@@ -105,7 +105,7 @@ function OidcCard({ currentUser, name }: { currentUser: User; name: string }) {
           </label>
           {error && (
             <div role="alert" className="alert-err flex items-center gap-2">
-              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -180,7 +180,7 @@ function PasswordCard({ currentUser, onUserUpdated, demoMode }: { currentUser: U
       </div>
       {msg && (
         <div role={msg.type === 'ok' ? 'status' : 'alert'} className={`flex items-center gap-2 ${msg.type === 'ok' ? 'alert-ok' : 'alert-err'}`}>
-          {msg.type === 'ok' ? <Check className="w-4 h-4 text-status-ok flex-shrink-0" /> : <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />}
+          {msg.type === 'ok' ? <Check className="w-4 h-4 text-status-ok shrink-0" /> : <CircleAlert className="w-4 h-4 text-status-err shrink-0" />}
           <span>{msg.text}</span>
         </div>
       )}

@@ -1756,7 +1756,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const showDraft = !!draft && (!liveState || (liveState.mode === 'draw' && liveState.isHost && liveState.participants.length <= 1));
 
   return createPortal(
-    <div className="fixed inset-0 z-[66] flex flex-col bg-canvas text-main" role="dialog"
+    <div className="fixed inset-0 z-66 flex flex-col bg-canvas text-main" role="dialog"
       aria-modal="true"
       aria-label={t('drawing.editorTitle')}
       // React passes events from a portal up to the bullet that renders it; they stop here
@@ -1766,21 +1766,21 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       onMouseDown={stop}
       onContextMenu={stop}
     >
-      <div className="shrink-0 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 pt-[calc(0.375rem+env(safe-area-inset-top))] pb-1.5 bg-panel/95 backdrop-blur-sm border-b border-border">
+      <div className="shrink-0 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 pt-[calc(0.375rem+env(safe-area-inset-top))] pb-1.5 bg-panel/95 backdrop-blur-xs border-b border-border">
         {!readOnly && <div className="hidden sm:block">{tools}</div>}
         <div className="flex-1" />
         {/* Alone in it (an unshared note, or nobody else there yet): no host, no people, it looks like drawing alone */}
         {liveState && !liveState.ended && !(liveState.isHost && livePeople.length <= 1) && (
           <div className="min-w-0 flex items-center gap-1.5 text-xs text-muted" title={liveTitle} data-live-people={livePeople.map((p) => p.name).join(',')}>
             <span className={`w-2 h-2 rounded-full shrink-0 ${liveState.status === 'live' ? 'bg-status-err animate-pulse' : 'bg-muted'}`} />
-            <AvatarStack people={livePeople} ringClass="ring-[var(--bg-panel)]" />
+            <AvatarStack people={livePeople} ringClass="ring-(--bg-panel)" />
             {/* Who saves for everyone; phones show the host's name with a crown */}
             <span className="min-w-0 inline-flex items-center gap-0.5" data-live-host={hostName || ''}>
-              <span className="hidden sm:inline truncate max-w-[14rem]">
+              <span className="hidden sm:inline truncate max-w-56">
                 {liveState.isHost ? t('drawing.live.youHost') : hostName ? t('drawing.live.host', { name: hostName }) : t('drawing.live.label')}
               </span>
               {hostName && <Crown className="sm:hidden w-3.5 h-3.5 shrink-0 text-status-warn" aria-label={t('drawing.live.host', { name: hostName })} />}
-              <span className="sm:hidden truncate max-w-[5.5rem]">{liveState.isHost ? t('drawing.live.you') : hostName || t('drawing.live.label')}</span>
+              <span className="sm:hidden truncate max-w-22">{liveState.isHost ? t('drawing.live.you') : hostName || t('drawing.live.label')}</span>
             </span>
           </div>
         )}

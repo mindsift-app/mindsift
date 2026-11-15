@@ -671,8 +671,8 @@ export const App: React.FC = () => {
 
   return (
     <div
-      className={`bg-canvas text-main flex flex-col font-sans selection:bg-accent/30 sm:h-[100dvh] sm:overflow-hidden sm:pl-[var(--app-rail-w)] ${
-        activeTab === 'workspace' ? 'h-[100dvh] overflow-hidden' : 'min-h-[100dvh]'
+      className={`bg-canvas text-main flex flex-col font-sans selection:bg-accent/30 sm:h-dvh sm:overflow-hidden sm:pl-(--app-rail-w) ${
+        activeTab === 'workspace' ? 'h-dvh overflow-hidden' : 'min-h-dvh'
       }`}
     >
       {/* Top Header Bar: floating on phones; desktop has the navigation rail instead */}
@@ -762,7 +762,7 @@ export const App: React.FC = () => {
       {demoNotice && (
         <div
           role="status"
-          className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-[60] px-3 py-1.5 rounded-full border border-accent/40 bg-panel-elevated text-main text-[11px] font-medium shadow-panel"
+          className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-60 px-3 py-1.5 rounded-full border border-accent/40 bg-panel-elevated text-main text-[11px] font-medium shadow-panel"
         >
           ✨ {demoNotice}
         </div>
@@ -775,7 +775,7 @@ export const App: React.FC = () => {
       <div
         ref={scrollAreaRef}
         data-app-scroll
-        className={`flex-1 flex flex-col min-h-0 sm:[scrollbar-gutter:stable_both-edges] ${
+        className={`flex-1 flex flex-col min-h-0 sm:scrollbar-gutter-both ${
           activeTab === 'workspace' ? 'sm:overflow-hidden' : 'sm:overflow-y-auto'
         }`}
       >

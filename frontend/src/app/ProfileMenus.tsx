@@ -42,7 +42,7 @@ export function ProfileDropdown({
     <div className="absolute left-full bottom-0 ml-3 w-64 max-h-[calc(100dvh-1.5rem)] overflow-y-auto panel-surface shadow-panel z-50 divide-y divide-border text-xs origin-bottom-left animate-in fade-in zoom-in-95 slide-in-from-left-1 duration-150">
       {/* User Info Header */}
       <div className="p-3 bg-canvas flex items-center gap-2.5">
-        <UserAvatar user={user} size="md" className="border border-border/70" />
+        <UserAvatar user={user} size="md" className="border" />
         <div className="min-w-0 flex-1">
           <p className="font-bold text-main truncate">{user.displayName}</p>
           <p className="text-[11px] text-muted truncate">{user.email || user.username}</p>
@@ -160,7 +160,7 @@ export function MobileProfileSheet({
   const { isStandaloneApp, setShowManualPwaGuide, setShowPwaInstallModal } = pwa;
   return (
     <div
-      className="sm:hidden fixed inset-0 !m-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/60 animate-in fade-in duration-150"
       onClick={() => setShowMobileProfile(false)}
     >
       <div
@@ -170,7 +170,7 @@ export function MobileProfileSheet({
         {/* User Info Header */}
         <div className="flex items-center justify-between pb-2">
           <div className="flex items-center gap-3">
-            <UserAvatar user={user} size="lg" className="border border-border/80 shadow-sm" />
+            <UserAvatar user={user} size="lg" className="border shadow-xs" />
             <div>
               <p className="font-bold text-sm text-main">{user.displayName}</p>
               <p className="text-xs text-muted">{user.email || user.username}</p>

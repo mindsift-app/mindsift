@@ -114,7 +114,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
     <>
       {/* Mobile Backdrop (below sm) */}
       <div
-        className={`fixed inset-0 bg-black/60 sm:hidden backdrop-blur-xs ${anchor ? 'z-[60]' : 'z-40'}`}
+        className={`fixed inset-0 bg-black/60 sm:hidden ${anchor ? 'z-60' : 'z-40'}`}
         onClick={onClose}
         aria-hidden="true"
       />
@@ -123,10 +123,10 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
       <div
         ref={containerRef}
         className={`
-          fixed inset-x-0 bottom-[var(--kb-inset)] rounded-t-2xl max-h-[var(--vv-max)] bg-panel border-t border-border shadow-2xl flex flex-col p-3 space-y-3
+          fixed inset-x-0 bottom-(--kb-inset) rounded-t-2xl max-h-(--vv-max) bg-panel border-t border-border shadow-2xl flex flex-col p-3 space-y-3
           sm:inset-auto sm:w-[300px] sm:max-h-[360px] sm:p-1 sm:space-y-0 sm:bg-panel-elevated sm:rounded-card sm:border sm:border-border sm:shadow-xl ${
             anchor
-              ? 'z-[61] sm:fixed sm:left-[var(--pick-left)] sm:top-[max(12px,var(--pick-top))]'
+              ? 'z-61 sm:fixed sm:left-(--pick-left) sm:top-[max(12px,var(--pick-top))]'
               : 'z-50 sm:absolute sm:left-0 sm:top-full sm:mt-1 sm:z-40'
           }
         `}
@@ -159,7 +159,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectEmoji('')}
-                className="h-11 sm:h-7 px-3 sm:px-2 rounded text-xs font-medium text-status-err hover:bg-status-err/10 flex items-center gap-1 transition-colors cursor-pointer"
+                className="h-11 sm:h-7 px-3 sm:px-2 rounded-sm text-xs font-medium text-status-err hover:bg-status-err/10 flex items-center gap-1 transition-colors cursor-pointer"
                 title={t('emojiPicker.remove')}
               >
                 <Trash className="w-3.5 h-3.5" />
@@ -170,7 +170,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-11 h-11 sm:w-7 sm:h-7 rounded flex items-center justify-center text-muted hover:text-main hover:bg-panel-elevated transition-colors cursor-pointer"
+              className="w-11 h-11 sm:w-7 sm:h-7 rounded-sm flex items-center justify-center text-muted hover:text-main hover:bg-panel-elevated transition-colors cursor-pointer"
               title={t('close')}
               aria-label={t('close')}
             >
@@ -180,7 +180,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
         </div>
 
         {/* Full Emoji Catalog via emoji-picker-react */}
-        <div className="flex-1 min-h-0 overflow-hidden rounded mindsift-emoji-picker">
+        <div className="flex-1 min-h-0 overflow-hidden rounded-sm mindsift-emoji-picker">
           <Suspense
             fallback={
               // As high as the picker, so nothing moves when it arrives

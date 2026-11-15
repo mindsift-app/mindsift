@@ -216,7 +216,7 @@ function MenuBase<T extends string>({
           <div
             ref={popRef}
             style={{ left: pos.left, minWidth: pos.width, top: pos.top, bottom: pos.bottom, maxHeight: pos.maxHeight }}
-            className="fixed z-[60] min-w-40 max-w-[calc(100vw-1rem)] flex flex-col bg-panel border border-border rounded-card shadow-panel text-sm sm:text-xs animate-in fade-in duration-100"
+            className="fixed z-60 min-w-40 max-w-[calc(100vw-1rem)] flex flex-col bg-panel border border-border rounded-card shadow-panel text-sm sm:text-xs animate-in fade-in duration-100"
             // Keeps the focus where it is (button or search field), so the keys keep working after a click.
             // Events in the list stay in it: React would bubble them to the parents of the button (a note's
             // bullet, a dialog's backdrop).
@@ -243,7 +243,7 @@ function MenuBase<T extends string>({
                   aria-label={t('select.search')}
                   aria-controls={`${id}-list`}
                   aria-activedescendant={`${id}-${active}`}
-                  className="flex-1 min-w-0 h-11 sm:h-8 bg-transparent text-base sm:text-xs text-main outline-none placeholder:text-faint"
+                  className="flex-1 min-w-0 h-11 sm:h-8 bg-transparent text-base sm:text-xs text-main outline-hidden placeholder:text-faint"
                 />
               </div>
             )}
@@ -273,7 +273,7 @@ function MenuBase<T extends string>({
                           chosen ? 'bg-accent border-accent text-on-accent' : 'border-strong'
                         }`}
                       >
-                        {chosen && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        {chosen && <Check className="w-2.5 h-2.5 stroke-3" />}
                       </span>
                     )}
                     {option.lead && <span className="shrink-0 flex items-center">{option.lead}</span>}

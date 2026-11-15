@@ -165,7 +165,7 @@ export function FolderTree({
           className={`p-3 rounded-card border-2 border-dashed transition-all flex items-center justify-center text-xs font-medium text-center ${
             dragOverFolder === '__root_bottom__'
               ? 'border-accent bg-accent/20 text-accent ring-2 ring-accent/30'
-              : 'border-border/60 bg-panel-elevated/40 text-muted hover:border-accent/40'
+              : 'bg-panel-elevated/40 text-muted hover:border-accent/40'
           }`}
         >
           <span>{t('folder.moveToRoot')}</span>

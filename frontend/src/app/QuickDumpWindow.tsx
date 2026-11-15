@@ -52,7 +52,7 @@ export function QuickDumpWindow({ open, onClose, onCaptured, lists, focusTrigger
 
   return (
     <div
-      className={`${open ? 'hidden sm:flex' : 'hidden'} fixed inset-0 z-[60] items-start justify-center px-4 pt-[14vh] bg-black/45 backdrop-blur-[2px] animate-in fade-in duration-150`}
+      className={`${open ? 'hidden sm:flex' : 'hidden'} fixed inset-0 z-60 items-start justify-center px-4 pt-[14vh] bg-black/45 backdrop-blur-[2px] animate-in fade-in duration-150`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

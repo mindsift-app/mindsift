@@ -9,7 +9,7 @@ import type { AvailableUpdate } from '../lib/useUpdateCheck';
 export const UpdateAvailableModal: React.FC<{ update: AvailableUpdate; onLater: () => void }> = ({ update, onLater }) => {
   const { t } = useTranslation();
   return (
-  <div className="fixed inset-0 !m-0 z-[70] modal-overlay flex items-center justify-center p-4" onClick={onLater}>
+  <div className="fixed inset-0 m-0! z-70 modal-overlay flex items-center justify-center p-4" onClick={onLater}>
     <div
       role="dialog"
       aria-modal="true"

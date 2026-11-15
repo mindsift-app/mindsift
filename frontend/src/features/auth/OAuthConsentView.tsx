@@ -62,7 +62,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
   const groups = scopeGroups().filter(([group]) => SCOPES.some((sc) => sc.group === group && offered.includes(sc.id)));
 
   return (
-    <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
+    <div className="min-h-dvh bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
       <div className="w-full max-w-md panel-surface shadow-panel overflow-hidden">
         <div className="p-4 bg-canvas border-b border-border flex items-center gap-2.5">
           <div className="w-7 h-7 bg-accent text-on-accent rounded-btn flex items-center justify-center">
@@ -76,7 +76,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
 
           {error && (
             <div className="flex items-start gap-2 text-xs text-status-err">
-              <CircleAlert className="w-4 h-4 flex-shrink-0 mt-px" />
+              <CircleAlert className="w-4 h-4 shrink-0 mt-px" />
               <span>{error}</span>
             </div>
           )}
@@ -84,7 +84,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
           {info && (
             <>
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 bg-accent/15 text-accent rounded-btn flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 bg-accent/15 text-accent rounded-btn flex items-center justify-center shrink-0">
                   <Bot className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
@@ -119,7 +119,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
 
               {info.knownHost === false && (
                 <div role="alert" className="alert-err flex items-start gap-2 text-xs">
-                  <TriangleAlert className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <TriangleAlert className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>
                     <Trans
                       t={t}
@@ -132,7 +132,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
               )}
 
               <p className="text-[11px] text-faint flex items-center gap-1.5">
-                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                 <span>
                   <Trans
                     t={t}

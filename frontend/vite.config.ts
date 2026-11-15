@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -84,6 +85,7 @@ function nameMainChunk(): Plugin {
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     {
       name: 'mindsift-version-json',
       generateBundle() {

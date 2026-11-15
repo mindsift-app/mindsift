@@ -92,7 +92,7 @@ export const MoreTabsButton = forwardRef<HTMLDivElement, MoreTabsButtonProps>(fu
         aria-expanded={open}
         aria-haspopup="menu"
         title={t('listMenu.moreLists')}
-        className="tool-btn !gap-1"
+        className="tool-btn gap-1!"
       >
         <Ellipsis className="w-3.5 h-3.5" />
         <span>{items.length}</span>

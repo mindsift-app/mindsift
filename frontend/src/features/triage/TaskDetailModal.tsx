@@ -353,7 +353,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   // row of a long list (the view's space-y siblings rule), which delayed opening it.
   return createPortal(
     <div
-      className="fixed inset-0 !m-0 modal-overlay z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 m-0! modal-overlay z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
       onMouseDown={(e) => {
         pressedOutsideRef.current = e.target === e.currentTarget;
       }}
@@ -381,21 +381,21 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 const nextKanban = nextState ? (doneCol ? doneCol.id : 'done') : (todoCol ? todoCol.id : 'todo');
                 onUpdateStatus(task, nextKanban);
               }}
-              className={`w-5 h-5 checkbox-square flex items-center justify-center flex-shrink-0 transition-colors border disabled:cursor-default ${
+              className={`w-5 h-5 checkbox-square flex items-center justify-center shrink-0 transition-colors border disabled:cursor-default ${
                 task.isCompleted
                   ? 'bg-status-ok border-status-ok text-on-accent'
                   : 'border-strong hover:border-accent text-transparent'
               }`}
               title={task.isCompleted ? t('detail.markOpen') : t('detail.markDone')}
             >
-              <Check className="w-3.5 h-3.5 stroke-[3]" />
+              <Check className="w-3.5 h-3.5 stroke-3" />
             </button>
             {/* Phones: squeezed to a single letter next to the buttons, so left out */}
             <span className="hidden sm:inline text-xs font-semibold text-main truncate">
               {readOnly ? t('detail.view') : task.isCompleted ? t('detail.done') : editTitleOnOpen ? t('detail.new') : t('detail.edit')}
             </span>
             {readOnly && (
-              <span className="px-1.5 py-0.5 border border-border bg-canvas text-muted rounded-btn text-[10px] font-medium flex items-center gap-1 flex-shrink-0">
+              <span className="px-1.5 py-0.5 border border-border bg-canvas text-muted rounded-btn text-[10px] font-medium flex items-center gap-1 shrink-0">
                 <Lock className="w-2.5 h-2.5 text-faint" />
                 <span>{t('detail.readOnly')}</span>
               </span>
@@ -554,7 +554,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 title={readOnly ? undefined : t('detail.editTitle')}
               >
                 <h2
-                  className={`text-base font-semibold break-words leading-snug ${
+                  className={`text-base font-semibold wrap-break-word leading-snug ${
                     task.isCompleted ? 'line-through text-faint' : 'text-main'
                   }`}
                 >
@@ -606,7 +606,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 className={`h-8 px-2 text-xs rounded-btn font-medium transition-colors border flex items-center justify-center gap-1 cursor-pointer ${
                   task.priority === 'low'
                     ? // No colour of its own: a faint tint and frame in the text colour, light in dark themes
-                      'bg-[color-mix(in_srgb,var(--text-main)_10%,transparent)] border-[color-mix(in_srgb,var(--text-main)_55%,transparent)] text-main font-semibold shadow-xs'
+                      'bg-[color-mix(in_srgb,var(--text-main)_10%,transparent)] border-[color-mix(in_srgb,var(--text-main)_55%,transparent)] text-main font-semibold'
                     : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >
@@ -620,7 +620,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 }}
                 className={`h-8 px-2 text-xs rounded-btn font-medium transition-colors border flex items-center justify-center gap-1 cursor-pointer ${
                   !task.priority || task.priority === 'normal'
-                    ? 'bg-accent/15 border-accent text-accent font-semibold shadow-xs'
+                    ? 'bg-accent/15 border-accent text-accent font-semibold'
                     : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >
@@ -634,7 +634,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 }}
                 className={`h-8 px-2 text-xs rounded-btn font-medium transition-colors border flex items-center justify-center gap-1 cursor-pointer ${
                   task.priority === 'high'
-                    ? 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs'
+                    ? 'bg-status-warn/15 border-status-warn text-status-warn font-semibold'
                     : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >
@@ -649,7 +649,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 }}
                 className={`h-8 px-2 text-xs rounded-btn font-medium transition-colors border flex items-center justify-center gap-1 cursor-pointer ${
                   task.priority === 'urgent'
-                    ? 'bg-status-err/15 border-status-err text-status-err font-semibold shadow-xs'
+                    ? 'bg-status-err/15 border-status-err text-status-err font-semibold'
                     : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >
@@ -682,7 +682,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                   value={dueParts.time}
                   disabled={!dueParts.date}
                   onChange={(time) => onUpdateDueDate(task, joinDue(dueParts.date, time))}
-                  className="w-[7.5rem] lg:w-[5.75rem] shrink-0"
+                  className="w-30 lg:w-23 shrink-0"
                   inputClassName="h-11 sm:h-8 input-field px-2 lg:px-1.5 text-base sm:text-xs bg-panel"
                 />
                 {task.dueDate && (
@@ -949,7 +949,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     key={st.id}
                     data-sort-id={st.id}
                     className={`p-1.5 bg-canvas border rounded-card flex items-center justify-between text-xs group ${
-                      draggingSubtaskId === st.id ? 'border-accent shadow-sm opacity-80' : 'border-border'
+                      draggingSubtaskId === st.id ? 'border-accent shadow-xs opacity-80' : 'border-border'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -957,7 +957,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                         <button
                           type="button"
                           {...subtaskHandleProps(st.id)}
-                          className="-my-2.5 sm:my-0 h-11 w-6 sm:h-5 sm:w-4 flex items-center justify-center flex-shrink-0 text-faint hover:text-main cursor-grab active:cursor-grabbing touch-none"
+                          className="-my-2.5 sm:my-0 h-11 w-6 sm:h-5 sm:w-4 flex items-center justify-center shrink-0 text-faint hover:text-main cursor-grab active:cursor-grabbing touch-none"
                           title={t('detail.dragSort')}
                           aria-label={t('moveSubtask', { title: st.title })}
                         >
@@ -967,13 +967,13 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                       <button
                         type="button"
                         onClick={() => onToggleSubtask(task, st.id)}
-                        className={`w-3.5 h-3.5 checkbox-square flex items-center justify-center flex-shrink-0 transition-colors border ${
+                        className={`w-3.5 h-3.5 checkbox-square flex items-center justify-center shrink-0 transition-colors border ${
                           st.isCompleted
                             ? 'bg-status-ok border-status-ok text-on-accent'
                             : 'border-strong hover:border-accent text-transparent'
                         }`}
                       >
-                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                        <Check className="w-2.5 h-2.5 stroke-3" />
                       </button>
                       {editingSubtask?.id === st.id ? (
                         <div className="relative flex-1 min-w-0">

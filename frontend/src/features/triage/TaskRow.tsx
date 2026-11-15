@@ -74,7 +74,7 @@ function TaskRowView({
       {renderAssignees(task, 'xs')}
 
       {/* Action Controls (Desktop only - on mobile, tapping the task opens Detail Modal) */}
-      <div className="hidden sm:flex items-center gap-1 flex-shrink-0" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+      <div className="hidden sm:flex items-center gap-1 shrink-0" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           draggable={false}
@@ -146,21 +146,21 @@ function TaskRowView({
             e.stopPropagation();
             handleToggleDone(task);
           }}
-          className={`w-5 h-5 sm:w-4 sm:h-4 checkbox-square flex items-center justify-center flex-shrink-0 transition-colors border disabled:cursor-default ${
+          className={`w-5 h-5 sm:w-4 sm:h-4 checkbox-square flex items-center justify-center shrink-0 transition-colors border disabled:cursor-default ${
             isCompleted
               ? 'bg-status-ok border-status-ok text-on-accent'
               : 'border-strong hover:border-accent text-transparent'
           }`}
           title={readOnly ? t('detail.readOnly') : isCompleted ? t('detail.markOpen') : t('row.markDone')}
         >
-          <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[3]" />
+          <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-3" />
         </button>
 
         {/* Clickable Title & Metadata */}
         <div className="min-w-0 flex-1 cursor-pointer space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <p
-              className={`text-sm break-words leading-tight ${
+              className={`text-sm wrap-break-word leading-tight ${
                 isCompleted ? 'line-through text-faint' : 'text-main font-medium'
               }`}
             >
@@ -198,7 +198,7 @@ function TaskRowView({
               const statusId = task.kanbanStatus || (isCompleted ? 'done' : 'todo');
               const taskColumns = columnsFor(task);
               const statusCol = taskColumns.find((c) => c.id === statusId);
-              const dot = <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${columnDotClass(statusCol)}`} aria-hidden="true" />;
+              const dot = <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${columnDotClass(statusCol)}`} aria-hidden="true" />;
               return (
                 <>
                   <span className="hidden sm:inline-flex">
@@ -257,7 +257,7 @@ function TaskRowView({
               <button
                 type="button"
                 onClick={() => onOpen(task.id)}
-                className="inline-flex items-center gap-1 min-w-0 max-w-full text-[10px] text-muted hover:text-main bg-canvas px-1.5 py-0.5 rounded border border-border"
+                className="inline-flex items-center gap-1 min-w-0 max-w-full text-[10px] text-muted hover:text-main bg-canvas px-1.5 py-0.5 rounded-sm border border-border"
                 title={t('row.showNote')}
               >
                 <FileText className="w-2.5 h-2.5 text-accent shrink-0" />

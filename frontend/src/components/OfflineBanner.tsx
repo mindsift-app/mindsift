@@ -47,8 +47,8 @@ export const OfflineBanner: React.FC = () => {
   return (
     <div
       role="status"
-      className={`fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-[60] max-w-[calc(100vw-1.5rem)] border text-[11px] font-medium shadow-panel bg-panel-elevated border-status-warn/40 text-main ${
-        explain ? 'w-[26rem] rounded-card' : 'rounded-full'
+      className={`fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-60 max-w-[calc(100vw-1.5rem)] border text-[11px] font-medium shadow-panel bg-panel-elevated border-status-warn/40 text-main ${
+        explain ? 'w-104 rounded-card' : 'rounded-full'
       }`}
     >
       <button

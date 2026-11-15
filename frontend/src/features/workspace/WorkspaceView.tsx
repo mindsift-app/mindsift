@@ -763,7 +763,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         data-ws-pane
         className={
           focusMode
-            ? `fixed inset-0 z-[45] flex bg-editor focus-mode-enter ${zenPinTop ? 'lg:pt-[45px]' : ''} ${
+            ? `fixed inset-0 z-45 flex bg-editor focus-mode-enter ${zenPinTop ? 'lg:pt-[45px]' : ''} ${
                 zenPinSide ? 'lg:pl-80' : ''
               }`
             : 'flex flex-1 min-h-0 bg-editor rounded-card border border-border overflow-hidden'
@@ -790,7 +790,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           className={
             focusMode
               ? // Pinned: from lg on it stays open beside the note (below a pinned header), without shadow
-                `fixed left-0 inset-y-0 z-[47] w-80 max-w-[85vw] flex flex-col bg-sidebar border-r border-border transition-transform duration-300 ease-out ${
+                `fixed left-0 inset-y-0 z-47 w-80 max-w-[85vw] flex flex-col bg-sidebar border-r border-border transition-transform duration-300 ease-out ${
                   zenSidebar !== 'closed'
                     ? 'translate-x-0 shadow-panel'
                     : zenPinSide

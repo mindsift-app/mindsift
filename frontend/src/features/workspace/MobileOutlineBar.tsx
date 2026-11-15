@@ -32,7 +32,7 @@ export const MobileOutlineBar: React.FC<MobileOutlineBarProps> = ({ onOutdent, o
       onPointerDown={(e) => e.preventDefault()}
       onMouseDown={(e) => e.preventDefault()}
       onClick={action}
-      className="h-10 flex-1 max-w-[4.5rem] flex items-center justify-center rounded-btn border border-border bg-canvas text-main active:bg-panel-elevated touch-manipulation"
+      className="h-10 flex-1 max-w-18 flex items-center justify-center rounded-btn border border-border bg-canvas text-main active:bg-panel-elevated touch-manipulation"
     >
       {icon}
     </button>
@@ -43,7 +43,7 @@ export const MobileOutlineBar: React.FC<MobileOutlineBarProps> = ({ onOutdent, o
 
   return createPortal(
     <div
-      className="fixed left-0 right-0 z-[70] flex items-center justify-center gap-2 px-3 py-1.5 bg-panel/95 backdrop-blur-md border-t border-border"
+      className="fixed left-0 right-0 z-70 flex items-center justify-center gap-2 px-3 py-1.5 bg-panel/95 backdrop-blur-md border-t border-border"
       style={{ bottom: inset }}
       role="toolbar"
       aria-label={t('outlineBar.label')}

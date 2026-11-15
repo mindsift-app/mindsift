@@ -99,7 +99,7 @@ export function UsersSection({
             {pending.slice(0, pendingLimit).map((u) => (
               <div key={u.id} className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <UserAvatar user={u} size="sm" className="border border-border/80" />
+                  <UserAvatar user={u} size="sm" className="border" />
                   <div className="min-w-0">
                     <p className="font-bold text-main truncate flex items-center gap-2">
                       {u.displayName}
@@ -366,7 +366,7 @@ export function UsersSection({
                         placeholder={t('auth:emailPlaceholder')}
                         required
                         autoFocus
-                        className="flex-1 min-w-[12rem] h-8 px-2.5 input-field"
+                        className="flex-1 min-w-48 h-8 px-2.5 input-field"
                       />
                       <button
                         type="submit"

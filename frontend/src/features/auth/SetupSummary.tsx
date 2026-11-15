@@ -113,8 +113,8 @@ export const SetupSummary: React.FC<{
     <ul className="space-y-2">
       {items.map((item) => (
         <li key={item.key} data-tone={item.tone} className="flex items-start gap-2 leading-relaxed">
-          <span className="mt-0.5 flex-shrink-0">{item.icon}</span>
-          <span className="min-w-0 text-muted break-words">{item.text}</span>
+          <span className="mt-0.5 shrink-0">{item.icon}</span>
+          <span className="min-w-0 text-muted wrap-break-word">{item.text}</span>
         </li>
       ))}
     </ul>
@@ -134,7 +134,7 @@ export const SetupSummary: React.FC<{
             list(open)
           ) : (
             <p className="flex items-start gap-2 text-muted">
-              <span className="mt-0.5 flex-shrink-0">{okIcon}</span>
+              <span className="mt-0.5 shrink-0">{okIcon}</span>
               <span>{t('setupSummary.nothingOpen')}</span>
             </p>
           )}

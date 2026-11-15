@@ -73,9 +73,9 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         >
           <div className="flex items-center gap-2">
             {statusMsg.type === 'ok' ? (
-              <Check className="w-4 h-4 text-accent flex-shrink-0" />
+              <Check className="w-4 h-4 text-accent shrink-0" />
             ) : (
-              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
             )}
             <span>{statusMsg.text}</span>
           </div>
@@ -100,7 +100,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                 : 'text-muted hover:text-main hover:bg-canvas/50'
             }`}
           >
-            <Users className="w-4 h-4 text-accent flex-shrink-0" />
+            <Users className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('admin.nav.users')}</p>
               <p className="text-[10px] text-faint">{t('admin.nav.usersHint')}</p>
@@ -115,7 +115,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                     : 'text-muted hover:text-main hover:bg-canvas/50'
                 }`}
               >
-                <BuildingComplex className="w-4 h-4 text-accent flex-shrink-0" />
+                <BuildingComplex className="w-4 h-4 text-accent shrink-0" />
                 <div>
                   <p className="font-semibold">{t('orgs.title')}</p>
                   <p className="text-[10px] text-faint">{t('admin.nav.orgsHint')}</p>
@@ -133,7 +133,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                     : 'text-muted hover:text-main hover:bg-canvas/50'
                 }`}
               >
-                <Server className="w-4 h-4 text-accent flex-shrink-0" />
+                <Server className="w-4 h-4 text-accent shrink-0" />
                 <div>
                   <p className="font-semibold">{t('admin.nav.server')}</p>
                   <p className="text-[10px] text-faint">{t('admin.nav.serverHint')}</p>
@@ -148,7 +148,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                     : 'text-muted hover:text-main hover:bg-canvas/50'
                 }`}
               >
-                <Mail className="w-4 h-4 text-accent flex-shrink-0" />
+                <Mail className="w-4 h-4 text-accent shrink-0" />
                 <div>
                   <p className="font-semibold">{t('admin.nav.smtp')}</p>
                   <p className="text-[10px] text-faint">{t('admin.nav.smtpHint')}</p>
@@ -162,7 +162,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         <div className="md:col-span-3 panel-surface p-5 text-xs">
           {demoMode && (
             <div className="flex items-center gap-2 alert-err mb-4">
-              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
               <span>
                 {t('admin.demo')}
               </span>

@@ -123,7 +123,7 @@ export function TimeField({ value, onChange, ariaLabel, disabled, className = ''
             role="listbox"
             aria-label={ariaLabel}
             style={{ left: pos.left, minWidth: pos.width, top: pos.top, bottom: pos.bottom, maxHeight: pos.maxHeight }}
-            className="fixed z-[60] min-w-28 overflow-y-auto p-1 bg-panel border border-border rounded-card shadow-panel text-xs animate-in fade-in duration-100"
+            className="fixed z-60 min-w-28 overflow-y-auto p-1 bg-panel border border-border rounded-card shadow-panel text-xs animate-in fade-in duration-100"
             onMouseDown={(e) => e.preventDefault()}
           >
             {SLOTS.map((slot, i) => {

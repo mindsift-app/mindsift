@@ -300,7 +300,7 @@ function TourOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-[200]"
+      className="fixed inset-0 z-200"
       style={{ touchAction: 'none' }}
       onPointerDown={(e) => {
         if (!cardRef.current?.contains(e.target as Node)) e.preventDefault();

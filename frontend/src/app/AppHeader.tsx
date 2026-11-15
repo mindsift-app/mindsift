@@ -64,11 +64,11 @@ export function MobileHeaderBar({
         }}
         data-tour="view-menu"
         className={`min-h-[44px] px-2.5 -ml-2 rounded-xl flex items-center gap-2.5 cursor-pointer select-none active:scale-95 transition-all ${
-          isMenuOpen ? 'bg-panel border border-accent/40 shadow-sm' : 'hover:bg-panel/60'
+          isMenuOpen ? 'bg-panel border border-accent/40 shadow-xs' : 'hover:bg-panel/60'
         }`}
         title={t('header.openMenu')}
       >
-        <div className="w-8 h-8 bg-accent text-on-accent rounded-xl shadow-sm flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 bg-accent text-on-accent rounded-xl shadow-xs flex items-center justify-center shrink-0">
           <Brain className="w-4 h-4" />
         </div>
         <div className="flex items-center gap-1.5">
@@ -147,7 +147,7 @@ export function MobileHeaderBar({
           title={t('header.profileAndSettings')}
         >
           <span className="relative">
-            <UserAvatar user={user} size="md" className="shadow-sm" />
+            <UserAvatar user={user} size="md" className="shadow-xs" />
             {/* Connection status like in a chat app: green online, yellow limited, red without server */}
             <span
               role="status"

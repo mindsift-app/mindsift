@@ -89,8 +89,8 @@ export const SetupMailSection: React.FC<{
       {configured ? (
         <div className="space-y-1">
           <p className="flex items-start gap-1.5 text-main font-medium">
-            <CircleCheck className="w-3.5 h-3.5 mt-px text-status-ok flex-shrink-0" />
-            <span className="min-w-0 break-words">
+            <CircleCheck className="w-3.5 h-3.5 mt-px text-status-ok shrink-0" />
+            <span className="min-w-0 wrap-break-word">
               {info?.smtpViaEnv ? t('setupMail.envSet') : t('setupMail.alreadySet')}
               {info?.smtpHost && <code className="font-mono font-normal text-muted"> · {info.smtpHost}</code>}
             </span>
@@ -175,7 +175,7 @@ function SetupTestMail({ defaultTo, send, disabled }: { defaultTo: string; send:
         </button>
       </div>
       {result && (
-        <p role="status" className={`text-[11px] break-words ${result.ok ? 'text-status-ok' : 'text-status-err'}`}>
+        <p role="status" className={`text-[11px] wrap-break-word ${result.ok ? 'text-status-ok' : 'text-status-err'}`}>
           {result.text}
         </p>
       )}

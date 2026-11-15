@@ -390,7 +390,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       {/* Hashtag Autocomplete Suggestions Dropdown */}
       {showSuggestions && activeHashtagQuery && matchingSuggestions.length > 0 && (
         <div className="absolute left-6 top-full mt-2 w-64 max-h-56 overflow-y-auto bg-panel-elevated border border-border rounded-btn shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-          <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-faint tracking-wider border-b border-border/50">
+          <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-faint tracking-wider border-b">
             Hashtags
           </div>
           {matchingSuggestions.map((tag, idx) => {
@@ -449,11 +449,11 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
   const renderAddItemFields = (desktop: boolean) =>
     !activeList ? null : desktop ? (
       <>
-        <Plus className="w-4 h-4 text-accent ml-1 flex-shrink-0" />
+        <Plus className="w-4 h-4 text-accent ml-1 shrink-0" />
         <div className="relative flex-1 min-w-0">
-          {renderItemInput(true, 'w-full bg-transparent px-2 py-1 text-sm text-main placeholder-faint focus:outline-none')}
+          {renderItemInput(true, 'w-full bg-transparent px-2 py-1 text-sm text-main placeholder-faint focus:outline-hidden')}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {itemVoice()}
           {quantityInput('w-20 h-7 px-2 input-field text-xs')}
           <button

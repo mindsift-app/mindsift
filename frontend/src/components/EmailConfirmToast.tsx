@@ -30,9 +30,9 @@ export function EmailConfirmToast({ onConfirmed }: { onConfirmed?: () => void })
   return (
     <div
       role="status"
-      className="fixed z-[70] left-4 right-4 sm:left-auto sm:right-6 sm:w-96 top-[calc(4.5rem+env(safe-area-inset-top))] sm:top-auto sm:bottom-6 p-3 rounded-xl border border-border bg-panel shadow-lg flex items-start gap-2.5 text-sm"
+      className="fixed z-70 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 top-[calc(4.5rem+env(safe-area-inset-top))] sm:top-auto sm:bottom-6 p-3 rounded-xl border border-border bg-panel shadow-lg flex items-start gap-2.5 text-sm"
     >
-      <MailCheck className={`w-4 h-4 mt-0.5 flex-shrink-0 ${result.ok ? 'text-accent' : 'text-status-err'}`} />
+      <MailCheck className={`w-4 h-4 mt-0.5 shrink-0 ${result.ok ? 'text-accent' : 'text-status-err'}`} />
       <p className="flex-1 min-w-0 text-main">{result.text}</p>
       <button
         type="button"

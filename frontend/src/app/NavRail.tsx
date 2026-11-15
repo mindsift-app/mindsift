@@ -136,7 +136,7 @@ export function NavRail({
       aria-label={t('rail.label')}
       data-nav-rail={expanded ? 'expanded' : 'collapsed'}
       className={`hidden sm:flex fixed left-0 inset-y-0 z-40 flex-col gap-1 px-2.5 py-2.5 bg-panel border-r border-border transition-[width,box-shadow] duration-200 ease-out motion-reduce:transition-none ${
-        expanded ? 'w-[13.75rem] shadow-panel' : 'w-[3.75rem]'
+        expanded ? 'w-55 shadow-panel' : 'w-15'
       }`}
     >
       {/* Logo: back to the triage; expanded with the name and the version or the demo's countdown */}
@@ -146,7 +146,7 @@ export function NavRail({
           triggerHaptic(10);
           setActiveTab('triage');
         }}
-        className="rail-item !h-auto min-h-[2.75rem] !pl-1.5 hover:!bg-transparent"
+        className="rail-item h-auto! min-h-11 pl-1.5! hover:bg-transparent!"
         title={instanceName}
       >
         <span className="w-7 h-7 shrink-0 bg-accent text-on-accent rounded-btn flex items-center justify-center">
@@ -217,7 +217,7 @@ export function NavRail({
       >
         <RailItemContent
           icon={
-            <span className="w-9 h-9 -m-2 rounded-full bg-panel-elevated border border-border text-main flex items-center justify-center shadow-sm transition-colors group-hover:bg-panel-hover group-hover:border-strong">
+            <span className="w-9 h-9 -m-2 rounded-full bg-panel-elevated border border-border text-main flex items-center justify-center shadow-xs transition-colors group-hover:bg-panel-hover group-hover:border-strong">
               <Plus className="w-[18px] h-[18px]" />
             </span>
           }
@@ -262,7 +262,7 @@ export function NavRail({
           }}
           aria-expanded={showProfileMenu}
           aria-haspopup="menu"
-          className={`rail-item !h-11 !pl-1.5 ${inProfile || showProfileMenu ? 'bg-panel-elevated text-main' : ''}`}
+          className={`rail-item h-11! pl-1.5! ${inProfile || showProfileMenu ? 'bg-panel-elevated text-main' : ''}`}
           title={t('header.openUserMenu')}
         >
           <span className="relative shrink-0">
@@ -272,7 +272,7 @@ export function NavRail({
               role="status"
               aria-label={status.title}
               title={status.title}
-              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-[var(--bg-panel)] ${status.dot}`}
+              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-(--bg-panel) ${status.dot}`}
             />
           </span>
           {/* Collapsed, the name stays for screen readers (and tests that look for the account's button) */}

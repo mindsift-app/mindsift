@@ -276,7 +276,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
                   <tr key={i} className="hover:bg-canvas/50 transition-colors">
                     <td className="py-2 px-3 font-mono text-accent font-medium">{sc.key}</td>
                     <td className="py-2 px-3 text-muted">
-                      <span className="px-1.5 py-0.5 bg-canvas border border-border rounded text-[11px]">
+                      <span className="px-1.5 py-0.5 bg-canvas border border-border rounded-sm text-[11px]">
                         {sc.scope}
                       </span>
                     </td>

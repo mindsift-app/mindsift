@@ -956,7 +956,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         ref={contentRef}
         className={`w-full pl-2 pr-1 sm:px-8 flex-auto shrink-0 overflow-x-auto sm:overflow-x-visible [-webkit-overflow-scrolling:touch] ${
           inTagPage ? 'py-2' : inJournal ? 'py-3' : 'py-5'
-        } ${focusMode ? 'max-w-[var(--note-measure-focus)]' : 'sm:max-w-[var(--note-measure)]'} mx-auto`}
+        } ${focusMode ? 'max-w-(--note-measure-focus)' : 'sm:max-w-(--note-measure)'} mx-auto`}
         style={focusMode && desktopBar && !embedded ? { paddingTop: `calc(1.25rem + ${focusTopGap}px)`, paddingBottom: '60vh' } : undefined}
       >
         {desktopBar && zoomedBlock && breadcrumbs.length > 0 && <div className="mb-3">{breadcrumbNav}</div>}
@@ -990,7 +990,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   }}
                   placeholder={t('editor.branchTitle')}
                   readOnly={!canEdit || isTitleFromKind(zoomedBlock)}
-                  className={`w-full text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-none focus:ring-0 tracking-tight leading-tight ${
+                  className={`w-full text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-hidden focus:ring-0 tracking-tight leading-tight sm:leading-9 ${
                     isTitleFromKind(zoomedBlock) ? 'text-ellipsis' : ''
                   }`}
                 />
@@ -1126,7 +1126,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => canEdit && !inJournal && setShowEmojiPicker((prev) => !prev)}
-                  className={`text-2xl sm:text-3xl transition-opacity select-none leading-none bg-transparent border-0 outline-none p-0 focus:outline-none focus:ring-0 shadow-none ${
+                  className={`text-2xl sm:text-3xl transition-opacity select-none leading-none sm:leading-9 bg-transparent border-0 outline-hidden p-0 focus:outline-hidden focus:ring-0 shadow-none ${
                     inJournal ? 'cursor-default' : 'hover:opacity-80 cursor-pointer'
                   }`}
                   title={inJournal ? undefined : t('editor.changeIcon')}
@@ -1172,7 +1172,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 }}
                 onBlur={handleTitleBlur}
                 placeholder={t('editor.titlePlaceholder')}
-                className="flex-1 min-w-0 text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-none focus:ring-0 tracking-tight resize-none leading-snug whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+                className="flex-1 min-w-0 text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-hidden focus:ring-0 tracking-tight resize-none leading-snug sm:leading-9 whitespace-pre-wrap wrap-break-word wrap-anywhere"
               />
             </div>
 

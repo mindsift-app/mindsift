@@ -16,10 +16,10 @@ export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLab
   if (!isMenuOpen) return null;
 
   return (
-    <div className="sm:hidden fixed inset-0 !m-0 z-50">
+    <div className="sm:hidden fixed inset-0 m-0! z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 !m-0 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+        className="fixed inset-0 m-0! bg-black/60 animate-in fade-in duration-150"
         onClick={() => {
           triggerHaptic(8);
           closeMenu();
@@ -69,10 +69,10 @@ export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLab
                     const isActive = item.active;
 
                     let btnClass =
-                      'bg-canvas/70 hover:bg-canvas text-main border border-border/60';
+                      'bg-canvas/70 hover:bg-canvas text-main border';
                     if (isAccent) {
                       btnClass =
-                        'bg-accent text-on-accent border border-accent font-semibold shadow-sm';
+                        'bg-accent text-on-accent border border-accent font-semibold shadow-xs';
                     } else if (isDanger) {
                       btnClass =
                         'bg-status-err/10 text-status-err border border-status-err/30 font-medium';
@@ -95,7 +95,7 @@ export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLab
                         <div className="flex items-center gap-3 min-w-0 flex-1 text-left">
                           {item.icon && (
                             <span
-                              className={`flex-shrink-0 flex items-center justify-center w-5 h-5 ${
+                              className={`shrink-0 flex items-center justify-center w-5 h-5 ${
                                 isAccent
                                   ? 'text-on-accent'
                                   : isDanger
@@ -111,7 +111,7 @@ export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLab
                           <span className="truncate">{item.label}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 shrink-0">
                           {typeof item.badge === 'number' && !isAccent ? (
                             <CountBadge count={item.badge} showZero variant={isActive ? 'accent' : 'muted'} />
                           ) : item.badge !== undefined && item.badge !== '' && (
@@ -128,7 +128,7 @@ export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLab
                             </span>
                           )}
                           {isActive && !isAccent && (
-                            <Check className="w-4 h-4 text-accent flex-shrink-0" />
+                            <Check className="w-4 h-4 text-accent shrink-0" />
                           )}
                         </div>
                       </button>

@@ -206,7 +206,7 @@ export function DateField({ value, onChange, ariaLabel, disabled, className = ''
             role="dialog"
             aria-label={ariaLabel}
             style={{ left: pos.left, top: pos.top, bottom: pos.bottom, width: POPOVER_WIDTH }}
-            className="fixed z-[60] p-2 bg-panel border border-border rounded-card shadow-panel text-xs animate-in fade-in duration-100"
+            className="fixed z-60 p-2 bg-panel border border-border rounded-card shadow-panel text-xs animate-in fade-in duration-100"
             onMouseDown={(e) => e.preventDefault()}
           >
             <div className="flex items-center justify-between mb-1">
@@ -288,7 +288,7 @@ export function DateField({ value, onChange, ariaLabel, disabled, className = ''
                           data-cursor={isCursor}
                           tabIndex={isCursor ? 0 : -1}
                           onClick={() => pick(day)}
-                          className={`h-8 m-px rounded-btn tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                          className={`h-8 m-px rounded-btn tabular-nums outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
                             chosen
                               ? 'bg-accent text-on-accent font-semibold'
                               : isToday

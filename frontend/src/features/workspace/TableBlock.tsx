@@ -583,7 +583,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
             onChange={(e) => handleChange(e, r, c)}
             onKeyDown={(e) => handleKeyDown(e, r, c)}
             onPaste={(e) => handlePaste(e, r, c)}
-            className={`nt-input absolute inset-0 block w-full h-full m-0 p-0 resize-none overflow-hidden bg-transparent border-0 focus:outline-none focus:ring-0 ${
+            className={`nt-input absolute inset-0 block w-full h-full m-0 p-0 resize-none overflow-hidden bg-transparent border-0 focus:outline-hidden focus:ring-0 ${
               isActive ? 'text-main' : 'text-transparent selection:text-transparent pointer-events-none'
             }`}
           />

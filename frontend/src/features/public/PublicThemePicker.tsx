@@ -76,7 +76,7 @@ export const PublicThemePicker: React.FC = () => {
           aria-expanded={open}
           title={t('theme.pick')}
           aria-label={t('theme.pick')}
-          className="btn-icon w-11 h-11 sm:w-8 sm:h-8 bg-panel/80 backdrop-blur-sm"
+          className="btn-icon w-11 h-11 sm:w-8 sm:h-8 bg-panel/80 backdrop-blur-xs"
         >
           {dot(choice.family)}
         </button>
@@ -108,7 +108,7 @@ export const PublicThemePicker: React.FC = () => {
         onClick={() => setChoice((c) => ({ ...c, mode: dark ? 'light' : 'dark' }))}
         title={dark ? t('theme.light') : t('theme.dark')}
         aria-label={dark ? t('theme.light') : t('theme.dark')}
-        className="btn-icon w-11 h-11 sm:w-8 sm:h-8 bg-panel/80 backdrop-blur-sm"
+        className="btn-icon w-11 h-11 sm:w-8 sm:h-8 bg-panel/80 backdrop-blur-xs"
       >
         {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>

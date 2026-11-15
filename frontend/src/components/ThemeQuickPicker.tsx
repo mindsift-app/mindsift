@@ -79,7 +79,7 @@ export const ThemeQuickPicker: React.FC<ThemeQuickPickerProps> = ({ activeTheme,
                 title={m === 'light' ? t('theme.light') : m === 'dark' ? t('theme.dark') : t('theme.system')}
                 aria-label={m === 'light' ? t('theme.light') : m === 'dark' ? t('theme.dark') : t('theme.system')}
                 className={`${touch ? 'h-9' : 'h-7'} rounded-full flex items-center justify-center gap-1 text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                  selected ? 'bg-panel text-accent shadow-sm' : 'text-muted hover:text-main'
+                  selected ? 'bg-panel text-accent shadow-xs' : 'text-muted hover:text-main'
                 }`}
               >
                 {m === 'light' ? (
@@ -110,7 +110,7 @@ export const ThemeQuickPicker: React.FC<ThemeQuickPickerProps> = ({ activeTheme,
               }`}
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.previewAccent }} />
-              <span className="truncate max-w-[8rem]">{t.name}</span>
+              <span className="truncate max-w-32">{t.name}</span>
             </button>
           ))}
         </div>

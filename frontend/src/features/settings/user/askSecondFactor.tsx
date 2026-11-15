@@ -98,7 +98,7 @@ function OidcConfirmSheet() {
         <p className="text-xs text-muted">{t('security.oidc.confirmIntro', { name })}</p>
         {error && (
           <div role="alert" className="alert-err flex items-center gap-2 text-xs">
-            <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+            <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -128,10 +128,10 @@ function OidcReturnToast() {
   return (
     <div
       role={ok ? 'status' : 'alert'}
-      className="fixed z-[70] left-4 right-4 sm:left-auto sm:right-6 sm:w-96 top-[calc(4.5rem+env(safe-area-inset-top))] sm:top-auto sm:bottom-6 p-3 rounded-xl border border-border bg-panel shadow-lg flex items-start gap-2.5 text-sm"
+      className="fixed z-70 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 top-[calc(4.5rem+env(safe-area-inset-top))] sm:top-auto sm:bottom-6 p-3 rounded-xl border border-border bg-panel shadow-lg flex items-start gap-2.5 text-sm"
       data-oidc-result
     >
-      {ok ? <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-ok" /> : <CircleAlert className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-err" />}
+      {ok ? <Check className="w-4 h-4 mt-0.5 shrink-0 text-status-ok" /> : <CircleAlert className="w-4 h-4 mt-0.5 shrink-0 text-status-err" />}
       <p className="flex-1 min-w-0 text-main">{text}</p>
       <button
         type="button"
@@ -223,7 +223,7 @@ function SecondFactorSheet() {
         )}
         {error && (
           <div role="alert" className="alert-err flex items-center gap-2 text-xs">
-            <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+            <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
             <span>{error}</span>
           </div>
         )}

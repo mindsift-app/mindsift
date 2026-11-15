@@ -274,7 +274,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
           }`}
         >
           <div
-            className={`w-6 h-6 capture-pill rounded-full bg-accent text-on-accent flex items-center justify-center mr-2 flex-shrink-0 ${
+            className={`w-6 h-6 capture-pill rounded-full bg-accent text-on-accent flex items-center justify-center mr-2 shrink-0 ${
               isMultiline ? 'self-start mt-1' : ''
             }`}
           >
@@ -312,7 +312,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                 ? t('capture.placeholderNote')
                 : t('capture.placeholder')
             }
-            className={`flex-1 min-w-0 w-full bg-transparent text-main placeholder-faint text-xs sm:text-sm focus:outline-none resize-none leading-5 py-0.5 ${
+            className={`flex-1 min-w-0 w-full bg-transparent text-main placeholder-faint text-xs sm:text-sm focus:outline-hidden resize-none leading-5 py-0.5 ${
               isOverMaxHeight ? 'overflow-y-auto' : 'overflow-hidden'
             }`}
             style={{ minHeight: '22px', maxHeight: '140px' }}
@@ -320,7 +320,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
           />
 
           <div
-            className={`flex items-center gap-1 flex-shrink-0 ${
+            className={`flex items-center gap-1 shrink-0 ${
               // Multiline: the buttons get their own row under the text, so the text keeps the full width
               isMultiline ? 'basis-full justify-end mt-1 animate-in fade-in slide-in-from-top-1 duration-150' : 'ml-2'
             }`}
@@ -388,7 +388,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
               disabled={!content.trim() || isSubmitting}
               className={`h-6 px-2.5 capture-pill rounded-full font-medium text-[11px] flex items-center gap-1 transition-all ${
                 content.trim()
-                  ? 'bg-accent hover:bg-accent-hover text-on-accent cursor-pointer shadow-sm'
+                  ? 'bg-accent hover:bg-accent-hover text-on-accent cursor-pointer shadow-xs'
                   : 'bg-panel-elevated text-faint cursor-not-allowed'
               }`}
             >
@@ -452,7 +452,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                           : 'bg-canvas border-border text-muted hover:text-main hover:bg-panel-hover'
                       }`}
                     >
-                      <Layers className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+                      <Layers className="w-3.5 h-3.5 text-accent shrink-0" />
                       <span className="truncate">{t('capture.inbox')}</span>
                     </button>
 
@@ -468,7 +468,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                           : 'bg-canvas border-border text-muted hover:text-main hover:bg-panel-hover'
                       }`}
                     >
-                      <SquareCheckBig className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+                      <SquareCheckBig className="w-3.5 h-3.5 text-accent shrink-0" />
                       <span className="truncate">{t('triage:capture.directTask')}{writableTaskLists.length > 0 ? '…' : ''}</span>
                     </button>
 
@@ -487,7 +487,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                           : 'bg-canvas border-border text-muted hover:text-main hover:bg-panel-hover'
                       }`}
                     >
-                      <ShoppingCart className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+                      <ShoppingCart className="w-3.5 h-3.5 text-accent shrink-0" />
                       <span className="truncate">{t('capture.directList')}</span>
                     </button>
 
@@ -503,7 +503,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                           : 'bg-canvas border-border text-muted hover:text-main hover:bg-panel-hover'
                       }`}
                     >
-                      <FileText className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+                      <FileText className="w-3.5 h-3.5 text-accent shrink-0" />
                       <span className="truncate">{t('capture.directNote')}</span>
                     </button>
                   </div>
@@ -578,10 +578,10 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                 <span className="text-muted text-[11px] font-semibold mr-1">{t('capture.priority')}</span>
                 {(['low', 'normal', 'high', 'urgent'] as PriorityLevel[]).map((p) => {
                   const config: Record<PriorityLevel, { label: string; icon?: React.ReactNode; activeClass: string }> = {
-                    low: { label: t('common:priority.low'), activeClass: 'bg-canvas border-strong text-main font-semibold shadow-xs' },
-                    normal: { label: t('common:priority.normal'), activeClass: 'bg-accent/15 border-accent text-accent font-semibold shadow-xs' },
-                    high: { label: t('common:priority.high'), icon: <TriangleAlert className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs' },
-                    urgent: { label: t('common:priority.urgent'), icon: <Flame className="w-3 h-3 text-status-err" />, activeClass: 'bg-status-err/15 border-status-err text-status-err font-semibold shadow-xs' },
+                    low: { label: t('common:priority.low'), activeClass: 'bg-canvas border-strong text-main font-semibold' },
+                    normal: { label: t('common:priority.normal'), activeClass: 'bg-accent/15 border-accent text-accent font-semibold' },
+                    high: { label: t('common:priority.high'), icon: <TriangleAlert className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold' },
+                    urgent: { label: t('common:priority.urgent'), icon: <Flame className="w-3 h-3 text-status-err" />, activeClass: 'bg-status-err/15 border-status-err text-status-err font-semibold' },
                   };
                   const active = priority === p;
                   const item = config[p];
@@ -615,7 +615,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                   ariaLabel={t('capture.due')}
                   value={dueDate}
                   onChange={setDueDate}
-                  className="w-[9rem]"
+                  className="w-36"
                   inputClassName="h-[30px] input-field px-2.5 text-xs"
                 />
               </div>

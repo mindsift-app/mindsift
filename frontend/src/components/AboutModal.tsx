@@ -38,7 +38,7 @@ export const AboutModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         {licenses.state === 'loading' && <p className="text-xs text-muted">{t('about.thirdPartyLoading')}</p>}
         {licenses.state === 'error' && <p className="text-xs text-muted">{t('about.thirdPartyError')}</p>}
         {licenses.state === 'done' && (
-          <pre className="text-[11px] leading-snug text-muted whitespace-pre-wrap break-words font-mono">{licenses.text}</pre>
+          <pre className="text-[11px] leading-snug text-muted whitespace-pre-wrap wrap-break-word font-mono">{licenses.text}</pre>
         )}
       </ReadingModal>
     );

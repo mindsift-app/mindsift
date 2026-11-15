@@ -32,7 +32,7 @@ export const ErrorNoticeHost: React.FC = () => {
 
   if (!notice) return null;
   return (
-    <div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-[80] max-w-[calc(100vw-1.5rem)]">
+    <div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-80 max-w-[calc(100vw-1.5rem)]">
       <div
         key={notice.key}
         role="alert"

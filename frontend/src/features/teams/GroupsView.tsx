@@ -258,9 +258,9 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
         >
           <div className="flex items-center gap-2">
             {statusMsg.type === 'ok' ? (
-              <Check className="w-4 h-4 text-accent flex-shrink-0" />
+              <Check className="w-4 h-4 text-accent shrink-0" />
             ) : (
-              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
             )}
             <span>{statusMsg.text}</span>
           </div>
@@ -276,7 +276,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       {/* Modal: Neue Gruppe erstellen */}
       {showCreateModal && (
         <div
-          className="fixed inset-0 !m-0 modal-overlay z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 m-0! modal-overlay z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-150"
           onClick={() => setShowCreateModal(false)}
         >
           <div
@@ -423,12 +423,12 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                   return (
                     <div
                       key={team.id}
-                      className="p-4 bg-canvas border border-border rounded-card space-y-4 shadow-sm"
+                      className="p-4 bg-canvas border border-border rounded-card space-y-4 shadow-xs"
                     >
                       {/* Team Header */}
                       <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
                         <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                          <div className="w-8 h-8 rounded-btn bg-accent/15 text-accent flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-8 h-8 rounded-btn bg-accent/15 text-accent flex items-center justify-center shrink-0 mt-0.5">
                             <Users className="w-4 h-4" />
                           </div>
 
@@ -479,7 +479,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                 </span>
                               </div>
                               {team.description && (
-                                <p className="text-xs text-muted mt-1 break-words">
+                                <p className="text-xs text-muted mt-1 wrap-break-word">
                                   {team.description}
                                 </p>
                               )}
@@ -488,7 +488,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                         </div>
 
                         {!isEditing && (
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <button
                               onClick={() => handleStartEdit(team)}
                               className="btn-action h-7 px-2.5 text-xs flex items-center gap-1 cursor-pointer"
@@ -537,13 +537,13 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                   </div>
                                 </div>
 
-                                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <div className="flex items-center gap-1.5 shrink-0">
                                     <SelectMenu<'admin' | 'member'>
                                       ariaLabel={t('changeRole')}
                                       title={t('changeRole')}
                                       value={m.role as 'admin' | 'member'}
                                       onChange={(role) => handleChangeMemberRole(team.id, m.userId, role)}
-                                      buttonClassName={`h-6 px-1.5 gap-1 text-[10px] rounded input-field bg-panel ${
+                                      buttonClassName={`h-6 px-1.5 gap-1 text-[10px] rounded-sm input-field bg-panel ${
                                         isAdmin ? 'border-accent text-accent font-semibold' : 'text-muted'
                                       }`}
                                       options={[
@@ -554,7 +554,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
 
                                   <button
                                     onClick={() => handleRemoveMember(team.id, m.userId, m.displayName)}
-                                    className="p-1 text-faint hover:text-status-err rounded transition-colors cursor-pointer"
+                                    className="p-1 text-faint hover:text-status-err rounded-sm transition-colors cursor-pointer"
                                     title={isSelf ? t('leave') : t('removeMember')}
                                   >
                                     <X className="w-3.5 h-3.5" />
@@ -625,11 +625,11 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                   return (
                     <div
                       key={team.id}
-                      className="p-4 bg-canvas border border-border rounded-card space-y-3 shadow-sm"
+                      className="p-4 bg-canvas border border-border rounded-card space-y-3 shadow-xs"
                     >
                       <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
                         <div className="flex items-start gap-2.5">
-                          <div className="w-8 h-8 rounded-btn bg-panel-elevated text-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-8 h-8 rounded-btn bg-panel-elevated text-muted flex items-center justify-center shrink-0 mt-0.5">
                             <Users className="w-4 h-4" />
                           </div>
                           <div>

@@ -649,7 +649,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
   // Header controls take the code block's own text colour: light themes with dark code blocks (Classic)
   // would otherwise turn them page-dark on hover
   const headerControl =
-    'min-h-[44px] sm:min-h-0 bg-transparent text-faint hover:text-code-fg focus:text-code-fg font-mono text-[11px] font-medium border border-transparent hover:border-code-fg/20 focus:border-accent rounded-btn py-0.5 outline-none';
+    'min-h-[44px] sm:min-h-0 bg-transparent text-faint hover:text-code-fg focus:text-code-fg font-mono text-[11px] font-medium border border-transparent hover:border-code-fg/20 focus:border-accent rounded-btn py-0.5 outline-hidden';
   const indentButton = (label: string, icon: React.ReactNode, onClick: (() => void) | undefined, enabled: boolean) => (
     <button
       type="button"
@@ -759,7 +759,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
             onPaste={onTextareaPaste}
             onScroll={handleScroll}
             style={{ caretColor: 'var(--text-code)' }}
-            className="relative block w-full m-0 p-2 font-mono text-xs leading-relaxed whitespace-pre bg-transparent text-transparent caret-code-fg selection:bg-accent/25 selection:text-transparent border-0 focus:outline-none focus:ring-0 resize-none overflow-x-auto overflow-y-hidden code-scroll"
+            className="relative block w-full m-0 p-2 font-mono text-xs leading-relaxed whitespace-pre bg-transparent text-transparent caret-code-fg selection:bg-accent/25 selection:text-transparent border-0 focus:outline-hidden focus:ring-0 resize-none overflow-x-auto overflow-y-hidden code-scroll"
           />
         </div>
       </div>

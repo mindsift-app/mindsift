@@ -129,7 +129,7 @@ export const MfaStep: React.FC<MfaStepProps> = ({ mfaToken, methods, onAuthentic
     return (
       <div className="space-y-3.5" data-mfa-step="recovery-left">
         <div role="status" className={`flex items-start gap-2 ${low ? 'alert-err' : 'alert-ok'}`}>
-          {low ? <TriangleAlert className="w-4 h-4 flex-shrink-0 mt-px" /> : <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-px" />}
+          {low ? <TriangleAlert className="w-4 h-4 shrink-0 mt-px" /> : <ShieldCheck className="w-4 h-4 shrink-0 mt-px" />}
           <div className="space-y-1">
             <p>{t('mfa.recoveryUsed', { count: recoveryDone.left })}</p>
             {low && <p>{recoveryDone.left === 0 ? t('mfa.recoveryNone') : t('mfa.recoveryLow')}</p>}
@@ -193,7 +193,7 @@ export const MfaStep: React.FC<MfaStepProps> = ({ mfaToken, methods, onAuthentic
 
       {error && (
         <div role="alert" className="alert-err flex items-center gap-2">
-          <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+          <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
           <span>{error}</span>
         </div>
       )}

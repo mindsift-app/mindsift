@@ -21,7 +21,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({ legal, onOpenAbout }) => {
         </button>
       </div>
 
-      <LegalLinks legal={legal} className="!text-[10px] !text-faint !gap-x-3 leading-none" />
+      <LegalLinks legal={legal} className="text-[10px]! !text-faint gap-x-3! leading-none" />
     </footer>
   );
 };

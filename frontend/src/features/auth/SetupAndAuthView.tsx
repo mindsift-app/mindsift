@@ -390,7 +390,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   // ============================================================================
   if (authStatus.needsSetup) {
     return (
-      <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
+      <div className="min-h-dvh bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
         <div className="w-full max-w-xl panel-surface shadow-panel overflow-hidden">
           {/* Top Brand Bar */}
           <div className="p-4 bg-canvas border-b border-border flex items-center justify-between">
@@ -525,7 +525,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             {/* Beside the button: the form is long, an error on top would be out of sight */}
             {error && (
               <div role="alert" className="alert-err flex items-center gap-2">
-                <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+                <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
                 <span>{error}</span>
               </div>
             )}
@@ -553,7 +553,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   // STANDARD LOGIN / INVITE CODE / REGISTRATION VIEW
   // ============================================================================
   return (
-    <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
+    <div className="min-h-dvh bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
       <div className="w-full max-w-md panel-surface shadow-panel overflow-hidden">
         {/* Top Header */}
         <div className="p-4 bg-canvas border-b border-border flex items-center justify-between">
@@ -628,7 +628,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         <div className="p-5 text-xs">
           {error && (
             <div className="mb-4 alert-err flex items-center gap-2">
-              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
               <span className="flex-1">{error}</span>
               {error === unverifiedError && email.trim() && (
                 <button
@@ -644,7 +644,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
           )}
           {notice && !error && (
             <div role="status" className="mb-4 p-2.5 rounded-card border border-status-ok/40 bg-status-ok/10 text-main flex items-start gap-2">
-              <Check className="w-4 h-4 text-status-ok flex-shrink-0 mt-px" />
+              <Check className="w-4 h-4 text-status-ok shrink-0 mt-px" />
               <span>{notice}</span>
             </div>
           )}
@@ -770,7 +770,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 </p>
               )}
               {authStatus.demoMode && (
-                <div className="p-2.5 rounded border border-accent/30 bg-accent/10 space-y-1.5">
+                <div className="p-2.5 rounded-sm border border-accent/30 bg-accent/10 space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] font-semibold text-accent">
                     <span>{t('login.demoActive')}</span>
                     <span className="text-[10px] text-muted font-normal">{t('login.demoFill')}</span>
@@ -783,7 +783,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                         setEmail('admin');
                         setPassword('admin');
                       }}
-                      className="flex-1 py-1 px-2 text-[11px] rounded bg-panel hover:bg-panel-elevated border border-border text-main font-mono transition-colors text-center"
+                      className="flex-1 py-1 px-2 text-[11px] rounded-sm bg-panel hover:bg-panel-elevated border border-border text-main font-mono transition-colors text-center"
                     >
                       admin / admin
                     </button>
@@ -793,7 +793,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                         setEmail('user');
                         setPassword('user');
                       }}
-                      className="flex-1 py-1 px-2 text-[11px] rounded bg-panel hover:bg-panel-elevated border border-border text-main font-mono transition-colors text-center"
+                      className="flex-1 py-1 px-2 text-[11px] rounded-sm bg-panel hover:bg-panel-elevated border border-border text-main font-mono transition-colors text-center"
                     >
                       user / user
                     </button>

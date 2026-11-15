@@ -300,7 +300,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                 if (el) sectionRefs.current.set(date, el);
                 else sectionRefs.current.delete(date);
               }}
-              className="min-h-[8rem]"
+              className="min-h-32"
             >
               {docId ? (
                 <DocumentEditor
@@ -330,7 +330,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
               )}
               {/* Between the days a line across the text that fades out to both sides (as wide as the note) */}
               {idx < shown.length - 1 && (
-                <div className={`pl-2 pr-1 sm:px-8 mx-auto ${focusMode ? 'max-w-[var(--note-measure-focus)]' : 'sm:max-w-[var(--note-measure)]'}`} aria-hidden>
+                <div className={`pl-2 pr-1 sm:px-8 mx-auto ${focusMode ? 'max-w-(--note-measure-focus)' : 'sm:max-w-(--note-measure)'}`} aria-hidden>
                   <div className="h-px bg-[linear-gradient(to_right,transparent,var(--border-color)_20%,var(--border-color)_80%,transparent)]" />
                 </div>
               )}

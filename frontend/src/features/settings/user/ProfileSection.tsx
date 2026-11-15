@@ -61,9 +61,9 @@ export function ProfileSection({
           }`}
         >
           {profileMsg.type === 'ok' ? (
-            <Check className="w-4 h-4 text-status-ok flex-shrink-0" />
+            <Check className="w-4 h-4 text-status-ok shrink-0" />
           ) : (
-            <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+            <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
           )}
           <span>{profileMsg.text}</span>
         </div>
@@ -78,7 +78,7 @@ export function ProfileSection({
               <UserAvatar
                 user={{ displayName, email, avatarUrl }}
                 size="xl"
-                className="border-2 border-border/80 shadow-md ring-2 ring-primary/20"
+                className="border-2 shadow-md ring-2 ring-primary/20"
               />
               {isProcessingAvatar && (
                 <div className="absolute inset-0 bg-base-100/70 rounded-full flex items-center justify-center text-[10px] font-medium text-main">

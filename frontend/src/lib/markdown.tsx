@@ -136,7 +136,7 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
       }
     } else if (token.startsWith('`') && token.endsWith('`')) {
       elements.push(
-        <code key={key} className="px-1.5 py-0.5 rounded bg-main/[0.12] text-main font-mono text-[0.9em]">
+        <code key={key} className="px-1.5 py-0.5 rounded-sm bg-main/[0.12] text-main font-mono text-[0.9em]">
           {token.slice(1, -1)}
         </code>
       );
@@ -256,7 +256,7 @@ export function renderInlineMarkdown(text: string, options?: InlineMarkdownOptio
         nodes.push(
           <div
             key={`fenced-${partIdx}`}
-            className="p-2.5 my-2 rounded bg-code text-accent font-mono text-xs overflow-x-auto border border-border/60 select-text"
+            className="p-2.5 my-2 rounded-sm bg-code text-accent font-mono text-xs overflow-x-auto border select-text"
           >
             {firstLine && (
               <div className="text-[10px] text-faint uppercase font-sans pb-1 select-none">
@@ -293,7 +293,7 @@ export function MarkdownViewer({ content, className = '' }: { content: string; c
     if (line.trim().startsWith('```')) {
       if (inCodeBlock) {
         renderedNodes.push(
-          <pre key={`code-${i}`} className="p-2.5 my-2 rounded bg-panel-elevated text-accent font-mono text-xs overflow-x-auto border border-border/60">
+          <pre key={`code-${i}`} className="p-2.5 my-2 rounded-sm bg-panel-elevated text-accent font-mono text-xs overflow-x-auto border">
             <code>{codeBlockLines.join('\n')}</code>
           </pre>
         );
@@ -365,7 +365,7 @@ export function MarkdownViewer({ content, className = '' }: { content: string; c
 
   if (inCodeBlock && codeBlockLines.length > 0) {
     renderedNodes.push(
-      <pre key="code-end" className="p-2.5 my-2 rounded bg-panel-elevated text-accent font-mono text-xs overflow-x-auto border border-border/60">
+      <pre key="code-end" className="p-2.5 my-2 rounded-sm bg-panel-elevated text-accent font-mono text-xs overflow-x-auto border">
         <code>{codeBlockLines.join('\n')}</code>
       </pre>
     );

@@ -96,10 +96,10 @@ export const PublicNoteView: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <PublicFrame>
-      <div className="max-w-[var(--note-measure)] mx-auto pl-2 pr-1 sm:px-8 pt-16 sm:pt-[18vh] pb-[40vh]">
+      <div className="max-w-(--note-measure) mx-auto pl-2 pr-1 sm:px-8 pt-16 sm:pt-[18vh] pb-[40vh]">
         <div className="flex items-center gap-3 mb-4">
-          {note.icon && !zoom.zoomedBlock && <span className="text-2xl sm:text-3xl leading-none select-none">{note.icon}</span>}
-          <h1 className="flex-1 min-w-0 text-2xl sm:text-3xl font-light text-main tracking-tight leading-snug break-words [overflow-wrap:anywhere]">
+          {note.icon && !zoom.zoomedBlock && <span className="text-2xl sm:text-3xl leading-none sm:leading-9 select-none">{note.icon}</span>}
+          <h1 className="flex-1 min-w-0 text-2xl sm:text-3xl font-light text-main tracking-tight leading-snug sm:leading-9 wrap-break-word wrap-anywhere">
             {zoom.zoomedBlock ? (isTitleFromKind(zoom.zoomedBlock) ? blockTitle(zoom.zoomedBlock) : readableMentions(zoom.zoomedBlock.content || '')) || t('untitled') : note.title || t('untitled')}
           </h1>
         </div>
@@ -141,7 +141,7 @@ export const PublicNoteView: React.FC<{ token: string }> = ({ token }) => {
 };
 
 const PublicFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="min-h-[100dvh] bg-editor text-main overflow-x-hidden">
+  <div className="min-h-dvh bg-editor text-main overflow-x-hidden">
     <PublicThemePicker />
     {children}
   </div>

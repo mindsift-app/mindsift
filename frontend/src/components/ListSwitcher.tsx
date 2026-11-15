@@ -51,7 +51,7 @@ export const ListSwitcher: React.FC<ListSwitcherProps> = ({ label, items, active
         className="h-11 -my-1 max-w-full flex items-center gap-1 text-sm font-semibold text-main cursor-pointer"
       >
         <span className="truncate">{label}</span>
-        <ChevronDown className={`w-4 h-4 text-muted flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
         <div
@@ -75,10 +75,10 @@ export const ListSwitcher: React.FC<ListSwitcherProps> = ({ label, items, active
                   active ? 'text-main font-semibold' : 'text-muted'
                 }`}
               >
-                {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
+                {item.icon && <span className="shrink-0">{item.icon}</span>}
                 <span className="truncate flex-1">{item.title}</span>
                 <CountBadge count={item.count} />
-                {active && <Check className="w-4 h-4 text-accent flex-shrink-0" />}
+                {active && <Check className="w-4 h-4 text-accent shrink-0" />}
               </button>
             );
           })}

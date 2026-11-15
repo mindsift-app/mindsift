@@ -68,7 +68,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
           title={t('media.enlarge')}
           className="block max-w-full rounded-card overflow-hidden border border-border bg-panel cursor-zoom-in"
         >
-          <img src={src} alt={ref.caption} className="block max-w-full max-h-[28rem] object-contain" />
+          <img src={src} alt={ref.caption} className="block max-w-full max-h-112 object-contain" />
         </button>
       ) : (
         <div className="flex items-center justify-center w-48 h-32 rounded-card border border-border bg-panel">
@@ -89,7 +89,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
             }
           }}
           placeholder={t('media.caption')}
-          className="w-full bg-transparent border-0 p-0 text-xs text-muted placeholder-faint focus:outline-none focus:ring-0"
+          className="w-full bg-transparent border-0 p-0 text-xs text-muted placeholder-faint focus:outline-hidden focus:ring-0"
         />
       ) : (
         ref.caption && <figcaption className="text-xs text-muted">{ref.caption}</figcaption>
@@ -102,7 +102,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
             role="dialog"
             aria-label={ref.caption || t('editor.kind.image')}
             onClick={() => setZoomed(false)}
-            className="fixed inset-0 z-[100] bg-black/85 flex flex-col items-center justify-center p-4 cursor-zoom-out"
+            className="fixed inset-0 z-100 bg-black/85 flex flex-col items-center justify-center p-4 cursor-zoom-out"
           >
             <button
               type="button"

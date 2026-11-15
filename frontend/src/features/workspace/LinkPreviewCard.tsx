@@ -56,12 +56,12 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, 
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-stretch gap-3 min-h-[6.5rem] rounded-card border border-border bg-panel hover:bg-panel-elevated transition-colors overflow-hidden no-underline"
+        className="flex items-stretch gap-3 min-h-26 rounded-card border border-border bg-panel hover:bg-panel-elevated transition-colors overflow-hidden no-underline"
       >
         <div className="min-w-0 flex-1 py-3 pl-3 pr-11 sm:pr-8 space-y-1 flex flex-col justify-center">
           <div className="flex items-center gap-1.5 text-[11px] text-faint min-w-0">
             {icon ? (
-              <img src={icon} alt="" className="w-3.5 h-3.5 rounded-sm shrink-0" />
+              <img src={icon} alt="" className="w-3.5 h-3.5 rounded-xs shrink-0" />
             ) : (
               <Globe className="w-3.5 h-3.5 shrink-0" />
             )}

@@ -1258,8 +1258,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
 
       {canEdit && trailingArea && (
         <div
-          className={`${compact ? 'min-h-[2.5rem]' : 'min-h-[14rem]'} mt-0.5 first:mt-0 pt-2 pl-2 transition-colors cursor-text ${
-            dragOverIndex === blocks.length ? 'border-t-2 border-accent bg-accent/10 rounded' : ''
+          className={`${compact ? 'min-h-10' : 'min-h-56'} mt-0.5 first:mt-0 pt-2 pl-2 transition-colors cursor-text ${
+            dragOverIndex === blocks.length ? 'border-t-2 border-accent bg-accent/10 rounded-sm' : ''
           }`}
           onClick={(e) => {
             if (e.target !== e.currentTarget && (e.target as HTMLElement).closest('button, a, input, textarea, select')) {

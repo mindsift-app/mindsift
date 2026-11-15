@@ -9,6 +9,15 @@
      6. Corners (geometry)
    ========================================================================== */
 
+/* Tailwind CSS 4, set up to cascade like Tailwind 3 did here: preflight in the base layer; the component
+   classes below and the generated utilities share the utilities layer (components first), so a utility wins
+   over a component class of the same specificity and a more specific component rule (.bg-panel.border)
+   wins over a utility; the rest of this file is unlayered and comes last. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tw-animate-css';
+
 @import './themes/theme-dark.css';
 @import './themes/theme-light.css';
 @import './themes/theme-terracotta.css';
@@ -20,9 +29,122 @@
 @import './themes/theme-polarized-light.css';
 @import './themes/theme-suri-light.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Toggling .dark on <html> (no dark: classes are used today) */
+@custom-variant dark (&:is(.dark *));
+/* Hover styles also on touch devices, as in Tailwind 3 (Tailwind 4 limits hover to @media (hover: hover)) */
+@custom-variant hover (&:hover);
+
+@theme {
+  /* Phone layout below sm, desktop from sm (see AGENTS.md). sm is 768 px, not Tailwind's 640, so phones in
+     landscape and small tablets (iPad mini upright) get the touch layout too; keep PHONE_MAX_WIDTH in
+     src/lib/breakpoints.ts and the media queries below in step. */
+  --breakpoint-*: initial;
+  --breakpoint-sm: 768px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Line heights of the font sizes in rem, as in Tailwind 3: Tailwind 4 uses ratios, which a child with a
+     smaller size of its own (text-[10px] inside text-xs) inherits as a smaller line */
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+}
+
+/* Theme colours, corners and shadows are the theme's CSS variables (src/themes/). inline: a class uses the
+   variable itself (bg-accent → var(--accent-primary)), opacity modifiers mix it with transparent
+   (bg-accent/15); reference: Tailwind does not declare them again on :root, where names like --color-info,
+   --radius-card or --shadow-panel would overwrite the theme's own variables of the same name. */
+@theme inline reference {
+  --color-canvas: var(--bg-app);
+  --color-editor: var(--bg-editor);
+  --color-sidebar: var(--bg-sidebar);
+  --color-panel: var(--bg-panel);
+  --color-panel-elevated: var(--bg-panel-elevated);
+  --color-panel-hover: var(--bg-panel-hover);
+  --color-surface: var(--bg-panel);
+  --color-surface-elevated: var(--bg-panel-elevated);
+  --color-surface-hover: var(--bg-panel-hover);
+  --color-surface-border: var(--border-color);
+  --color-input: var(--bg-input);
+  --color-overlay: var(--bg-overlay);
+  --color-code: var(--bg-code);
+  --color-code-fg: var(--text-code);
+  --color-main: var(--text-main);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-on-accent: var(--text-on-accent);
+  --color-accent: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-border: var(--accent-border);
+  --color-brand: var(--accent-primary);
+  --color-brand-hover: var(--accent-hover);
+  --color-brand-dark: var(--accent-primary);
+  --color-status-ok: var(--color-success);
+  --color-status-ok-bg: var(--bg-success);
+  --color-status-ok-border: var(--border-success);
+  --color-status-err: var(--color-danger);
+  --color-status-err-bg: var(--bg-danger);
+  --color-status-err-border: var(--border-danger);
+  --color-status-warn: var(--color-warning);
+  --color-status-warn-bg: var(--bg-warning);
+  --color-status-warn-border: var(--border-warning);
+  --color-status-info: var(--accent-hover);
+  --color-status-danger: var(--color-danger);
+  /* Extra tones for Kanban columns; fallbacks below, themes may set their own */
+  --color-tone-blue: var(--color-info);
+  --color-tone-purple: var(--color-purple);
+  --color-border: var(--border-color);
+  /* Aliases for names used in components (e.g. avatar initials), mapped to theme colours */
+  --color-primary: var(--accent-primary);
+  --color-secondary: var(--text-muted);
+  --color-info: var(--accent-hover);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+
+  --border-color-subtle: var(--border-subtle);
+  --border-color-strong: var(--border-strong);
+
+  --radius-card: var(--radius-card);
+  --radius-btn: var(--radius-btn);
+  --radius-input: var(--radius-input);
+  --radius-checkbox: var(--radius-checkbox);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-panel: var(--shadow-panel);
+}
+
+/* Defaults of Tailwind 3's preflight that Tailwind 4 changed: border colour (now currentColor), placeholder
+   colour (now the text colour at half opacity) and the pointer on buttons */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border-color);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    opacity: 1;
+    color: #9ca3af;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 * {
   box-sizing: border-box;
@@ -77,7 +199,7 @@ body {
    SEMANTISCHE KOMPONENTEN-KLASSEN (100% Theme-gesteuert)
    ========================================================================== */
 
-@layer components {
+@layer utilities {
   /* Main cards, sidebars and containers */
   .panel-surface {
     background-color: var(--bg-panel);
@@ -790,7 +912,37 @@ body {
   .token.null.important {
     color: var(--code-keyword);
   }
+
+  /* The generated utilities, after the component classes above */
+  @tailwind utilities;
+
+  /* space-x/space-y as in Tailwind 3: the gap goes above every visible child but the first. Tailwind 4 puts it
+     below every child but the last (also before a hidden last child, e.g. an empty:hidden badge row) and with
+     a lower specificity, so a child's own margin adds up. Generated here instead (see @source not inline below); a new value needs a line
+     here and in that list. */
+  .space-y-0\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.125rem; margin-bottom: 0; }
+  .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; margin-bottom: 0; }
+  .space-y-1\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.375rem; margin-bottom: 0; }
+  .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; margin-bottom: 0; }
+  .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.625rem; margin-bottom: 0; }
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; margin-bottom: 0; }
+  .space-y-3\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.875rem; margin-bottom: 0; }
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; margin-bottom: 0; }
+  .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.25rem; margin-bottom: 0; }
+  .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; margin-bottom: 0; }
+  .-space-x-1\.5 > :not([hidden]) ~ :not([hidden]) { margin-right: 0; margin-left: -0.375rem; }
+  /* divide-y the same way: Tailwind 3 draws the line above every visible child but the first */
+  .divide-y > :not([hidden]) ~ :not([hidden]) { border-top-width: 1px; border-bottom-width: 0; }
+  .divide-border > :not([hidden]) ~ :not([hidden]) { border-color: var(--border-color); }
+  @media (width >= 768px) {
+    .sm\:space-y-0 > :not([hidden]) ~ :not([hidden]) { margin-top: 0; margin-bottom: 0; }
+  }
+  @media (width >= 1024px) {
+    .lg\:space-y-0 > :not([hidden]) ~ :not([hidden]) { margin-top: 0; margin-bottom: 0; }
+  }
 }
+@source not inline('{,sm:,lg:}{,-}space-{x,y}-{0,0.5,1,1.5,2,2.5,3,3.5,4,5,6}');
+@source not inline('divide-{y,border}');
 
 /* ==========================================================================
    EMOJI PICKER (emoji-picker-react Integration & Mobile Touch Tuning)

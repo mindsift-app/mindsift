@@ -42,7 +42,7 @@ export function SmtpSection({
           </div>
 
           {settings.smtpConfiguredViaEnv && (
-            <span className="badge-ok text-[11px] flex-shrink-0">
+            <span className="badge-ok text-[11px] shrink-0">
               {t('smtp.envDetected')}
             </span>
           )}

@@ -34,7 +34,7 @@ export const OidcStatusCard: React.FC<{ status?: OidcAdminStatus }> = ({ status 
       </div>
       {status.configured && !status.enabled && (
         <div role="alert" className="alert-err flex items-center gap-2 text-xs">
-          <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+          <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
           <span>{status.reason === 'demo' ? t('server.oidc.offDemo') : t('server.oidc.offNoBaseUrl')}</span>
         </div>
       )}
@@ -44,11 +44,11 @@ export const OidcStatusCard: React.FC<{ status?: OidcAdminStatus }> = ({ status 
           className={`flex items-start gap-2 text-xs ${status.reachable ? 'alert-ok' : 'alert-err'}`}
         >
           {status.reachable ? (
-            <Check className="w-4 h-4 text-status-ok flex-shrink-0" />
+            <Check className="w-4 h-4 text-status-ok shrink-0" />
           ) : (
-            <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+            <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
           )}
-          <span className="min-w-0 break-words">
+          <span className="min-w-0 wrap-break-word">
             {status.reachable ? t('server.oidc.reachable') : t('server.oidc.unreachable', { error: status.error || '' })}
           </span>
         </div>

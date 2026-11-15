@@ -86,8 +86,8 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
       }}
       className={
         dragOver
-          ? 'my-1 p-3 rounded-card border-2 border-dashed border-accent bg-accent-dim space-y-3 focus:outline-none'
-          : 'my-1 p-3 rounded-card border-2 border-dashed border-border bg-panel space-y-3 focus:outline-none'
+          ? 'my-1 p-3 rounded-card border-2 border-dashed border-accent bg-accent-dim space-y-3 focus:outline-hidden'
+          : 'my-1 p-3 rounded-card border-2 border-dashed border-border bg-panel space-y-3 focus:outline-hidden'
       }
     >
       <div className="flex items-center justify-between gap-2">

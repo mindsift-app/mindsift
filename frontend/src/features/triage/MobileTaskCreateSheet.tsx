@@ -50,7 +50,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
 
   return (
     <div
-      className="sm:hidden fixed inset-0 !m-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/60 animate-in fade-in duration-150"
       onClick={() => onClose()}
     >
       <div
@@ -121,10 +121,10 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
             <div className="grid grid-cols-4 gap-1.5">
               {(['low', 'normal', 'high', 'urgent'] as PriorityLevel[]).map((p) => {
                 const config: Record<PriorityLevel, { label: string; icon?: React.ReactNode; activeClass: string }> = {
-                  low: { label: t('common:priority.low'), activeClass: 'bg-canvas border-strong text-main font-semibold shadow-xs' },
-                  normal: { label: t('common:priority.normal'), activeClass: 'bg-accent/15 border-accent text-accent font-semibold shadow-xs' },
-                  high: { label: t('common:priority.high'), icon: <TriangleAlert className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs' },
-                  urgent: { label: t('common:priority.urgent'), icon: <Flame className="w-3 h-3 text-status-err" />, activeClass: 'bg-status-err/15 border-status-err text-status-err font-semibold shadow-xs' },
+                  low: { label: t('common:priority.low'), activeClass: 'bg-canvas border-strong text-main font-semibold' },
+                  normal: { label: t('common:priority.normal'), activeClass: 'bg-accent/15 border-accent text-accent font-semibold' },
+                  high: { label: t('common:priority.high'), icon: <TriangleAlert className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold' },
+                  urgent: { label: t('common:priority.urgent'), icon: <Flame className="w-3 h-3 text-status-err" />, activeClass: 'bg-status-err/15 border-status-err text-status-err font-semibold' },
                 };
                 const active = priority === p;
                 const item = config[p];

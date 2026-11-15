@@ -87,7 +87,7 @@ export function TagFilterRow({ tags, tasks, selected, onSelect }: TagFilterRowPr
           aria-expanded={pickerOpen}
           aria-haspopup="dialog"
           title={t('tags.showAll')}
-          className="tool-btn !h-7 !px-2.5"
+          className="tool-btn h-7! px-2.5!"
         >
           {t('tags.more', { count: Math.max(1, hiddenCount) })}
         </button>

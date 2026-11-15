@@ -247,9 +247,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   // Text size and colour of the bullet's field, shared with the dimmed copy under it
   const fieldText =
     block.type === 'h1'
-      ? 'text-xl sm:text-2xl font-bold text-main tracking-tight'
+      ? 'text-xl sm:text-2xl sm:leading-8 font-bold text-main tracking-tight'
       : block.type === 'h2'
-      ? 'text-lg sm:text-xl font-semibold text-main'
+      ? 'text-lg sm:text-xl sm:leading-7 font-semibold text-main'
       : block.type === 'h3'
       ? 'text-base font-semibold text-main'
       : block.type === 'todo' && block.checked
@@ -1488,13 +1488,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             }`}
             title={block.checked ? t('block.markOpen') : t('block.markDone')}
           >
-            <Check className="w-3 h-3 stroke-[3]" />
+            <Check className="w-3 h-3 stroke-3" />
           </button>
         )}
       </div>
 
       {/* Main Block Content */}
-      <div className="flex-1 min-w-0 pr-1 relative min-h-[1.5rem]">
+      <div className="flex-1 min-w-0 pr-1 relative min-h-6">
         {previewUrl && (
           <LinkPreviewCard
             url={previewUrl}
@@ -1732,7 +1732,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                 : 'contents'
             }
           >
-          <div className="relative w-full min-h-[1.5rem]">
+          <div className="relative w-full min-h-6">
             {/* View Layer with Inline Markdown */}
             <div
               onClick={(e) => {
@@ -1742,13 +1742,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   if (!focusWithRenderedSelection()) focusAtPoint(e.clientX, e.clientY);
                 }
               }}
-              className={`w-full min-h-[1.5rem] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
+              className={`w-full min-h-6 leading-relaxed whitespace-pre-wrap wrap-break-word wrap-anywhere ${
                 activeFocus ? 'absolute inset-0 pointer-events-none' : 'relative cursor-text'
               } ${
                 block.type === 'h1'
-                  ? 'text-xl sm:text-2xl font-bold text-main tracking-tight'
+                  ? 'text-xl sm:text-2xl sm:leading-8 font-bold text-main tracking-tight'
                   : block.type === 'h2'
-                  ? 'text-lg sm:text-xl font-semibold text-main'
+                  ? 'text-lg sm:text-xl sm:leading-7 font-semibold text-main'
                   : block.type === 'h3'
                   ? 'text-base font-semibold text-main'
                   : block.type === 'todo' && block.checked
@@ -1796,7 +1796,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                     e.stopPropagation();
                     onOpenTask?.((block.taskId || block.subtaskOf) as string);
                   }}
-                  className={`${block.taskId ? 'badge-accent' : 'badge-neutral'} inline-block align-middle ml-1.5 text-[9px] leading-none px-1.5 py-0.5 rounded font-medium select-none cursor-pointer hover:opacity-80 ${
+                  className={`${block.taskId ? 'badge-accent' : 'badge-neutral'} inline-block align-middle ml-1.5 text-[9px] leading-none px-1.5 py-0.5 rounded-sm font-medium select-none cursor-pointer hover:opacity-80 ${
                     activeFocus ? 'pointer-events-none' : 'pointer-events-auto'
                   }`}
                   title={block.taskId ? t('block.openTask') : t('block.openParentTask')}
@@ -1978,7 +1978,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           drawing keeps its width while they type and nothing moves */}
       {lockedBy && (
         <span
-          className="absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 shadow-xs h-5 inline-flex items-center gap-1 pl-0.5 pr-1.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
+          className="absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 h-5 inline-flex items-center gap-1 pl-0.5 pr-1.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
           style={{ color: lockColor!.text, border: `1px solid ${lockColor!.border}` }}
           title={t('lock.title', { name: lockedBy.name })}
         >
@@ -2001,7 +2001,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         ref={bubbleRef}
         className={`absolute ${
           block.type === 'table' && canEdit ? 'right-12 sm:right-8' : 'right-1 sm:right-2'
-        } top-0.5 sm:top-1 z-20 bg-panel/90 border border-border shadow-xs rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
+        } top-0.5 sm:top-1 z-20 bg-panel/90 border border-border rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
           lockedBy || (!canEdit && !onCopyBlockLink && block.type !== 'drawing')
             ? // Someone else is editing the block: no actions, and the lock badge stays visible. Read only
               // without a link to copy (a public page): nothing to show, not even an empty frame
@@ -2009,9 +2009,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             : // Blurred only while shown: a backdrop filter in every bullet made scrolling a long note
               // recompose the page each frame
               showBubble
-            ? 'opacity-100 pointer-events-auto backdrop-blur-sm'
+            ? 'opacity-100 pointer-events-auto backdrop-blur-xs'
             : // Hidden buttons must not take clicks; keyboard focus inside still shows it
-              'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto focus-within:backdrop-blur-sm'
+              'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto focus-within:backdrop-blur-xs'
         }`}
       >
         {/* A drawing's own buttons (edit, save view …) come in here */}
@@ -2180,7 +2180,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
 // Layout of a bullet's text field; the dimmed copy under it must wrap exactly the same
 const FIELD_LAYOUT =
-  'block w-full min-h-[1.5rem] resize-none overflow-hidden bg-transparent border-0 focus:outline-none focus:ring-0 leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]';
+  'block w-full min-h-6 resize-none overflow-hidden bg-transparent border-0 focus:outline-hidden focus:ring-0 leading-relaxed whitespace-pre-wrap wrap-break-word wrap-anywhere';
 
 const SECRET_REF_RE = /\{\{secret:[A-Za-z0-9_]+\}\}/g;
 

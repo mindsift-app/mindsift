@@ -110,14 +110,14 @@ export function OpenItemGroups({
                             e.stopPropagation();
                             handleToggleItem(item);
                           }}
-                          className={`w-5 h-5 sm:w-4 sm:h-4 checkbox-square flex items-center justify-center flex-shrink-0 transition-colors border ${
+                          className={`w-5 h-5 sm:w-4 sm:h-4 checkbox-square flex items-center justify-center shrink-0 transition-colors border ${
                             item.isCompleted
                               ? 'bg-status-ok border-status-ok text-on-accent'
                               : 'border-strong hover:border-accent text-transparent'
                           }`}
                           title={item.isCompleted ? t('markOpen') : t('markDone')}
                         >
-                          <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[3]" />
+                          <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-3" />
                         </button>
 
                         <span className="text-sm font-medium text-main truncate">
@@ -162,7 +162,7 @@ export function OpenItemGroups({
                             className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
                               item.quantity
                                 ? 'badge-accent cursor-pointer hover:brightness-125'
-                                : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 text-muted hover:text-accent border border-dashed border-border/70 hover:border-accent text-[11px]'
+                                : 'opacity-0 group-hover:opacity-60 hover:opacity-100! text-muted hover:text-accent border border-dashed hover:border-accent text-[11px]'
                             }`}
                             title={t('editQuantity')}
                           >
@@ -250,10 +250,10 @@ export function CompletedItems({
                         e.stopPropagation();
                         handleToggleItem(item);
                       }}
-                      className="w-5 h-5 sm:w-4 sm:h-4 checkbox-square flex items-center justify-center flex-shrink-0 transition-colors border bg-status-ok border-status-ok text-on-accent"
+                      className="w-5 h-5 sm:w-4 sm:h-4 checkbox-square flex items-center justify-center shrink-0 transition-colors border bg-status-ok border-status-ok text-on-accent"
                       title={t('markOpen')}
                     >
-                      <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[3]" />
+                      <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-3" />
                     </button>
 
                     <span className="text-sm text-faint line-through truncate">
@@ -290,7 +290,7 @@ export function CompletedItems({
                           setEditingQtyItemId(item.id);
                           setEditingQtyValue(item.quantity || '');
                         }}
-                        className={`text-xs px-1.5 py-0.5 rounded transition-colors ${
+                        className={`text-xs px-1.5 py-0.5 rounded-sm transition-colors ${
                           item.quantity
                             ? 'text-faint hover:text-main cursor-pointer'
                             : 'opacity-0 group-hover:opacity-60 text-faint hover:text-main text-[11px]'

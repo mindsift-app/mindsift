@@ -52,7 +52,7 @@ export function RetentionSection({
       </div>
       {retentionError && (
         <div className="alert-err flex items-center gap-2">
-          <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+          <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
           <span>{retentionError}</span>
         </div>
       )}
@@ -71,7 +71,7 @@ export function RetentionSection({
                 <p className="font-semibold text-main">{area.title}</p>
                 <p className="text-muted">{area.text}</p>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <span className="text-muted">{area.verb}</span>
                 <SelectMenu
                   size="sm"

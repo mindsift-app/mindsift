@@ -282,7 +282,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
       {/* API keys */}
       <div>
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-8 h-8 bg-accent text-on-accent flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 bg-accent text-on-accent flex items-center justify-center shrink-0">
             <Key className="w-4 h-4" />
           </div>
           <div>
@@ -477,7 +477,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
 
             <div className="pt-4 border-t border-border">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-7 h-7 bg-accent text-on-accent flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 bg-accent text-on-accent flex items-center justify-center shrink-0">
                   <Webhook className="w-4 h-4" />
                 </div>
                 <div>
@@ -605,7 +605,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
         {mcpEnabled && (access === 'mcp' || !restKeys) && (
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-7 h-7 bg-accent text-on-accent flex items-center justify-center flex-shrink-0">
+              <div className="w-7 h-7 bg-accent text-on-accent flex items-center justify-center shrink-0">
                 <Bot className="w-4 h-4" />
               </div>
               <div>
@@ -651,7 +651,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                         setCopiedConnector(true);
                         setTimeout(() => setCopiedConnector(false), 2000);
                       }}
-                      className="btn-icon w-11 h-11 sm:w-9 sm:h-9 flex-shrink-0"
+                      className="btn-icon w-11 h-11 sm:w-9 sm:h-9 shrink-0"
                       aria-label={t('api.mcp.copyAddress')}
                       title={t('api.mcp.copyAddress')}
                     >

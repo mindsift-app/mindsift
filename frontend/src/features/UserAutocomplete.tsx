@@ -163,7 +163,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
             <button
               type="button"
               onClick={handleClear}
-              className="text-muted hover:text-main p-0.5 rounded hover:bg-canvas transition-colors"
+              className="text-muted hover:text-main p-0.5 rounded-sm hover:bg-canvas transition-colors"
               title={t('userSearch.clear')}
             >
               <X className="w-3.5 h-3.5" />
@@ -189,7 +189,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
             onKeyDown={handleKeyDown}
             {...NO_AUTOFILL}
             placeholder={searchOn ? placeholder ?? t('userSearch.placeholder') : t('userSearch.exactPlaceholder')}
-            className="w-full h-11 sm:h-8 pl-8 pr-2.5 bg-input text-main border border-border rounded-btn focus:outline-none focus:border-accent text-base sm:text-xs placeholder:text-muted transition-colors disabled:opacity-50"
+            className="w-full h-11 sm:h-8 pl-8 pr-2.5 bg-input text-main border border-border rounded-btn focus:outline-hidden focus:border-accent text-base sm:text-xs placeholder:text-muted transition-colors disabled:opacity-50"
           />
 
           {!searchOn && query.trim() !== '' && (

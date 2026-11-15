@@ -143,7 +143,7 @@ export function TodoRollupView({
                         : 'border-strong hover:border-accent text-transparent'
                     }`}
                   >
-                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    <Check className="w-2.5 h-2.5 stroke-3" />
                   </button>
                   <span
                     onClick={() => handleJumpToDocBlock(item.doc.id, item.blockId)}
@@ -244,9 +244,9 @@ export function TodoRollupView({
                         return (
                           <div
                             key={doc.id}
-                            className="border border-border/60 rounded-btn p-2 bg-main/[0.04] space-y-1.5"
+                            className="border rounded-btn p-2 bg-main/[0.04] space-y-1.5"
                           >
-                            <div className="flex items-center justify-between pb-1 border-b border-border/40">
+                            <div className="flex items-center justify-between pb-1 border-b">
                               <div
                                 onClick={() => {
                                   setCollapsedTodoNotes((prev) => {
@@ -301,7 +301,7 @@ export function TodoRollupView({
                                             : 'border-strong hover:border-accent text-transparent'
                                         }`}
                                       >
-                                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                        <Check className="w-2.5 h-2.5 stroke-3" />
                                       </button>
                                       <span
                                         onClick={() =>

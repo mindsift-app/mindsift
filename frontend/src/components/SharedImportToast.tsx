@@ -56,15 +56,15 @@ export const SharedImportToast: React.FC<SharedImportToastProps> = ({ thoughtIds
   };
 
   const big =
-    'min-h-[52px] px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer active:scale-98 disabled:opacity-50';
+    'min-h-[52px] px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer disabled:opacity-50';
 
   return (
     <>
       {/* Tapping anywhere else closes it (transparent, the page stays visible) */}
-      <div className="fixed inset-0 z-[59]" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 z-59" onClick={onClose} aria-hidden />
       <div
         role="status"
-        className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-[60] w-[calc(100vw-1.5rem)] max-w-md panel-surface shadow-panel overflow-hidden p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
+        className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-60 w-[calc(100vw-1.5rem)] max-w-md panel-surface shadow-panel overflow-hidden p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
       >
         <button
           type="button"

@@ -109,7 +109,7 @@ export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title
                     <button
                       type="button"
                       onClick={() => onOpen(l.docId, b.id)}
-                      className="w-full text-left text-xs text-muted hover:text-main px-2 py-1.5 rounded-btn hover:bg-panel-elevated border-l-2 border-border line-clamp-3 break-words cursor-pointer"
+                      className="w-full text-left text-xs text-muted hover:text-main px-2 py-1.5 rounded-btn hover:bg-panel-elevated border-l-2 border-border line-clamp-3 wrap-break-word cursor-pointer"
                     >
                       <Snippet text={b.content} />
                     </button>
