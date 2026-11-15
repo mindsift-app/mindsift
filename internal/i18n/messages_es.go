@@ -6,6 +6,13 @@ var messagesES = map[string]string{
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "El servidor está procesando otras solicitudes grandes (imágenes); vuelve a intentarlo en unos segundos",
 	"'language' gibt es nur für Code (type code)":                                                                    "'language' solo existe para código (type code)",
 	"Ein Trennstrich hat keinen Text (mit type einen anderen Typ wählen)":                                            "Un separador no tiene texto (elige otro tipo con type)",
+	"Ein Punkt lässt sich nicht in seine eigenen Unterpunkte oder neben sich selbst verschieben":                     "Un punto no se puede mover a sus propios subpuntos ni junto a sí mismo",
+	"Genau eins angeben: afterId, beforeId, parentId oder step":                                                      "Indica exactamente uno: afterId, beforeId, parentId o step",
+	"Der Punkt steht schon als erster auf seiner Ebene":                                                              "El punto ya es el primero de su nivel",
+	"Der Punkt steht schon als letzter auf seiner Ebene":                                                             "El punto ya es el último de su nivel",
+	"Einrücken geht nur unter einen Punkt, der auf derselben Ebene darüber steht":                                    "Para sangrar hace falta un punto encima en el mismo nivel",
+	"Der Punkt steht schon auf der obersten Ebene":                                                                   "El punto ya está en el nivel superior",
+	"'step': up, down, indent oder outdent":                                                                          "'step': up, down, indent o outdent",
 
 	"'content' darf nicht leer sein":                         "'content' no puede estar vacío",
 	"'content' muss Text sein (Markdown)":                    "'content' debe ser texto (Markdown)",

@@ -20,7 +20,7 @@ import (
 // triage; discarded ones can be restored from the triage trash.
 
 func init() {
-	mcpTools = append(mcpTools, mcpWriteTools...)
+	mcpTools = append(append(mcpTools, mcpWriteTools...), mcpStructureTools...)
 }
 
 // noteBullet: a bullet with its id, so an agent can change exactly this one

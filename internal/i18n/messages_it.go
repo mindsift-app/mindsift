@@ -6,6 +6,13 @@ var messagesIT = map[string]string{
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "Il server sta elaborando altre richieste di grandi dimensioni (immagini); riprova tra qualche secondo",
 	"'language' gibt es nur für Code (type code)":                                                                    "'language' esiste solo per il codice (type code)",
 	"Ein Trennstrich hat keinen Text (mit type einen anderen Typ wählen)":                                            "Un separatore non ha testo (scegli un altro tipo con type)",
+	"Ein Punkt lässt sich nicht in seine eigenen Unterpunkte oder neben sich selbst verschieben":                     "Un punto non può essere spostato nei propri sottopunti né accanto a se stesso",
+	"Genau eins angeben: afterId, beforeId, parentId oder step":                                                      "Indica esattamente uno: afterId, beforeId, parentId o step",
+	"Der Punkt steht schon als erster auf seiner Ebene":                                                              "Il punto è già il primo del suo livello",
+	"Der Punkt steht schon als letzter auf seiner Ebene":                                                             "Il punto è già l'ultimo del suo livello",
+	"Einrücken geht nur unter einen Punkt, der auf derselben Ebene darüber steht":                                    "Per rientrare serve un punto sopra sullo stesso livello",
+	"Der Punkt steht schon auf der obersten Ebene":                                                                   "Il punto è già al livello più alto",
+	"'step': up, down, indent oder outdent":                                                                          "'step': up, down, indent o outdent",
 
 	"'content' darf nicht leer sein":                         "'content' non può essere vuoto",
 	"'content' muss Text sein (Markdown)":                    "'content' deve essere testo (Markdown)",

@@ -6,6 +6,13 @@ var messagesFR = map[string]string{
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "Le serveur traite d'autres requêtes volumineuses (images) ; réessayez dans quelques secondes",
 	"'language' gibt es nur für Code (type code)":                                                                    "'language' n'existe que pour le code (type code)",
 	"Ein Trennstrich hat keinen Text (mit type einen anderen Typ wählen)":                                            "Un séparateur n'a pas de texte (choisir un autre type avec type)",
+	"Ein Punkt lässt sich nicht in seine eigenen Unterpunkte oder neben sich selbst verschieben":                     "Un point ne peut pas être déplacé dans ses propres sous-points ni à côté de lui-même",
+	"Genau eins angeben: afterId, beforeId, parentId oder step":                                                      "Indiquer exactement un seul : afterId, beforeId, parentId ou step",
+	"Der Punkt steht schon als erster auf seiner Ebene":                                                              "Le point est déjà le premier de son niveau",
+	"Der Punkt steht schon als letzter auf seiner Ebene":                                                             "Le point est déjà le dernier de son niveau",
+	"Einrücken geht nur unter einen Punkt, der auf derselben Ebene darüber steht":                                    "Pour indenter, il faut un point au-dessus sur le même niveau",
+	"Der Punkt steht schon auf der obersten Ebene":                                                                   "Le point est déjà au niveau supérieur",
+	"'step': up, down, indent oder outdent":                                                                          "'step' : up, down, indent ou outdent",
 
 	"'content' darf nicht leer sein":                         "'content' ne doit pas être vide",
 	"'content' muss Text sein (Markdown)":                    "'content' doit être du texte (Markdown)",
