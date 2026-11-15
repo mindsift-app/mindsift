@@ -221,11 +221,17 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 // title reaches the note lists of everyone with access.
 func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results []collab.Result) {
 	titleChanged := false
+	var restored []string
 	for i, res := range results {
 		if i < len(ops) && ops[i].Kind == collab.OpSetTitle && res.Seq > 0 {
 			titleChanged = true
 		}
+		if i < len(ops) && ops[i].Kind == collab.OpRestore && res.Seq > 0 {
+			restored = append(restored, ops[i].IDs...)
+		}
 	}
+	// A linked to-do back by undo: its task is linked again (deleting it had unlinked the task)
+	relinked := s.store.RelinkRestoredDocTasks(docID, restored)
 	// Ticked or retitled in the note: told like a change in the task (unlinking alone changes nothing).
 	// The notifications are planned from the tasks' new state and stored with them in one transaction.
 	var b notifyBatch
@@ -241,13 +247,28 @@ func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results 
 		return b.center, b.queue
 	}
 	changed, added := s.store.ReconcileDocTaskLinksNotify(docID, plan)
+	sent := map[string]bool{}
 	for _, c := range changed {
 		s.wsHub.BroadcastToUsers(audiences[c.After.ID], "TASK_UPDATED", c.After)
+		sent[c.After.ID] = true
+	}
+	for _, t := range relinked {
+		if !sent[t.ID] {
+			s.wsHub.BroadcastToUsers(s.taskAudience(t), "TASK_UPDATED", t) // the task views show the link again
+		}
 	}
 	s.sendBatch(&b, added)
 	s.notifyNoteMentions(actorID, docID, ops, results)
 	if titleChanged {
 		s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
+	}
+}
+
+// pokeDoc tells the note's open editors to sync without a change of its own (notifyDocChanged at the
+// current head), e.g. for new task badges: a linked task deleted or restored.
+func (s *Server) pokeDoc(docID string) {
+	if _, head, err := s.store.GetDocOpsSince(docID, 0, 0); err == nil {
+		s.notifyDocChanged(docID, head)
 	}
 }
 

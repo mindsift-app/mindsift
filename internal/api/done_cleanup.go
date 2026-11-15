@@ -101,12 +101,22 @@ func (s *Server) handleGetTaskTrash(w http.ResponseWriter, r *http.Request) {
 
 // handleRestoreTrashedTask puts a task back and tells everyone who sees it.
 func (s *Server) handleRestoreTrashedTask(w http.ResponseWriter, r *http.Request) {
-	task, err := s.store.RestoreTrashedTask(auth.GetUserID(r.Context()), chi.URLParam(r, "id"))
+	userID := auth.GetUserID(r.Context())
+	task, err := s.store.RestoreTrashedTask(userID, chi.URLParam(r, "id"))
 	if err != nil {
 		writeTaskTrashError(w, err)
 		return
 	}
 	s.wsHub.BroadcastToUsers(s.taskAudience(task), "TASK_CREATED", task)
+	if task.DocID != "" {
+		// Linked to a to-do: the task takes what the to-do became meanwhile (ticked, deleted: unlinked), and
+		// the open note shows the badge again
+		s.afterDocChange(userID, task.DocID, nil, nil)
+		s.pokeDoc(task.DocID)
+		if fresh, err := s.store.GetThoughtByIDUnchecked(task.ID); err == nil {
+			task = fresh
+		}
+	}
 	writeJSON(w, http.StatusOK, task)
 }
 

@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -370,6 +371,21 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 	if req.Assignees != nil {
 		plan = nil
 	}
+	// A task linked to a to-do: no reconcile of its note between writing the task and carrying the change
+	// into the note (storage.LockDocTasks)
+	// and what goes into the note is compared with the task as stored right before the write: before was
+	// read earlier and may miss a tick from the note in between, which the patch may just have undone
+	release := func() {}
+	stored := before
+	if before.DocID != "" {
+		unlock := s.store.LockDocTasks(before.DocID)
+		var once sync.Once
+		release = func() { once.Do(unlock) }
+		if fresh, err := s.store.GetThoughtByIDUnchecked(thoughtID); err == nil {
+			stored = fresh
+		}
+	}
+	defer release()
 	updated, added, err := s.store.UpdateTask(userID, base, patch, plan)
 	if err != nil {
 		return nil, err
@@ -384,7 +400,9 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 		updated.Assignees = assignees
 		audience = s.taskAudience(updated)
 	}
-	if docID := s.store.SyncTaskToDocFrom(userID, updated); docID != "" {
+	docID := s.store.SyncTaskToDocFrom(userID, updated, syncBase(stored, updated, req))
+	release()
+	if docID != "" {
 		_, head, _ := s.store.GetDocOpsSince(docID, 0, 0)
 		s.notifyDocChanged(docID, head)
 	}
@@ -402,6 +420,23 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 	}
 	updated.IsWatching = slices.Contains(watchers, userID)
 	return updated, nil
+}
+
+// syncBase is what SyncTaskToDocFrom compares the changed task with: the task as written, with the fields
+// of the patch as they were before it. Only what the patch changed goes into the note; the other fields of
+// updated may carry a change from the note itself made meanwhile, which the note has already.
+func syncBase(before, updated *domain.Thought, req taskPatch) *domain.Thought {
+	b := updated.Clone()
+	if req.Content != nil {
+		b.Content = before.Content
+	}
+	if req.IsCompleted != nil || (req.KanbanStatus != nil && *req.KanbanStatus != "") {
+		b.IsCompleted = before.IsCompleted
+	}
+	if req.Subtasks != nil {
+		b.Subtasks = before.Subtasks
+	}
+	return b
 }
 
 func (s *Server) handleUpdateThought(w http.ResponseWriter, r *http.Request) {
@@ -451,6 +486,9 @@ func (s *Server) deleteTask(userID, thoughtID string) error {
 	}
 	s.sendBatch(&b, added)
 	s.wsHub.BroadcastToUsers(audience, "TASK_DELETED", map[string]string{"id": thoughtID})
+	if th.DocID != "" {
+		s.pokeDoc(th.DocID) // the open note drops the to-do's task badge
+	}
 	return nil
 }
 
