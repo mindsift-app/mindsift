@@ -246,7 +246,8 @@ func (s *Server) handleToggleListItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item, err := s.setListItemDone(userID, listID, itemID, req.IsCompleted, actorFrom(r.Context()))
-	if errors.Is(err, storage.ErrListItemNotFound) {
+	// Deleted (or the list unshared) since the check above: 404 like that check, not 400
+	if errors.Is(err, storage.ErrListItemNotFound) || errors.Is(err, storage.ErrListNotFound) {
 		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}

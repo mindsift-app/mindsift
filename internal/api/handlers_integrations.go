@@ -258,24 +258,16 @@ func (s *Server) handleWebhookIngest(w http.ResponseWriter, r *http.Request) {
 // createTask creates a task directly (POST /webhooks/ingest, MCP tool create_task), optionally in a
 // task list the user may write to (otherwise storage.ErrTaskListReadOnly). actor: the API key, if any.
 func (s *Server) createTask(userID, content, priority, source, dueDate, taskListID, notes string, actor *apiActor) (*domain.Thought, error) {
-	if priority == "" {
-		priority = "normal"
-	}
+	// Before the text is checked, so an empty task in a read-only list is refused as such
 	if taskListID != "" && !s.store.CanEditTaskList(userID, taskListID) {
 		return nil, storage.ErrTaskListReadOnly
 	}
-	thought, err := s.store.CreateThoughtWithDetails(userID, content, priority, source, dueDate, taskListID, "todo", notes)
-	if err != nil {
-		return nil, err
-	}
-	task, err := s.store.UpdateThoughtTriage(userID, thought.ID, "keep", "task", "", dueDate, taskListID)
+	task, members, err := s.store.CreateTask(userID, content, priority, source, dueDate, taskListID, notes)
 	if err != nil {
 		return nil, err
 	}
 	s.recordThoughtOrigin(task, actor, true)
-	s.assignCreator(userID, task)
-	s.wsHub.BroadcastToUsers(s.taskAudience(task), "TASK_CREATED", task)
-	s.notifyTaskAdded(userID, task, nil)
+	s.announceNewTask(userID, task, members)
 	s.notifyTaskMentions(userID, nil, task)
 	return task, nil
 }

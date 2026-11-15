@@ -257,10 +257,10 @@ Load-tested on the public demo, a deliberately small server with **1 CPU core an
 |---|---|---|---|
 | 500, about 10 per note | ~1.1 s | ~3 s | 0 % |
 | 800, about 10 per note | ~3 s | ~13 s | 0.02 % |
-| 1,200, about 10 per note | ~8 s | ~20 s | 1.6 % |
+| 1,200, about 10 per note | ~8 s | ~17 s | 0.2 % |
 | 300, all in the **same** note | ~0.5 s | ~4 s | 0 % |
 
-Several hundred people at the same moment work on that single core, with the server using under 200 MB of memory; above that the CPU is the limit and everything slows down, and at 1,200 about one request in 60 times out. Hundreds typing in the *same* note wait for each other, because edits to one note are applied one after another. More: [Doku/performance.md](Doku/performance.md).
+Several hundred people at the same moment work on that single core, with the server using under 200 MB of memory; above that the CPU is the limit and everything slows down, and at 1,200 about one request in 450 times out. Hundreds typing in the *same* note wait for each other, because edits to one note are applied one after another. More: [Doku/performance.md](Doku/performance.md).
 
 ---
 

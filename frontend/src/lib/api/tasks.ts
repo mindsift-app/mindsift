@@ -1,5 +1,5 @@
 // REST calls: Capture, thoughts, triage, tasks, task trash and task lists
-import { TrashedTask, KanbanColumn, PriorityLevel, TaskList, TaskListShare, Thought, SubTask } from '../types';
+import { TrashedTask, KanbanColumn, PriorityLevel, TaskList, TaskListShare, TaskReorderResult, Thought, SubTask } from '../types';
 import { extractHashtags } from '../hashtags';
 import { OfflineError, enqueue, flushOutbox } from '../offline';
 import { getToken, getCurrentUserId, ensureArray, request, sendOutboxEntry } from './client';
@@ -109,9 +109,9 @@ export const tasksApi = {
     });
   },
 
-  async reorderTasks(items: { id: string; sortOrder: number; kanbanStatus?: string }[], taskListId?: string): Promise<{ success: boolean }> {
+  async reorderTasks(items: { id: string; sortOrder: number; kanbanStatus?: string }[], taskListId?: string): Promise<TaskReorderResult> {
     const url = taskListId ? `/api/v1/task-lists/${taskListId}/tasks/reorder` : '/api/v1/tasks/reorder';
-    return request<{ success: boolean }>(url, {
+    return request<TaskReorderResult>(url, {
       method: 'POST',
       body: JSON.stringify({ items }),
     });

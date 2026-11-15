@@ -237,7 +237,8 @@
     "empty": "La papelera está vacía.",
     "delete": "Eliminar definitivamente",
     "deletedAtBy": "eliminado el {{date}} por {{name}}",
-    "deletedAtAuto": "eliminado el {{date}} (automáticamente)"
+    "deletedAtAuto": "eliminado el {{date}} (automáticamente)",
+    "limited": "Se muestran las {{count}} entradas más recientes."
   },
   "quickAdd": {
     "toList": "Añadir una tarea a «{{title}}»…",

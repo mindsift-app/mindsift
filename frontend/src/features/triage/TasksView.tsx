@@ -25,6 +25,7 @@ import { TaskListView } from './TaskListView';
 import { filterAndSortTasks, followTaskUpdate, groupTasks, tasksWithTag } from './taskListing';
 import { useTaskRealtime } from './useTaskRealtime';
 import { useTaskUndo } from './useTaskUndo';
+import { createMoveTracker } from './taskMoves';
 import { useTaskActions } from './useTaskActions';
 import { QuickAddTaskBar } from './QuickAddTaskBar';
 import { NewTaskListSheet } from './NewTaskListSheet';
@@ -114,6 +115,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       : DEFAULT_GROUP_LIST
   );
   const [filter, setFilter] = useState<TaskFilter>('open');
+  const filterRef = useLatestRef(filter);
   const [tasks, setTasksState] = useState<Thought[]>([]);
   const [taskLists, setTaskLists] = useState<TaskList[]>([]);
   const [selectedListId, setSelectedListIdState] = useState<string>(
@@ -152,8 +154,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
   }, [selectedListId, viewModes, groupAll, groupList]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [collaborators, setCollaborators] = useState<User[]>([]);
-  // Task trash of the selected list (or all): deleted tasks and cleared or cleaned-up completed ones
-  const [taskTrash, setTaskTrash] = useState<TrashedTask[]>([]);
+  // Task trash of the selected list (or all): deleted tasks and cleared or cleaned-up completed ones.
+  // Loaded only while the trash is shown (null = not loaded; its count is not shown then): every load
+  // of the view fetching it as well made it one of the slowest requests under load.
+  const [taskTrash, setTaskTrash] = useState<TrashedTask[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Drag and Drop state
@@ -228,18 +232,19 @@ export const TasksView: React.FC<TasksViewProps> = ({
     const listId = selectedListId;
     if (loadedListRef.current !== listId) setLoading(true);
     try {
-      const [allTasks, allLists, allTeams, allCollabs, trash] = await Promise.all([
+      const [allTasks, allLists, allTeams, allCollabs, trashResult] = await Promise.all([
         api.getTasks(listId === 'all' ? undefined : listId).catch(() => []),
         api.getTaskLists().catch(() => []),
         api.getUserTeams().catch(() => []),
         api.getCollaborators().catch(() => []),
-        api.getTaskTrash(listId === 'all' ? '' : listId).catch(() => []),
+        filterRef.current === 'discarded' ? api.getTaskTrash(listId === 'all' ? '' : listId).catch(() => []) : null,
       ]);
       if (seq !== loadSeqRef.current) return; // a newer reload is under way
       loadedListRef.current = listId;
+      const trash = trashResult === null ? null : Array.isArray(trashResult) ? trashResult : [];
       listCacheRef.current.set(listId, {
         tasks: Array.isArray(allTasks) ? allTasks : [],
-        trash: Array.isArray(trash) ? trash : [],
+        trash,
       });
       setTasks(Array.isArray(allTasks) ? allTasks : []);
       setTaskLists(Array.isArray(allLists) ? allLists : []);
@@ -251,7 +256,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
       }
       setTeams(Array.isArray(allTeams) ? allTeams : []);
       setCollaborators(Array.isArray(allCollabs) ? allCollabs : []);
-      setTaskTrash(Array.isArray(trash) ? trash : []);
+      // Without the trash it is out of date; unless it was opened meanwhile (the effect below loads it)
+      if (trash !== null) setTaskTrash(trash);
+      else if (filterRef.current !== 'discarded') setTaskTrash(null);
     } catch {
       // Prevent unhandled promise rejection from crashing view
     } finally {
@@ -269,10 +276,26 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
   const selectedListIdRef = useLatestRef(selectedListId);
 
+  // Opening the trash loads it (after that, loadData reloads it with the rest while it is open)
+  useEffect(() => {
+    if (filter !== 'discarded' || taskTrash !== null || loading) return;
+    const listId = selectedListId;
+    let cancelled = false;
+    api
+      .getTaskTrash(listId === 'all' ? '' : listId)
+      .catch(() => [])
+      .then((trash) => {
+        if (!cancelled && listId === selectedListIdRef.current) setTaskTrash(Array.isArray(trash) ? trash : []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filter, taskTrash, loading, selectedListId, selectedListIdRef]);
+
   // Last known tasks of every list opened in this session. Switching lists shows them in the same render
   // as the new list's view (list or Kanban), so the board never flashes the previous list's tasks; the
   // reload then brings them up to date. A list not opened yet takes its share of "Alle Aufgaben".
-  const listCacheRef = useRef(new Map<string, { tasks: Thought[]; trash: TrashedTask[] }>());
+  const listCacheRef = useRef(new Map<string, { tasks: Thought[]; trash: TrashedTask[] | null }>());
   useEffect(() => {
     if (!loading && loadedListRef.current === selectedListId) {
       listCacheRef.current.set(selectedListId, { tasks, trash: taskTrash });
@@ -288,11 +311,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
     if (!known && id !== 'all' && all) {
       known = {
         tasks: all.tasks.filter((t) => t.taskListId === id),
-        trash: all.trash.filter((t) => t.taskListId === id),
+        trash: all.trash ? all.trash.filter((t) => t.taskListId === id) : null,
       };
     }
     setTasks(known ? known.tasks : []);
-    setTaskTrash(known ? known.trash : []);
+    setTaskTrash(known ? known.trash : null);
     setLoading(!known);
     loadedListRef.current = known ? id : null;
     setSelectedListIdState(id);
@@ -311,8 +334,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
   // The realtime handler is registered once; it must reload with the current list, not the first one
   const loadDataRef = useLatestRef(loadData);
 
+  // Moves of this board on their way: answers and events they overtook are not applied (taskMoves.ts)
+  const [moveTracker] = useState(createMoveTracker);
+
   // Live-Sync of tasks and task lists (useTaskRealtime)
-  useTaskRealtime({ setTasks, setTaskLists, listIdRef: selectedListIdRef, loadDataRef });
+  useTaskRealtime({ setTasks, setTaskLists, listIdRef: selectedListIdRef, loadDataRef, moveTracker });
 
   const safeTaskLists = useMemo(() => (Array.isArray(taskLists) ? taskLists : []), [taskLists]);
   const currentSelectedList = safeTaskLists.find((l) => l.id === selectedListId);
@@ -461,7 +487,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   // --- TASK ACTIONS ---
 
   // Undo with Ctrl/Cmd+Z and the notice below (useTaskUndo)
-  const { toast, pushUndo, orderSnapshot, showToast, undoLast } = useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefreshStats });
+  const { toast, pushUndo, orderSnapshot, showToast, undoLast } = useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefreshStats, moveTracker });
 
   // Task actions (useTaskActions)
   const {
@@ -597,6 +623,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     kanbanBoardRef,
     kanbanPhoneSnap,
     kanbanPhoneTop,
+    moveTracker,
   });
 
 
@@ -691,7 +718,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       setShowNewListModal,
       setViewMode,
       sortBy,
-      trashCount: taskTrash.length,
+      trashCount: taskTrash?.length,
       safeTaskLists,
       viewMode,
     });
@@ -709,7 +736,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     sortBy,
     openTasks.length,
     doneTasks.length,
-    taskTrash.length,
+    taskTrash?.length,
     kanbanTasks.length,
     safeTaskLists,
     openTasksCount,
@@ -861,7 +888,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
               ? t('tabCount.open', { count: openTasks.length })
               : filter === 'done'
               ? t('tabCount.done', { count: doneTasks.length })
-              : t('tabCount.trash', { count: taskTrash.length })}
+              : taskTrash
+              ? t('tabCount.trash', { count: taskTrash.length })
+              : t('common:trash')}
           </span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">

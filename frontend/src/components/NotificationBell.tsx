@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AtSign, Bell, CalendarClock, CheckCheck, CircleCheck, Eye, CirclePlus, Share2, Trash, UserPlus } from 'lucide-react';
 import { api, triggerHaptic } from '../lib/api';
 import { CenterEntry } from '../lib/types';
 import { formatRelative } from '../lib/format';
 import { CountBadge } from './CountBadge';
+import { loadCenter, setCenter, useNotificationCenter } from './notificationCenter';
 import { RailItemContent } from './RailItemContent';
 
 const KIND_ICON: Record<string, React.ReactNode> = {
@@ -19,7 +20,7 @@ const KIND_ICON: Record<string, React.ReactNode> = {
 
 // The notification center: a bell with the number of unread entries; it opens a small list (phones: full
 // width under the header; desktop: beside the navigation rail) of everything that happened, newest first. A click on an entry marks it read and
-// opens its task, note or list. Quiet: no sound, nothing pops up; open apps follow over the WebSocket.
+// opens its task, note or list. Quiet: no sound, nothing pops up; open apps follow the realtime events.
 export function NotificationBell({
   variant,
   onOpen,
@@ -31,32 +32,12 @@ export function NotificationBell({
   expanded?: boolean;
 }) {
   const { t } = useTranslation('common');
-  const [items, setItems] = useState<CenterEntry[]>([]);
-  const [unread, setUnread] = useState(0);
+  // Entries and unread count, shared by both bells and kept current by realtime events (notificationCenter.ts)
+  const { items, unread } = useNotificationCenter();
   const [open, setOpen] = useState(false);
   const [top, setTop] = useState(0);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
-
-  const load = useCallback(() => {
-    api
-      .getNotifications()
-      .then((res) => {
-        setItems(res.items);
-        setUnread(res.unread);
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    load();
-    const onWs = (e: Event) => {
-      const event = (e as CustomEvent<{ event?: string }>).detail?.event;
-      if (event === 'NOTIFICATION' || event === 'NOTIFICATIONS_READ' || event === 'NOTIFICATIONS_CLEARED') load();
-    };
-    window.addEventListener('mindsift:ws', onWs);
-    return () => window.removeEventListener('mindsift:ws', onWs);
-  }, [load]);
 
   useEffect(() => {
     if (!open) return;
@@ -79,7 +60,7 @@ export function NotificationBell({
   const toggle = () => {
     triggerHaptic(10);
     if (!open) {
-      load();
+      loadCenter();
       setTop((buttonRef.current?.getBoundingClientRect().bottom || 56) + 6);
     }
     setOpen((v) => !v);
@@ -88,23 +69,23 @@ export function NotificationBell({
   const pick = (entry: CenterEntry) => {
     setOpen(false);
     if (!entry.read) {
-      setItems((prev) => prev.map((e) => (e.id === entry.id ? { ...e, read: true } : e)));
-      setUnread((n) => Math.max(0, n - 1));
+      setCenter((prev) => ({
+        items: prev.items.map((e) => (e.id === entry.id ? { ...e, read: true } : e)),
+        unread: Math.max(0, prev.unread - 1),
+      }));
       api.markNotificationsRead([entry.id]).catch(() => {});
     }
     onOpen(entry);
   };
 
   const markAll = () => {
-    setItems((prev) => prev.map((e) => ({ ...e, read: true })));
-    setUnread(0);
-    api.markNotificationsRead().catch(() => load());
+    setCenter((prev) => ({ items: prev.items.map((e) => ({ ...e, read: true })), unread: 0 }));
+    api.markNotificationsRead().catch(() => loadCenter());
   };
 
   const clear = () => {
-    setItems([]);
-    setUnread(0);
-    api.clearNotifications().catch(() => load());
+    setCenter({ items: [], unread: 0 });
+    api.clearNotifications().catch(() => loadCenter());
   };
 
   const label = unread > 0 ? t('center.titleUnread', { count: unread }) : t('center.title');

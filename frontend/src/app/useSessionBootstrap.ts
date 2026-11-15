@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AuthStatus, DashboardStats, SharedList, Thought, User, WSMessage } from '../lib/types';
-import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken } from '../lib/api';
+import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken, lastLocalWriteAt } from '../lib/api';
 import { clearOfflineData, outboxCount } from '../lib/offline';
 import { flushClosedNotes } from '../lib/docSync/flushClosed';
 import { finishOidcReturn, oidcReturnPending } from '../lib/oidc';
@@ -8,6 +8,7 @@ import { voiceConfigFromStatus } from '../lib/voice';
 import i18n from '../i18n';
 import { useLatestRef } from '../lib/useLatestRef';
 import { setServerLinkPreviews } from '../lib/linkPreview';
+import { OWN_ECHO_WINDOW_MS, createStatsScheduler, eventChangesDeck, eventChangesStats } from './realtimeCounters';
 
 type AccountLoad = [
   PromiseSettledResult<Awaited<ReturnType<typeof api.getMe>>>,
@@ -84,15 +85,20 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     applyAccount(await loadAccount());
   }, [applyAccount]);
 
-  // The counters in the navigation only, debounced: an action and the realtime echo of it (and a burst of
-  // events from a shared note) make one request together
-  const statsTimerRef = useRef<number | undefined>(undefined);
-  const refreshStats = useCallback(() => {
-    window.clearTimeout(statsTimerRef.current);
-    statsTimerRef.current = window.setTimeout(() => {
+  // The counters in the navigation only. refreshStats is for this tab's own changes (shortly, an action and
+  // its realtime echo make one request); other people's changes reload them in a slower shared rhythm
+  // (realtimeCounters.ts)
+  const [statsScheduler] = useState(() =>
+    createStatsScheduler(() => {
       api.getStats().then(setStats).catch(() => {});
-    }, 300);
-  }, []);
+    })
+  );
+  const refreshStats = useCallback(() => statsScheduler.soon(), [statsScheduler]);
+  // The ids in the deck, for the realtime events that concern it
+  const deckIdsRef = useRef<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    deckIdsRef.current = new Set(deck.map((t) => t.id));
+  }, [deck]);
 
   useEffect(() => {
     const checkBootAndAuth = async () => {
@@ -224,9 +230,12 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     }, 5000);
   }, [handleDemoResetRef]);
 
-  // Refresh stats on task/doc/list real-time events (counters in the navigation). Task events also
-  // reload the triage deck: a note sorted on another device must leave this deck too.
+  // Counters and deck follow realtime events, but only as far as an event can change them: the deck for
+  // events about inbox thoughts (a thought sorted on another device leaves this deck too), the counters
+  // at once for the echo of this tab's own change and in the shared rhythm for everyone else's. A hidden
+  // tab skips them, it loads everything when it becomes visible again; so does a reconnect.
   useEffect(() => {
+    const scheduler = statsScheduler;
     let deckTimer: number | undefined;
     const reloadDeck = () => {
       window.clearTimeout(deckTimer);
@@ -245,25 +254,38 @@ export function useSessionBootstrap(onSignedOut: () => void) {
         handleDemoResetRef.current();
         return;
       }
-      // DOC_SEQ only announces new edits inside a note, the counters stay the same
-      if (
-        typeof msg.event === 'string' &&
-        msg.event !== 'DOC_SEQ' &&
-        ['TASK_', 'DOC_', 'SPACE_', 'ITEM_', 'LIST_'].some((prefix) => msg.event.startsWith(prefix))
-      ) {
-        refreshStats();
-        if (msg.event.startsWith('TASK_')) reloadDeck();
+      if (document.visibilityState === 'hidden') return;
+      if (eventChangesStats(msg.event)) {
+        if (Date.now() - lastLocalWriteAt() < OWN_ECHO_WINDOW_MS) scheduler.soon();
+        else scheduler.shared();
+      }
+      if (eventChangesDeck(msg, deckIdsRef.current)) reloadDeck();
+    };
+    // Back after the connection dropped: events of the gap are lost, load counters and deck once
+    let connectionLost = false;
+    const onStatus = (e: WindowEventMap['mindsift:ws:status']) => {
+      if (!e.detail) return;
+      if (!e.detail.connected) {
+        connectionLost = true;
+      } else if (connectionLost) {
+        connectionLost = false;
+        if (getToken()) {
+          scheduler.soon();
+          reloadDeck();
+        }
       }
     };
     window.addEventListener('mindsift:ws', handleWs);
+    window.addEventListener('mindsift:ws:status', onStatus);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      window.clearTimeout(statsTimerRef.current);
+      scheduler.cancel();
       window.clearTimeout(deckTimer);
       window.removeEventListener('mindsift:ws', handleWs);
+      window.removeEventListener('mindsift:ws:status', onStatus);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [refreshAll, refreshStats, handleDemoResetRef]);
+  }, [refreshAll, statsScheduler, handleDemoResetRef]);
 
   return {
     bootLoading,

@@ -18,6 +18,64 @@ func (s *Store) CreateThought(userID, content, priority, source, dueDate string)
 }
 
 func (s *Store) CreateThoughtWithDetails(userID, content, priority, source, dueDate, taskListID, kanbanStatus, notes string) (*domain.Thought, error) {
+	t, err := s.newThought(userID, content, priority, source, dueDate, taskListID, kanbanStatus, notes)
+	if err != nil {
+		return nil, err
+	}
+	if err := insertThought(s.db, t); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+// CreateTask creates a task as CreateThoughtWithDetails followed by UpdateThoughtTriage (keep, task)
+// did, but with one write instead of three: the row goes in as a task, and in a task list more than one
+// person can see, the creator is assigned to it in the same transaction (as the server's assignCreator
+// did afterwards). members: everyone who can see the list (GetTaskListUserIDs), nil without one.
+// Under load each separate write waited its turn for the database's write lock, which made creating a
+// task the slowest request (load test 2026-11-15).
+func (s *Store) CreateTask(userID, content, priority, source, dueDate, taskListID, notes string) (*domain.Thought, []string, error) {
+	t, err := s.newThought(userID, content, priority, source, dueDate, taskListID, "todo", notes)
+	if err != nil {
+		return nil, nil, err
+	}
+	t.Status = domain.StatusConverted
+	t.ConvertedType = "task"
+	t.TriagedAt = t.CreatedAt
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer tx.Rollback()
+	if err := insertThought(tx, t); err != nil {
+		return nil, nil, err
+	}
+	var members []string
+	if taskListID != "" {
+		members, err = taskListUserIDsTx(tx, taskListID)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(members) > 1 {
+			if _, err := tx.Exec(`INSERT OR IGNORE INTO task_assignees (task_id, user_id, created_at) VALUES (?, ?, ?)`, t.ID, userID, domain.NowISO()); err != nil {
+				return nil, nil, err
+			}
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, nil, err
+	}
+	// As stored (the same reads UpdateThoughtTriage answered with)
+	created, err := s.GetThoughtByID(userID, t.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return created, members, nil
+}
+
+// newThought checks the input of a new thought and builds it (tags from the text and the source); the
+// caller inserts it with insertThought.
+func (s *Store) newThought(userID, content, priority, source, dueDate, taskListID, kanbanStatus, notes string) (*domain.Thought, error) {
 	content = strings.TrimSpace(content)
 	dueDate = domain.NormalizeDue(dueDate)
 	if content == "" {
@@ -61,8 +119,6 @@ func (s *Store) CreateThoughtWithDetails(userID, content, priority, source, dueD
 			tags = append(tags, "webhook")
 		}
 	}
-	tagsJSON, _ := json.Marshal(tags)
-
 	t := &domain.Thought{
 		ID:           domain.NewID("th"),
 		UserID:       userID,
@@ -76,18 +132,25 @@ func (s *Store) CreateThoughtWithDetails(userID, content, priority, source, dueD
 		KanbanStatus: kanbanStatus,
 		Notes:        notes,
 		CreatedAt:    domain.NowISO(),
+		Subtasks:     []domain.SubTask{},
 	}
-
-	_, err := s.db.Exec(
-		`INSERT INTO thoughts (id, user_id, content, tags, priority, source, status, is_completed, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, subtasks)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 0, ?, '[]')`,
-		t.ID, t.UserID, t.Content, string(tagsJSON), t.Priority, t.Source, string(t.Status), t.DueDate, t.TaskListID, t.KanbanStatus, t.Notes, t.CreatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	t.Subtasks = []domain.SubTask{}
 	return t, nil
+}
+
+// execer is *sql.DB or *sql.Tx for statements that may run inside a transaction or alone.
+type execer interface {
+	Exec(query string, args ...any) (sql.Result, error)
+}
+
+// insertThought stores a thought built by newThought (status, converted_type and triaged_at as set on it).
+func insertThought(db execer, t *domain.Thought) error {
+	tagsJSON, _ := json.Marshal(t.Tags)
+	_, err := db.Exec(
+		`INSERT INTO thoughts (id, user_id, content, tags, priority, source, status, is_completed, converted_type, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, 0, ?, ?, '[]')`,
+		t.ID, t.UserID, t.Content, string(tagsJSON), t.Priority, t.Source, string(t.Status), t.ConvertedType, t.DueDate, t.TaskListID, t.KanbanStatus, t.Notes, t.CreatedAt, t.TriagedAt,
+	)
+	return err
 }
 
 func scanThought(rows interface {
@@ -237,74 +300,6 @@ func (s *Store) GetTasks(userID string, taskListID string) ([]domain.Thought, er
 	return result, nil
 }
 
-func (s *Store) ReorderTasks(taskListID string, items []domain.ThoughtReorderItem) error {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	var completed []string // tasks that move into "done" now (repeating ones spawn their successor)
-	for _, it := range items {
-		if it.KanbanStatus != nil && *it.KanbanStatus != "" {
-			isCompleted := 0
-			if isDoneColumn(tx, it.ID, *it.KanbanStatus) {
-				isCompleted = 1
-				var was int
-				if err := rowErr(tx.QueryRow(`SELECT is_completed FROM thoughts WHERE id = ?`, it.ID).Scan(&was)); err != nil {
-					return err
-				}
-				if was == 0 {
-					completed = append(completed, it.ID)
-				}
-			}
-			// Only a reopened task (done -> open) gets its due alarm again. A Kanban move sends every task
-			// of the touched columns, so resetting all open ones re-sent "due today" for each of them.
-			// (is_completed in the CASE is still the value before this UPDATE.)
-			_, err = tx.Exec(
-				`UPDATE thoughts SET sort_order = ?, kanban_status = ?, is_completed = ?,
-				 alarm_sent = CASE WHEN ? = 0 AND is_completed = 1 THEN 0 ELSE alarm_sent END,
-				 alarm_failures = CASE WHEN ? = 0 AND is_completed = 1 THEN 0 ELSE alarm_failures END WHERE id = ?`,
-				it.SortOrder, *it.KanbanStatus, isCompleted, isCompleted, isCompleted, it.ID,
-			)
-		} else {
-			_, err = tx.Exec(
-				`UPDATE thoughts SET sort_order = ? WHERE id = ?`,
-				it.SortOrder, it.ID,
-			)
-		}
-		if err != nil {
-			return err
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	for _, id := range completed {
-		s.spawnNextOccurrence(id)
-	}
-	return nil
-}
-
-// isDoneColumn: whether a Kanban column completes the task: the column of the task's list marked as done
-// (its ID may be anything), else the default ID "done".
-func isDoneColumn(q interface {
-	QueryRow(query string, args ...any) *sql.Row
-}, taskID, column string) bool {
-	var raw string
-	logDBErr(q.QueryRow(`SELECT COALESCE(tl.columns, '') FROM thoughts t LEFT JOIN task_lists tl ON tl.id = t.task_list_id WHERE t.id = ?`, taskID).Scan(&raw))
-	var cols []domain.KanbanColumn
-	if raw != "" && json.Unmarshal([]byte(raw), &cols) == nil && len(cols) > 0 {
-		for _, c := range cols {
-			if c.ID == column {
-				return c.IsDone
-			}
-		}
-	}
-	return column == "done"
-}
-
 // UpdateThoughtTriage handles swipe left (discard), swipe right (keep), restore, and conversion to task/document/list_item
 func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, targetListID, dueDate, taskListID string) (*domain.Thought, error) {
 	thought, err := s.GetThoughtByID(userID, thoughtID)
@@ -325,8 +320,11 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 	}
 	if taskListID == "" {
 		taskListID = thought.TaskListID
-	} else if err := s.ensureTaskListWritable(userID, taskListID); err != nil {
-		return nil, err
+	}
+	if taskListID != thought.TaskListID {
+		if err := s.ensureTaskListWritable(userID, taskListID); err != nil {
+			return nil, err
+		}
 	}
 
 	switch action {
@@ -457,7 +455,7 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 		return nil, err
 	}
 	if taskListID != thought.TaskListID {
-		s.PruneTaskAssignees()
+		s.pruneTaskAssigneesOf(thoughtID)
 	}
 
 	return s.GetThoughtByID(userID, thoughtID)
@@ -531,22 +529,24 @@ func (s *Store) UpdateThoughtDetails(userID, thoughtID string, content *string, 
 		completedInt = 1
 	}
 
+	// A new due date or a reopened task gets its alarm again (in the same statement: a second write
+	// waited for the write lock once more)
+	rearm := thought.DueDate != oldDue || (wasCompleted && !thought.IsCompleted)
 	_, err = s.db.Exec(
-		`UPDATE thoughts SET content = ?, tags = ?, is_completed = ?, due_date = ?, priority = ?, task_list_id = ?, kanban_status = ?, notes = ?, subtasks = ? WHERE id = ?`,
-		thought.Content, string(tagsJSON), completedInt, thought.DueDate, thought.Priority, thought.TaskListID, thought.KanbanStatus, thought.Notes, string(subtasksJSON), thoughtID,
+		`UPDATE thoughts SET content = ?, tags = ?, is_completed = ?, due_date = ?, priority = ?, task_list_id = ?, kanban_status = ?, notes = ?, subtasks = ?,
+		     alarm_sent = CASE WHEN ? THEN 0 ELSE alarm_sent END, alarm_failures = CASE WHEN ? THEN 0 ELSE alarm_failures END
+		 WHERE id = ?`,
+		thought.Content, string(tagsJSON), completedInt, thought.DueDate, thought.Priority, thought.TaskListID, thought.KanbanStatus, thought.Notes, string(subtasksJSON),
+		rearm, rearm, thoughtID,
 	)
 	if err != nil {
 		return nil, err
 	}
-	// A new due date or a reopened task gets its alarm again
-	if thought.DueDate != oldDue || (wasCompleted && !thought.IsCompleted) {
-		if _, err := s.db.Exec(`UPDATE thoughts SET alarm_sent = 0, alarm_failures = 0 WHERE id = ?`, thoughtID); err != nil {
-			return nil, err
-		}
+	if rearm {
 		thought.AlarmSent = false
 	}
 	if taskListID != nil {
-		s.PruneTaskAssignees()
+		s.pruneTaskAssigneesOf(thoughtID)
 		thought.Assignees = s.getTaskAssignees(thoughtID)
 	}
 	if !wasCompleted && thought.IsCompleted {

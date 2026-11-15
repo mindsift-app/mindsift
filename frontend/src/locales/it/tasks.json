@@ -237,7 +237,8 @@
     "empty": "Il cestino è vuoto.",
     "delete": "Elimina definitivamente",
     "deletedAtBy": "eliminata il {{date}} da {{name}}",
-    "deletedAtAuto": "eliminata il {{date}} (automaticamente)"
+    "deletedAtAuto": "eliminata il {{date}} (automaticamente)",
+    "limited": "Vengono mostrate le {{count}} voci più recenti."
   },
   "quickAdd": {
     "toList": "Aggiungi un'attività a \"{{title}}\"…",

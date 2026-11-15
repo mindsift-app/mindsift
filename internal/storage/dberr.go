@@ -32,6 +32,16 @@ func rowErr(err error) error {
 	return err
 }
 
+// GoneAsNotFound turns a failed FOREIGN KEY check into sql.ErrNoRows: a row written for something that
+// was deleted in the meantime (assignees of a task deleted a moment ago) means "not found", not a server
+// error. Other errors pass unchanged.
+func GoneAsNotFound(err error) error {
+	if err != nil && strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
+		return sql.ErrNoRows
+	}
+	return err
+}
+
 // execLogged runs a statement nothing else depends on (last_used_at, updated_at, cleaning up); a
 // failure is logged instead of dropped.
 func (s *Store) execLogged(query string, args ...any) {

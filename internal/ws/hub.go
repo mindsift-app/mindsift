@@ -122,6 +122,24 @@ type Hub struct {
 	authorizeRoom func(userID, roomID string) bool
 	// messages takes client messages the hub does not handle itself (live drawing, DRAW_*)
 	messages MessageHandler
+	// delivered learns every user an event goes to (SetDeliveryListener); called with h.mu read-locked
+	delivered func(userID, event string)
+}
+
+// SetDeliveryListener installs a function that learns, for every event sent to users or rooms, which
+// users it goes to (the API drops their cached counters). It runs while the hub is read-locked: it must
+// be quick and must not call back into the hub.
+func (h *Hub) SetDeliveryListener(f func(userID, event string)) {
+	h.mu.Lock()
+	h.delivered = f
+	h.mu.Unlock()
+}
+
+// notifyDeliveredLocked: h.mu is held (read or write)
+func (h *Hub) notifyDeliveredLocked(userID, event string) {
+	if h.delivered != nil && userID != "" {
+		h.delivered(userID, event)
+	}
 }
 
 // MessageHandler handles messages browsers send over WebSocket beyond room subscriptions, and learns
@@ -583,12 +601,17 @@ func (h *Hub) BroadcastToUser(userID, event string, payload any) {
 	}
 
 	h.mu.RLock()
+	defer h.mu.RUnlock()
 	if h.closed {
-		h.mu.RUnlock()
 		return
 	}
-	defer h.mu.RUnlock()
+	h.sendToUserLocked(userID, event, data)
+}
 
+// sendToUserLocked hands an encoded event to every connection of a user (h.mu held for reading).
+func (h *Hub) sendToUserLocked(userID, event string, data []byte) {
+	// Also for users without a connection right now: their cached counters change all the same
+	h.notifyDeliveredLocked(userID, event)
 	if room, ok := h.userRooms[userID]; ok {
 		for client := range room {
 			client.trySend(data)
@@ -634,15 +657,28 @@ func (h *Hub) BroadcastSystem(event string) {
 	}
 }
 
-// BroadcastToUsers sends one event to every connection of the given users (duplicates are ignored).
+// BroadcastToUsers sends one event to every connection of the given users (duplicates are ignored). The
+// event is encoded once for all of them, not once per user.
 func (h *Hub) BroadcastToUsers(userIDs []string, event string, payload any) {
+	if len(userIDs) == 0 {
+		return
+	}
+	data, err := json.Marshal(domain.WSMessage{Event: event, Payload: payload, Timestamp: domain.NowISO()})
+	if err != nil {
+		return
+	}
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	if h.closed {
+		return
+	}
 	seen := make(map[string]bool, len(userIDs))
 	for _, uid := range userIDs {
 		if uid == "" || seen[uid] {
 			continue
 		}
 		seen[uid] = true
-		h.BroadcastToUser(uid, event, payload)
+		h.sendToUserLocked(uid, event, data)
 	}
 }
 
@@ -678,11 +714,13 @@ func (h *Hub) Broadcast(spaceID, listID, event string, payload any) {
 
 	if room, ok := h.rooms[targetRoom]; ok {
 		for client := range room {
+			h.notifyDeliveredLocked(client.userID, event)
 			client.trySend(data)
 		}
 	}
 	if sseRoom, ok := h.sseRooms[targetRoom]; ok {
 		for sseClient := range sseRoom {
+			h.notifyDeliveredLocked(sseClient.userID, event)
 			sseClient.trySend(data)
 		}
 	}
@@ -746,11 +784,13 @@ func (h *Hub) BroadcastRoom(roomID, event string, payload any, excludeClient *Cl
 			if excludeClient != nil && client == excludeClient {
 				continue
 			}
+			h.notifyDeliveredLocked(client.userID, event)
 			client.trySend(data)
 		}
 	}
 	if sseRoom, ok := h.sseRooms[roomID]; ok {
 		for sseClient := range sseRoom {
+			h.notifyDeliveredLocked(sseClient.userID, event)
 			sseClient.trySend(data)
 		}
 	}

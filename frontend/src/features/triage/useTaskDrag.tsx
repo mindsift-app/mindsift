@@ -2,7 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api, triggerHaptic } from '../../lib/api';
 import { KanbanColumn, TaskList, Thought } from '../../lib/types';
 import { useKanbanTouchDrag } from './useKanbanTouchDrag';
+import { tasksAfterReorder } from './useTaskRealtime';
+import { MoveTracker, ReorderItem, applyMoveAnswer, changedOrder } from './taskMoves';
 import { startElementDragGhost } from '../../lib/dragGhost';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 // Drag & drop needs a mouse or pen; on touch-only devices a draggable row can swallow a slightly
 // longer tap, so the row would not open
@@ -30,6 +33,7 @@ interface TaskDragOptions {
   kanbanBoardRef: React.RefObject<HTMLDivElement | null>;
   kanbanPhoneSnap: boolean;
   kanbanPhoneTop: number;
+  moveTracker: MoveTracker;
 }
 
 // Moving tasks in TasksView by dragging: HTML5 drag & drop with mouse or pen (list rows, Kanban cards and
@@ -53,6 +57,7 @@ export function useTaskDrag({
   kanbanBoardRef,
   kanbanPhoneSnap,
   kanbanPhoneTop,
+  moveTracker,
 }: TaskDragOptions) {
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragOverTaskTarget, setDragOverTaskTarget] = useState<{ taskId: string; position: 'before' | 'after' } | null>(null);
@@ -147,6 +152,26 @@ export function useTaskDrag({
     await moveTaskNextTo(sourceId, targetTask, position, newKanbanCol);
   };
 
+  // Saves a move and takes the places from the server's answer: tasks deleted meanwhile drop out, the done
+  // state follows the list's done column. Only the tasks whose place or column changed are sent. An answer
+  // overtaken by a newer move is not applied (the newer one brings the places); a failed call or a new
+  // successor of a repeating task loads everything once no move is on its way.
+  // The answer may come after another list was opened: load the one shown then
+  const loadDataRef = useLatestRef(loadData);
+  const saveOrder = async (before: Thought[], order: ReorderItem[]) => {
+    const payload = changedOrder(before, order);
+    if (payload.length === 0) return;
+    const seq = moveTracker.begin(payload);
+    const res = await api.reorderTasks(payload, selectedListId !== 'all' ? selectedListId : undefined).catch(() => null);
+    applyMoveAnswer(
+      moveTracker,
+      seq,
+      res,
+      (items, skipped) => setTasks((prev) => tasksAfterReorder(prev, items, skipped)),
+      () => void loadDataRef.current()
+    );
+  };
+
   // Shared by mouse drag & drop and the touch drag on the Kanban board
   const moveTaskNextTo = async (sourceId: string | null, targetTask: Thought, position: 'before' | 'after', newKanbanCol?: string) => {
     if (!sourceId || sourceId === targetTask.id) return;
@@ -186,14 +211,7 @@ export function useTaskDrag({
       kanbanStatus: t.kanbanStatus,
     }));
 
-    try {
-      await api.reorderTasks(
-        reorderPayload,
-        selectedListId !== 'all' ? selectedListId : undefined
-      );
-    } catch {
-      loadData();
-    }
+    await saveOrder(tasks, reorderPayload);
   };
 
   const resetKanbanDrag = () => {
@@ -316,14 +334,7 @@ export function useTaskDrag({
       kanbanStatus: t.kanbanStatus,
     }));
 
-    try {
-      await api.reorderTasks(
-        reorderPayload,
-        selectedListId !== 'all' ? selectedListId : undefined
-      );
-    } catch {
-      loadData();
-    }
+    await saveOrder(tasks, reorderPayload);
   };
 
   // Kanban with a finger: hold a card, drag it, let go (mouse and pen use HTML5 drag & drop)

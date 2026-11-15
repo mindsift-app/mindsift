@@ -91,8 +91,19 @@ func taskTrashArgs(userID string) []any {
 	return append([]any{userID}, accessibleTaskListArgs(userID)...)
 }
 
-// GetTaskTrash lists the trashed tasks of one task list ("" = all the user can see), newest first.
+// TaskTrashLimit: GET /tasks/trash answers with the newest this many entries. The trash used to come
+// whole, and grew under load to thousands of entries; emptying it still takes every entry.
+const TaskTrashLimit = 500
+
+// GetTaskTrash lists the trashed tasks of one task list ("" = all the user can see), newest first, at
+// most TaskTrashLimit.
 func (s *Store) GetTaskTrash(userID, taskListID string) ([]TrashedTask, error) {
+	return s.getTaskTrash(userID, taskListID, TaskTrashLimit)
+}
+
+// getTaskTrash is GetTaskTrash with a limit (0 = all). Edit rights are looked up once per list, not
+// per entry.
+func (s *Store) getTaskTrash(userID, taskListID string, limit int) ([]TrashedTask, error) {
 	q := `SELECT tt.id, tt.content, tt.task_list_id, tt.is_completed, tt.trashed_at, COALESCE(u.display_name, '')
 		FROM trashed_tasks tt LEFT JOIN users u ON u.id = tt.trashed_by
 		WHERE ` + taskTrashScope
@@ -101,26 +112,40 @@ func (s *Store) GetTaskTrash(userID, taskListID string) ([]TrashedTask, error) {
 		q += ` AND tt.task_list_id = ?`
 		args = append(args, taskListID)
 	}
-	rows, err := s.db.Query(q+` ORDER BY tt.trashed_at DESC`, args...)
+	q += ` ORDER BY tt.trashed_at DESC, tt.rowid DESC`
+	if limit > 0 {
+		q += ` LIMIT ?`
+		args = append(args, limit)
+	}
+	rows, err := s.db.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 	out := []TrashedTask{}
 	for rows.Next() {
 		var t TrashedTask
 		var done int
 		if err := rows.Scan(&t.ID, &t.Content, &t.TaskListID, &done, &t.TrashedAt, &t.TrashedBy); err != nil {
+			_ = rows.Close()
 			return nil, err
 		}
 		t.IsCompleted = done == 1
 		out = append(out, t)
 	}
-	if err := rows.Err(); err != nil {
+	err = rows.Err()
+	_ = rows.Close() // before the permission queries: each needs a connection of its own
+	if err != nil {
 		return nil, err
 	}
+	canEdit := map[string]bool{"": true}
 	for i := range out {
-		out[i].CanEdit = out[i].TaskListID == "" || s.CanEditTaskList(userID, out[i].TaskListID)
+		id := out[i].TaskListID
+		ok, known := canEdit[id]
+		if !known {
+			ok = s.CanEditTaskList(userID, id)
+			canEdit[id] = ok
+		}
+		out[i].CanEdit = ok
 	}
 	return out, nil
 }
@@ -204,7 +229,7 @@ func (s *Store) RestoreTrashedTask(userID, id string) (*domain.Thought, error) {
 	if err := s.execInTx(stmts...); err != nil {
 		return nil, err
 	}
-	s.PruneTaskAssignees()
+	s.pruneTaskAssigneesOf(id)
 	return s.GetThoughtByIDUnchecked(id)
 }
 
@@ -223,7 +248,7 @@ func (s *Store) EmptyTaskTrash(userID, taskListID string) ([]string, error) {
 			return nil, err
 		}
 	}
-	items, err := s.GetTaskTrash(userID, taskListID)
+	items, err := s.getTaskTrash(userID, taskListID, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -236,11 +261,16 @@ func (s *Store) EmptyTaskTrash(userID, taskListID string) ([]string, error) {
 	return ids, s.purgeTrashedTasks(ids)
 }
 
+// purgeTrashedTasks deletes trashed tasks for good, a few hundred per transaction (it took one
+// transaction per task).
 func (s *Store) purgeTrashedTasks(ids []string) error {
-	for _, id := range ids {
+	const chunk = 500
+	for start := 0; start < len(ids); start += chunk {
+		end := min(start+chunk, len(ids))
+		idsJSON, _ := json.Marshal(ids[start:end])
 		if err := s.execInTx(
-			stmt(`DELETE FROM trashed_tasks WHERE id = ?`, id),
-			stmt(`DELETE FROM task_watchers WHERE task_id = ?`, id),
+			stmt(`DELETE FROM trashed_tasks WHERE id IN (SELECT value FROM json_each(?))`, string(idsJSON)),
+			stmt(`DELETE FROM task_watchers WHERE task_id IN (SELECT value FROM json_each(?))`, string(idsJSON)),
 		); err != nil {
 			return err
 		}

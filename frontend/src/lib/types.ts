@@ -329,6 +329,23 @@ export interface KanbanColumn {
   isDone?: boolean;
 }
 
+// A task's place after a move, as the server stored it (answer of the reorder call and TASK_REORDERED)
+export interface TaskOrder {
+  id: string;
+  sortOrder: number;
+  kanbanStatus?: string;
+  isCompleted?: boolean;
+}
+
+// Answer of the reorder call: the places applied, the IDs left out (deleted or no longer in the list) and
+// whether a repeating task got a successor the answer does not contain
+export interface TaskReorderResult {
+  success: boolean;
+  items?: TaskOrder[];
+  skipped?: string[];
+  reload?: boolean;
+}
+
 export interface TaskListShare {
   id: string;
   taskListId: string;

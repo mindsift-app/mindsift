@@ -21,4 +21,6 @@ interface WindowEventMap {
   beforeinstallprompt: BeforeInstallPromptEvent;
   // Every realtime message, for listeners outside lib/api/realtime.ts
   'mindsift:ws': CustomEvent<import('./lib/types').WSMessage | undefined>;
+  // The realtime connection opened or dropped (lib/api/realtime.ts)
+  'mindsift:ws:status': CustomEvent<{ connected: boolean; transport: string } | undefined>;
 }

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -69,6 +70,20 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	target := strings.TrimSpace(req.Target)
+	if target == "task" {
+		// In one write (storage.CreateTask), not created in the inbox and converted afterwards
+		task, members, err := s.store.CreateTask(userID, req.Content, req.Priority, source, dueDate, taskListID, "")
+		if err != nil {
+			writeStoreError(w, http.StatusBadRequest, err)
+			return
+		}
+		s.recordThoughtOrigin(task, actorFrom(r.Context()), true)
+		s.announceNewTask(userID, task, members)
+		writeJSON(w, http.StatusCreated, task)
+		return
+	}
+
 	thought, err := s.store.CreateThoughtWithDetails(userID, req.Content, req.Priority, source, dueDate, taskListID, "todo", "")
 	if err != nil {
 		writeStoreError(w, http.StatusBadRequest, err)
@@ -77,8 +92,7 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 	// Before a conversion, so a list item made from it takes the origin along
 	s.recordThoughtOrigin(thought, actorFrom(r.Context()), true)
 
-	target := strings.TrimSpace(req.Target)
-	if target == "task" || target == "document" || (target == "list_item" && targetListID != "") {
+	if target == "document" || (target == "list_item" && targetListID != "") {
 		if converted, convErr := s.store.UpdateThoughtTriage(userID, thought.ID, "keep", target, targetListID, dueDate, taskListID); convErr == nil && converted != nil {
 			thought = converted
 			if target == "list_item" && targetListID != "" {
@@ -259,32 +273,40 @@ func (s *Server) handleReorderTasks(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, storage.ErrTaskListReadOnly.Error())
 		return
 	}
-	// ReorderTasks updates by ID only, so every item must be a task the caller may edit
-	audience := []string{userID}
-	for _, it := range req.Items {
-		th, err := s.store.GetThoughtByID(userID, it.ID)
-		if err != nil {
-			writeError(w, http.StatusNotFound, "Aufgabe nicht gefunden")
-			return
-		}
-		if th.TaskListID != "" && !s.store.CanEditTaskList(userID, th.TaskListID) {
-			writeError(w, http.StatusForbidden, storage.ErrTaskListReadOnly.Error())
-			return
-		}
-		audience = append(audience, s.taskAudience(th)...)
+	// Tasks deleted (or moved to another list) while the card was dragged are skipped; a task the caller
+	// may not change still refuses the whole move (404 if they cannot see it, 403 if they may only read it)
+	res, err := s.store.ReorderTasksForUser(userID, taskListID, req.Items)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "Aufgabe nicht gefunden")
+		return
 	}
-
-	if err := s.store.ReorderTasks(taskListID, req.Items); err != nil {
+	if errors.Is(err, storage.ErrTaskListReadOnly) {
+		writeErrorFrom(w, http.StatusForbidden, err)
+		return
+	}
+	if err != nil {
 		writeInternal(w, err)
 		return
 	}
 
-	s.wsHub.BroadcastToUsers(audience, "TASK_REORDERED", map[string]any{
+	// items: the places as stored; reload: a repeating task was completed and got a successor the
+	// items do not contain
+	payload := map[string]any{
 		"taskListId": taskListID,
-		"items":      req.Items,
+		"items":      res.Applied,
+		"skipped":    res.Skipped,
+		"reload":     res.Spawned,
 		"userId":     userID,
+	}
+	if res.Written > 0 || res.Spawned {
+		s.wsHub.BroadcastToUsers(res.Audience, "TASK_REORDERED", payload)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"success": true,
+		"items":   res.Applied,
+		"skipped": res.Skipped,
+		"reload":  res.Spawned,
 	})
-	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
 // taskPatch is a partial change of a task; nil fields stay as they are. Shared by PATCH /thoughts/{id}
@@ -313,12 +335,12 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 	// The rule is set first, so completing a task in the same request already repeats it
 	if req.Recurrence != nil {
 		if err := s.store.SetTaskRecurrence(userID, thoughtID, strings.TrimSpace(*req.Recurrence)); err != nil {
-			return nil, err
+			return nil, storage.GoneAsNotFound(err)
 		}
 	}
 	if req.Reminders != nil {
 		if _, err := s.store.SetTaskReminders(userID, thoughtID, *req.Reminders); err != nil {
-			return nil, err
+			return nil, storage.GoneAsNotFound(err)
 		}
 	}
 	updated, err := s.store.UpdateThoughtDetails(userID, thoughtID, req.Content, req.IsCompleted, req.DueDate, req.Priority, req.TaskListID, req.KanbanStatus, req.Notes, req.Subtasks, req.Tags)
@@ -329,7 +351,8 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 	if req.Assignees != nil {
 		assignees, err := s.store.SetTaskAssignees(userID, thoughtID, *req.Assignees)
 		if err != nil {
-			return nil, err
+			// The task deleted in the meantime fails the insert of its assignees (FOREIGN KEY): 404, not 500
+			return nil, storage.GoneAsNotFound(err)
 		}
 		updated.Assignees = assignees
 	}
@@ -337,10 +360,14 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 		_, head, _ := s.store.GetDocOpsSince(docID, 0, 0)
 		s.notifyDocChanged(docID, head)
 	}
-	s.wsHub.BroadcastToUsers(append(s.taskAudience(before), s.taskAudience(updated)...), "TASK_UPDATED", updated)
+	audience := s.taskAudience(updated)
+	if before != nil && (before.TaskListID != updated.TaskListID || before.UserID != updated.UserID) {
+		audience = append(audience, s.taskAudience(before)...)
+	}
+	s.wsHub.BroadcastToUsers(audience, "TASK_UPDATED", updated)
 	s.notifyTaskChange(userID, before, updated, false)
 	s.notifyTaskMentions(userID, before, updated)
-	updated.IsWatching = s.store.WatchedTaskIDs(userID)[updated.ID]
+	updated.IsWatching = s.store.IsWatching(userID, updated.ID)
 	return updated, nil
 }
 
