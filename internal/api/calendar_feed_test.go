@@ -82,7 +82,9 @@ func TestCalendarFeed(t *testing.T) {
 	clock.UseInTest(t, tokyo)
 	srv, store, ts, owner, ownerToken := startRealtimeServer(t)
 	bob, _ := newTestUser(t, store, "bob@example.com")
-	do := func(method string) *http.Response { return doJSON(t, ts, method, "/api/v1/calendar-feed", ownerToken, nil) }
+	do := func(method string) *http.Response {
+		return doJSON(t, ts, method, "/api/v1/calendar-feed", ownerToken, nil)
+	}
 
 	// Off until switched on
 	var st calendarFeedState
