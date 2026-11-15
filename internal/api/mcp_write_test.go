@@ -303,7 +303,7 @@ func TestMCPWikiLinks(t *testing.T) {
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	uid := claims.UserID
 	call := mcpCaller(t, srv)
-	agentKey, _ := store.CreateAPIKey(uid, "Agent", []string{"notes:read", "notes:write"})
+	agentKey, _ := store.CreateAPIKey(uid, "Agent", []string{"notes:read", "notes:write", "notes:create"})
 	key := agentKey.RawKey
 	target, _ := store.CreateDocument(uid, "", "Homelab 2.0", "", "", nil, nil, false)
 	twinA, _ := store.CreateDocument(uid, "", "Garten", "", "A", nil, nil, false)
@@ -331,6 +331,41 @@ func TestMCPWikiLinks(t *testing.T) {
 	d, _ = store.GetDocumentByID(uid, doc.ID)
 	if want := "Neu: [[Homelab 2.0#" + target.ID + "]] und [[Garten]]"; d.Blocks[len(d.Blocks)-1].Content != want {
 		t.Fatalf("added: %q, want %q", d.Blocks[len(d.Blocks)-1].Content, want)
+	}
+
+	// In code [[…]] is no link, like in the editor's code block: not in a new note, nor in a code bullet
+	// added or edited
+	code := `echo "[[Homelab 2.0]]"`
+	res, isErr, msg := call(key, "create_note", `{"title":"Skripte","content":`+jsonString("- Siehe [[Homelab 2.0]]\n\n```bash\n"+code+"\n```")+`}`)
+	if isErr {
+		t.Fatal(msg)
+	}
+	created, _ := store.GetDocumentByID(uid, res["id"].(string))
+	var texts, codes []string
+	for _, b := range created.Blocks {
+		if b.Type == "code" {
+			codes = append(codes, b.Content)
+		} else {
+			texts = append(texts, b.Content)
+		}
+	}
+	if len(codes) != 1 || codes[0] != code || len(texts) != 1 || texts[0] != "Siehe [[Homelab 2.0#"+target.ID+"]]" {
+		t.Fatalf("create_note: text %q, code %q", texts, codes)
+	}
+	res, isErr, msg = call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","type":"code","text":`+jsonString(code)+`}`)
+	if isErr {
+		t.Fatal(msg)
+	}
+	added := res["addedId"].(string)
+	if _, content, _ := snapBullet(t, srv, doc.ID, added); content != code {
+		t.Fatalf("add_note_bullet code: %q", content)
+	}
+	edited := `printf "[[Homelab 2.0]] neu"`
+	if _, isErr, msg := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"`+added+`","text":`+jsonString(edited)+`}`); isErr {
+		t.Fatal(msg)
+	}
+	if _, content, _ := snapBullet(t, srv, doc.ID, added); content != edited {
+		t.Fatalf("update_note_bullet code: %q", content)
 	}
 }
 

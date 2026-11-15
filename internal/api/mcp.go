@@ -1073,10 +1073,11 @@ var mcpTools = []mcpTool{
 				return nil, err
 			}
 			blocks := mcpContentBlocks(content)
-			// [[Titel]] written by the agent points at its note by id where the title is unambiguous
+			// [[Titel]] written by the agent points at its note by id where the title is unambiguous; code
+			// is kept as written ([[…]] is no link there), like the editor's code block
 			link := s.store.WikiLinker(userID)
 			for i := range blocks {
-				if blocks[i].Type != drawing.BlockType {
+				if blocks[i].Type != drawing.BlockType && blocks[i].Type != "code" {
 					blocks[i].Content = link(blocks[i].Content)
 				}
 			}
