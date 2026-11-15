@@ -83,10 +83,12 @@ const main = async () => {
   // /vorlage in the empty bullet of another note
   await page.getByText(targetTitle, { exact: true }).first().click();
   await page.waitForFunction(() => document.querySelectorAll('[data-outline-block]').length >= 2);
-  const empty = page.locator('[data-outline-block] textarea').nth(1);
-  await empty.click();
+  // Into the empty second bullet: from the end of the first one
+  await page.locator('[data-outline-block]').first().locator('[data-outline-text]').click();
+  await page.keyboard.press('End');
+  await page.keyboard.press('ArrowDown');
   await page.keyboard.type('/vorlage');
-  await page.getByText('/vorlage', { exact: true }).waitFor();
+  await page.getByRole('button', { name: /^\/vorlage/ }).waitFor();
   await page.keyboard.press('Enter');
   const search = page.getByPlaceholder('Vorlage suchen …');
   await search.waitFor();
@@ -114,9 +116,9 @@ const main = async () => {
   // "Neue Notiz anlegen" with the template
   await page.getByRole('button', { name: 'Neue Notiz anlegen' }).locator('visible=true').first().click();
   await page.getByPlaceholder('Name der Notiz').fill(`Neu ${stamp}`);
-  await page.getByRole('button', { name: 'Vorlage' }).click();
+  await page.getByRole('button', { name: 'Vorlage', exact: true }).click();
   await page.getByRole('option', { name: new RegExp(tplTitle) }).click();
-  await page.getByRole('button', { name: 'Erstellen' }).click();
+  await page.getByRole('button', { name: 'Erstellen', exact: true }).click();
   const created = await waitFor(async () => {
     const list = await api(admin, 'GET', '/api/v1/documents');
     const d = list.find((x) => x.title === `Neu ${stamp}`);
