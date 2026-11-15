@@ -238,6 +238,7 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 	}
 	user.IsActive = true
 	s.store.ClearEmailVerification(userID) // the admin vouches for the account
+	s.audit(r, storage.AuditAccountApproved, auditUserTarget(user), nil)
 	link := s.appLink(r)
 	lang := s.userLanguage(user.ID)
 	s.background(func() {
@@ -314,5 +315,6 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadGateway, tr(w, "E-Mail-Versand fehlgeschlagen")+": "+trErr(w, err))
 		return
 	}
+	s.audit(r, storage.AuditInviteSent, auditInviteTarget(inv), map[string]string{"email": email})
 	writeJSON(w, http.StatusOK, inv)
 }

@@ -545,6 +545,7 @@ func (s *Server) Router() http.Handler {
 			r.Get("/api/v1/admin/update", s.handleAdminUpdate)
 			r.Post("/api/v1/admin/update/dismiss", s.notInDemo(s.handleAdminDismissUpdate))
 			r.Post("/api/v1/admin/smtp/test", s.notInDemo(s.handleAdminTestSMTP))
+			r.Get("/api/v1/admin/audit", s.handleAdminAudit)
 		})
 	})
 

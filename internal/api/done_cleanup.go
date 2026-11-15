@@ -16,8 +16,8 @@ import (
 // task trash, the trashes and ticked-off list items emptied; once shortly after the start and then
 // every hour. Expired and unused OAuth connections go in the same pass (oauth.go), and so do hidden
 // values no note holds any more (secrets.go), expired public links (publiclinks.go), backups of
-// deleted accounts past the backup retention and copies from before migrations older than 90 days
-// (backups.go).
+// deleted accounts past the backup retention, copies from before migrations older than 90 days
+// (backups.go) and rows of the audit log older than a year (audit.go).
 func (s *Server) startDoneCleanupTicker() {
 	if !s.wait(2 * time.Minute) {
 		return
@@ -31,6 +31,7 @@ func (s *Server) startDoneCleanupTicker() {
 		s.runPublicLinkCleanup(now)
 		s.runDeletedBackupSweep(now)
 		s.runPreMigrationBackupExpiry(now)
+		s.runAuditCleanup(now)
 		select {
 		case <-s.stop:
 			return

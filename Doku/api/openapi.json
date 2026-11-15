@@ -652,6 +652,20 @@
         }
       }
     },
+    "/api/v1/admin/audit": {
+      "get": {
+        "summary": "Audit log of the administration",
+        "description": "Who changed accounts, roles and server settings, newest first (server admins only). Query: action (key, or a category ending in a dot such as account.), user (account id: rows it did or that concern it), before (nextBefore of the previous page), limit (1–200, default 50). Answers {entries, nextBefore}; nextBefore 0 means no older rows",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/auth/alarms/test": {
       "post": {
         "summary": "Send a test alarm",
