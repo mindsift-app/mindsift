@@ -39,7 +39,10 @@ Client → Server: The server processes `{"event":"JOIN_ROOM","room":"<id>"}`, `
 |---|---|
 | User channel (`BroadcastToUser`) | All connections belonging to a user |
 | Room (`BroadcastRoom`, `Broadcast`) | Connections in the room |
+| Room, per connection (`BroadcastRoomEach`) | Connections in the room, each with its own message (the bundled pointers of a live drawing leave out the receiver's own) |
 | Multiple users (`BroadcastToUsers`) | All connections of a computed user group, e.g. owners and members of a task list |
+
+Each WebSocket connection has a queue of up to 128 events; when it is full, further events for that connection are dropped (live drawing notices that by `seq`). The writer takes what is waiting in the queue in one go (up to 256 events): every event is still a WebSocket message of its own, but they go to the network in one write (one system call and usually one TCP packet instead of one each), which saves the server, the proxy in front and the network most of their per-message work when many small events go out at once.
 
 ## Events
 
@@ -87,7 +90,7 @@ Several people draw in one drawing bullet at once (concept: [architecture.md](..
 | `DRAW_JOIN` | `base` (block content when opened), `els` (own whole state: elements with `ver`, `nonce`, tombstones), `grid`, `join` (optional), `resume` (optional) | Draw along (write access). Starts a session without one (host; the browser sends this only after "Gemeinsam zeichnen", or again after a lost connection), with `join: true` ("Mitzeichnen" in a session someone else runs) only joins a running one and answers `ended` otherwise; with `resume: true` ("Rückgängig" after discarding) only brings back a session discarded within 15 s for the same `base`, else `ended`, and a join without it never resumes a discarded session; resumes one everyone left within 10 min if `base` matches, or joins a running one; merges `els` by version. Answer `DRAW_STATE`; joining again after a lost connection or a server restart works the same way. A connection draws in one drawing at a time: joining another leaves the previous one. Limits per person and server: [architecture.md](../architecture.md#collaboration-live-drawing) |
 | `DRAW_WATCH` | – | Watch (read access); answer `DRAW_STATE` (`active: false` without a session) |
 | `DRAW_OPS` | `els` (changed elements and tombstones), `order` (new order of the ids, optional), `grid` (optional) | Merged by version; the winners go to the room as `DRAW_OPS`, the sender gets `DRAW_ACK` |
-| `DRAW_PRESENCE` | `x`, `y` (drawing coordinates), `gone`, `touch`, `sel` (selected ids) | Pointer and selection, at most 30 a second, the rest dropped |
+| `DRAW_PRESENCE` | `x`, `y` (drawing coordinates), `gone`, `touch`, `sel` (selected ids) | Pointer and selection, at most 30 a second, the rest dropped (the app sends at most 20). The server keeps the latest of each person and sends them bundled (`DRAW_POINTERS`) |
 | `DRAW_SYNC` | – | The whole state again as `DRAW_STATE` (after a gap in `seq`) |
 | `DRAW_LEAVE` | – | Leave (drawing or watching); the host's leaving hands over to the person drawing longest |
 | `DRAW_DONE` | `clientId` (the note's sync client) | Host only: ends the session; the host gets `DRAW_END` with the final state and saves it via `/docs/{id}/sync`, the bullet's lease goes to `clientId` |
@@ -99,9 +102,11 @@ Several people draw in one drawing bullet at once (concept: [architecture.md](..
 | `DRAW_OPS` | `from`, `els`, `order`, `grid`, `seq` | Room, without the sender |
 | `DRAW_ACK` | `seq` | Sender of `DRAW_OPS` |
 | `DRAW_PEOPLE` | `active`, `host`, `participants`, `watchers` | Room (joined, left, new host) |
-| `DRAW_PRESENCE` | `from`, `userId`, `name`, `x`, `y`, `gone`, `touch`, `sel` | Room, without the sender |
+| `DRAW_POINTERS` | `pointers`: `[{from, x, y, sel?, touch?, gone?}]`, `from` = connection (name and colour come from `participants`), `sel`, `touch` and `gone` left out when empty or false | Room; every connection without its own pointer, none when only its own changed |
 | `DRAW_END` | `reason` (`done`, `discard`, `expired`), `by`; for the host also the final `els`, `order`, `grid` | Room |
 | `DRAW_ERROR` | `code`: `forbidden`, `locked` (someone else edits alone), `ended` (`join` without a running session), `no_session`, `not_host`, `limit` (session too large), `too_many` (the person keeps too many sessions going), `busy` (the server holds as many sessions or bytes as it takes), `rate` (changes, or joining and watching, too fast), `invalid` | The sender |
+
+**Pointers are bundled** (`drawPresence`, `sendDrawPointers` in [drawlive.go](../../internal/api/drawlive.go)): per drawing, the server collects the latest pointer of each person drawing and sends one `DRAW_POINTERS` per receiver every 50 ms with the pointers that changed since the last one; a newer pointer of the same person replaces one still waiting. The first pointer after a quiet tick goes out at once; a tick without pointers stops the timer, so a drawing nobody moves in has none, and the end of the session stops it too. A person thus receives at most 20 pointer messages a second, however many draw (before, every pointer went to every other connection on its own: N people at 20 a second made N×(N−1)×20 messages a second). Changes (`DRAW_OPS`) keep their own, immediate way and order; a bundle may come before or after a change sent at the same time. Servers before this version sent every pointer as `DRAW_PRESENCE` with `from`, `userId`, `name`, `x`, `y`, `gone`, `touch`, `sel`; the app still accepts that.
 
 `seq` counts the merged changes of a session; a browser that sees a gap (a message was dropped because its connection was too slow) fetches the state again (`DRAW_SYNC`, or `GET …/live` without WebSocket).
 

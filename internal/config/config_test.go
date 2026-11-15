@@ -240,6 +240,17 @@ func TestCustomLinkValidation(t *testing.T) {
 }
 
 // STT_ALLOW_BROWSER=false: without a Whisper server (or in the demo) there is no voice input at all
+// DRAW_LIVE_MAX_MB sets the memory of all live drawings together; unset or out of range keeps 128.
+func TestDrawLiveMaxMB(t *testing.T) {
+	t.Setenv("DATA_DIR", t.TempDir())
+	for v, want := range map[string]int{"": 128, "256": 256, "1": 1, "0": 128, "-5": 128, "99999": 128, "viel": 128} {
+		t.Setenv("DRAW_LIVE_MAX_MB", v)
+		if got := Load().DrawLiveMaxMB; got != want {
+			t.Errorf("DRAW_LIVE_MAX_MB=%q: %d, want %d", v, got, want)
+		}
+	}
+}
+
 func TestSpeechModeWithoutBrowser(t *testing.T) {
 	cases := []struct {
 		cfg  SpeechConfig

@@ -186,11 +186,11 @@ func TestRateLimit(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i := 0; i < presenceBurst; i++ {
-		if _, err := m.Presence("d1", "b1", "ws_a", t0); err != nil {
+		if err := m.Presence("d1", "b1", "ws_a", Pointer{}, t0); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if _, err := m.Presence("d1", "b1", "ws_a", t0); !errors.Is(err, ErrRate) {
+	if err := m.Presence("d1", "b1", "ws_a", Pointer{}, t0); !errors.Is(err, ErrRate) {
 		t.Fatal("pointers are limited too")
 	}
 }
@@ -208,7 +208,7 @@ func TestWatchersOnlyLook(t *testing.T) {
 	if _, _, err := m.Apply("d1", "b1", "ws_c", []Element{el(t, "e1", 5, 0, "")}, nil, nil, t0); !errors.Is(err, ErrNotInSession) {
 		t.Fatalf("a watcher changed the drawing: %v", err)
 	}
-	if _, err := m.Presence("d1", "b1", "ws_c", t0); !errors.Is(err, ErrNotInSession) {
+	if err := m.Presence("d1", "b1", "ws_c", Pointer{}, t0); !errors.Is(err, ErrNotInSession) {
 		t.Fatal("watchers send no pointer")
 	}
 	if _, err := m.Finish("d1", "b1", "ws_c", true, t0); !errors.Is(err, ErrNotHost) {
@@ -451,8 +451,13 @@ func TestSessionsOfTheServer(t *testing.T) {
 		t.Fatal("the left session is still there")
 	}
 
-	// Bytes: sessions of about 1 MB each until the total is reached
+	// Bytes: sessions of about 1 MB each until the total is reached (set lower than the default, as
+	// DRAW_LIVE_MAX_MB does, so the test stays quick)
+	if NewManager().maxTotal != DefaultMaxTotalBytes {
+		t.Fatal("a new manager takes the default total")
+	}
 	m = NewManager()
+	m.SetMaxTotalBytes(24 << 20)
 	pad := `,"txt":"` + strings.Repeat("y", 60000) + `"`
 	heavy := func() []Element {
 		var out []Element
@@ -475,7 +480,7 @@ func TestSessionsOfTheServer(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if n == MaxSessions || m.bytes > MaxTotalBytes || m.bytes < MaxTotalBytes-MaxBytes {
+	if n == MaxSessions || m.bytes > m.maxTotal || m.bytes < m.maxTotal-MaxBytes || n > 30 {
 		t.Fatalf("%d sessions with %d bytes", n, m.bytes)
 	}
 	if _, ok := m.State("d1", fmt.Sprintf("b%d", n)); ok {
@@ -518,5 +523,51 @@ func TestJoinRate(t *testing.T) {
 	m.Sweep(t0.Add(time.Minute))
 	if len(m.joins) != 0 {
 		t.Fatalf("rates that filled up again are kept: %d", len(m.joins))
+	}
+}
+
+// Pointers wait for the next bundle: the latest of each person replaces the earlier ones, in the order the
+// people joined, once; leaving and the end of the session drop what waits.
+func TestPointersAreBundled(t *testing.T) {
+	m := NewManager()
+	m.Join("d1", "b1", anna(), "base", nil, nil, false, t0)
+	m.Join("d1", "b1", ben(), "base", nil, nil, false, t0)
+	m.Watch("d1", "b1", cleo())
+	if got := m.TakePointers("d1", "b1"); got != nil {
+		t.Fatalf("pointers before anyone moved: %+v", got)
+	}
+	_ = m.Presence("d1", "b1", "ws_b", Pointer{X: 1, Y: 1}, t0)
+	_ = m.Presence("d1", "b1", "ws_a", Pointer{X: 2, Y: 2, From: "ws_b"}, t0)
+	_ = m.Presence("d1", "b1", "ws_b", Pointer{X: 3, Y: 3, Sel: []string{"e1"}}, t0)
+	got := m.TakePointers("d1", "b1")
+	want := []Pointer{{From: "ws_a", X: 2, Y: 2}, {From: "ws_b", X: 3, Y: 3, Sel: []string{"e1"}}}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("bundle %+v, want %+v", got, want)
+	}
+	if got := m.TakePointers("d1", "b1"); got != nil {
+		t.Fatalf("the same pointers twice: %+v", got)
+	}
+	// Leaving drops the pointer of the one who left
+	_ = m.Presence("d1", "b1", "ws_a", Pointer{X: 4}, t0)
+	_ = m.Presence("d1", "b1", "ws_b", Pointer{X: 5}, t0)
+	m.Leave("d1", "b1", "ws_b", t0)
+	if got := m.TakePointers("d1", "b1"); len(got) != 1 || got[0].From != "ws_a" {
+		t.Fatalf("after Ben left: %+v", got)
+	}
+	// Discarding and saving end the session: nothing waits any more
+	_ = m.Presence("d1", "b1", "ws_a", Pointer{X: 6}, t0)
+	if _, err := m.Finish("d1", "b1", "ws_a", false, t0); err != nil {
+		t.Fatal(err)
+	}
+	if got := m.TakePointers("d1", "b1"); got != nil {
+		t.Fatalf("pointers after discarding: %+v", got)
+	}
+	m.Join("d1", "b2", anna(), "base", nil, nil, false, t0)
+	_ = m.Presence("d1", "b2", "ws_a", Pointer{X: 7}, t0)
+	if _, err := m.Finish("d1", "b2", "ws_a", true, t0); err != nil {
+		t.Fatal(err)
+	}
+	if got := m.TakePointers("d1", "b2"); got != nil {
+		t.Fatalf("pointers after saving: %+v", got)
 	}
 }

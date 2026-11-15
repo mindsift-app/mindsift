@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/collab"
+	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/drawlive"
 	"github.com/mindsift-app/mindsift/internal/storage"
@@ -29,15 +30,31 @@ const (
 	drawMaxClientID = 64
 )
 
+// drawPointerTick: pointers go out bundled at most this often per drawing (the browser sends 20 a second)
+const drawPointerTick = 50 * time.Millisecond
+
 type drawHub struct {
 	mu sync.Mutex // serializes the sessions and what is sent, so everyone gets the changes in one order
 	m  *drawlive.Manager
 	// WebSocket connections in a session, for messages to one of them
 	conns map[string]*ws.Client
+	// pointers: drawings whose pointers go out bundled, by room; a drawing is here only while pointers
+	// come in, its timer stops after a tick without any
+	pointers map[string]*pointerRoom
+	// afterFunc starts the timer of a bundle (time.AfterFunc; tests fire it by hand)
+	afterFunc func(time.Duration, func()) stopper
 }
 
-func newDrawHub() *drawHub {
-	return &drawHub{m: drawlive.NewManager(), conns: map[string]*ws.Client{}}
+type stopper interface{ Stop() bool }
+
+type pointerRoom struct{ timer stopper }
+
+// newDrawHub: maxBytes is what all sessions may hold together (DRAW_LIVE_MAX_MB; 0: the default)
+func newDrawHub(maxBytes int) *drawHub {
+	m := drawlive.NewManager()
+	m.SetMaxTotalBytes(maxBytes)
+	return &drawHub{m: m, conns: map[string]*ws.Client{}, pointers: map[string]*pointerRoom{},
+		afterFunc: func(d time.Duration, f func()) stopper { return time.AfterFunc(d, f) }}
 }
 
 // drawRoom is the realtime room of a drawing; the room authorizer lets in everyone who can read the note.
@@ -206,6 +223,9 @@ func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 	left := d.m.LeaveElsewhere(p.DocID, p.BlockID, c.ID(), s.now())
 	for _, ch := range left {
 		s.wsHub.BroadcastRoom(drawRoom(ch.DocID, ch.BlockID), "DRAW_PEOPLE", people(ch.State), nil)
+		if ch.Empty {
+			s.stopPointers(ch.DocID, ch.BlockID)
+		}
 	}
 	running := d.m.Running(p.DocID, p.BlockID)
 	resumable := p.Resume && d.m.Resumable(p.DocID, p.BlockID, p.Base, s.now())
@@ -311,7 +331,10 @@ func (s *Server) drawOps(c *ws.Client, p drawMessage) {
 	}
 }
 
-// drawPresence passes a pointer and selection on (dropped over the rate).
+// drawPresence takes a pointer and selection (dropped over the rate). Pointers go out bundled: one
+// DRAW_POINTERS per drawing and receiver every drawPointerTick with everyone's latest pointer, so the
+// messages grow with the number of people, not with its square. A pointer after a quiet tick goes out at
+// once; the ones after it wait for the tick, and a newer pointer of the same person replaces a waiting one.
 func (s *Server) drawPresence(c *ws.Client, p drawMessage) {
 	sel := p.Sel
 	if len(sel) > drawMaxSelected {
@@ -326,12 +349,96 @@ func (s *Server) drawPresence(c *ws.Client, p drawMessage) {
 	d := s.draw
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	who, err := d.m.Presence(p.DocID, p.BlockID, c.ID(), s.now())
-	if err != nil {
+	ptr := drawlive.Pointer{X: p.X, Y: p.Y, Sel: clean, Touch: p.Touch, Gone: p.Gone}
+	if d.m.Presence(p.DocID, p.BlockID, c.ID(), ptr, s.now()) != nil {
 		return
 	}
-	s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), "DRAW_PRESENCE", map[string]any{"docId": p.DocID, "blockId": p.BlockID,
-		"from": who.ID, "userId": who.UserID, "name": who.Name, "x": p.X, "y": p.Y, "sel": clean, "touch": p.Touch, "gone": p.Gone}, c)
+	room := drawRoom(p.DocID, p.BlockID)
+	if d.pointers[room] != nil {
+		return // goes out with the next tick
+	}
+	s.sendDrawPointers(p.DocID, p.BlockID)
+	s.schedulePointers(p.DocID, p.BlockID, &pointerRoom{})
+}
+
+// schedulePointers starts (or continues) the ticks of a drawing's pointers; called holding d.mu.
+func (s *Server) schedulePointers(docID, blockID string, r *pointerRoom) {
+	d := s.draw
+	room := drawRoom(docID, blockID)
+	d.pointers[room] = r
+	r.timer = d.afterFunc(drawPointerTick, func() {
+		d.mu.Lock()
+		defer d.mu.Unlock()
+		if d.pointers[room] != r {
+			return // stopped meanwhile
+		}
+		if !s.sendDrawPointers(docID, blockID) {
+			delete(d.pointers, room) // a tick without pointers: the drawing rests, no timer runs
+			return
+		}
+		s.schedulePointers(docID, blockID, r)
+	})
+}
+
+// stopPointers ends the ticks of a drawing whose session ended; called holding d.mu.
+func (s *Server) stopPointers(docID, blockID string) {
+	d := s.draw
+	room := drawRoom(docID, blockID)
+	if r := d.pointers[room]; r != nil {
+		r.timer.Stop()
+		delete(d.pointers, room)
+	}
+}
+
+// sendDrawPointers sends the pointers that changed since the last bundle, every receiver without its own;
+// false when there were none. Called holding d.mu.
+func (s *Server) sendDrawPointers(docID, blockID string) bool {
+	ptrs := s.draw.m.TakePointers(docID, blockID)
+	if len(ptrs) == 0 {
+		return false
+	}
+	entries := make([][]byte, len(ptrs))
+	from := make(map[string]int, len(ptrs))
+	for i, p := range ptrs {
+		entries[i], _ = json.Marshal(p)
+		from[p.From] = i
+	}
+	// The envelope of domain.WSMessage, put together by hand: the entries are encoded once, not once per
+	// receiver
+	head, _ := json.Marshal(map[string]string{"docId": docID, "blockId": blockID})
+	ts, _ := json.Marshal(domain.NowISO())
+	build := func(skip int) []byte {
+		out := make([]byte, 0, 96+len(head)+len(ts)+len(entries)*80)
+		out = append(out, `{"event":"DRAW_POINTERS","list_id":"","payload":`...)
+		out = append(out, head[:len(head)-1]...)
+		out = append(out, `,"pointers":[`...)
+		first := true
+		for i, e := range entries {
+			if i == skip {
+				continue
+			}
+			if !first {
+				out = append(out, ',')
+			}
+			first = false
+			out = append(out, e...)
+		}
+		out = append(out, `]},"timestamp":`...)
+		out = append(out, ts...)
+		return append(out, '}')
+	}
+	all := build(-1)
+	s.wsHub.BroadcastRoomEach(drawRoom(docID, blockID), "DRAW_POINTERS", func(connID string) []byte {
+		i, own := from[connID]
+		if !own {
+			return all
+		}
+		if len(entries) == 1 {
+			return nil // only the receiver's own pointer
+		}
+		return build(i)
+	})
+	return true
 }
 
 // drawLeave takes a connection out of a session ("Verlassen", editor closed). With userID, only a
@@ -348,6 +455,9 @@ func (s *Server) drawLeave(docID, blockID, connID, userID string) {
 	}
 	if ok {
 		s.wsHub.BroadcastRoom(drawRoom(docID, blockID), "DRAW_PEOPLE", people(ch.State), nil)
+		if ch.Empty {
+			s.stopPointers(docID, blockID)
+		}
 	}
 	d.mu.Unlock()
 	if ok && ch.Participant {
@@ -363,6 +473,9 @@ func (s *Server) drawConnectionGone(connID string) {
 	changes := d.m.Gone(connID, s.now())
 	for _, ch := range changes {
 		s.wsHub.BroadcastRoom(drawRoom(ch.DocID, ch.BlockID), "DRAW_PEOPLE", people(ch.State), nil)
+		if ch.Empty {
+			s.stopPointers(ch.DocID, ch.BlockID)
+		}
 	}
 	d.mu.Unlock()
 	for _, ch := range changes {
@@ -390,6 +503,7 @@ func (s *Server) drawFinish(c *ws.Client, p drawMessage, save bool) {
 		mine := withYou(st, c.ID())
 		mine["reason"], mine["by"], mine["byUserId"] = reason, host.Name, host.UserID
 		c.SendEvent("DRAW_END", mine)
+		s.stopPointers(p.DocID, p.BlockID)
 	}
 	d.mu.Unlock()
 	if err != nil {
