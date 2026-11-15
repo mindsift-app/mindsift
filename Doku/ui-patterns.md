@@ -25,7 +25,7 @@ Component: [PickerPopover.tsx](../frontend/src/components/PickerPopover.tsx), in
 Used where items are added to a set shown as chips: organizations of a new account or invite (`OrganizationPicker`), members of an organization (`OrganizationsSection`).
 
 - The chips show what is chosen (✕ removes one); a round **"+" button** after them opens the popover below it.
-- The popover: a search field (focused), up to 8 matching rows (avatar or icon, name, a second line such as the e-mail address), arrows and Enter pick, Escape or a click outside closes. Picking adds the item and closes it.
+- The popover: a search field (focused), up to 8 matching rows (avatar or icon, name, a second line such as the e-mail address), arrows and Enter pick, Escape or a click outside closes. Picking adds the item and closes it (exception: the hashtag filter behind "+ n weitere" stays open, see Filter Chips).
 - Chips wrap, so many entries just make the block taller; the form around it never needs its own scrolling.
 
 ## Long Lists of People (Administration)
@@ -162,11 +162,11 @@ Classes in `index.css`: `tool-tab`, `tool-tab-active`, `tool-btn`, `tool-icon`, 
 
 ## Filter Chips (Desktop)
 
-Component: [TagFilterRow.tsx](../frontend/src/features/triage/TagFilterRow.tsx) (hashtag filter above the tasks), classes `filter-chip`, `filter-chip-active`, `filter-chip-count` in `index.css`. Phones filter in their sheet (`TasksFilterSheet`) and keep its look.
+Component: [TagFilterRow.tsx](../frontend/src/features/triage/TagFilterRow.tsx) (hashtag filter above the tasks), classes `filter-chip`, `filter-chip-active`, `filter-chip-count` in `index.css`. Phones filter in their sheet (`TasksFilterSheet`) and keep its look; every control there (hashtag chips, grouping, sorting, reset, done, close) is at least 44 px tall.
 
 - **No frames:** each chip has the light surface of `tool-tab` and a pill shape; the number after the label is quieter (`filter-chip-count`, equal-width digits), not a `CountBadge`. Chosen chips get the accent's tint like the open page in the rail, with `aria-pressed`.
 - **Several at once:** a click (a tap on the phone, no modifier key) switches a hashtag on or off; a task shows if it has at least one of the chosen hashtags. "Alle" clears the filter, and so does opening another task list (`useTagFilter`; the filter is not stored). The phone banner names the choice compactly ("#a, #b", "#a +2").
-- **One line, never wrapping:** the chips that do not fit go behind **"+ n weitere"** (`useOverflowTabs`, as in the tab rows; chosen chips always keep their place). It opens `PickerPopover` with a search over all hashtags (count at the end of a row, a check at the chosen ones); arrows and Enter switch one on or off, Escape closes and the focus goes back to the button.
+- **One line, never wrapping:** the chips that do not fit go behind **"+ n weitere"** (`useOverflowTabs`, as in the tab rows; chosen chips always keep their place). It opens `PickerPopover` with a search over all hashtags (count at the end of a row, a check at the chosen ones); a click or arrows and Enter switch one on or off and the popover stays open, so several can be picked in a row (the search keeps its text and the focus); Escape or a click outside closes it and the focus goes back to the button.
 - Status badges in a toolbar (e.g. "6 Quick Dumps offen" above the triage) drop their frame from `sm` the same way: the accent's tint, a pill, semibold.
 
 ## Content Width (Desktop)

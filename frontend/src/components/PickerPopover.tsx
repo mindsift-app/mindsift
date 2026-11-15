@@ -130,7 +130,12 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({
             <button
               key={item.id}
               type="button"
-              onClick={() => onPick(item)}
+              onClick={() => {
+                onPick(item);
+                // A picker that stays open (several picks in a row) keeps the search ready for typing and keys
+                inputRef.current?.focus();
+              }}
+              aria-pressed={item.selected ?? undefined}
               onMouseMove={() => setActive(i)}
               data-picker-row={i}
               className={`w-full min-h-11 sm:min-h-0 flex items-center gap-2 px-2 py-1.5 rounded-btn text-left cursor-pointer transition-colors ${

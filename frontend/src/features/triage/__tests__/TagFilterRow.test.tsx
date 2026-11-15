@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { TagFilterRow } from '../TagFilterRow';
 import { Thought } from '../../../lib/types';
 
@@ -61,7 +61,44 @@ describe('TagFilterRow', () => {
     fireEvent.change(search, { target: { value: 'gar' } });
     fireEvent.keyDown(search, { key: 'Enter' });
     expect(onToggle).toHaveBeenCalledWith('garten');
-    expect(screen.queryByPlaceholderText('Hashtag suchen …')).toBeNull();
+    // Stays open for the next pick
+    expect(screen.getByPlaceholderText('Hashtag suchen …')).toBeTruthy();
+  });
+
+  it('keeps the search open while several hashtags are switched there, shows them chosen, Escape closes it', () => {
+    rowWidth = 420;
+    const onToggle = vi.fn();
+    const props = { tags, tasks, onToggle, onClear: () => {} };
+    const { rerender } = render(<TagFilterRow {...props} selected={[]} />);
+    fireEvent.click(screen.getByRole('button', { name: /weitere/ }));
+    const dialog = screen.getByRole('dialog');
+    const search = screen.getByPlaceholderText('Hashtag suchen …');
+    // A click on a row switches it and hands the focus back to the search
+    fireEvent.click(within(dialog).getByRole('button', { name: /#garten/ }));
+    expect(onToggle).toHaveBeenLastCalledWith('garten');
+    expect(document.activeElement).toBe(search);
+    rerender(<TagFilterRow {...props} selected={['garten']} />);
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: /#garten/ }).getAttribute('aria-pressed')).toBe('true');
+    // Arrows and Enter pick the next one in the same popover
+    fireEvent.keyDown(search, { key: 'ArrowDown' });
+    fireEvent.keyDown(search, { key: 'ArrowDown' });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(onToggle).toHaveBeenLastCalledWith('einkauf');
+    rerender(<TagFilterRow {...props} selected={['garten', 'einkauf']} />);
+    const rows = within(screen.getByRole('dialog')).getAllByRole('button');
+    expect(rows.map((r) => r.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'true']);
+    fireEvent.keyDown(search, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('closes the search on a click outside', () => {
+    rowWidth = 420;
+    render(<TagFilterRow tags={tags} tasks={tasks} selected={[]} onToggle={() => {}} onClear={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /weitere/ }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /#backup/ }));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('keeps every chosen hashtag in the row, even when they come last', () => {

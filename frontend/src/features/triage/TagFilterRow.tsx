@@ -18,9 +18,9 @@ interface TagFilterRowProps {
 }
 
 // Desktop hashtag filter of TasksView (Doku/ui-patterns.md "Filter Chips"): frameless chips in one line that
-// never wraps; those that do not fit go behind "+ n mehr", a popover with a search over all hashtags. A click
-// switches a hashtag on or off (several at once), "Alle" clears the filter. Chosen hashtags always keep their
-// chip (useOverflowTabs).
+// never wraps; those that do not fit go behind "+ n mehr", a popover with a search over all hashtags that stays
+// open while hashtags are switched there. A click switches a hashtag on or off (several at once), "Alle" clears
+// the filter. Chosen hashtags always keep their chip (useOverflowTabs).
 export function TagFilterRow({ tags, tasks, selected, onToggle, onClear }: TagFilterRowProps) {
   const { t } = useTranslation('tasks');
   const { rowRef, moreRef, tabRef, hidden: overflowHidden, isHidden } = useOverflowTabs(tags, selected);
@@ -109,10 +109,8 @@ export function TagFilterRow({ tags, tasks, selected, onToggle, onClear }: TagFi
           maxResults={Infinity}
           placeholder={t('tags.search')}
           empty={t('tags.noMatch')}
-          onPick={(item) => {
-            onToggle(item.id);
-            closePicker();
-          }}
+          // Stays open: several hashtags can be switched in a row; Escape or a click outside closes it
+          onPick={(item) => onToggle(item.id)}
           onClose={closePicker}
         />
       )}
