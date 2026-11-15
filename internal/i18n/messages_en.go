@@ -564,6 +564,8 @@ var messagesEN = map[string]string{
 	"Ungültige Einstellung für die Zwei-Faktor-Pflicht":                                                 "Invalid setting for required two-factor sign-in",
 	"Deine eigene Zwei-Faktor-Anmeldung änderst du in den Kontoeinstellungen":                           "You change your own two-factor sign-in in your account settings",
 	"Bitte richte zuerst die Zwei-Faktor-Anmeldung ein":                                                 "Please set up two-factor sign-in first",
+	"Das neue Passwort muss sich vom bisherigen unterscheiden":                                          "The new password has to differ from the current one",
+	"Bitte lege zuerst ein neues Passwort fest":                                                         "Please choose a new password first",
 	"In MindSift wurde für dein Konto die Zwei-Faktor-Anmeldung eingeschaltet.":                         "Two-factor sign-in was switched on for your MindSift account.",
 	"In MindSift wurde die Zwei-Faktor-Anmeldung deines Kontos ausgeschaltet. Die Anmeldung fragt jetzt nur noch nach dem Passwort.":                                                                 "Two-factor sign-in of your MindSift account was switched off. Signing in now asks for the password only.",
 	"In MindSift wurde deinem Konto eine Authenticator-App hinzugefügt.":                                                                                                                             "An authenticator app was added to your MindSift account.",

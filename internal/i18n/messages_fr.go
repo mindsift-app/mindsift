@@ -564,6 +564,8 @@ var messagesFR = map[string]string{
 	"Ungültige Einstellung für die Zwei-Faktor-Pflicht":                                                 "Réglage non valide pour la connexion en deux étapes obligatoire",
 	"Deine eigene Zwei-Faktor-Anmeldung änderst du in den Kontoeinstellungen":                           "Tu modifies ta propre connexion en deux étapes dans les réglages du compte",
 	"Bitte richte zuerst die Zwei-Faktor-Anmeldung ein":                                                 "Configure d'abord la connexion en deux étapes",
+	"Das neue Passwort muss sich vom bisherigen unterscheiden":                                          "Le nouveau mot de passe doit être différent de l’actuel",
+	"Bitte lege zuerst ein neues Passwort fest":                                                         "Choisis d’abord un nouveau mot de passe",
 	"In MindSift wurde für dein Konto die Zwei-Faktor-Anmeldung eingeschaltet.":                         "La connexion en deux étapes a été activée pour ton compte MindSift.",
 	"In MindSift wurde die Zwei-Faktor-Anmeldung deines Kontos ausgeschaltet. Die Anmeldung fragt jetzt nur noch nach dem Passwort.":                                                                 "La connexion en deux étapes de ton compte MindSift a été désactivée. La connexion ne demande plus que le mot de passe.",
 	"In MindSift wurde deinem Konto eine Authenticator-App hinzugefügt.":                                                                                                                             "Une application d'authentification a été ajoutée à ton compte MindSift.",
