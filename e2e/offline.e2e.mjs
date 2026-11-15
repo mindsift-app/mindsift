@@ -54,6 +54,37 @@ async function newNote(token, title, bullets) {
   });
 }
 
+// Every file of the build is in the service worker's cache (it fetches them after the first visit, in
+// the background): only then can the app start without a connection. Returns how many, 0 if not yet all.
+async function assetsCached(page, ms = 30000) {
+  const files = ((await (await fetch(`${BASE}/sw.js`)).text()).match(/"\/assets\/[^"]+"/g) || []).length;
+  const count = await waitFor(
+    () =>
+      page.evaluate(async (n) => {
+        const keys = await caches.keys();
+        let count = 0;
+        for (const k of keys.filter((k) => k.startsWith('mindsift-assets-'))) count += (await (await caches.open(k)).keys()).length;
+        return count >= n && n > 0 ? count : 0;
+      }, files),
+    ms
+  );
+  return { count: count || 0, files };
+}
+
+// The app has started: its user menu is shown. Started offline it loads its scripts from the service
+// worker's cache and its data from the browser's storage, which under the load of a full test run took
+// longer than 10 s once: up to 30 s.
+async function appStarted(page) {
+  return page
+    .getByTitle('Benutzermenü öffnen')
+    .first()
+    .waitFor({ timeout: 30000 })
+    .then(
+      () => true,
+      () => false
+    );
+}
+
 async function setup(ctx, token) {
   await ctx.addInitScript((t) => {
     localStorage.setItem('mindsift_jwt_token', t);
@@ -425,18 +456,8 @@ const main = async () => {
       await page.getByTitle('Benutzermenü öffnen').first().waitFor({ timeout: 10000 });
       await openNote(page, iconNote, 'Punkt mit Icon');
       await sleep(1000);
-      const files = ((await (await fetch(`${BASE}/sw.js`)).text()).match(/"\/assets\/[^"]+"/g) || []).length;
-      const cached = await waitFor(
-        () =>
-          page.evaluate(async (n) => {
-            const keys = await caches.keys();
-            let count = 0;
-            for (const k of keys.filter((k) => k.startsWith('mindsift-assets-'))) count += (await (await caches.open(k)).keys()).length;
-            return count >= n && n > 0 ? count : 0;
-          }, files),
-        20000
-      );
-      check(!!cached, `The service worker keeps every file of the build after the first visit (${cached || 0} of ${files})`);
+      const cached = await assetsCached(page);
+      check(cached.count > 0, `The service worker keeps every file of the build after the first visit (${cached.count} of ${cached.files})`);
       await ctx.close();
 
       ctx = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE', offline: true });
@@ -445,8 +466,7 @@ const main = async () => {
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
       await page.goto(BASE).catch(() => {});
-      const started = await waitFor(async () => (await page.getByTitle('Benutzermenü öffnen').count()) > 0, 10000);
-      check(!!started, 'Started offline after one visit: the app opens signed in');
+      check(await appStarted(page), 'Started offline after one visit: the app opens signed in');
       const broken = async () => {
         const body = await page.locator('body').innerText().catch(() => '');
         return body.includes('Ansicht konnte nicht geladen werden') || body.includes('konnte nicht vollständig geladen werden');
@@ -596,13 +616,17 @@ const main = async () => {
         return '';
       });
       check(stored.startsWith('text/html'), `The stored start page is still the app's HTML (${stored})`);
+      // The scripts of the app are fetched in the background after the first visit: closed before they
+      // are all there, the app cannot start offline, whatever the icon did
+      await page.goto(BASE);
+      const cached = await assetsCached(page);
+      check(cached.count > 0, `Every file of the build is kept before going offline (${cached.count} of ${cached.files})`);
       await ctx.close();
 
       ctx = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE', offline: true });
       page = await setup(ctx, admin);
       await page.goto(BASE).catch(() => {});
-      const started = await waitFor(async () => (await page.getByTitle('Benutzermenü öffnen').count()) > 0, 10000);
-      check(!!started, 'Started offline after opening the icon: the app opens');
+      check(await appStarted(page), 'Started offline after opening the icon: the app opens');
       await ctx.close();
     } finally {
       rmSync(profile, { recursive: true, force: true });
