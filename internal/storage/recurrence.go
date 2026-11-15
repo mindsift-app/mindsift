@@ -136,7 +136,7 @@ func (s *Store) spawnNextOccurrence(taskID string) {
 	if err := s.execInTx(carry...); err != nil {
 		slog.Error("Next occurrence: repeat, reminders and assignees not carried over", "task_id", next.ID, "error", err)
 	}
-	s.PruneTaskAssignees()
+	s.pruneTaskAssigneesOf(next.ID)
 
 	if created, err := s.getThoughtRaw(next.ID); err == nil && s.OnTaskCreated != nil {
 		s.OnTaskCreated(created)

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"time"
@@ -44,6 +45,20 @@ func (s *Store) IsTaskListMuted(userID, listID string) bool {
 	var n int
 	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM task_list_mutes WHERE user_id = ? AND task_list_id = ?`, userID, listID).Scan(&n))
 	return n > 0
+}
+
+// TaskListMutedBy: who of userIDs muted the task list (IsTaskListMuted for all of them in one query, by
+// the primary key).
+func (s *Store) TaskListMutedBy(listID string, userIDs []string) map[string]bool {
+	out := map[string]bool{}
+	if len(userIDs) == 0 {
+		return out
+	}
+	idsJSON, _ := json.Marshal(userIDs)
+	for _, id := range s.queryUserIDs(`SELECT user_id FROM task_list_mutes WHERE user_id IN (SELECT value FROM json_each(?)) AND task_list_id = ?`, string(idsJSON), listID) {
+		out[id] = true
+	}
+	return out
 }
 
 // MutedTaskListIDs: the task lists the person muted.

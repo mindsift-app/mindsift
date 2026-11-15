@@ -229,7 +229,7 @@ func (s *Store) RestoreTrashedTask(userID, id string) (*domain.Thought, error) {
 	if err := s.execInTx(stmts...); err != nil {
 		return nil, err
 	}
-	s.PruneTaskAssignees()
+	s.pruneTaskAssigneesOf(id)
 	return s.GetThoughtByIDUnchecked(id)
 }
 

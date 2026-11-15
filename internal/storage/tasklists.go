@@ -253,9 +253,19 @@ func taskListSharesOf(q docQueryer, listIDs []string) (map[string][]domain.TaskL
 
 // queryUserIDs runs a query returning a single user_id column and collects the distinct IDs.
 func (s *Store) queryUserIDs(query string, args ...any) []string {
-	rows, err := s.db.Query(query, args...)
-	if dbFailed(err) {
+	ids, err := userIDsOf(s.db, query, args...)
+	logDBErr(err)
+	if ids == nil {
 		return []string{}
+	}
+	return ids
+}
+
+// userIDsOf is queryUserIDs on a connection or transaction, with the error.
+func userIDsOf(q docQueryer, query string, args ...any) ([]string, error) {
+	rows, err := q.Query(query, args...)
+	if err != nil {
+		return nil, err
 	}
 	defer rows.Close()
 	ids := make([]string, 0)
@@ -267,8 +277,12 @@ func (s *Store) queryUserIDs(query string, args ...any) []string {
 			ids = append(ids, id)
 		}
 	}
-	logDBErr(rows.Err())
-	return ids
+	return ids, rows.Err()
+}
+
+// taskListUserIDsTx is GetTaskListUserIDs inside a transaction.
+func taskListUserIDsTx(q docQueryer, listID string) ([]string, error) {
+	return userIDsOf(q, fmt.Sprintf(taskListAccessSQL, "?"), listID, listID, listID)
 }
 
 // accessibleTaskListsSQL selects the IDs of every task list a user can see: own lists and lists shared
@@ -413,6 +427,23 @@ func (s *Store) PruneTaskAssignees() {
 	)
 	if err != nil {
 		slog.Error("Cleaning up assignees failed", "error", err)
+	}
+}
+
+// pruneTaskAssigneesOf is PruneTaskAssignees for one task, after a change that only concerns it (moved to
+// another list or out of any, restored, created as the next occurrence). The whole table, checked row
+// by row against the access of its list, was read for each of those before.
+func (s *Store) pruneTaskAssigneesOf(taskID string) {
+	_, err := s.db.Exec(
+		`DELETE FROM task_assignees WHERE task_id = ? AND rowid IN (
+		    SELECT ta.rowid FROM task_assignees ta
+		    LEFT JOIN thoughts t ON t.id = ta.task_id
+		    WHERE ta.task_id = ? AND (t.id IS NULL OR t.task_list_id = ''
+		       OR ta.user_id NOT IN (`+fmt.Sprintf(taskListAccessSQL, "t.task_list_id")+`))
+		 )`, taskID, taskID,
+	)
+	if err != nil {
+		slog.Error("Cleaning up assignees failed", "task_id", taskID, "error", err)
 	}
 }
 
@@ -669,6 +700,32 @@ func (s *Store) GetTaskListByID(userID, listID string) (*domain.TaskList, error)
 	}
 	tl = one[0]
 	return &tl, nil
+}
+
+// TaskListTitle is the title of a task list the user can see ("" otherwise), without the details
+// GetTaskListByID gathers (counts, shares, members).
+func (s *Store) TaskListTitle(userID, listID string) string {
+	var title string
+	logDBErr(rowErr(s.db.QueryRow(`SELECT title FROM task_lists WHERE id = ? AND id IN (`+accessibleTaskListsSQL+`)`,
+		append([]any{listID}, accessibleTaskListArgs(userID)...)...).Scan(&title)))
+	return title
+}
+
+// TaskListColumns are the board columns of a task list the user can see, as GetTaskListByID gives them
+// (the default columns in the user's language while the list has none); ok is false without access.
+func (s *Store) TaskListColumns(userID, listID string) (cols []domain.KanbanColumn, ok bool) {
+	var colsJSON string
+	err := s.db.QueryRow(`SELECT COALESCE(columns, '[]') FROM task_lists WHERE id = ? AND id IN (`+accessibleTaskListsSQL+`)`,
+		append([]any{listID}, accessibleTaskListArgs(userID)...)...).Scan(&colsJSON)
+	if err != nil {
+		logDBErr(rowErr(err))
+		return nil, false
+	}
+	_ = json.Unmarshal([]byte(colsJSON), &cols)
+	if len(cols) == 0 {
+		cols = defaultColumns(s.MessageLanguage(userID))
+	}
+	return cols, true
 }
 
 func (s *Store) UpdateTaskList(userID, listID string, title, icon, color, spaceID *string, columns *[]domain.KanbanColumn) (*domain.TaskList, error) {

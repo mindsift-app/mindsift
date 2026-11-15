@@ -41,6 +41,34 @@ func (s *Store) migrateNotifications() error {
 func (s *Store) NotificationSettingsOf(userID string) domain.NotificationSettings {
 	var raw, channels string
 	logDBErr(s.db.QueryRow(`SELECT notification_settings, alarm_channels FROM users WHERE id = ?`, userID).Scan(&raw, &channels))
+	return notificationSettingsFrom(raw, channels)
+}
+
+// NotificationSettingsOfUsers is NotificationSettingsOf for several users in one query (an unknown id
+// gets the defaults, as there).
+func (s *Store) NotificationSettingsOfUsers(userIDs []string) map[string]domain.NotificationSettings {
+	out := make(map[string]domain.NotificationSettings, len(userIDs))
+	idsJSON, _ := json.Marshal(userIDs)
+	rows, err := s.db.Query(`SELECT id, notification_settings, alarm_channels FROM users WHERE id IN (SELECT value FROM json_each(?))`, string(idsJSON))
+	if !dbFailed(err) {
+		for rows.Next() {
+			var id, raw, channels string
+			if !dbFailed(rows.Scan(&id, &raw, &channels)) {
+				out[id] = notificationSettingsFrom(raw, channels)
+			}
+		}
+		logDBErr(rows.Err())
+		_ = rows.Close()
+	}
+	for _, id := range userIDs {
+		if _, ok := out[id]; !ok {
+			out[id] = notificationSettingsFrom("", "")
+		}
+	}
+	return out
+}
+
+func notificationSettingsFrom(raw, channels string) domain.NotificationSettings {
 	out := domain.DefaultNotificationSettings(parseAlarmChannels(channels))
 	if raw != "" {
 		_ = json.Unmarshal([]byte(raw), &out)
@@ -167,6 +195,13 @@ func (s *Store) TaskWatchers(taskID string) []string {
 }
 
 // WatchedTaskIDs is the set of tasks the user watches (to mark them in task lists).
+// IsWatching: the person watches the task.
+func (s *Store) IsWatching(userID, taskID string) bool {
+	var n int
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM task_watchers WHERE task_id = ? AND user_id = ?`, taskID, userID).Scan(&n))
+	return n > 0
+}
+
 func (s *Store) WatchedTaskIDs(userID string) map[string]bool {
 	out := map[string]bool{}
 	rows, err := s.db.Query(`SELECT task_id FROM task_watchers WHERE user_id = ?`, userID)

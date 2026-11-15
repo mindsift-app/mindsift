@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -57,11 +58,23 @@ const (
 // AddCenterEntry stores an entry; ok is false when CenterOnce found one already. replaced holds the text
 // of the entry it replaced while that was still unread (to merge two changes into one line).
 func (s *Store) AddCenterEntry(userID string, e CenterEntry, groupKey string, mode CenterGroup) (out CenterEntry, ok bool, replaced string, err error) {
+	return addCenterEntry(s.db, userID, e, groupKey, mode, "")
+}
+
+// centerDB is *sql.DB or *sql.Tx
+type centerDB interface {
+	docQueryer
+	execer
+}
+
+// addCenterEntry is AddCenterEntry on a connection or transaction. generic: the text the entry gets
+// instead when it replaces an unread one with a different text ("" keeps its own).
+func addCenterEntry(db centerDB, userID string, e CenterEntry, groupKey string, mode CenterGroup, generic string) (out CenterEntry, ok bool, replaced string, err error) {
 	if groupKey != "" {
 		var id int64
 		var text string
 		var read bool
-		found := s.db.QueryRow(`SELECT id, text, read FROM center_entries WHERE user_id = ? AND group_key = ? ORDER BY id DESC LIMIT 1`,
+		found := db.QueryRow(`SELECT id, text, read FROM center_entries WHERE user_id = ? AND group_key = ? ORDER BY id DESC LIMIT 1`,
 			userID, groupKey).Scan(&id, &text, &read) == nil
 		if found && mode == CenterOnce {
 			return CenterEntry{}, false, "", nil
@@ -70,19 +83,73 @@ func (s *Store) AddCenterEntry(userID string, e CenterEntry, groupKey string, mo
 			if !read {
 				replaced = text
 			}
-			if _, err := s.db.Exec(`DELETE FROM center_entries WHERE user_id = ? AND group_key = ?`, userID, groupKey); err != nil {
+			if _, err := db.Exec(`DELETE FROM center_entries WHERE user_id = ? AND group_key = ?`, userID, groupKey); err != nil {
 				return CenterEntry{}, false, "", err
 			}
 		}
 	}
+	if replaced != "" && replaced != e.Text && generic != "" {
+		e.Text = generic
+	}
 	e.CreatedAt = time.Now().UTC().Format(time.RFC3339)
-	res, err := s.db.Exec(`INSERT INTO center_entries (user_id, kind, title, text, target_type, target_id, block_id, group_key, created_at)
+	res, err := db.Exec(`INSERT INTO center_entries (user_id, kind, title, text, target_type, target_id, block_id, group_key, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, userID, e.Kind, e.Title, e.Text, e.TargetType, e.TargetID, e.BlockID, groupKey, e.CreatedAt)
 	if err != nil {
 		return CenterEntry{}, false, "", err
 	}
 	e.ID, _ = res.LastInsertId()
 	return e, true, replaced, nil
+}
+
+// CenterAdd is one entry for StoreNotifications: as AddCenterEntry with CenterReplace, Generic as in
+// addCenterEntry.
+type CenterAdd struct {
+	UserID   string
+	Entry    CenterEntry
+	GroupKey string
+	Generic  string
+}
+
+// QueuedAdd is one event for StoreNotifications to queue (QueueNotification).
+type QueuedAdd struct {
+	UserID  string
+	Kind    string
+	Payload map[string]string
+}
+
+// StoreNotifications stores the center entries and queued events of one event for all its recipients in
+// a single transaction and returns the entries as stored (in the order of center). It used to be a
+// write per recipient: a task completed in a list shared with 50 people waited 50 times for the
+// database's write lock.
+func (s *Store) StoreNotifications(center []CenterAdd, queue []QueuedAdd) ([]CenterEntry, error) {
+	if len(center) == 0 && len(queue) == 0 {
+		return nil, nil
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	out := make([]CenterEntry, 0, len(center))
+	for _, c := range center {
+		e, _, _, err := addCenterEntry(tx, c.UserID, c.Entry, c.GroupKey, CenterReplace, c.Generic)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	for _, q := range queue {
+		raw, _ := json.Marshal(q.Payload)
+		if _, err := tx.Exec(`INSERT INTO notification_queue (user_id, kind, payload, created_at) VALUES (?, ?, ?, ?)`,
+			q.UserID, q.Kind, string(raw), now); err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // SetCenterEntryText changes an entry's text (two changes of a watched task merged into one line).

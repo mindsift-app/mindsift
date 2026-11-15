@@ -70,6 +70,20 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	target := strings.TrimSpace(req.Target)
+	if target == "task" {
+		// In one write (storage.CreateTask), not created in the inbox and converted afterwards
+		task, members, err := s.store.CreateTask(userID, req.Content, req.Priority, source, dueDate, taskListID, "")
+		if err != nil {
+			writeStoreError(w, http.StatusBadRequest, err)
+			return
+		}
+		s.recordThoughtOrigin(task, actorFrom(r.Context()), true)
+		s.announceNewTask(userID, task, members)
+		writeJSON(w, http.StatusCreated, task)
+		return
+	}
+
 	thought, err := s.store.CreateThoughtWithDetails(userID, req.Content, req.Priority, source, dueDate, taskListID, "todo", "")
 	if err != nil {
 		writeStoreError(w, http.StatusBadRequest, err)
@@ -78,8 +92,7 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 	// Before a conversion, so a list item made from it takes the origin along
 	s.recordThoughtOrigin(thought, actorFrom(r.Context()), true)
 
-	target := strings.TrimSpace(req.Target)
-	if target == "task" || target == "document" || (target == "list_item" && targetListID != "") {
+	if target == "document" || (target == "list_item" && targetListID != "") {
 		if converted, convErr := s.store.UpdateThoughtTriage(userID, thought.ID, "keep", target, targetListID, dueDate, taskListID); convErr == nil && converted != nil {
 			thought = converted
 			if target == "list_item" && targetListID != "" {
@@ -347,10 +360,14 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 		_, head, _ := s.store.GetDocOpsSince(docID, 0, 0)
 		s.notifyDocChanged(docID, head)
 	}
-	s.wsHub.BroadcastToUsers(append(s.taskAudience(before), s.taskAudience(updated)...), "TASK_UPDATED", updated)
+	audience := s.taskAudience(updated)
+	if before != nil && (before.TaskListID != updated.TaskListID || before.UserID != updated.UserID) {
+		audience = append(audience, s.taskAudience(before)...)
+	}
+	s.wsHub.BroadcastToUsers(audience, "TASK_UPDATED", updated)
 	s.notifyTaskChange(userID, before, updated, false)
 	s.notifyTaskMentions(userID, before, updated)
-	updated.IsWatching = s.store.WatchedTaskIDs(userID)[updated.ID]
+	updated.IsWatching = s.store.IsWatching(userID, updated.ID)
 	return updated, nil
 }
 

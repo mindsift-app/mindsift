@@ -601,12 +601,15 @@ func (h *Hub) BroadcastToUser(userID, event string, payload any) {
 	}
 
 	h.mu.RLock()
+	defer h.mu.RUnlock()
 	if h.closed {
-		h.mu.RUnlock()
 		return
 	}
-	defer h.mu.RUnlock()
+	h.sendToUserLocked(userID, event, data)
+}
 
+// sendToUserLocked hands an encoded event to every connection of a user (h.mu held for reading).
+func (h *Hub) sendToUserLocked(userID, event string, data []byte) {
 	// Also for users without a connection right now: their cached counters change all the same
 	h.notifyDeliveredLocked(userID, event)
 	if room, ok := h.userRooms[userID]; ok {
@@ -654,15 +657,28 @@ func (h *Hub) BroadcastSystem(event string) {
 	}
 }
 
-// BroadcastToUsers sends one event to every connection of the given users (duplicates are ignored).
+// BroadcastToUsers sends one event to every connection of the given users (duplicates are ignored). The
+// event is encoded once for all of them, not once per user.
 func (h *Hub) BroadcastToUsers(userIDs []string, event string, payload any) {
+	if len(userIDs) == 0 {
+		return
+	}
+	data, err := json.Marshal(domain.WSMessage{Event: event, Payload: payload, Timestamp: domain.NowISO()})
+	if err != nil {
+		return
+	}
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	if h.closed {
+		return
+	}
 	seen := make(map[string]bool, len(userIDs))
 	for _, uid := range userIDs {
 		if uid == "" || seen[uid] {
 			continue
 		}
 		seen[uid] = true
-		h.BroadcastToUser(uid, event, payload)
+		h.sendToUserLocked(uid, event, data)
 	}
 }
 

@@ -64,6 +64,12 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 	return newStore("sqlite", dbPath, opts...)
 }
 
+// NewStoreWithDriver is NewStore over another database/sql driver that wraps "sqlite" (tests outside
+// this package count the statements of a request with it).
+func NewStoreWithDriver(driverName, dbPath string, opts ...StoreOption) (*Store, error) {
+	return newStore(driverName, dbPath, opts...)
+}
+
 // newStore opens the database with the given database/sql driver (tests wrap "sqlite" to count queries).
 func newStore(driverName, dbPath string, opts ...StoreOption) (*Store, error) {
 	if dbPath != ":memory:" && !strings.HasPrefix(dbPath, "file:") {

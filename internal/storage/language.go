@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/mindsift-app/mindsift/internal/i18n"
@@ -25,6 +26,25 @@ func (s *Store) Language(userID string) string {
 	var v string
 	logDBErr(s.db.QueryRow(`SELECT language FROM users WHERE id = ?`, userID).Scan(&v))
 	return v
+}
+
+// Languages is Language for several users in one query (users without a choice are left out).
+func (s *Store) Languages(userIDs []string) map[string]string {
+	out := make(map[string]string, len(userIDs))
+	idsJSON, _ := json.Marshal(userIDs)
+	rows, err := s.db.Query(`SELECT id, language FROM users WHERE id IN (SELECT value FROM json_each(?)) AND language != ''`, string(idsJSON))
+	if dbFailed(err) {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, lang string
+		if !dbFailed(rows.Scan(&id, &lang)) {
+			out[id] = lang
+		}
+	}
+	logDBErr(rows.Err())
+	return out
 }
 
 func (s *Store) SetLanguage(userID, lang string) error {

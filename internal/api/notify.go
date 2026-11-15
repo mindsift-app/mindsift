@@ -38,20 +38,53 @@ type notifyItem struct {
 // for those that want it by mail, Discord, webhook or push (settings, pause, own-change rule). payload
 // gives the event's texts in a recipient's language; besides "title" and "text" it may carry what the
 // center needs (see centerFrom).
+//
+// Everything an event stores for its recipients goes in one transaction, and their languages and
+// settings are read in one query each: it used to be about six statements per recipient, among them a
+// write of its own, so a task completed in a list shared with 50 people waited 50 times for the
+// database's write lock (load test 2026-11-15).
 func (s *Server) notify(kind, actorID string, recipients []string, payload func(lang string) map[string]string) {
 	seen := map[string]bool{}
+	ids := make([]string, 0, len(recipients))
 	for _, uid := range recipients {
-		if uid == "" || seen[uid] {
+		// The actor only ever hears about watched tasks (below), so a personal task reads nothing here
+		if uid == actorID && kind != "watched" {
 			continue
 		}
-		seen[uid] = true
+		if uid != "" && !seen[uid] {
+			seen[uid] = true
+			ids = append(ids, uid)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	langs := s.userLanguages(ids)
+	// The texts depend on the language only
+	texts := map[string]map[string]string{}
+	textsFor := func(uid string) map[string]string {
+		lang := langs[uid]
+		p, ok := texts[lang]
+		if !ok {
+			p = payload(lang)
+			texts[lang] = p
+		}
+		return p
+	}
+	var settings map[string]domain.NotificationSettings
+	if !s.cfg.DemoMode {
+		settings = s.store.NotificationSettingsOfUsers(ids)
+	}
+	var center []storage.CenterAdd
+	var queue []storage.QueuedAdd
+	for _, uid := range ids {
 		if uid != actorID {
-			s.addToCenter(uid, kind, payload(s.userLanguage(uid)))
+			center = append(center, centerAdd(uid, kind, textsFor(uid)))
 		}
 		if s.cfg.DemoMode {
 			continue
 		}
-		set := s.store.NotificationSettingsOf(uid)
+		set := settings[uid]
 		if set.Paused {
 			continue
 		}
@@ -61,10 +94,34 @@ func (s *Server) notify(kind, actorID string, recipients []string, payload func(
 		if !set.Channels(kind).Any() {
 			continue
 		}
-		if err := s.store.QueueNotification(uid, kind, payload(s.userLanguage(uid))); err != nil {
-			slog.Warn("Queueing a notification failed", "user_id", uid, "error", err)
-		}
+		queue = append(queue, storage.QueuedAdd{UserID: uid, Kind: kind, Payload: textsFor(uid)})
 	}
+	added, err := s.store.StoreNotifications(center, queue)
+	if err != nil {
+		slog.Warn("Storing notifications failed", "kind", kind, "recipients", len(ids), "error", err)
+		return
+	}
+	for i, e := range added {
+		s.wsHub.BroadcastToUser(center[i].UserID, "NOTIFICATION", e)
+	}
+}
+
+// userLanguages is userLanguage for several people, with two queries in all.
+func (s *Server) userLanguages(userIDs []string) map[string]string {
+	chosen := s.store.Languages(userIDs)
+	fallback := ""
+	out := make(map[string]string, len(userIDs))
+	for _, uid := range userIDs {
+		if v := chosen[uid]; i18n.Valid(v) {
+			out[uid] = v
+			continue
+		}
+		if fallback == "" {
+			fallback = s.defaultLanguage()
+		}
+		out[uid] = fallback
+	}
+	return out
 }
 
 // Payload keys for the notification center
@@ -77,14 +134,15 @@ const (
 	centerGroupID = "centerGroup"   // one entry per key: a newer one replaces it
 )
 
-// addToCenter stores an event for the person's bell and tells their open apps.
-func (s *Server) addToCenter(userID, kind string, p map[string]string) {
+// centerAdd is the entry an event's texts make in a person's notification center (replacing an earlier
+// one of its group, see storage.StoreNotifications).
+func centerAdd(userID, kind string, p map[string]string) storage.CenterAdd {
 	text := p[centerText]
 	if text == "" {
 		text = p["text"]
 	}
 	e := storage.CenterEntry{Kind: kind, Title: p["title"], Text: text, TargetType: p[centerTarget], TargetID: p[centerID], BlockID: p[centerBlock]}
-	s.storeCenterEntry(userID, e, p[centerGroupID], storage.CenterReplace, p[centerGeneric])
+	return storage.CenterAdd{UserID: userID, Entry: e, GroupKey: p[centerGroupID], Generic: p[centerGeneric]}
 }
 
 // storeCenterEntry adds an entry; replacing an unread one with a different text merges them into the
@@ -252,8 +310,8 @@ func isTask(t *domain.Thought) bool {
 
 // columnName is the name of a task list's board column as the actor sees it, else its id.
 func (s *Server) columnName(actorID, listID, columnID string) string {
-	if tl, err := s.store.GetTaskListByID(actorID, listID); err == nil && tl != nil {
-		for _, c := range tl.Columns {
+	if cols, ok := s.store.TaskListColumns(actorID, listID); ok {
+		for _, c := range cols {
 			if c.ID == columnID {
 				return c.Name
 			}
@@ -368,9 +426,11 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 	}
 	if done && t.TaskListID != "" {
 		var members []string
-		for _, uid := range s.taskAudience(t) {
+		audience := s.taskAudience(t)
+		muted := s.store.TaskListMutedBy(t.TaskListID, audience)
+		for _, uid := range audience {
 			// Watchers already hear about it; a muted list stays quiet
-			if !watching[uid] && !s.store.IsTaskListMuted(uid, t.TaskListID) {
+			if !watching[uid] && !muted[uid] {
 				members = append(members, uid)
 			}
 		}
@@ -402,13 +462,27 @@ func (s *Server) notifyTaskAdded(actorID string, t *domain.Thought, skip map[str
 	if !isTask(t) || t.TaskListID == "" {
 		return
 	}
-	list := ""
-	if tl, err := s.store.GetTaskListByID(actorID, t.TaskListID); err == nil && tl != nil {
-		list = tl.Title
+	s.notifyTaskAddedTo(actorID, t, skip, s.taskAudience(t))
+}
+
+// announceNewTask tells everyone who sees a task just created (storage.CreateTask) about it and its
+// list's members that it was added. members: those of its list as CreateTask returned them, so they are
+// not read again.
+func (s *Server) announceNewTask(actorID string, t *domain.Thought, members []string) {
+	audience := append(members, t.UserID)
+	s.wsHub.BroadcastToUsers(audience, "TASK_CREATED", t)
+	if t.TaskListID != "" {
+		s.notifyTaskAddedTo(actorID, t, nil, audience)
 	}
+}
+
+// notifyTaskAddedTo is notifyTaskAdded with the task's audience (taskAudience) at hand.
+func (s *Server) notifyTaskAddedTo(actorID string, t *domain.Thought, skip map[string]bool, audience []string) {
+	list := s.store.TaskListTitle(actorID, t.TaskListID)
+	muted := s.store.TaskListMutedBy(t.TaskListID, audience)
 	var members []string
-	for _, uid := range s.taskAudience(t) {
-		if !skip[uid] && !s.store.IsTaskListMuted(uid, t.TaskListID) {
+	for _, uid := range audience {
+		if !skip[uid] && !muted[uid] {
 			members = append(members, uid)
 		}
 	}
