@@ -13,6 +13,7 @@ import { readViewMemory, writeViewMemory } from '../../lib/viewSession';
 import { useKanbanLayout } from './useKanbanLayout';
 import { MobileTaskCreateSheet, MobileTaskDraft } from './MobileTaskCreateSheet';
 import { TagFilterRow } from './TagFilterRow';
+import { useTagFilter } from './useTagFilter';
 import { inIdOrder } from '../../lib/useTabReorder';
 import { useTaskDrag } from './useTaskDrag';
 import { useLatestCallback } from '../../lib/useLatestCallback';
@@ -219,8 +220,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
     return DEFAULT_KANBAN_COLUMNS;
   });
 
-  // Hashtag filtering, grouping and sorting state
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  // Hashtag filter (several at once, reset when another list opens), grouping and sorting state
+  const { selectedTags, toggleTag, clearTags } = useTagFilter(selectedListId);
   const [sortBy, setSortBy] = useState<TaskSort>('custom');
 
   // Reloads happen after almost every action and on realtime events. Only the first load of a list shows
@@ -472,12 +473,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const doneTasks = safeTasks.filter((t) => t.isCompleted);
 
   const filteredTasks = useMemo(
-    () => filterAndSortTasks(safeTasks, filter, selectedTag, sortBy),
-    [safeTasks, filter, selectedTag, sortBy]
+    () => filterAndSortTasks(safeTasks, filter, selectedTags, sortBy),
+    [safeTasks, filter, selectedTags, sortBy]
   );
 
-  // Tasks for Kanban board (shows all non-discarded matching tag)
-  const kanbanTasks = useMemo(() => tasksWithTag(safeTasks, selectedTag), [safeTasks, selectedTag]);
+  // Tasks for the Kanban board and the calendar (all with one of the chosen hashtags)
+  const kanbanTasks = useMemo(() => tasksWithTag(safeTasks, selectedTags), [safeTasks, selectedTags]);
 
   // Grouped tasks calculation (taskListing.ts)
   const groupedTasks = useMemo(
@@ -707,7 +708,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       openCount: openTasks.length,
       openTasksCount,
       selectedListId,
-      selectedTag,
+      selectedTags,
       setMobileCreateListId,
       setSelectedListId,
       setShowFilterModal,
@@ -724,7 +725,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   }, [
     viewMode,
     selectedListId,
-    selectedTag,
+    selectedTags,
     groupBy,
     defaultGroupBy,
     setViewMode,
@@ -828,8 +829,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
         onOpenDocument={rowOpenDocument}
         renderAssignees={rowRenderAssignees}
         renderTaskProgressBar={rowProgressBar}
-        selectedTag={selectedTag}
-        setSelectedTag={setSelectedTag}
+        selectedTags={selectedTags}
+        onToggleTag={toggleTag}
       />
     );
   };
@@ -914,8 +915,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       {/* Mobile Active Filter Badge Banner (minimal and clean) */}
       <ActiveFilterBanner
-        selectedTag={selectedTag}
-        setSelectedTag={setSelectedTag}
+        selectedTags={selectedTags}
+        clearTags={clearTags}
         groupBy={groupBy}
         defaultGroupBy={defaultGroupBy}
         setGroupBy={setGroupBy}
@@ -925,7 +926,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       {/* Hashtag Filter & Grouping / Sorting Toolbar (Desktop only - on mobile accessible via Logo Menu Filter & Sort) */}
       <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 pt-1 pb-0.5">
-        <TagFilterRow tags={allAvailableTags} tasks={safeTasks} selected={selectedTag} onSelect={setSelectedTag} />
+        <TagFilterRow tags={allAvailableTags} tasks={safeTasks} selected={selectedTags} onToggle={toggleTag} onClear={clearTags} />
 
         {/* Kanban: manage columns; calendar: month or week (the list view has grouping and sorting above the
             list) */}
@@ -961,9 +962,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
         groupBy={groupBy}
         groupOptions={groupOptions}
         safeTasks={safeTasks}
-        selectedTag={selectedTag}
+        selectedTags={selectedTags}
         setGroupBy={setGroupBy}
-        setSelectedTag={setSelectedTag}
+        toggleTag={toggleTag}
+        clearTags={clearTags}
         setShowFilterModal={setShowFilterModal}
         setSortBy={setSortBy}
         sortBy={sortBy}
@@ -1109,9 +1111,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
           renderAssignees={renderAssignees}
           renderTaskProgressBar={renderTaskProgressBar}
           safeTaskLists={safeTaskLists}
-          selectedTag={selectedTag}
+          selectedTags={selectedTags}
           setDetailTaskId={setDetailTaskId}
-          setSelectedTag={setSelectedTag}
+          onToggleTag={toggleTag}
           setShowDetailModal={setShowDetailModal}
           tasks={tasks}
           onOpenDocument={onOpenDocument}
@@ -1134,7 +1136,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
           renderTaskRow={renderTaskRow}
           safeTaskLists={safeTaskLists}
           selectedListId={selectedListId}
-          selectedTag={selectedTag}
+          selectedTags={selectedTags}
           setFilter={setFilter}
           setGroupBy={setGroupBy}
           setSortBy={setSortBy}

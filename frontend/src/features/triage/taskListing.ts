@@ -16,25 +16,40 @@ export function followTaskUpdate(extra: Thought | null, update: Thought[] | ((pr
   return next.find((t) => t.id === extra.id) ?? extra;
 }
 
-// Tasks with the hashtag (all with none); the Kanban board shows these
-export function tasksWithTag(tasks: Thought[], selectedTag: string | null): Thought[] {
-  let result = tasks;
-  if (selectedTag) {
-    result = result.filter((t) => Array.isArray(t.tags) && t.tags.includes(selectedTag));
-  }
-  return result;
+// Whether a task has at least one of the chosen hashtags (any task while none is chosen)
+export function hasAnyTag(task: Thought, selectedTags: readonly string[]): boolean {
+  if (selectedTags.length === 0) return true;
+  return Array.isArray(task.tags) && task.tags.some((tag) => selectedTags.includes(tag));
 }
 
-// Open, done or all tasks with the hashtag, sorted as chosen ("custom": manual order, newest first on ties)
-export function filterAndSortTasks(tasks: Thought[], filter: TaskFilter, selectedTag: string | null, sortBy: TaskSort): Thought[] {
+// The hashtag filter after a click on a hashtag: on if it was off, off if it was on
+export function toggleTag(selectedTags: readonly string[], tag: string): string[] {
+  return selectedTags.includes(tag) ? selectedTags.filter((t) => t !== tag) : [...selectedTags, tag];
+}
+
+// The chosen hashtags in a few characters: "#a", "#a, #b", "#a +2"
+export function tagFilterLabel(selectedTags: readonly string[]): string {
+  if (selectedTags.length <= 2) return selectedTags.map((tag) => `#${tag}`).join(', ');
+  return i18n.t('tasks:tags.selectedMore', { tag: selectedTags[0], count: selectedTags.length - 1 });
+}
+
+// Tasks with at least one of the hashtags (all with none); the Kanban board and the calendar show these
+export function tasksWithTag(tasks: Thought[], selectedTags: readonly string[]): Thought[] {
+  if (selectedTags.length === 0) return tasks;
+  return tasks.filter((t) => hasAnyTag(t, selectedTags));
+}
+
+// Open, done or all tasks with one of the hashtags, sorted as chosen ("custom": manual order, newest first
+// on ties)
+export function filterAndSortTasks(tasks: Thought[], filter: TaskFilter, selectedTags: readonly string[], sortBy: TaskSort): Thought[] {
   let result = tasks;
   if (filter === 'open') {
     result = result.filter((t) => !t.isCompleted);
   } else if (filter === 'done') {
     result = result.filter((t) => t.isCompleted);
   }
-  if (selectedTag) {
-    result = result.filter((t) => Array.isArray(t.tags) && t.tags.includes(selectedTag));
+  if (selectedTags.length > 0) {
+    result = result.filter((t) => hasAnyTag(t, selectedTags));
   }
   if (sortBy === 'custom') {
     return [...result].sort((a, b) => {

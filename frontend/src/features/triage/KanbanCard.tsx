@@ -19,8 +19,8 @@ interface KanbanCardProps {
   justDropped: boolean;
   prevCol?: KanbanColumn;
   nextCol?: KanbanColumn;
-  // The tag filter, only when this card has that tag
-  activeTag: string | null;
+  // Hashtags the task list is filtered by (highlighted on the card)
+  activeTags: readonly string[];
   // Read-only, assignees and columns come from the lists: a change there renders every card again
   lists: TaskList[];
   // Stable functions (KanbanBoard), so a card renders again only when its own props change
@@ -49,7 +49,7 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
   justDropped,
   prevCol,
   nextCol,
-  activeTag,
+  activeTags,
   onDragStart,
   onDragEnd,
   touchProps,
@@ -186,8 +186,9 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
             key={tag}
             type="button"
             onClick={() => onTagClick(tag)}
+            aria-pressed={activeTags.includes(tag)}
             className={`text-[9px] px-1.5 py-0.2 rounded-pill border transition-colors ${
-              activeTag === tag ? 'bg-accent/15 border-accent text-accent font-semibold' : 'badge-neutral hover:border-accent'
+              activeTags.includes(tag) ? 'bg-accent/15 border-accent text-accent font-semibold' : 'badge-neutral hover:border-accent'
             }`}
           >
             #{tag}

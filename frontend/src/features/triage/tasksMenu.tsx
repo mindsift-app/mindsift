@@ -18,7 +18,7 @@ interface TasksMenuInput {
   openCount: number;
   openTasksCount: number | undefined;
   selectedListId: string;
-  selectedTag: string | null;
+  selectedTags: readonly string[];
   setMobileCreateListId: (id: string) => void;
   setSelectedListId: (id: string) => void;
   setShowFilterModal: (show: boolean) => void;
@@ -46,7 +46,7 @@ export function buildTasksMenu({
   openCount,
   openTasksCount,
   selectedListId,
-  selectedTag,
+  selectedTags,
   setMobileCreateListId,
   setSelectedListId,
   setShowFilterModal,
@@ -77,7 +77,7 @@ export function buildTasksMenu({
   ];
 
   const filterSortActiveCount =
-    (selectedTag ? 1 : 0) + (groupBy !== defaultGroupBy ? 1 : 0) + (sortBy !== 'custom' ? 1 : 0);
+    (selectedTags.length > 0 ? 1 : 0) + (groupBy !== defaultGroupBy ? 1 : 0) + (sortBy !== 'custom' ? 1 : 0);
 
   const filterItems: MobileActionItem[] = [
     {

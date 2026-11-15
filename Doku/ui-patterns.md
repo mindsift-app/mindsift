@@ -164,8 +164,9 @@ Classes in `index.css`: `tool-tab`, `tool-tab-active`, `tool-btn`, `tool-icon`, 
 
 Component: [TagFilterRow.tsx](../frontend/src/features/triage/TagFilterRow.tsx) (hashtag filter above the tasks), classes `filter-chip`, `filter-chip-active`, `filter-chip-count` in `index.css`. Phones filter in their sheet (`TasksFilterSheet`) and keep its look.
 
-- **No frames:** each chip has the light surface of `tool-tab` and a pill shape; the number after the label is quieter (`filter-chip-count`, equal-width digits), not a `CountBadge`. The chosen chip gets the accent's tint like the open page in the rail, with `aria-pressed`; a second click clears the filter.
-- **One line, never wrapping:** the chips that do not fit go behind **"+ n weitere"** (`useOverflowTabs`, as in the tab rows; the chosen chip always keeps its place). It opens `PickerPopover` with a search over all hashtags (count at the end of a row, a check at the chosen one); arrows and Enter pick, Escape closes and the focus goes back to the button.
+- **No frames:** each chip has the light surface of `tool-tab` and a pill shape; the number after the label is quieter (`filter-chip-count`, equal-width digits), not a `CountBadge`. Chosen chips get the accent's tint like the open page in the rail, with `aria-pressed`.
+- **Several at once:** a click (a tap on the phone, no modifier key) switches a hashtag on or off; a task shows if it has at least one of the chosen hashtags. "Alle" clears the filter, and so does opening another task list (`useTagFilter`; the filter is not stored). The phone banner names the choice compactly ("#a, #b", "#a +2").
+- **One line, never wrapping:** the chips that do not fit go behind **"+ n weitere"** (`useOverflowTabs`, as in the tab rows; chosen chips always keep their place). It opens `PickerPopover` with a search over all hashtags (count at the end of a row, a check at the chosen ones); arrows and Enter switch one on or off, Escape closes and the focus goes back to the button.
 - Status badges in a toolbar (e.g. "6 Quick Dumps offen" above the triage) drop their frame from `sm` the same way: the accent's tint, a pill, semibold.
 
 ## Content Width (Desktop)

@@ -5,7 +5,7 @@ import { TaskTrashList } from './TaskTrashList';
 import { SelectMenu } from '../../components/SelectMenu';
 import { TaskList, Thought, TrashedTask } from '../../lib/types';
 import { GroupBy, TaskFilter, TaskSort } from './taskViewTypes';
-import { TaskGroup } from './taskListing';
+import { TaskGroup, tagFilterLabel } from './taskListing';
 
 
 interface TaskListViewProps {
@@ -25,7 +25,7 @@ interface TaskListViewProps {
   renderTaskRow: (task: Thought) => React.ReactNode;
   safeTaskLists: TaskList[];
   selectedListId: string;
-  selectedTag: string | null;
+  selectedTags: readonly string[];
   setFilter: (filter: TaskFilter) => void;
   setGroupBy: (g: GroupBy) => void;
   setSortBy: (sort: TaskSort) => void;
@@ -53,7 +53,7 @@ export function TaskListView({
   renderTaskRow,
   safeTaskLists,
   selectedListId,
-  selectedTag,
+  selectedTags,
   setFilter,
   setGroupBy,
   setSortBy,
@@ -175,8 +175,8 @@ export function TaskListView({
                 <div className="p-8 text-center text-muted text-sm space-y-1">
                   <p className="font-medium text-main">{t('view.none')}</p>
                   <p className="text-xs text-faint">
-                    {selectedTag
-                      ? t('view.noneWithTag', { tag: selectedTag })
+                    {selectedTags.length > 0
+                      ? t('view.noneWithTag', { tags: tagFilterLabel(selectedTags), count: selectedTags.length })
                       : filter === 'done'
                       ? t('view.noneDone')
                       : t('view.createHint')}
