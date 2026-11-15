@@ -162,7 +162,7 @@ const fr: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image (téléverser, photographier, coller ou lier une image ; uniquement dans une puce vide)</span>
+                <span>/image (téléverser, photographier, coller ou lier une image ; uniquement dans une puce vide). Une image copiée ou une capture d’écran se colle aussi directement dans la note avec Ctrl+V (Cmd+V, sur téléphone appui long puis Coller) : elle devient une puce image à part, une puce vide devient elle-même l’image</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />

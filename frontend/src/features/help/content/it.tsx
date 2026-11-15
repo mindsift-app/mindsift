@@ -156,7 +156,7 @@ const it: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image (carica, fotografa, incolla o collega un'immagine; solo in un punto vuoto)</span>
+                <span>/image (carica, fotografa, incolla o collega un'immagine; solo in un punto vuoto). Un'immagine copiata o uno screenshot si incolla anche direttamente nella nota con Ctrl+V (Cmd+V, sul telefono tocco prolungato e Incolla): diventa un punto immagine a sé, un punto vuoto diventa l'immagine stessa</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
