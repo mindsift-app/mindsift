@@ -373,7 +373,13 @@
     "closeEsc": "Schließen (Esc)",
     "saving": "Wird gespeichert…",
     "uploading": "Wird hochgeladen…",
-    "takePhoto": "Foto aufnehmen"
+    "takePhoto": "Foto aufnehmen",
+    "pastingImage_one": "Bild wird hochgeladen…",
+    "pastingImage_other": "{{count}} Bilder werden hochgeladen…",
+    "pasteOffline": "Bilder lassen sich nur mit Verbindung einfügen. Bitte erneut einfügen, sobald du online bist.",
+    "pasteFailed_one": "Bild nicht eingefügt: {{error}}",
+    "pasteFailed_other": "{{count}} Bilder nicht eingefügt: {{error}}",
+    "pasteTooMany": "Höchstens {{max}} Bilder auf einmal, die übrigen wurden nicht eingefügt."
   },
   "journal": {
     "opening": "{{date}} wird geöffnet…",

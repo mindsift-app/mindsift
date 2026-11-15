@@ -376,7 +376,13 @@
     "closeEsc": "Cerrar (Esc)",
     "saving": "Guardando…",
     "uploading": "Subiendo…",
-    "takePhoto": "Hacer foto"
+    "takePhoto": "Hacer foto",
+    "pastingImage_one": "Subiendo imagen…",
+    "pastingImage_other": "Subiendo {{count}} imágenes…",
+    "pasteOffline": "Las imágenes solo se pueden pegar con conexión. Vuelve a pegarlas cuando estés en línea.",
+    "pasteFailed_one": "Imagen no pegada: {{error}}",
+    "pasteFailed_other": "{{count}} imágenes no pegadas: {{error}}",
+    "pasteTooMany": "Como máximo {{max}} imágenes a la vez, las demás no se han pegado."
   },
   "journal": {
     "opening": "Abriendo {{date}}…",

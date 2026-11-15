@@ -109,6 +109,8 @@
   "fab": {
     "nothing": "Nothing recognized",
     "saved": "Saved to the quick dump",
+    "savedDue": "Saved to the quick dump · Due: {{due}}",
+    "undoTitle": "Keep the text as dictated, without a due date",
     "saveFailed": "Saving failed",
     "unsupported": "This browser does not support voice input",
     "releaseCancel": "🗑️ Release to cancel",

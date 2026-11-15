@@ -1,10 +1,10 @@
 import { SquareCheckBig, FileText, Layers, ShoppingCart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { DashboardStats, Thought } from '../lib/types';
+import { DashboardStats } from '../lib/types';
 import { triggerHaptic } from '../lib/api';
 import { CountBadge } from '../components/CountBadge';
 import { HoldToRecordFab } from '../features/capture/HoldToRecordFab';
-import { captureDictation } from '../features/capture/captureDictation';
+import type { DictationOutcome } from '../features/capture/captureDictation';
 import { ActiveTab } from './appTabs';
 
 interface MobileNavProps {
@@ -14,7 +14,8 @@ interface MobileNavProps {
   // The open view's "+" action; without one the + opens the Quick Dump sheet
   primaryAction?: () => void;
   openMobileTriageCapture: () => void;
-  handleCaptured: (thought: Thought, target?: 'inbox' | 'task' | 'list_item' | 'document') => void;
+  // Saves what was dictated by holding the + into the inbox (features/capture/captureDictation.ts)
+  onDictated: (text: string) => Promise<DictationOutcome | undefined>;
 }
 
 // Bottom navigation on phones: Triage, Workspace, the + button in the middle (tap: the view's action,
@@ -25,7 +26,7 @@ export function MobileNav({
   stats,
   primaryAction,
   openMobileTriageCapture,
-  handleCaptured,
+  onDictated,
 }: MobileNavProps) {
   const { t } = useTranslation();
   return (
@@ -76,10 +77,7 @@ export function MobileNav({
               openMobileTriageCapture();
             }
           }}
-          onTranscript={async (text) => {
-            const thought = await captureDictation(text);
-            handleCaptured(thought, 'inbox');
-          }}
+          onTranscript={onDictated}
         />
       </div>
 

@@ -162,7 +162,7 @@ const fr: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image (téléverser, photographier, coller ou lier une image ; uniquement dans une puce vide)</span>
+                <span>/image (téléverser, photographier, coller ou lier une image ; uniquement dans une puce vide). Une image copiée ou une capture d’écran se colle aussi directement dans la note avec Ctrl+V (Cmd+V, sur téléphone appui long puis Coller) : elle devient une puce image à part, une puce vide devient elle-même l’image</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
@@ -460,7 +460,7 @@ const fr: HelpContent = {
               <strong className="text-main">Au clavier :</strong> appuie sur <kbd className={kbd}>C</kbd> n'importe où dans l'application (sauf si tu écris dans un champ de texte). <kbd className={kbd}>Entrée</kbd> enregistre et la fenêtre reste ouverte pour l'idée suivante ; <kbd className={kbd}>Échap</kbd> ou un clic à côté la ferme.
             </li>
             <li>
-              <strong className="text-main">Dictée vocale :</strong> clique sur l'icône de micro (<Mic className="w-3.5 h-3.5 inline text-accent" />) ou maintiens appuyé le bouton d'action flottant (+) sur mobile pour dicter ta pensée. La reconnaissance vocale la transcrit en temps réel. Sur ordinateur, le <strong className="text-main">+</strong> rond de la barre de gauche fonctionne de la même façon : maintiens-le appuyé pour dicter, relâche pour enregistrer dans la boîte de réception, relâche à côté du bouton ou appuie sur <kbd className={kbd}>Échap</kbd> pour annuler ; un clic court ouvre toujours la fenêtre.
+              <strong className="text-main">Dictée vocale :</strong> clique sur l'icône de micro (<Mic className="w-3.5 h-3.5 inline text-accent" />) ou maintiens appuyé le bouton d'action flottant (+) sur mobile pour dicter ta pensée. La reconnaissance vocale la transcrit en temps réel. Sur ordinateur, le <strong className="text-main">+</strong> rond de la barre de gauche fonctionne de la même façon : maintiens-le appuyé pour dicter, relâche pour enregistrer dans la boîte de réception, relâche à côté du bouton ou appuie sur <kbd className={kbd}>Échap</kbd> pour annuler ; un clic court ouvre toujours la fenêtre. Une date dans la dictée (« dentiste demain à 14 h ») devient l'échéance et disparaît du texte, comme à la saisie ; le message qui suit l'indique (<em>Échéance : Demain, 14:00</em>), et <strong className="text-main">Annuler</strong> garde le texte tel que tu l'as dicté, sans échéance.
             </li>
             <li>
               <strong className="text-main">Destination personnalisée :</strong> par défaut, les pensées arrivent dans le Quick Dump (pour triage ultérieur), mais tu peux aussi les envoyer directement comme tâche, note ou élément de liste en un clic.

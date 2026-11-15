@@ -75,3 +75,11 @@ describe('parsePastedLines', () => {
     expect(parse('a | b\n---').map((i) => i.type)).toEqual(['text', 'divider']);
   });
 });
+
+describe('pasted file references', () => {
+  it('come back as image and audio bullets', () => {
+    const items = parsePastedLines(['- ![Foto](media:med_ab12)', '- [Sprachnotiz](media:med_cd34)', '- Text mit ![x](media:med_ab12) drin']);
+    expect(items.map((i) => i.type)).toEqual(['image', 'audio', 'text']);
+    expect(items[0].content).toBe('![Foto](media:med_ab12)');
+  });
+});

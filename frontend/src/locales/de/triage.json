@@ -109,6 +109,8 @@
   "fab": {
     "nothing": "Nichts erkannt",
     "saved": "Im Quick Dump gespeichert",
+    "savedDue": "Im Quick Dump gespeichert · Fällig: {{due}}",
+    "undoTitle": "Text wie diktiert behalten, ohne Fälligkeit",
     "saveFailed": "Fehler beim Speichern",
     "unsupported": "Spracheingabe wird von diesem Browser nicht unterstützt",
     "releaseCancel": "🗑️ Zum Abbrechen loslassen",

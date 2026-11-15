@@ -101,6 +101,8 @@
     "dictateCancel": "Relâcher pour annuler",
     "dictateSaving": "Enregistrement…",
     "dictateSaved": "Enregistré dans le Quick Dump",
+    "dictateSavedDue": "Enregistré dans le Quick Dump · Échéance : {{due}}",
+    "dictateUndoTitle": "Garder le texte tel que dicté, sans échéance",
     "dictateNothing": "Rien n’a été reconnu",
     "search": "Recherche",
     "searchKey": "Ctrl K",

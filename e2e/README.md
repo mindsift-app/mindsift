@@ -100,6 +100,10 @@ Selection over several bullets in Chromium and Firefox, in two notes (callout at
 
 Run it after every change to selecting, copying or deleting in notes.
 
+## paste-image.e2e.mjs
+
+Pasting an image (desktop, Chromium and Firefox), through a synthetic paste event with a PNG drawn on a canvas: in an empty bullet the bullet becomes the image, in a bullet with text the image becomes an image bullet below it; both are stored on the server and load in the note. Ctrl+Z removes the pasted image bullet again. Bullets with an image copied within MindSift and pasted keep the image's reference and upload nothing.
+
 ## secrets.e2e.mjs
 
 A bullet with a hidden value of another note pasted into a note (the text goes into the bullet's field as pasting puts it there). Checked:

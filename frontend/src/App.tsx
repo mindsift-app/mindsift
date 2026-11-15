@@ -62,7 +62,7 @@ import { useMobileCapture } from './app/useMobileCapture';
 import { MobileCaptureSheet } from './app/MobileCaptureSheet';
 import { MobileHeaderBar } from './app/AppHeader';
 import { NavRail } from './app/NavRail';
-import { captureDictation } from './features/capture/captureDictation';
+import { captureDictation, DictationOutcome, undoDictationDate } from './features/capture/captureDictation';
 import { QuickDumpWindow, useQuickDumpShortcut } from './app/QuickDumpWindow';
 import { useSessionBootstrap } from './app/useSessionBootstrap';
 import { useMainViews } from './app/useMainViews';
@@ -472,6 +472,19 @@ export const App: React.FC = () => {
     refreshAll();
   };
 
+  // Holding a + (phone and desktop rail) dictates into the inbox; a recognised date can be taken back after
+  const saveDictation = async (text: string): Promise<DictationOutcome | undefined> => {
+    const saved = await captureDictation(text);
+    handleCaptured(saved.thought, 'inbox');
+    if (!saved.due) return undefined;
+    return {
+      due: saved.due,
+      undo: async () => {
+        if (await undoDictationDate(saved)) refreshAll();
+      },
+    };
+  };
+
   // Phones: the Quick Dump sheet with voice input (the + without an action of the open view)
   const capture = useMobileCapture(handleCaptured);
   const { openMobileTriageCapture } = capture;
@@ -726,10 +739,7 @@ export const App: React.FC = () => {
           triggerHaptic(20);
           openQuickDump();
         }}
-        onDictated={async (text) => {
-          const thought = await captureDictation(text);
-          handleCaptured(thought, 'inbox');
-        }}
+        onDictated={saveDictation}
         onSearch={() => setShowCommandPalette(true)}
         handleOpenHelp={handleOpenHelp}
         user={user}
@@ -919,7 +929,7 @@ export const App: React.FC = () => {
         stats={stats}
         primaryAction={primaryAction}
         openMobileTriageCapture={openMobileTriageCapture}
-        handleCaptured={handleCaptured}
+        onDictated={saveDictation}
       />
 
       {/* MOBILE QUICK-ADD BOTTOM SHEET / MODAL (DESIGN-ALIGNED WITH TASKS VIEW) */}

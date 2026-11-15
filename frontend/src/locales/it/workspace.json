@@ -376,7 +376,13 @@
     "closeEsc": "Chiudi (Esc)",
     "saving": "Salvataggio in corso…",
     "uploading": "Caricamento in corso…",
-    "takePhoto": "Scatta foto"
+    "takePhoto": "Scatta foto",
+    "pastingImage_one": "Caricamento immagine…",
+    "pastingImage_other": "Caricamento di {{count}} immagini…",
+    "pasteOffline": "Le immagini si possono incollare solo con una connessione. Incollale di nuovo quando sei online.",
+    "pasteFailed_one": "Immagine non incollata: {{error}}",
+    "pasteFailed_other": "{{count}} immagini non incollate: {{error}}",
+    "pasteTooMany": "Al massimo {{max}} immagini alla volta, le altre non sono state incollate."
   },
   "journal": {
     "opening": "Apertura di {{date}}…",
