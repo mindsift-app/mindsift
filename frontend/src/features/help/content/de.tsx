@@ -802,7 +802,7 @@ const de: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Automatische Mengenerkennung:</strong> Eingaben wie <code className="text-accent font-mono">2x Bio-Milch</code> oder <code className="text-accent font-mono">500g Pasta</code> trennen Menge und Bezeichnung automatisch.
+              <strong className="text-main">Menge gleich mittippen:</strong> Bei <code className="text-accent font-mono">2x Bio-Milch</code>, <code className="text-accent font-mono">500g Pasta</code>, <code className="text-accent font-mono">3 Äpfel</code> oder <code className="text-accent font-mono">Tomaten 2 Dosen</code> markiert das Feld die Menge und zeigt sie als Chip daneben. Beim Hinzufügen kommt sie ins Mengenfeld und der Name ohne sie auf die Liste. Das × am Chip lässt den Text, wie er ist; eine Menge im eigenen Feld hat Vorrang. Erkannt werden eine Zahl mit x, eine Zahl mit Einheit (g, kg, l, ml, Stück, Pck, Dose, Flasche, Bund …) und eine Zahl am Anfang. Eine Zahl am Ende ohne Einheit gehört zum Namen (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">Cola 0,5</code>), ebenso eine am Wort (<code className="text-accent font-mono">7up</code>). Ins Mengenfeld darfst du auch Einheiten schreiben, etwa <code className="text-accent font-mono">500 g</code>.
             </li>
             <li>
               <strong className="text-main">Kategorisierung per Hashtag:</strong> Ergänze einen Hashtag wie <code className="text-accent font-mono">#Kühlregal</code> oder <code className="text-accent font-mono">#Gemüse</code>. Die Liste gruppiert die Artikel automatisch in entsprechende Abschnitte.

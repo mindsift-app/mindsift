@@ -1,17 +1,20 @@
 import { ListItem, SharedList } from '../../lib/types';
 import i18n from '../../i18n';
 import { compareText } from '../../lib/format';
+import { ItemQuantity, withoutQuantity } from './itemQuantity';
 
 // How the shopping lists read and group their entries. Pure functions.
 
 // "oat milk #fridge" → content "oat milk", category "fridge" (the first hashtag); only a hashtag
-// becomes the content itself
-export function parseListItemInput(rawText: string, defaultQty?: string): {
+// becomes the content itself. recognized: the quantity read from the text (itemQuantity.ts), left out of
+// the content; a quantity typed into its own field (defaultQty) wins and the text stays as typed.
+export function parseListItemInput(rawText: string, defaultQty?: string, recognized?: ItemQuantity | null): {
   content: string;
   quantity: string;
   category?: string;
 } {
-  let text = rawText.trim();
+  const fromText = !defaultQty?.trim() && recognized ? recognized : null;
+  let text = (fromText ? withoutQuantity(rawText, fromText) : rawText).trim();
   const hashtagRegex = /#([\p{L}\p{N}_-]+)/gu;
   const matches = Array.from(text.matchAll(hashtagRegex));
 
@@ -27,7 +30,7 @@ export function parseListItemInput(rawText: string, defaultQty?: string): {
 
   return {
     content: text,
-    quantity: defaultQty?.trim() || '',
+    quantity: fromText ? fromText.quantity : defaultQty?.trim() || '',
     category,
   };
 }

@@ -46,5 +46,9 @@
   "shareMenuLabel": "Condividi la lista «{{title}}»",
   "item": {
     "addQuantity": "+ quantità"
+  },
+  "quantityHint": {
+    "recognized": "Quantità riconosciuta: {{quantity}}",
+    "ignore": "Non usare questa quantità"
   }
 }

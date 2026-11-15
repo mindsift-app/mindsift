@@ -125,3 +125,55 @@ describe('SharedListsView: suggestions while typing a new item', () => {
     expect(screen.getByRole('option', { name: /Brot/ })).toBeTruthy();
   });
 });
+
+describe('SharedListsView: quantity typed into the item', () => {
+  beforeEach(() => {
+    createListItem.mockClear();
+  });
+
+  const submit = async (input: HTMLInputElement) => {
+    await act(async () => {
+      fireEvent.submit(input.closest('form')!);
+    });
+  };
+
+  it('shows the quantity as a chip, marks it and saves it into its own field', async () => {
+    const input = await setup();
+    type(input, '2x Milch #Kühlregal');
+    expect(screen.getByTestId('quantity-chip').textContent).toBe('2x');
+    expect(screen.getByTestId('quantity-mark').textContent).toBe('2x');
+    await submit(input);
+    expect(createListItem).toHaveBeenCalledWith('lst_1', 'Milch', 'Kühlregal', '2x');
+    expect(screen.queryByTestId('quantity-chip')).toBeNull();
+  });
+
+  it('× keeps the text as typed', async () => {
+    const input = await setup();
+    type(input, '500g Pasta');
+    fireEvent.click(screen.getByRole('button', { name: 'Menge nicht übernehmen' }));
+    expect(screen.queryByTestId('quantity-chip')).toBeNull();
+    await submit(input);
+    expect(createListItem).toHaveBeenCalledWith('lst_1', '500g Pasta', undefined, '');
+  });
+
+  it('a quantity in its own field wins, units included', async () => {
+    const input = await setup();
+    type(input, '3 Äpfel');
+    expect(screen.getByTestId('quantity-chip').textContent).toBe('3');
+    const qty = screen.getByLabelText('Menge (optional)') as HTMLInputElement;
+    fireEvent.change(qty, { target: { value: '500 g' } });
+    expect(qty.value).toBe('500 g');
+    expect(screen.queryByTestId('quantity-chip')).toBeNull();
+    await submit(input);
+    expect(createListItem).toHaveBeenCalledWith('lst_1', '3 Äpfel', undefined, '500 g');
+  });
+
+  it('suggests by the name without the quantity and keeps the quantity for the suggestion', async () => {
+    const input = await setup();
+    type(input, '2x Mi');
+    await act(async () => {
+      fireEvent.mouseDown(screen.getByRole('option', { name: /^Milch/ }));
+    });
+    expect(createListItem).toHaveBeenCalledWith('lst_1', 'Milch', 'Kühlregal', '2x');
+  });
+});
