@@ -462,6 +462,7 @@ func (s *Server) Router() http.Handler {
 		r.Patch("/api/v1/lists/{id}", s.handleUpdateList)
 		r.Delete("/api/v1/lists/{id}", s.handleDeleteList)
 		r.Get("/api/v1/lists/{id}/shares", s.handleGetListShares)
+		r.Get("/api/v1/lists/{id}/suggestions", s.handleListItemSuggestions)
 		r.Post("/api/v1/lists/{id}/shares", s.handleCreateListShare)
 		r.Delete("/api/v1/lists/{id}/shares/{shareId}", s.handleDeleteListShare)
 		r.Post("/api/v1/lists/{id}/items", s.handleCreateListItem)

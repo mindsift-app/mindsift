@@ -87,6 +87,7 @@ Since Migration 44 ([note_storage.go](../internal/storage/note_storage.go)) the 
 | `lists` | Shared lists: `title`, `icon`, `list_type` (`shopping`/`checklist`/`vacation`) |
 | `list_shares` | Shares: `target_type`, `target_id`, `role` (`editor`/`viewer`) |
 | `list_items` | Entries: `content`, `category`, `quantity`, `is_completed`, `completed_by(_name)`, `created_by` (empty for older items), `sort_order`, `fts_rowid` (key of the row in `list_items_fts`, Migration 47) |
+| `list_item_history` | Names added to a list before, for suggestions while typing (Migration 62, [list_suggestions.go](../internal/storage/list_suggestions.go)): `list_id`, `name_key` (lower case, spaces collapsed, hashtags removed; key with `list_id`), `content`, `category` (of the last use), `use_count`, `last_used`. Survives clearing ticked items, at most 500 names per list, removed with the list |
 
 ### Teams
 | Table | Purpose |
@@ -103,7 +104,7 @@ users 1─n task_lists          task_lists 1─n task_list_shares ─(team|user)
 users 1─n documents 1─n blocks 1─n block_tags
 documents n─n users           via doc_shares / doc_team_shares (read-only)
 workspace_shared_folders 1─n workspace_folder_shares / workspace_folder_mounts
-users 1─n lists 1─n list_items;  lists 1─n list_shares
+users 1─n lists 1─n list_items;  lists 1─n list_shares;  lists 1─n list_item_history
 teams 1─n team_members n─1 users
 ```
 

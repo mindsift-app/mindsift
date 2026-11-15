@@ -2,6 +2,7 @@ package storage
 
 import (
 	"strings"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -395,4 +396,40 @@ func (s *Store) seedStrings(query string, args ...any) []string {
 	}
 	logDBErr(rows.Err())
 	return out
+}
+
+// seedDemoListHistory gives the demo's shopping list earlier purchases, so suggestions show up while
+// typing (list_suggestions.go). Only the demo: a new account's history is what its owner adds.
+func (s *Store) seedDemoListHistory(admin *domain.User, lang string) {
+	title := "Weekly groceries"
+	entries := []struct {
+		content, category string
+		count, daysAgo    int
+	}{
+		{"Milk", "Fridge", 14, 3}, {"Mineral water", "Drinks", 9, 6}, {"Flour", "Baking", 4, 20},
+		{"Mince", "Fridge", 5, 10}, {"Mint", "Fruit & veg", 2, 30}, {"Bananas", "Fruit & veg", 11, 4},
+		{"Butter", "Fridge", 8, 7}, {"Eggs", "Fridge", 10, 5}, {"Pasta", "Pantry", 7, 9},
+	}
+	if lang == "de" {
+		title = "Wocheneinkauf"
+		entries = []struct {
+			content, category string
+			count, daysAgo    int
+		}{
+			{"Milch", "Kühlregal", 14, 3}, {"Mineralwasser", "Getränke", 9, 6}, {"Mehl", "Backzutaten", 4, 20},
+			{"Mozzarella", "Kühlregal", 6, 8}, {"Minze", "Obst & Gemüse", 2, 30}, {"Bananen", "Obst & Gemüse", 11, 4},
+			{"Butter", "Kühlregal", 8, 7}, {"Eier", "Kühlregal", 10, 5}, {"Vollkornnudeln", "Vorräte", 7, 9},
+			{"Frischmilch", "Kühlregal", 3, 12},
+		}
+	}
+	ids := s.seedStrings(`SELECT id FROM lists WHERE user_id = ? AND title = ?`, admin.ID, title)
+	if len(ids) == 0 {
+		return
+	}
+	for _, e := range entries {
+		display, key := listHistoryName(e.content)
+		at := clock.Now().AddDate(0, 0, -e.daysAgo).UTC().Format(time.RFC3339)
+		s.execLogged(`INSERT OR IGNORE INTO list_item_history (list_id, name_key, content, category, use_count, last_used)
+			VALUES (?, ?, ?, ?, ?, ?)`, ids[0], key, display, e.category, e.count, at)
+	}
 }

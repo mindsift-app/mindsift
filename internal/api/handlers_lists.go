@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -209,6 +210,24 @@ func (s *Server) handleDeleteListShare(w http.ResponseWriter, r *http.Request) {
 		"shareId": shareID,
 	})
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+// GET /lists/{id}/suggestions?q=&limit=: entries added to the list before, for suggestions while typing a
+// new one (storage/list_suggestions.go). Everyone who may read the list may read them.
+func (s *Server) handleListItemSuggestions(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	listID := chi.URLParam(r, "id")
+	if s.store.ListRole(userID, listID) == "" {
+		writeErrorFrom(w, http.StatusNotFound, storage.ErrListNotFound)
+		return
+	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	items, err := s.store.ListItemSuggestions(listID, r.URL.Query().Get("q"), limit, time.Now())
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
 func (s *Server) handleCreateListItem(w http.ResponseWriter, r *http.Request) {

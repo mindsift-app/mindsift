@@ -289,6 +289,7 @@ func (s *Store) EnsureDemoAccounts() error {
 		}
 		logDBErr(s.SeedStarterContent(adminUser))
 		s.seedDemoShares(adminUser, normalUser)
+		s.seedDemoListHistory(adminUser, lang)
 	}
 
 	return nil

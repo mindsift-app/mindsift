@@ -73,10 +73,3 @@ Every ID that was ever given out and is no longer open. IDs up to FLAW-27 date f
 | FLAW-43 | Not a flaw: intended behaviour, described in [sharing-and-permissions.md](sharing-and-permissions.md#files-in-shared-notes) (files in shared notes and copies of their bullets) | unreleased |
 
 FLAW-31 is resolved in part (0.6.0) and stays in the overview above. FLAW-34 (resolved in part in 0.6.0, fully since migration 43) stays there with its details as well.
-
----
-
-## Feature Ideas
-
-### Lists
-- **Suggest Frequent Items** while typing (based on completed entries).
