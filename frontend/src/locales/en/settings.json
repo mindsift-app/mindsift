@@ -660,6 +660,8 @@
       "issuer": "Issuer",
       "clientId": "Client ID",
       "redirectUrl": "Redirect URI",
+      "logoutUrl": "Back-channel logout URL",
+      "logoutUrlHint": "Enter it at the provider. The provider calls it directly, so the server must be reachable from there without going through a browser.",
       "scopes": "Scopes",
       "autoCreate": "Create accounts automatically",
       "passwordLogin": "Sign-in with password",

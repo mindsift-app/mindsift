@@ -243,7 +243,16 @@ func TestOIDCBackchannelLogoutCanBeTurnedOff(t *testing.T) {
 	if rec := e.backchannelLogout(e.logoutToken("abc-123", "provider-session-1", nil, nil)); rec.Code != http.StatusNotFound || !e.signedIn(token) {
 		t.Fatalf("switched off: %d", rec.Code)
 	}
-	if e.srv.oidcLogoutURL() != "" {
+	if e.srv.oidcLogoutURL() != "" || e.srv.oidcStatusForAdmin().LogoutURL != "" {
 		t.Fatal("no logout URL while it is off")
+	}
+}
+
+// The administration shows the back-channel logout URL next to the redirect URI
+func TestOIDCAdminStatusShowsLogoutURL(t *testing.T) {
+	e := newOIDCEnv(t, nil)
+	st := e.srv.oidcStatusForAdmin()
+	if want := strings.TrimRight(e.srv.cfg.BaseURL, "/") + oidcLogoutPath; st.LogoutURL != want {
+		t.Fatalf("logout URL %q, want %q", st.LogoutURL, want)
 	}
 }

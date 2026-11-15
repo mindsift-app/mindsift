@@ -762,6 +762,8 @@
       "issuer": "Issuer",
       "clientId": "ID de cliente",
       "redirectUrl": "URI de redirección",
+      "logoutUrl": "URL de cierre de sesión back-channel",
+      "logoutUrlHint": "Introdúcela en el proveedor. El proveedor la llama directamente, así que el servidor debe ser accesible desde allí sin pasar por un navegador.",
       "scopes": "Scopes",
       "autoCreate": "Crear cuentas automáticamente",
       "passwordLogin": "Inicio de sesión con contraseña",

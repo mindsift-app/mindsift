@@ -660,6 +660,8 @@
       "issuer": "Issuer",
       "clientId": "ID client",
       "redirectUrl": "URI de redirection",
+      "logoutUrl": "URL de déconnexion back-channel",
+      "logoutUrlHint": "À saisir chez le fournisseur. Il l'appelle directement : le serveur doit donc être joignable depuis chez lui sans passer par un navigateur.",
       "scopes": "Scopes",
       "autoCreate": "Créer les comptes automatiquement",
       "passwordLogin": "Connexion avec mot de passe",

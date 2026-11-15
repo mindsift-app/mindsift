@@ -91,6 +91,8 @@ export interface OidcAdminStatus {
   issuer?: string;
   clientId?: string;
   redirectUrl?: string;
+  // Back-channel logout URL to enter at the provider; empty while that is off
+  logoutUrl?: string;
   scopes?: string;
   adminGroup?: string;
   autoCreate: boolean;

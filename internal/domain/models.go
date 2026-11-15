@@ -861,6 +861,7 @@ type OIDCStatus struct {
 	Issuer        string `json:"issuer,omitempty"`
 	ClientID      string `json:"clientId,omitempty"`
 	RedirectURL   string `json:"redirectUrl,omitempty"`
+	LogoutURL     string `json:"logoutUrl,omitempty"` // back-channel logout; empty while that is off
 	Scopes        string `json:"scopes,omitempty"`
 	AdminGroup    string `json:"adminGroup,omitempty"`
 	AutoCreate    bool   `json:"autoCreate"`
