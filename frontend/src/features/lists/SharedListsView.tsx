@@ -474,7 +474,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       {showSuggestions && activeHashtagQuery && matchingSuggestions.length > 0 && (
         <div className="absolute left-6 top-full mt-2 w-64 max-h-56 overflow-y-auto bg-panel-elevated border border-border rounded-btn shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
           <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-faint tracking-wider border-b">
-            Hashtags
+            {t('hashtagsHeading')}
           </div>
           {matchingSuggestions.map((tag, idx) => {
             const isSelected = idx === suggestionIndex;
