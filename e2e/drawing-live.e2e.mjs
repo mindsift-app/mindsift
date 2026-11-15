@@ -70,7 +70,7 @@ async function openNote(engine, token, title, { noWebSocket = false, phone = fal
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
   await page.goto(BASE);
   if (phone) await skipAppOffer(page);
-  await page.getByRole('button', { name: /Workspace/ }).locator('visible=true').first().click();
+  await page.getByRole('button', { name: /^Workspace/ }).locator('visible=true').first().click();
   await page.getByText(title, { exact: true }).first().click();
   await page.getByRole('img', { name: /^Zeichnung/ }).first().waitFor({ timeout: 10000 });
   await sleep(2500); // realtime connection (and the fallback without WebSocket) settles
@@ -265,7 +265,7 @@ const main = async () => {
 
   await B.page.reload();
   if (PHONE) await skipAppOffer(B.page);
-  await B.page.getByRole('button', { name: /Workspace/ }).locator('visible=true').first().click();
+  await B.page.getByRole('button', { name: /^Workspace/ }).locator('visible=true').first().click();
   await B.page.getByText(title, { exact: true }).first().click();
   const afterReload = await waitFor(
     async () => (await B.page.locator('[role="img"][aria-label^="Zeichnung"] ellipse').count()) === 3 && (await B.page.locator('[role="img"][aria-label^="Zeichnung"] polygon').count()) === 1,
