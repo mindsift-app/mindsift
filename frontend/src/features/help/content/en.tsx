@@ -156,7 +156,7 @@ const en: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image (upload, photograph, paste or link an image; only in an empty bullet). A copied image or screenshot can also simply be pasted into the note with Ctrl+V (Cmd+V, long-press and Paste on a phone): it becomes an image bullet of its own, an empty bullet becomes the image itself</span>
+                <span>/image (upload, photograph, paste or link an image; only in an empty bullet). A copied image or screenshot can also simply be pasted into the note with Ctrl+V (Cmd+V, long-press and Paste on a phone), or on a computer image files (from the file manager, or an image from a browser tab) dragged onto a bullet: it becomes an image bullet of its own below it, an empty bullet becomes the image itself; dragged beside the bullets or onto the title, the images go to the end of the note</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />

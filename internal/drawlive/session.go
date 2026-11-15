@@ -46,9 +46,10 @@ const (
 	// MaxUserSessions: sessions one person keeps going (draws in, or left last); joining a running
 	// session of someone else is always possible
 	MaxUserSessions = 8
-	// MaxSessions and MaxTotalBytes: all sessions of the server together
-	MaxSessions   = 256
-	MaxTotalBytes = 32 << 20
+	// MaxSessions and DefaultMaxTotalBytes: all sessions of the server together (the total can be set,
+	// DRAW_LIVE_MAX_MB; a full session takes about 1.4 times its bytes in memory)
+	MaxSessions          = 256
+	DefaultMaxTotalBytes = 128 << 20
 	// Joining and watching per person: each start loads the note to check the block
 	joinsPerSecond = 2
 	joinsBurst     = 20
@@ -193,15 +194,28 @@ type session struct {
 	// discarded: the last person discarded it; kept for DiscardKeep for "Rückgängig" only
 	discarded     bool
 	ops, presence map[string]*bucket
+	// pointers: the latest pointer of each person drawing since the last bundle (TakePointers)
+	pointers map[string]Pointer
 }
 
 type key struct{ docID, blockID string }
 
+// Pointer is the pointer and selection of someone drawing, as it goes out bundled with the others'
+// (DRAW_POINTERS); who it is comes from the participants the browsers know.
+type Pointer struct {
+	From  string   `json:"from"` // connection
+	X     float64  `json:"x"`
+	Y     float64  `json:"y"`
+	Sel   []string `json:"sel,omitempty"`
+	Touch bool     `json:"touch,omitempty"`
+	Gone  bool     `json:"gone,omitempty"`
+}
+
 // Manager holds the sessions of all drawings.
 type Manager struct {
 	sessions map[key]*session
-	// bytes: what all sessions hold together
-	bytes int
+	// bytes: what all sessions hold together, maxTotal: how much they may (SetMaxTotalBytes)
+	bytes, maxTotal int
 	// joins: rate of joining and watching per person
 	joins map[string]*bucket
 	// dropped: sessions everyone had left that gave way for a new one (their watchers learn it)
@@ -209,12 +223,21 @@ type Manager struct {
 }
 
 func NewManager() *Manager {
-	return &Manager{sessions: map[key]*session{}, joins: map[string]*bucket{}}
+	return &Manager{sessions: map[key]*session{}, joins: map[string]*bucket{}, maxTotal: DefaultMaxTotalBytes}
+}
+
+// SetMaxTotalBytes sets what all sessions may hold together (n <= 0: DefaultMaxTotalBytes). Sessions
+// already over it keep what they have but cannot grow.
+func (m *Manager) SetMaxTotalBytes(n int) {
+	if n <= 0 {
+		n = DefaultMaxTotalBytes
+	}
+	m.maxTotal = n
 }
 
 func newSession(docID, blockID, base string) *session {
 	return &session{docID: docID, blockID: blockID, base: base, els: map[string]Element{},
-		ops: map[string]*bucket{}, presence: map[string]*bucket{}}
+		ops: map[string]*bucket{}, presence: map[string]*bucket{}, pointers: map[string]Pointer{}}
 }
 
 func indexOf(people []Person, connID string) int {
@@ -255,7 +278,7 @@ func (s *session) state() State {
 }
 
 // merge takes the elements that beat what the session has; either all of them fit the limits or nothing
-// changes. room is what the session may hold within MaxTotalBytes; growing over it is ErrBusy.
+// changes. room is what the session may hold within the total of all sessions; growing over it is ErrBusy.
 func (s *session) merge(els []Element, room int) ([]Element, error) {
 	won := make([]Element, 0, len(els))
 	next := map[string]Element{}
@@ -354,7 +377,7 @@ func (m *Manager) drop(k key) {
 func (m *Manager) mergeInto(k key, s *session, els []Element) ([]Element, error) {
 	for {
 		before := s.bytes
-		won, err := s.merge(els, MaxTotalBytes-(m.bytes-before))
+		won, err := s.merge(els, m.maxTotal-(m.bytes-before))
 		if err == nil {
 			m.bytes += s.bytes - before
 			return won, nil
@@ -583,15 +606,12 @@ func (m *Manager) Apply(docID, blockID, connID string, els []Element, order []st
 	return ops, true, nil
 }
 
-// Presence checks that a pointer may go out now (someone drawing, within the rate); else it is dropped.
-func (m *Manager) Presence(docID, blockID, connID string, now time.Time) (Person, error) {
+// Presence keeps the pointer of someone drawing for the next bundle (TakePointers); it replaces one of
+// theirs still waiting. Over the rate, or from someone not drawing, it is dropped.
+func (m *Manager) Presence(docID, blockID, connID string, p Pointer, now time.Time) error {
 	s := m.get(docID, blockID)
-	if s == nil {
-		return Person{}, ErrNotInSession
-	}
-	i := indexOf(s.participants, connID)
-	if i < 0 {
-		return Person{}, ErrNotInSession
+	if s == nil || indexOf(s.participants, connID) < 0 {
+		return ErrNotInSession
 	}
 	b := s.presence[connID]
 	if b == nil {
@@ -599,9 +619,28 @@ func (m *Manager) Presence(docID, blockID, connID string, now time.Time) (Person
 		s.presence[connID] = b
 	}
 	if !b.take(now, presencePerSecond, presenceBurst) {
-		return Person{}, ErrRate
+		return ErrRate
 	}
-	return s.participants[i], nil
+	p.From = connID
+	s.pointers[connID] = p
+	return nil
+}
+
+// TakePointers returns (once) the pointers that changed since the last call, in the order the people
+// joined; none when nothing changed or the session is gone.
+func (m *Manager) TakePointers(docID, blockID string) []Pointer {
+	s := m.get(docID, blockID)
+	if s == nil || len(s.pointers) == 0 {
+		return nil
+	}
+	out := make([]Pointer, 0, len(s.pointers))
+	for _, p := range s.participants {
+		if ptr, ok := s.pointers[p.ID]; ok {
+			out = append(out, ptr)
+		}
+	}
+	clear(s.pointers)
+	return out
 }
 
 func (m *Manager) leave(s *session, connID string, now time.Time) (Change, bool) {
@@ -611,6 +650,7 @@ func (m *Manager) leave(s *session, connID string, now time.Time) (Change, bool)
 		s.participants = append(s.participants[:i], s.participants[i+1:]...)
 		delete(s.ops, connID)
 		delete(s.presence, connID)
+		delete(s.pointers, connID)
 		if !s.active() {
 			ch.Empty, ch.HostChanged = true, false
 			s.emptySince, s.lastUser = now, ch.Person.UserID
@@ -677,7 +717,7 @@ func (m *Manager) Finish(docID, blockID, connID string, save bool, now time.Time
 	}
 	s.lastUser = s.participants[0].UserID
 	s.participants, s.watchers = nil, nil
-	s.ops, s.presence = map[string]*bucket{}, map[string]*bucket{}
+	s.ops, s.presence, s.pointers = map[string]*bucket{}, map[string]*bucket{}, map[string]Pointer{}
 	s.emptySince, s.discarded = now, true
 	return st, nil
 }

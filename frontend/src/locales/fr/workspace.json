@@ -382,7 +382,8 @@
     "pasteOffline": "Les images ne peuvent être collées qu’avec une connexion. Collez-les à nouveau une fois en ligne.",
     "pasteFailed_one": "Image non collée : {{error}}",
     "pasteFailed_other": "{{count}} images non collées : {{error}}",
-    "pasteTooMany": "{{max}} images au maximum à la fois, les autres n’ont pas été collées."
+    "pasteTooMany": "{{max}} images au maximum à la fois, les autres n’ont pas été collées.",
+    "dropOnlyImages": "Seules les images peuvent être glissées ici."
   },
   "journal": {
     "opening": "Ouverture de {{date}}…",
@@ -619,6 +620,7 @@
       "endedDone": "{{name}} a enregistré le dessin.",
       "endedDiscard": "{{name}} a abandonné le dessin en direct.",
       "endedExpired": "Le dessin en direct est terminé.",
+      "unsentKept": "Tes dernières modifications ne sont pas arrivées dans la session ; elles restent dans ce navigateur comme brouillon et te seront proposées à la prochaine ouverture du dessin.",
       "saving": "Enregistrement …",
       "offline": "Connexion perdue – tes modifications partent dès qu’elle revient.",
       "offlineWatch": "Connexion perdue.",
@@ -630,6 +632,7 @@
         "limit": "Le dessin est trop grand pour la session en direct. Retire quelque chose, surtout des traits à main levée.",
         "too_many": "Tu dessines déjà en direct dans trop de dessins. Ferme-en un, puis rouvre celui-ci.",
         "busy": "Trop de dessins en direct sont en cours sur le serveur. Rouvre-le plus tard.",
+        "busy_live": "Le serveur n'accepte plus de modifications de dessins en direct pour le moment. Tes modifications restent ici et seront envoyées dès qu'il y aura de nouveau de la place.",
         "save": "L’enregistrement n’a pas fonctionné. Vérifie la connexion et réessaie."
       }
     }

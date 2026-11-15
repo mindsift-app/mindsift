@@ -13,7 +13,8 @@ vi.mock('../../lib/api', () => ({
 }));
 
 import { NavRail, NAV_RAIL_KEY } from '../NavRail';
-import { QuickDumpWindow, useQuickDumpShortcut } from '../QuickDumpWindow';
+import { QuickDumpWindow } from '../QuickDumpWindow';
+import { useQuickDumpShortcut } from '../useQuickDumpShortcut';
 import type { ActiveTab } from '../appTabs';
 import type { AuthStatus, DashboardStats, User } from '../../lib/types';
 

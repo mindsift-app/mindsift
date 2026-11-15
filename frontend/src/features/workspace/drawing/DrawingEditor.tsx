@@ -698,7 +698,9 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   function closeLive() {
     const l = liveState!;
     if (l.ended || l.mode === 'watch' || readOnly) {
-      if (l.ended && l.ended.reason !== 'expired') dropDraft();
+      // Changes the server refused stay in the local draft (offered when the drawing opens again)
+      if (l.unsent) saveDraft();
+      else if (l.ended && l.ended.reason !== 'expired') dropDraft();
       if (!l.ended) l.leave();
       return onClose(null, !!l.ended);
     }
@@ -1789,11 +1791,17 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const liveNotice = !liveState
     ? null
     : liveState.ended
-    ? liveState.ended.reason === 'done'
-      ? t('drawing.live.endedDone', { name: liveState.ended.by || t('lock.someone') })
-      : liveState.ended.reason === 'discard'
-      ? t('drawing.live.endedDiscard', { name: liveState.ended.by || t('lock.someone') })
-      : t('drawing.live.endedExpired')
+    ? [
+        liveState.ended.reason === 'done'
+          ? t('drawing.live.endedDone', { name: liveState.ended.by || t('lock.someone') })
+          : liveState.ended.reason === 'discard'
+          ? t('drawing.live.endedDiscard', { name: liveState.ended.by || t('lock.someone') })
+          : t('drawing.live.endedExpired'),
+        // Own changes the server refused did not get into the session: they stay as a local draft
+        liveState.unsent ? t('drawing.live.unsentKept') : '',
+      ]
+        .filter(Boolean)
+        .join(' ')
     : liveState.error
     ? t(`drawing.live.error.${liveState.error}`)
     : liveState.saving

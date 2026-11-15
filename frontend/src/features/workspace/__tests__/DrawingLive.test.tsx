@@ -411,4 +411,30 @@ describe('Live drawing in the editor', () => {
     emit('DRAW_END', { reason: 'done', by: 'Anna' });
     expect(screen.getByText('Anna hat die Zeichnung gespeichert.')).toBeTruthy();
   });
+
+  it('shows the bundled pointers of the others', () => {
+    open();
+    emit('DRAW_STATE', { ...people, you: 'c_ben', els: [], order: [], seq: 0 });
+    emit('DRAW_POINTERS', { pointers: [{ from: 'c_anna', x: 10, y: 20, sel: ['a'] }] });
+    expect(document.querySelector('[data-live-cursor="Anna"]')).toBeTruthy();
+    expect(document.querySelector('[data-live-selection="Anna"]')).toBeTruthy();
+  });
+
+  it('a change the server refuses mid-session stays: a clear hint, still drawing, kept as a draft at the end', async () => {
+    localStorage.removeItem('mindsift_drawing_draft:b1');
+    open();
+    emit('DRAW_STATE', { ...people, you: 'c_ben', els: [], order: [], seq: 0 });
+    fireEvent.click(screen.getByRole('button', { name: /^Gitter/ }));
+    await vi.waitFor(() => expect(realtime.sent.map((m) => m.event)).toContain('DRAW_OPS'));
+    emit('DRAW_ERROR', { code: 'busy' });
+    expect(screen.getByText(/Deine Änderungen bleiben hier erhalten/)).toBeTruthy();
+    // Not read-only: the tools are still there
+    expect((screen.getByRole('button', { name: /^Gitter/ }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByRole('button', { name: /Verlassen/ })).toBeTruthy();
+    // Anna saves before the server took it: the hint says the change stays as a draft, and closing keeps it
+    emit('DRAW_END', { reason: 'done', by: 'Anna' });
+    expect(screen.getByText(/bleiben in diesem Browser als Entwurf/)).toBeTruthy();
+    fireEvent.click(within(document.querySelector('[data-live-notice]') as HTMLElement).getByRole('button', { name: 'Schließen' }));
+    expect(JSON.parse(localStorage.getItem('mindsift_drawing_draft:b1') || '{}').content).toContain('"grid":true');
+  });
 });

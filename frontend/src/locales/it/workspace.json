@@ -382,7 +382,8 @@
     "pasteOffline": "Le immagini si possono incollare solo con una connessione. Incollale di nuovo quando sei online.",
     "pasteFailed_one": "Immagine non incollata: {{error}}",
     "pasteFailed_other": "{{count}} immagini non incollate: {{error}}",
-    "pasteTooMany": "Al massimo {{max}} immagini alla volta, le altre non sono state incollate."
+    "pasteTooMany": "Al massimo {{max}} immagini alla volta, le altre non sono state incollate.",
+    "dropOnlyImages": "Si possono trascinare solo immagini."
   },
   "journal": {
     "opening": "Apertura di {{date}}…",
@@ -619,6 +620,7 @@
       "endedDone": "{{name}} ha salvato il disegno.",
       "endedDiscard": "{{name}} ha scartato il disegno dal vivo.",
       "endedExpired": "Il disegno dal vivo è terminato.",
+      "unsentKept": "Le tue ultime modifiche non sono arrivate nella sessione; restano in questo browser come bozza e ti verranno proposte alla prossima apertura del disegno.",
       "saving": "Salvataggio …",
       "offline": "Connessione persa – le tue modifiche partono appena torna.",
       "offlineWatch": "Connessione persa.",
@@ -630,6 +632,7 @@
         "limit": "Il disegno è troppo grande per la sessione dal vivo. Togli qualcosa, soprattutto tratti a mano libera.",
         "too_many": "Stai già disegnando dal vivo in troppi disegni. Chiudine uno e riapri questo.",
         "busy": "In questo momento sul server ci sono troppi disegni dal vivo. Riaprilo più tardi.",
+        "busy_live": "Al momento il server non accetta altre modifiche ai disegni dal vivo. Le tue modifiche restano qui e verranno inviate appena ci sarà di nuovo spazio.",
         "save": "Il salvataggio non è riuscito. Controlla la connessione e riprova."
       }
     }

@@ -6,6 +6,10 @@
 // DataTransfer holding a PNG made on a canvas (the system clipboard is not writable in every engine; Firefox
 // empties a DataTransfer handed to the ClipboardEvent constructor, so it is set on the event instead). Needs a
 // server in demo mode (account admin/admin); see e2e/README.md.
+// Dragging image files onto a note goes the same way: a synthetic drag (dragenter, dragover, drop with a
+// DataTransfer holding a File, set on the event like the paste's) onto a bullet puts the image below it, onto
+// an empty bullet makes it the image, onto the title appends it at the end; the target row is outlined while
+// dragging, and a file without an image only gives a hint.
 import { chromium, firefox } from 'playwright';
 
 const BASE = process.env.MINDSIFT_URL || 'http://localhost:18080';
@@ -60,6 +64,55 @@ async function pasteImage(page, { text = '', html = '' } = {}) {
   );
 }
 
+// Drags a file (a PNG drawn on a canvas, or a text file) onto a point of the page: the middle of a bullet's row
+// (row) or of the note's title (title). Returns whether a row was outlined while dragging; drop: false stops
+// before the drop (and leaves the drag over the note)
+async function dragFile(page, { row, title, text = false, drop = true }) {
+  return page.evaluate(
+    async ({ row, title, text, drop }) => {
+      let file;
+      if (text) {
+        file = new File(['Nur Text'], 'notiz.txt', { type: 'text/plain' });
+      } else {
+        const canvas = document.createElement('canvas');
+        canvas.width = 320;
+        canvas.height = 180;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(0, 0, 320, 180);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.fillText('Gezogenes Bild', 40, 100);
+        const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+        file = new File([blob], 'gezogen.png', { type: 'image/png' });
+      }
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      const box =
+        title !== undefined
+          ? Array.from(document.querySelectorAll('textarea')).find((t) => t.value === title)
+          : document.querySelectorAll('[data-outline-block]')[row];
+      const rect = box.getBoundingClientRect();
+      const x = rect.left + Math.min(rect.width / 2, 120);
+      const y = rect.top + rect.height / 2;
+      const el = document.elementFromPoint(x, y) || box;
+      const fire = (type) => {
+        const ev = new DragEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y });
+        Object.defineProperty(ev, 'dataTransfer', { value: dt });
+        el.dispatchEvent(ev);
+      };
+      fire('dragenter');
+      fire('dragover');
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const rows = Array.from(document.querySelectorAll('[data-outline-block]'));
+      const marked = rows.findIndex((r) => r.hasAttribute('data-file-drop'));
+      if (drop) fire('drop');
+      return marked;
+    },
+    { row, title, text, drop }
+  );
+}
+
 // All image bullets of the page have loaded their picture
 const imagesLoaded = (page, count) =>
   page.waitForFunction(
@@ -89,6 +142,17 @@ const main = async () => {
         ],
       });
       created.push(doc.id);
+      // A second note for dragging image files in
+      const dropTitle = `Bild-Ziehen ${tag} ${stamp}`;
+      const dropDoc = await api(admin, 'POST', '/api/v1/documents', {
+        title: dropTitle,
+        blocks: [
+          { id: `dz0_${stamp}`, type: 'text', content: 'Ziel', level: 0 },
+          { id: `dz1_${stamp}`, type: 'text', content: '', level: 0 },
+          { id: `dz2_${stamp}`, type: 'text', content: 'Unten', level: 0 },
+        ],
+      });
+      created.push(dropDoc.id);
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
       await ctx.addInitScript((t) => {
         localStorage.setItem('mindsift_jwt_token', t);
@@ -238,6 +302,57 @@ const main = async () => {
         blocks: blocks.map((b) => `${b.type}:${b.content}`),
         uploads,
       });
+
+      // Dragging image files onto the note
+      await page.getByText(dropTitle, { exact: true }).first().click();
+      await page.waitForFunction(() => document.querySelectorAll('[data-outline-block]').length === 3, null, { timeout: 10000 });
+      const shape = async () => (await serverBlocks(admin, dropDoc.id)).map((b) => (b.type === 'image' ? 'image' : `${b.type}:${b.content}`));
+
+      // Onto a bullet with text: the row is outlined while dragging, the image goes below it
+      let marked = await dragFile(page, { row: 0 });
+      check(marked === 0, `${tag}: gezogene Bilddatei markiert den Ziel-Punkt`, marked);
+      await page.waitForFunction(() => document.querySelectorAll('[data-outline-block]').length === 4, null, { timeout: 15000 });
+      await imagesLoaded(page, 1);
+      await page.waitForTimeout(1200);
+      check(
+        (await shape()).join('|') === 'text:Ziel|image|text:|text:Unten',
+        `${tag}: auf Punkt mit Text gezogenes Bild kommt als Bild-Punkt darunter`,
+        await shape()
+      );
+      check(
+        await page.evaluate(() => !document.querySelector('[data-file-drop]')),
+        `${tag}: Markierung verschwindet nach dem Ablegen`
+      );
+
+      // Onto the empty bullet: it becomes the image
+      await dragFile(page, { row: 2 });
+      await imagesLoaded(page, 2);
+      await page.waitForTimeout(1200);
+      check(
+        (await shape()).join('|') === 'text:Ziel|image|image|text:Unten',
+        `${tag}: auf leeren Punkt gezogenes Bild macht ihn zum Bild-Punkt`,
+        await shape()
+      );
+
+      // A file without an image: a hint, nothing else
+      marked = await dragFile(page, { row: 0, text: true });
+      await page.waitForTimeout(800);
+      const hint = await page.getByText('Nur Bilder lassen sich hineinziehen.').count();
+      check(
+        marked === -1 && hint > 0 && (await shape()).length === 4,
+        `${tag}: Datei ohne Bild gibt nur einen Hinweis`,
+        { marked, hint, blocks: await shape() }
+      );
+
+      // Onto the title: at the end of the note
+      await dragFile(page, { title: dropTitle });
+      await imagesLoaded(page, 3);
+      await page.waitForTimeout(1200);
+      check(
+        (await shape()).join('|') === 'text:Ziel|image|image|text:Unten|image',
+        `${tag}: auf den Titel gezogenes Bild kommt ans Ende der Notiz`,
+        await shape()
+      );
 
       await ctx.close();
       await browser.close();

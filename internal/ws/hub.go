@@ -1,10 +1,12 @@
 package ws
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"sort"
 	"strings"
@@ -39,6 +41,7 @@ type Client struct {
 	hub             *Hub
 	id              string // connection id (live drawing sessions tell connections apart by it)
 	conn            *websocket.Conn
+	out             *batchConn // the connection below conn, which holds back writes while writePump batches
 	roomID          string
 	userID          string
 	send            chan []byte
@@ -796,6 +799,29 @@ func (h *Hub) BroadcastRoom(roomID, event string, payload any, excludeClient *Cl
 	}
 }
 
+// BroadcastRoomEach sends every connection in a room the message encode builds for its connection id
+// (an encoded domain.WSMessage, nil for none): for events whose content differs by receiver, such as the
+// bundled pointers of a live drawing, which leave out the receiver's own.
+func (h *Hub) BroadcastRoomEach(roomID, event string, encode func(connID string) []byte) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	if h.closed {
+		return
+	}
+	for client := range h.rooms[roomID] {
+		if data := encode(client.id); data != nil {
+			h.notifyDeliveredLocked(client.userID, event)
+			client.trySend(data)
+		}
+	}
+	for sseClient := range h.sseRooms[roomID] {
+		if data := encode(sseClient.id); data != nil {
+			h.notifyDeliveredLocked(sseClient.userID, event)
+			sseClient.trySend(data)
+		}
+	}
+}
+
 func (c *Client) SendEvent(event string, payload any) {
 	msg := domain.WSMessage{
 		Event:     event,
@@ -809,7 +835,8 @@ func (c *Client) SendEvent(event string, payload any) {
 }
 
 func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request, roomID, userID string) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	hw := &hijackBatched{ResponseWriter: w}
+	conn, err := upgrader.Upgrade(hw, r, nil)
 	if err != nil {
 		slog.Error("WebSocket upgrade error", "room_id", roomID, "user_id", userID, "error", err)
 		return
@@ -819,6 +846,7 @@ func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request, roomID, userID str
 		hub:       h,
 		id:        domain.NewID("ws"),
 		conn:      conn,
+		out:       hw.conn,
 		roomID:    roomID,
 		userID:    userID,
 		send:      make(chan []byte, 128),
@@ -981,7 +1009,7 @@ func (c *Client) writePump() {
 				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			if err := c.writeQueued(message); err != nil {
 				return
 			}
 		case <-ticker.C:
@@ -991,4 +1019,109 @@ func (c *Client) writePump() {
 			}
 		}
 	}
+}
+
+// maxBatch: messages writePump writes in one go at most, so a connection that never runs dry still gets
+// its ping in time
+const maxBatch = 256
+
+// writeQueued writes message and whatever else waits for the connection already, each as a WebSocket
+// message of its own (the wire format stays the same), but in as few writes to the network as possible:
+// one system call and one packet for many small events instead of one each.
+func (c *Client) writeQueued(message []byte) error {
+	if c.out != nil {
+		c.out.hold()
+	}
+	err := c.conn.WriteMessage(websocket.TextMessage, message)
+	for n := 1; err == nil && n < maxBatch; n++ {
+		var more []byte
+		var ok bool
+		select {
+		case more, ok = <-c.send:
+		default:
+		}
+		if more == nil && !ok {
+			break // nothing waiting (or closed: the next round of writePump sends the close message)
+		}
+		err = c.conn.WriteMessage(websocket.TextMessage, more)
+	}
+	if c.out != nil {
+		if ferr := c.out.flush(); err == nil {
+			err = ferr
+		}
+	}
+	return err
+}
+
+// hijackBatched hands gorilla/websocket a batchConn in place of the hijacked network connection.
+type hijackBatched struct {
+	http.ResponseWriter
+	conn *batchConn
+}
+
+func (h *hijackBatched) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	nc, brw, err := http.NewResponseController(h.ResponseWriter).Hijack()
+	if err != nil {
+		return nil, nil, err
+	}
+	h.conn = &batchConn{Conn: nc}
+	return h.conn, brw, nil
+}
+
+// batchMaxBytes: held back writes go out once they reach this much, and a larger buffer is not kept
+const batchMaxBytes = 64 << 10
+
+// batchConn is a network connection that can hold back writes until flush. Outside hold/flush it writes
+// straight through (the handshake, pongs the reader sends). Writes are serialized by gorilla/websocket;
+// the mutex only orders them against flush.
+type batchConn struct {
+	net.Conn
+	mu      sync.Mutex
+	holding bool
+	buf     []byte
+	writes  int // writes to the network (tests)
+}
+
+func (b *batchConn) hold() {
+	b.mu.Lock()
+	b.holding = true
+	b.mu.Unlock()
+}
+
+func (b *batchConn) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if !b.holding {
+		b.writes++
+		return b.Conn.Write(p)
+	}
+	b.buf = append(b.buf, p...)
+	if len(b.buf) >= batchMaxBytes {
+		if err := b.flushLocked(); err != nil {
+			return 0, err
+		}
+	}
+	return len(p), nil
+}
+
+// flush writes what was held back and ends holding.
+func (b *batchConn) flush() error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.holding = false
+	return b.flushLocked()
+}
+
+func (b *batchConn) flushLocked() error {
+	if len(b.buf) == 0 {
+		return nil
+	}
+	b.writes++
+	_, err := b.Conn.Write(b.buf)
+	if cap(b.buf) > batchMaxBytes {
+		b.buf = nil
+	} else {
+		b.buf = b.buf[:0]
+	}
+	return err
 }

@@ -105,7 +105,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	if srv.voiceMode() == "server" {
 		srv.background(srv.startVoiceCheck)
 	}
-	srv.draw = newDrawHub()
+	srv.draw = newDrawHub(cfg.DrawLiveMaxMB << 20)
 	srv.update = newUpdateChecker(cfg.AppVersion, store.UpdateCheckState(), func(st updateState) {
 		if b, err := json.Marshal(st); err == nil {
 			if err := store.SetUpdateCheckState(string(b)); err != nil {

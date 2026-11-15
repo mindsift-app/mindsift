@@ -109,6 +109,10 @@ type Config struct {
 	// NotifyDigestMinutes: notifications (except task alarms) are bundled over this many minutes
 	NotifyDigestMinutes int
 
+	// DrawLiveMaxMB: DRAW_LIVE_MAX_MB, what all live drawing sessions may hold in memory together (each
+	// up to 1 MB; a full session takes about 1.4 MB of memory)
+	DrawLiveMaxMB int
+
 	// Web push (VAPID_*): keys are generated and stored in the database when not set
 	VAPIDPublicKey  string
 	VAPIDPrivateKey string
@@ -604,6 +608,7 @@ func Load() *Config {
 			VADFilter:      strings.ToLower(getEnv("STT_VAD_FILTER", "true")) != "false",
 		},
 		NotifyDigestMinutes: envInt("NOTIFY_DIGEST_MINUTES", 5, 1, 1440),
+		DrawLiveMaxMB:       envInt("DRAW_LIVE_MAX_MB", 128, 1, 4096),
 		VAPIDPublicKey:      strings.TrimSpace(os.Getenv("VAPID_PUBLIC_KEY")),
 		VAPIDPrivateKey:     strings.TrimSpace(os.Getenv("VAPID_PRIVATE_KEY")),
 		VAPIDSubject:        strings.TrimSpace(os.Getenv("VAPID_SUBJECT")),

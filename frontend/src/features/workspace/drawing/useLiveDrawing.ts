@@ -29,8 +29,9 @@ export interface LiveCursor extends LivePerson {
 
 export type LiveStatus = 'connecting' | 'live' | 'offline' | 'idle';
 export type LiveEndReason = 'done' | 'discard' | 'expired';
-// busy and too_many: the server takes no further live drawing (from this person, or at all) right now
-export type LiveError = 'forbidden' | 'locked' | 'limit' | 'busy' | 'too_many' | 'save' | null;
+// busy and too_many: the server takes no further live drawing (from this person, or at all) right now;
+// busy_live: in the session, the server takes no more changes for now (all sessions together are full)
+export type LiveError = 'forbidden' | 'locked' | 'limit' | 'busy' | 'busy_live' | 'too_many' | 'save' | null;
 /** Refusals before being in a session (the editor that started it goes back to drawing alone) */
 export type LiveRefusal = 'forbidden' | 'locked' | 'limit' | 'busy' | 'too_many';
 
@@ -76,11 +77,32 @@ type DrawWire = Partial<LiveDrawingState> & {
   reason?: string;
   by?: string;
   code?: string;
+  /** DRAW_POINTERS: the pointers that changed since the last bundle, without this browser's own */
+  pointers?: PointerWire[];
 };
+
+// One pointer as the server bundles them (DRAW_POINTERS); who it is comes from the participants
+interface PointerWire {
+  from?: string;
+  x?: number;
+  y?: number;
+  sel?: string[];
+  touch?: boolean;
+  gone?: boolean;
+}
+
+const cursorOf = (who: LivePerson, p: PointerWire): LiveCursor => ({
+  ...who,
+  at: p.gone ? undefined : [Number(p.x) || 0, Number(p.y) || 0],
+  sel: Array.isArray(p.sel) ? p.sel : [],
+  touch: !!p.touch,
+});
 
 const FLUSH_MS = 50; // changes go out at most this often
 const POINTER_MS = 50; // pointers at most 20 times a second
 const SAVE_TIMEOUT_MS = 6000;
+// Changes the server refused mid-session (busy, limit) are offered again this often
+const REFUSED_RETRY_MS = 5000;
 
 export function useLiveDrawing(opts: LiveOptions | null) {
   const optsRef = useLatestRef(opts);
@@ -100,7 +122,12 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     statusRef.current = s;
     setStatusState(s);
   };
-  const [participants, setParticipants] = useState<LivePerson[]>([]);
+  const [participants, setParticipantsState] = useState<LivePerson[]>([]);
+  const participantsRef = useRef<LivePerson[]>([]);
+  const setParticipants = (p: LivePerson[]) => {
+    participantsRef.current = p;
+    setParticipantsState(p);
+  };
   const [watchers, setWatchers] = useState<LivePerson[]>([]);
   const [host, setHost] = useState('');
   const [you, setYouState] = useState('');
@@ -125,6 +152,17 @@ export function useLiveDrawing(opts: LiveOptions | null) {
   const resumeOnly = useRef(false);
   const joinedRef = useRef(false);
   const [joined, setJoined] = useState(false);
+  // Changes of this browser the server refused in the session (busy, limit): they stay in the drawing
+  // (and in the local draft) and go out again, with the whole state, once the server takes them
+  const unsentRef = useRef(false);
+  const [unsent, setUnsentState] = useState(false);
+  const setUnsent = (v: boolean) => {
+    unsentRef.current = v;
+    setUnsentState(v);
+  };
+  // After a refusal the next state from the server allows one try to send everything again
+  const retrying = useRef(false);
+  const refusedTimer = useRef<number | null>(null);
 
   const setEnded = (e: { reason: LiveEndReason; by?: string }) => {
     endedRef.current = true;
@@ -218,6 +256,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     }
     // In after all (another drawing was closed meanwhile)
     setError((e) => (e === 'busy' || e === 'too_many' ? null : e));
+    retrying.current = unsentRef.current;
     joinOnly.current = false;
     resumeOnly.current = false;
     joinedRef.current = true;
@@ -235,8 +274,34 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     if (!o || !merge || modeRef.current !== 'draw' || endedRef.current) return;
     // Not connected: nothing is lost, joining again sends the whole state
     if (statusRef.current !== 'live' || !isWebSocketConnected()) return;
+    // Refused: nothing goes out until the retry brought the server's state (refusedRetry)
+    if (unsentRef.current && !retrying.current) return;
     const out = merge.collect(o.getDoc());
     if (out.els.length || out.order || out.grid !== undefined) send('DRAW_OPS', { els: out.els, order: out.order, grid: out.grid });
+    else if (unsentRef.current) takenAgain(); // the server has everything after all
+  };
+
+  // The server took the changes again (or had them): the hint goes
+  const takenAgain = () => {
+    retrying.current = false;
+    setUnsent(false);
+    setError((e) => (e === 'busy_live' || e === 'limit' ? null : e));
+  };
+
+  // A change refused in the session: the drawing keeps it; after a while the whole state of the session
+  // comes again, and what it lacks goes out with the next flush (LiveMerge.reconcile)
+  const refused = (code: 'busy' | 'limit') => {
+    setError(code === 'busy' ? 'busy_live' : 'limit');
+    setUnsent(true);
+    retrying.current = false;
+    if (refusedTimer.current === null) refusedTimer.current = window.setTimeout(refusedRetry, REFUSED_RETRY_MS);
+  };
+
+  const refusedRetry = () => {
+    refusedTimer.current = null;
+    if (!unsentRef.current || left.current || endedRef.current) return;
+    if (statusRef.current === 'live' && isWebSocketConnected()) send('DRAW_SYNC');
+    else refusedTimer.current = window.setTimeout(refusedRetry, REFUSED_RETRY_MS);
   };
 
   const schedule = () => {
@@ -283,6 +348,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
           break;
         }
         case 'DRAW_ACK': {
+          if (unsentRef.current && retrying.current) takenAgain();
           const seq = Number(p.seq) || 0;
           if (seq > lastSeq.current + 1) resync();
           lastSeq.current = Math.max(lastSeq.current, seq);
@@ -297,21 +363,28 @@ export function useLiveDrawing(opts: LiveOptions | null) {
           else if (!p.active) setStatus('idle');
           break;
         }
-        case 'DRAW_PRESENCE': {
-          const from = p.from;
-          if (!from || from === youRef.current) break;
+        case 'DRAW_POINTERS': {
+          if (!Array.isArray(p.pointers)) break;
+          const people = new Map(participantsRef.current.map((x) => [x.id, x]));
+          const ptrs = p.pointers;
           setCursors((prev) => {
-            const next = new Map(prev);
-            next.set(from, {
-              id: from,
-              userId: p.userId ?? '',
-              name: p.name ?? '',
-              at: p.gone ? undefined : [Number(p.x) || 0, Number(p.y) || 0],
-              sel: Array.isArray(p.sel) ? p.sel : [],
-              touch: !!p.touch,
-            });
+            let next = prev;
+            for (const ptr of ptrs) {
+              // Someone not drawing (any more): a late pointer of someone who left
+              const who = ptr && typeof ptr.from === 'string' && ptr.from !== youRef.current ? people.get(ptr.from) : undefined;
+              if (!who) continue;
+              if (next === prev) next = new Map(prev);
+              next.set(who.id, cursorOf(who, ptr));
+            }
             return next;
           });
+          break;
+        }
+        case 'DRAW_PRESENCE': {
+          // One pointer, as servers before DRAW_POINTERS sent them (during an update)
+          const from = p.from;
+          if (!from || from === youRef.current) break;
+          setCursors((prev) => new Map(prev).set(from, cursorOf({ id: from, userId: p.userId ?? '', name: p.name ?? '' }, p)));
           break;
         }
         case 'DRAW_END': {
@@ -321,6 +394,11 @@ export function useLiveDrawing(opts: LiveOptions | null) {
           if (mine && p.reason === 'done') {
             endedRef.current = true;
             const doc = o.getDoc();
+            if (unsentRef.current) {
+              // Changes of the host the server refused: the final state with them (they are newer)
+              o.onSaved(merge.reconcile(doc, { els: p.els || [], order: p.order, grid: !!p.grid }).doc);
+              break;
+            }
             o.onSaved(finalDrawing({ ...doc, ...(p.grid ? { grid: true } : { grid: undefined }) }, p.els || [], p.order));
           } else if (mine && p.reason === 'discard') {
             endedRef.current = true;
@@ -337,6 +415,11 @@ export function useLiveDrawing(opts: LiveOptions | null) {
             case 'limit':
             case 'busy':
             case 'too_many':
+              // A change refused in the session: kept here, sent again later
+              if ((p.code === 'busy' || p.code === 'limit') && joinedRef.current && statusRef.current === 'live') {
+                refused(p.code);
+                break;
+              }
               if (!joinedRef.current && o.onRefused?.(p.code)) break;
               setError(p.code);
               break;
@@ -383,7 +466,8 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       if (pointerTimer.current !== null) window.clearTimeout(pointerTimer.current);
       if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
       if (retryTimer.current !== null) window.clearTimeout(retryTimer.current);
-      flushTimer.current = pointerTimer.current = saveTimer.current = retryTimer.current = null;
+      if (refusedTimer.current !== null) window.clearTimeout(refusedTimer.current);
+      flushTimer.current = pointerTimer.current = saveTimer.current = retryTimer.current = refusedTimer.current = null;
       // Declared further down; the cleanup runs after render, when it exists
       // eslint-disable-next-line react-hooks/immutability
       if (!left.current && !endedRef.current) leaveNow();
@@ -398,6 +482,8 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       setHost('');
       setCursors(new Map());
       setEndedState(null);
+      setUnsent(false);
+      retrying.current = false;
     };
     // One session per start: everything it needs is read through refs
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -432,6 +518,8 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     ended,
     error,
     saving,
+    /** Changes of this browser the server refused (busy, limit): kept here and in the local draft */
+    unsent,
     /** The drawing changed here */
     changed: schedule,
     /** A gesture ended: its result goes out, waiting changes of others come in */
@@ -439,7 +527,9 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       const o = optsRef.current;
       if (!o || !merge || modeRef.current !== 'draw') return;
       const { out, incoming } = merge.release(o.getDoc());
-      if (statusRef.current === 'live' && isWebSocketConnected() && (out.els.length || out.order || out.grid !== undefined)) {
+      // Refused before: what is not sent now goes out after the retry (reconcile finds it)
+      const blocked = unsentRef.current && !retrying.current;
+      if (!blocked && statusRef.current === 'live' && isWebSocketConnected() && (out.els.length || out.order || out.grid !== undefined)) {
         send('DRAW_OPS', { els: out.els, order: out.order, grid: out.grid });
       }
       if (incoming.applied.length) o.apply(incoming.doc, incoming.applied);

@@ -219,6 +219,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     cursorAnchorRef,
   });
   const outlinerTreeRef = useRef<OutlinerTreeHandle | null>(null);
+  const fileDragAtEnd = (e: React.DragEvent) => outlinerTreeRef.current?.fileDragAtEnd(e);
   const docRef = useLatestRef<Document | null>(doc);
 
   const { zoomedBlock, childBlocks, levelOffset } = useMemo(() => {
@@ -1028,6 +1029,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           inTagPage ? 'py-2' : inJournal ? 'py-3' : 'py-5'
         } ${focusMode ? 'max-w-(--note-measure-focus)' : 'sm:max-w-(--note-measure)'} mx-auto`}
         style={focusMode && desktopBar && !embedded ? { paddingTop: `calc(1.25rem + ${focusTopGap}px)`, paddingBottom: '60vh' } : undefined}
+        // Image files dropped onto the title or beside the bullets go to the end of the note (OutlinerTree)
+        onDragEnter={fileDragAtEnd}
+        onDragOver={fileDragAtEnd}
+        onDragLeave={fileDragAtEnd}
+        onDrop={fileDragAtEnd}
       >
         {desktopBar && zoomedBlock && breadcrumbs.length > 0 && <div className="mb-3">{breadcrumbNav}</div>}
         {zoomedBlock ? (
