@@ -198,7 +198,7 @@ A key is only permitted to access the following endpoints and requires one of th
 | `tasks:read` | Read tasks | `GET /task-lists`, `GET /tasks` | `list_task_lists`, `list_tasks`, `get_task`, `search` |
 | `webhook:task` | Create tasks | `POST /inbox` or `/webhooks/ingest` with target `task` | `create_task` |
 | `tasks:write` | Modify tasks (includes creation) | plus `PATCH`/`DELETE /thoughts/{id}` | plus `update_task`, `complete_task`, `delete_task`, `create_task_list` |
-| `lists:read` | Read lists | `GET /lists`, `GET /lists/{id}` | `list_lists`, `get_list`, `search` |
+| `lists:read` | Read lists | `GET /lists`, `GET /lists/{id}`, `GET /lists/{id}/suggestions` | `list_lists`, `get_list`, `search` |
 | `webhook:list` | Add list items | `POST /lists/{id}/items`, `/webhooks/ingest` with target `list_item` | `add_list_item` |
 | `lists:write` | Modify lists (includes adding items) | plus `PATCH`/`PUT /lists/{id}/items/{itemId}` | plus `check_list_item`, `update_list_item`, `create_list` |
 | `notes:read` | Read notes | – | `list_notes`, `get_note`, `search` |
@@ -357,6 +357,7 @@ Duplicate operations (same `opId`) are not reapplied; the response returns the p
 | PATCH | `/lists/{id}` | Rename: `title`, `icon` (owner and editors; `403` for viewers, `404` without access); sends `LIST_UPDATED` |
 | GET/POST | `/lists/{id}/shares` | Retrieve or create shares (`targetType`, `targetId`, `role`: `editor`/`viewer`) |
 | DELETE | `/lists/{id}/shares/{shareId}` | Remove share |
+| GET | `/lists/{id}/suggestions` | Suggestions while typing a new item → `{items[{content, category, count, lastUsed}]}`: every entry added to the list before, also ticked and cleared ones, once per name (case and spaces ignored, hashtags removed) with the spelling and category of its last use (an empty category keeps the earlier one; renaming an item or dragging it into another group updates it). Without `q` all entries by score (count, halved after 60 days without use); with `q` only matching ones: starting with `q` first, then with a word starting with `q`, then containing it, each by score. `limit` default and max 500. The history belongs to the list (shared lists share it), keeps at most 500 names (least used go first) and is deleted with the list. Anyone who can read the list (`404` otherwise; API keys: `lists:read`) |
 | POST | `/lists/{id}/items` | Add item (`content`, `category`, `quantity`) |
 | PATCH | `/lists/{id}/items/{itemId}` | Check off or reopen item (`isCompleted`: the wanted state, not a toggle; already in that state, nothing is written or broadcast). Optional `changedAt` and `sentAt` (sender's clock, ms since 1970): a change made offline and sent later; it is ignored when the checked state changed after it |
 | PUT | `/lists/{id}/items/{itemId}` | Update item (`content`, `category`, `quantity`; only the fields sent are written) |

@@ -35,6 +35,10 @@
   "listTitlePlaceholder": "z.B. Supermarkt, Baumarkt, Drogerie",
   "addedBy": "Hinzugefügt von {{name}}",
   "itemPlaceholder": "Was soll auf „{{title}}“? (z. B. Hafermilch #Kühlregal)",
+  "addSheetTitle": "Auf „{{title}}“",
+  "suggestions": {
+    "title": "Vorschläge"
+  },
   "adding": "Wird hinzugefügt…",
   "general": "Allgemein",
   "openCount": "{{count}} offen",

@@ -2996,6 +2996,46 @@
         }
       }
     },
+    "/api/v1/lists/{id}/suggestions": {
+      "get": {
+        "summary": "Suggestions for a new list item",
+        "description": "Entries added to the list before (also ticked and cleared ones) with category, count and last use → {items}; q filters and ranks (starts with q, a word starts with q, contains q; then by frequency weighted by recency), limit default and max 500. Anyone who can read the list",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/mcp": {
       "delete": {
         "summary": "Not supported: 405 (no sessions)",

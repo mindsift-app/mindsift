@@ -35,6 +35,10 @@
   "listTitlePlaceholder": "es. Supermercato, Bricolage, Farmacia",
   "addedBy": "Aggiunto da {{name}}",
   "itemPlaceholder": "Cosa vuoi aggiungere a «{{title}}»? (es. latte d'avena #frigo)",
+  "addSheetTitle": "Su «{{title}}»",
+  "suggestions": {
+    "title": "Suggerimenti"
+  },
   "adding": "Aggiunta in corso…",
   "general": "Generale",
   "openCount": "{{count}} da fare",

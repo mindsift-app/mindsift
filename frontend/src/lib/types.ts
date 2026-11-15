@@ -818,6 +818,14 @@ export interface UnifiedShare {
   createdAt: string;
 }
 
+// An entry of a list's history: GET /lists/{id}/suggestions (features/lists/itemSuggestions.ts)
+export interface ListItemSuggestion {
+  content: string;
+  category: string;
+  count: number;
+  lastUsed: string;
+}
+
 export interface ListItem {
   id: string;
   listId: string;

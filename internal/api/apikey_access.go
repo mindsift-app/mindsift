@@ -81,6 +81,7 @@ var keyRoutes = []keyRoute{
 	{http.MethodDelete, regexp.MustCompile(`^/api/v1/thoughts/[^/]+$`), []string{storage.ScopeTasksWrite}},
 	{http.MethodGet, regexp.MustCompile(`^/api/v1/lists$`), []string{storage.ScopeListsRead}},
 	{http.MethodGet, regexp.MustCompile(`^/api/v1/lists/[^/]+$`), []string{storage.ScopeListsRead}},
+	{http.MethodGet, regexp.MustCompile(`^/api/v1/lists/[^/]+/suggestions$`), []string{storage.ScopeListsRead}},
 	{http.MethodPost, regexp.MustCompile(`^/api/v1/lists/[^/]+/items$`), []string{storage.ScopeListsWrite, storage.ScopeList}},
 	{http.MethodPatch, regexp.MustCompile(`^/api/v1/lists/[^/]+/items/[^/]+$`), []string{storage.ScopeListsWrite}},
 	{http.MethodPut, regexp.MustCompile(`^/api/v1/lists/[^/]+/items/[^/]+$`), []string{storage.ScopeListsWrite}},

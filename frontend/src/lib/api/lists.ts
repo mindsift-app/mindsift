@@ -1,5 +1,5 @@
 // REST calls: shared lists and their items
-import { ListItem, ListShare, SharedList } from '../types';
+import { ListItem, ListItemSuggestion, ListShare, SharedList } from '../types';
 import { OfflineError, enqueue, dropQueued, updateQueued, OFFLINE_ITEM_PREFIX } from '../offline';
 import { ensureArray, request } from './client';
 
@@ -74,6 +74,13 @@ export const listsApi = {
 
   async removeListShare(listId: string, shareId: string): Promise<void> {
     await request(`/api/v1/lists/${listId}/shares/${shareId}`, { method: 'DELETE' });
+  },
+
+  // Everything added to the list before, for suggestions while typing; without a query, so the read
+  // cache keeps one answer per list for offline use
+  async getListSuggestions(listId: string): Promise<ListItemSuggestion[]> {
+    const res = await request<{ items: ListItemSuggestion[] }>(`/api/v1/lists/${listId}/suggestions`);
+    return ensureArray(res?.items);
   },
 
   async createListItem(listId: string, content: string, category = '', quantity = ''): Promise<ListItem> {

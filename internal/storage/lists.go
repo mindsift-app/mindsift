@@ -415,6 +415,7 @@ func (s *Store) CreateListItem(listID, content, category, quantity string, sortO
 	}
 
 	s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, listID)
+	s.recordListItemUse(listID, it.Content, it.Category, now)
 	return it, nil
 }
 
@@ -490,6 +491,10 @@ func (s *Store) UpdateListItem(itemID string, content *string, category *string,
 	set("content", content)
 	set("category", category)
 	set("quantity", quantity)
+	var before *domain.ListItem
+	if content != nil || category != nil {
+		before, _ = s.getListItem(itemID)
+	}
 	if len(sets) > 0 {
 		res, err := s.db.Exec(`UPDATE list_items SET `+strings.Join(sets, ", ")+` WHERE id = ?`, append(args, itemID)...)
 		if err != nil {
@@ -505,6 +510,14 @@ func (s *Store) UpdateListItem(itemID string, content *string, category *string,
 	}
 	if len(sets) > 0 {
 		s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, domain.NowISO(), it.ListID)
+	}
+	// The history follows a corrected name or category (list_suggestions.go)
+	if before != nil {
+		if content != nil && before.Content != it.Content {
+			s.renameListItemUse(it.ListID, before.Content, it.Content, it.Category)
+		} else if category != nil && before.Category != it.Category {
+			s.setListItemUseCategory(it.ListID, it.Content, it.Category)
+		}
 	}
 	return it, nil
 }
@@ -522,7 +535,11 @@ func (s *Store) MoveListItem(itemID, targetListID string) (*domain.ListItem, err
 	}
 	s.execLogged(`UPDATE lists SET updated_at = ? WHERE id IN (?, ?)`, now, sourceListID, targetListID)
 
-	return s.getListItem(itemID)
+	it, err := s.getListItem(itemID)
+	if err == nil && sourceListID != targetListID {
+		s.recordListItemUse(targetListID, it.Content, it.Category, now)
+	}
+	return it, err
 }
 
 // getListItem reads one item with everything GetListItems returns (author included), so a
@@ -607,7 +624,16 @@ func (s *Store) ReorderListItems(listID string, items []domain.ListItemReorderIt
 	if _, err := tx.Exec(`UPDATE lists SET updated_at = ? WHERE id = ?`, domain.NowISO(), listID); err != nil {
 		return err
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	// An item dragged into another group: that category is suggested next time
+	for _, it := range items {
+		if it.Category != nil && it.Content != nil {
+			s.setListItemUseCategory(listID, *it.Content, *it.Category)
+		}
+	}
+	return nil
 }
 
 // ErrListNotFound: the list does not exist or the user has no access to it (deliberately the same).
