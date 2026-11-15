@@ -55,11 +55,13 @@ async function skipAppOffer(page) {
 
 async function openNote(engine, token, title, { noWebSocket = false, phone = false } = {}) {
   const browser = await engine.launch();
-  const ctx = await browser.newContext(
-    phone
+  const ctx = await browser.newContext({
+    ...(phone
       ? { viewport: { width: 390, height: 780 }, isMobile: engine === chromium, hasTouch: true, locale: 'de-DE' }
-      : { viewport: { width: 1280, height: 860 }, locale: 'de-DE' }
-  );
+      : { viewport: { width: 1280, height: 860 }, locale: 'de-DE' }),
+    // Screenshots sharp enough to read the header's small labels
+    ...(SHOTS ? { deviceScaleFactor: 2 } : {}),
+  });
   // Like a proxy that refuses the upgrade: the app goes on over SSE
   if (noWebSocket) await ctx.routeWebSocket(/\/api\/v1\/ws/, (ws) => ws.close({ code: 1008, reason: 'blocked by proxy' }));
   await ctx.addInitScript((t) => {
@@ -156,8 +158,37 @@ const main = async () => {
   check(!!hintC && (await editor(C.page).count()) === 0, 'Im anderen Tab sagt der Doppelklick „… auf einem anderen Gerät oder in einem anderen Tab …“');
   await shot(A.page, 'alone');
 
-  // Anna starts drawing together: a live session with what she drew so far
+  // Anna starts drawing together: a live session with what she drew so far. From the start she sees it
+  // (dot, her picture, "Du bist Gastgeber"), before anyone joins; "Fertig" and the discard button stay
+  // where they were, nothing flickers in between
+  await A.page.evaluate(() => {
+    const dlg = () => document.querySelector('[role="dialog"][aria-label="Zeichnung bearbeiten"]');
+    const w = window;
+    w.__liveFlicker = [];
+    const look = () => {
+      const d = dlg();
+      if (!d) return;
+      const buttons = [...d.querySelectorAll('button')];
+      const done = buttons.some((b) => b.textContent?.trim().startsWith('Fertig'));
+      const leave = buttons.some((b) => b.textContent?.includes('Verlassen'));
+      if (!done || leave) w.__liveFlicker.push({ done, leave });
+    };
+    w.__liveObserver = new MutationObserver(look);
+    w.__liveObserver.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true });
+  });
   await editor(A.page).getByRole('button', { name: 'Gemeinsam zeichnen' }).click();
+  const starterHost = await waitFor(async () => (await editor(A.page).locator('[data-live-host]').textContent())?.includes('Du bist Gastgeber'), 3000);
+  check(!!starterHost, 'Wer „Gemeinsam zeichnen“ startet, sieht sofort „Du bist Gastgeber“ (noch allein)');
+  const starterPeople = await editor(A.page).locator('[data-live-people]').getAttribute('data-live-people', { timeout: 2000 }).catch(() => null);
+  check(starterPeople === adminName, 'Der Starter sieht die Live-Anzeige mit seinem eigenen Bild', starterPeople);
+  await sleep(1000);
+  const flicker = await A.page.evaluate(() => {
+    window.__liveObserver.disconnect();
+    return window.__liveFlicker;
+  });
+  check(flicker.length === 0, 'Beim Start flackern die Knöpfe nicht („Fertig“ bleibt, kein „Verlassen“)', flicker.slice(0, 3));
+  check((await editor(A.page).locator('[data-live-host]').count()) === 1, 'Die Live-Anzeige bleibt nach dem Start stehen');
+  await shot(A.page, 'starter-after-start');
 
   // 2. The others' note shows the live drawing instead of a lock
   const badge = await waitFor(async () => {
@@ -286,7 +317,8 @@ const main = async () => {
   check(!!a2Open, 'Anna öffnet die Zeichnung wieder');
   await editor(A2.page).getByRole('button', { name: 'Gemeinsam zeichnen' }).click();
   await sleep(1500);
-  check((await editor(A2.page).locator('[data-live-people]').count()) === 0, 'Gastgeber allein: keine Live-Anzeige, auch nicht kurz');
+  const aloneHost = await editor(A2.page).locator('[data-live-host]').textContent({ timeout: 2000 }).catch(() => null);
+  check(!!aloneHost?.includes('Du bist Gastgeber'), 'Gastgeber allein: die Live-Anzeige mit „Du bist Gastgeber“ steht', aloneHost);
   await waitFor(async () => (await B.page.locator('[data-live-badge]').count()) === 1, 10000);
   await B.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
   await B.page.getByRole('alertdialog').getByRole('button', { name: 'Mitzeichnen' }).click();
@@ -300,6 +332,13 @@ const main = async () => {
   check(!!hostLeft && (await A2.page.getByRole('alertdialog').count()) === 0, 'Gastgeber schließt ohne Rückfrage, während andere mitzeichnen');
   const benHostAgain = await waitFor(async () => (await editor(B.page).getByRole('button', { name: /^Fertig/ }).count()) === 1, 8000);
   check(!!benHostAgain, 'Ben übernimmt als Gastgeber, als Anna den Editor schließt');
+  // Now alone in it: he still sees the live session and that he is host
+  const benSeesHost = await waitFor(async () => (await editor(B.page).locator('[data-live-host]').textContent())?.includes('Du bist Gastgeber'), 5000);
+  check(!!benSeesHost, 'Der neue Gastgeber sieht nach der Übergabe „Du bist Gastgeber“, auch allein');
+  const benPeople = await editor(B.page).locator('[data-live-people]').getAttribute('data-live-people', { timeout: 2000 }).catch(() => null);
+  check(benPeople === userName, 'Der neue Gastgeber sieht die Live-Anzeige mit seinem Bild', benPeople);
+  await sleep(300);
+  await shot(B.page, 'new-host-after-handover');
   await A2.browser.close();
 
   // 10. Ben, the last one, discards after the question and takes it back with "Rückgängig"

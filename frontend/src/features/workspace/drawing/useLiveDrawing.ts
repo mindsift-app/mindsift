@@ -413,7 +413,9 @@ export function useLiveDrawing(opts: LiveOptions | null) {
 
   if (!opts || !active) return null;
 
-  const isHost = !!you && host === you;
+  // Until the server answered, whoever started the session (or brought it back) counts as its host, so the
+  // buttons stay as they were ("Verlassen" does not flash in place of "Fertig"); joining counts as not
+  const isHost = you ? host === you : opts.mode === 'draw' && !opts.join;
   return {
     mode: (modeState ?? opts.mode)!,
     /** Was in the session at least once */
@@ -424,6 +426,8 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     host,
     you,
     isHost,
+    /** The server answered: this browser knows its connection in the session (and so who is host) */
+    answered: !!you,
     cursors,
     ended,
     error,
