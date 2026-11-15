@@ -34,6 +34,7 @@ import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
 import { SecretChip, NewSecretSheet } from './SecretChip';
 import { CodeBlockEditor, resolveLanguageId, isUnambiguousLanguageShortcut } from './CodeBlockEditor';
+import { htmlHasCodeBlock, htmlToMarkdown } from '../../lib/pasteHtml';
 import { TableBlock } from './TableBlock';
 import { emptyTable, serializeMarkdownTable, TableLines } from '../../lib/markdownTable';
 import { useLatestCallback } from '../../lib/useLatestCallback';
@@ -987,7 +988,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     // Bullets copied from a note with hidden values: the app's own format has their references where the
     // plain text has the mask (lib/outlineMarkdown.ts)
     const own = ownClipboardText(e.clipboardData);
-    const pastedText = own || e.clipboardData.getData('text');
+    // Code blocks from other pages (ChatGPT, Claude, documentation): only their HTML says where code starts
+    // and in which language, the plain text has it without a fence
+    const html = own ? '' : e.clipboardData.getData('text/html');
+    const fromHtml = html && htmlHasCodeBlock(html) ? htmlToMarkdown(html) : '';
+    const pastedText = own || fromHtml || e.clipboardData.getData('text');
     const start = e.currentTarget.selectionStart ?? localContent.length;
     const end = e.currentTarget.selectionEnd ?? start;
     const textBefore = localContent.slice(0, start);

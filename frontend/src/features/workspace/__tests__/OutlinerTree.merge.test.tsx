@@ -204,3 +204,42 @@ describe('Pasting bullets copied from a note', () => {
     expect(live.map((b) => b.content)).toEqual(['ZielPIN {{secret:sec2}}']);
   });
 });
+
+describe('Pasting code from other pages', () => {
+  const paste = async (ta: HTMLTextAreaElement, data: Record<string, string>) => {
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    await act(async () => {
+      fireEvent.paste(ta, { clipboardData: { getData: (type: string) => data[type] ?? (type === 'text' ? data['text/plain'] ?? '' : '') } });
+    });
+  };
+
+  it('a Markdown fence becomes a code block; the text before the cursor stays in its bullet', async () => {
+    render(<Harness initial={[mk('a', 'Ziel')]} />);
+    await paste(area('Ziel'), { 'text/plain': '```sh\nls -la\n```\nDanach' });
+    expect(live.map((b) => [b.type, b.content, b.lang ?? ''])).toEqual([
+      ['bullet', 'Ziel', ''],
+      ['code', 'ls -la', 'bash'],
+      ['text', 'Danach', ''],
+    ]);
+  });
+
+  it('takes the code blocks of an answer copied from a chat page from its HTML, not the plain text', async () => {
+    render(<Harness initial={[mk('a', '')]} />);
+    await paste(area(''), {
+      'text/plain': 'So geht es:\n\nyaml\nCode kopieren\nport: 80\n',
+      'text/html':
+        '<p>So geht es:</p><pre><div>yaml</div><div><button>Code kopieren</button></div><div><code class="language-yaml">port: 80\n</code></div></pre>',
+    });
+    expect(live.map((b) => [b.type, b.content, b.lang ?? ''])).toEqual([
+      ['text', 'So geht es:', ''],
+      ['code', 'port: 80', 'yaml'],
+    ]);
+  });
+
+  it('HTML without code blocks keeps the plain text', async () => {
+    render(<Harness initial={[mk('a', '')]} />);
+    await paste(area(''), { 'text/plain': 'Eins\n\nZwei', 'text/html': '<p>Eins</p><p><b>Zwei</b></p>' });
+    expect(live.map((b) => b.content)).toEqual(['Eins', 'Zwei']);
+  });
+});
