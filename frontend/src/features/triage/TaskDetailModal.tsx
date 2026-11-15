@@ -378,7 +378,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
               onClick={() => {
                 triggerHaptic(15);
                 const nextState = !task.isCompleted;
-                const doneCol = activeColumns.find((c) => c.isDone) || activeColumns[activeColumns.length - 1];
+                const doneCol = [...activeColumns].reverse().find((c) => c.isDone) || activeColumns[activeColumns.length - 1];
                 const todoCol = activeColumns.find((c) => !c.isDone) || activeColumns[0];
                 const nextKanban = nextState ? (doneCol ? doneCol.id : 'done') : (todoCol ? todoCol.id : 'todo');
                 onUpdateStatus(task, nextKanban);

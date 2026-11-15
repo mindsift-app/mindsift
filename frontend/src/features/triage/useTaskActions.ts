@@ -41,7 +41,7 @@ export function useTaskActions({
     pushUndo({ kind: 'status', id: task.id, isCompleted: !!task.isCompleted, kanbanStatus: task.kanbanStatus });
     const nextState = !task.isCompleted;
     const cols = columnsFor(task);
-    const doneCol = cols.find((c) => c.isDone) || cols[cols.length - 1];
+    const doneCol = [...cols].reverse().find((c) => c.isDone) || cols[cols.length - 1]; // the last done column, as on the server
     const todoCol = cols.find((c) => !c.isDone) || cols[0];
     // Un-ticked while its tick made offline still waits to be sent: back to the column it came from
     // ("In Arbeit"), so nothing is left to send (lib/api/tasks.ts updateThought)

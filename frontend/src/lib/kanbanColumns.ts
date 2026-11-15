@@ -18,7 +18,7 @@ export function columnsOfTask(task: Thought, lists: TaskList[], fallback: Kanban
 
 // The column of its own list a task stands in; a status whose column is gone counts as the first open one
 export function ownColumnIn(task: Thought, cols: KanbanColumn[]): KanbanColumn | undefined {
-  if (task.isCompleted) return cols.find((c) => c.isDone && c.id === task.kanbanStatus) || cols.find((c) => c.isDone);
+  if (task.isCompleted) return cols.find((c) => c.isDone && c.id === task.kanbanStatus) || [...cols].reverse().find((c) => c.isDone);
   return cols.find((c) => c.id === task.kanbanStatus) || cols.find((c) => c.id === 'todo') || cols.find((c) => !c.isDone);
 }
 
