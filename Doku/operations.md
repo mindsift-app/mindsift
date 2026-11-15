@@ -70,6 +70,32 @@ The daily backups hold the whole database as `data/backups/system/mindsift-db-<d
 
 People restore their own data from their personal backups in the account settings, without stopping the server.
 
+## Locked out? / Command line
+
+The server binary has a small command line for what the administration cannot do when nobody can sign in. In the container it is on the `PATH` as `mindsift`; run it next to the running server with `docker exec` (or `podman exec`), the container name as in [`docker-compose.yml`](../docker-compose.yml). Without the container, call the release binary as `./mindsift <command>` with the same `DATA_DIR` or `DATABASE_URL` as the server.
+
+```bash
+docker exec mindsift mindsift help                         # the commands
+docker exec mindsift mindsift users                        # list the accounts (--json for scripts)
+docker exec mindsift mindsift reset-password anna          # new one-time password, signs out every session
+docker exec mindsift mindsift reset-password anna --disable-2fa   # also removes app codes, passkeys, recovery codes
+docker exec mindsift mindsift make-admin anna              # admin role (--revoke takes it away)
+docker exec mindsift mindsift users create bert --email bert@example.com [--admin]
+docker exec mindsift mindsift users delete bert            # shows what would go; add --yes to delete
+docker exec mindsift mindsift check --backup               # snapshot to backups/system, then integrity check
+```
+
+- **Names:** `<name>` is the username, the email address or the account's ID, exactly (not the looser matching of the sign-in).
+- **Passwords:** `users create` without a password and `reset-password` print a one-time password once (20 characters). Hand it over safely; the person sets an own one in the account settings after signing in (MindSift has no forced password change). For scripts, `users create` reads a password from `--password-file <path>` or `--password-stdin` (`docker exec -i … --password-stdin < file`), checked by the rules of the administration.
+- **Rules as in the administration:** usernames and addresses must be valid and free; deleting takes the same steps as in the administration (shared notes and lists disappear for the others, other people's tasks in the account's task lists stay theirs, the account's backups are kept for the retention period). The last active administrator can be neither deleted nor demoted. The first account of an empty server must be an administrator; the setup wizard then asks its other questions after the first sign-in, as with `ADMIN_USER`.
+- **While the server runs:** the command opens the same database the same way (WAL, busy timeout) and changes it in short transactions. Sign-ins are checked against the database on every request, so a new password, a deleted account or another role count at once; old sign-ins of the account are refused. Within a few seconds the server also ends the account's live connections, lifts the lock of the sign-in protection after a new password and writes the change to its log (`Account changed on the command line … by=cli`); the database keeps a record of command line changes for a year (table `cli_events`).
+- **Versions:** the command never migrates the database. Run it with the binary of the running version (`docker exec` into its container does that); a binary that is older or newer than the database stops with a message instead of changing anything.
+- **Demo mode:** with `MINDSIFT_DEMO` the commands only read (`users`, `check`); changes are refused.
+- **As which user:** `docker exec` runs as root; the `mindsift` command switches to the owner of the data folder (uid 1000) first, so a backup or database files it creates stay usable for the server.
+- **Exit codes and `--json`:** every command takes `--json` and prints one JSON object (or, for `users`, an array); errors as `{"error": …, "code": …}`. Exit codes: `0` done, `1` failed or `check` found problems, `2` invalid input, `3` account not found, `4` refused (name or address taken, last administrator, demo mode).
+
+Without a command, or with `serve`, the binary starts the server as before.
+
 ## Health check
 
 The image checks `/api/v1/health` every 30 s, shown in `docker ps`, Portainer and Dockge and usable with `depends_on: condition: service_healthy`. Podman ignores checks in images; copy the `healthcheck:` block of `docker-compose.yml` instead.
