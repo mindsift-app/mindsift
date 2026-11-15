@@ -91,6 +91,12 @@ type Config struct {
 	// CalendarFeeds: CALENDAR_FEEDS=true/false fixes whether people may subscribe to their tasks in a
 	// calendar app (false forbids it outright); unset leaves it to the system settings.
 	CalendarFeeds *bool
+	// UpdateCheckOff: UPDATE_CHECK=false stops the daily look for a new MindSift release (api/update.go);
+	// the server then sends no request for it at all
+	UpdateCheckOff bool
+	// AppVersion: the version the binary was built as (main.version, set by the image build from
+	// APP_VERSION, e.g. "v0.80.0"); empty or "-dev" for builds that are not a release
+	AppVersion string
 	// DefaultLanguage: DEFAULT_LANGUAGE gives the server's default language until the admin picks one in
 	// the system settings (unsupported or unset: German; English in demo mode)
 	DefaultLanguage string
@@ -569,6 +575,7 @@ func Load() *Config {
 		PublicLinks:             envBoolPtr("PUBLIC_LINKS"),
 		PublicLinkMaxDays:       publicLinkMaxDaysFromEnv(),
 		CalendarFeeds:           envBoolPtr("CALENDAR_FEEDS"),
+		UpdateCheckOff:          envBoolPtr("UPDATE_CHECK") != nil && !*envBoolPtr("UPDATE_CHECK"),
 		DefaultLanguage:         defaultLanguage(demoMode),
 		DisableLoginProtection:  strings.ToLower(getEnv("LOGIN_PROTECTION", "true")) == "false",
 		OAuthIdleDays:           envInt("OAUTH_IDLE_DAYS", 90, 0, 36500),

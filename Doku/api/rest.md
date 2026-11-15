@@ -399,6 +399,8 @@ Routes marked **S** are open to server admins and user managers (`role = manager
 | GET | `/admin/settings/sharing-impact?mode=` | Dry run: how many shares and group memberships a mode change would remove (`affected`) |
 | POST | `/admin/smtp/test` | Test email (`toEmail`); with `smtp` (fields as in `/auth/setup`) through that mail server without storing it (setup wizard), `400` without host. `502` with the mail server's answer when sending fails |
 | GET | `/admin/voice` | Active voice recognition (`mode`: `server`/`browser`/`off`), settings from `STT_*` without secrets, limits, and in server mode fresh health status (`status.reachable`, `status.modelReady`) |
+| GET | `/admin/update` | The daily look for a new MindSift release: `enabled`, `reason` when off (`off`: `UPDATE_CHECK=false`, `demo`, `devBuild`: the server is no release version), `current` (installed), `latest`, `url` (its release page on GitHub), `publishedAt`, `checkedAt` (last answer from GitHub), `available` (`latest` is newer than `current`), `dismissed` (this admin put the hint for `latest` aside) |
+| POST | `/admin/update/dismiss` | Puts the hint for one release aside for this admin (`version`, e.g. `v1.2.0`); a newer release shows it again. `400` for anything but a release version, `403` in demo mode. Answers like `GET /admin/update` |
 | GET/POST | `/admin/backups` | List database dumps or create backup immediately (database dump + all user backups) |
 | GET | `/admin/backups/{name}` | Download database dump |
 | GET | `/admin/backups/deleted` | Kept backups of deleted accounts (`userId`, `displayName`, `email`, `deletedAt`, `removeAt`, `files`) |

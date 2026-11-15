@@ -9,6 +9,17 @@ import (
 	"testing"
 )
 
+// UPDATE_CHECK=false (or 0/no) switches the release check off; unset, true or anything else leaves it on.
+func TestUpdateCheckSwitch(t *testing.T) {
+	t.Setenv("DATA_DIR", t.TempDir())
+	for v, off := range map[string]bool{"": false, "true": false, "false": true, "0": true, "no": true, "maybe": false} {
+		t.Setenv("UPDATE_CHECK", v)
+		if got := Load().UpdateCheckOff; got != off {
+			t.Errorf("UPDATE_CHECK=%q: off = %v, want %v", v, got, off)
+		}
+	}
+}
+
 func TestConfigLogLevelAndDebug(t *testing.T) {
 	// Load writes the generated JWT secret into the data directory; keep it out of the repository
 	t.Setenv("DATA_DIR", t.TempDir())

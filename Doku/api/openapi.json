@@ -624,6 +624,34 @@
         }
       }
     },
+    "/api/v1/admin/update": {
+      "get": {
+        "summary": "Installed and latest MindSift release",
+        "description": "The daily release check (server admins only): enabled, reason when off (off: UPDATE_CHECK=false, demo, devBuild: no release version), current, latest, url (release page), publishedAt, checkedAt, available (latest is newer), dismissed (this admin put the hint for latest aside)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/update/dismiss": {
+      "post": {
+        "summary": "Put the release hint aside",
+        "description": "Hides the hint for one release (version, e.g. v1.2.0) for this admin; a newer release shows it again. 400 for anything but a release version, 403 in demo mode. Answers like GET /admin/update",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/auth/alarms/test": {
       "post": {
         "summary": "Send a test alarm",
