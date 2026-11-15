@@ -43,6 +43,35 @@ describe('phone hashtag filter', () => {
     expect(clearTags).toHaveBeenCalled();
   });
 
+  it('every control in the sheet is at least 44 px tall on the phone', () => {
+    render(
+      <TasksFilterSheet
+        allAvailableTags={['backup', 'einkauf', 'garten']}
+        defaultGroupBy="none"
+        groupBy="none"
+        groupOptions={[
+          { id: 'none', label: 'Keine' },
+          { id: 'priority', label: 'Priorität' },
+        ]}
+        safeTasks={tasks}
+        selectedTags={[]}
+        setGroupBy={noop}
+        toggleTag={noop}
+        clearTags={noop}
+        setShowFilterModal={noop}
+        setSortBy={noop}
+        sortBy="custom"
+        viewMode="list"
+        showFilterModal
+      />
+    );
+    const buttons = screen.getAllByRole('button');
+    // close, "Alle", 3 hashtags, 2 groupings, 5 sortings, reset, done
+    expect(buttons).toHaveLength(14);
+    for (const b of buttons) expect(b.className, b.textContent ?? '').toMatch(/(^|\s)(min-)?h-11(\s|$)/);
+    expect(screen.getByRole('button', { name: 'Schließen' })).toBeTruthy();
+  });
+
   it('the banner names the chosen hashtags compactly and clears them with one tap', () => {
     const clearTags = vi.fn();
     render(

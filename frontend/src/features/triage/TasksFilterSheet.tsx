@@ -51,7 +51,7 @@ export function TasksFilterSheet({
         className="w-full max-h-[85vh] overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] animate-in slide-in-from-bottom duration-200 space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between pb-3 border-b border-border">
+        <div className="flex items-center justify-between -mt-1 pb-2 border-b border-border">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
               <Funnel className="w-4 h-4" />
@@ -61,7 +61,8 @@ export function TasksFilterSheet({
           <button
             type="button"
             onClick={() => setShowFilterModal(false)}
-            className="p-1.5 text-faint hover:text-main rounded-btn transition-colors cursor-pointer"
+            aria-label={t('common:close')}
+            className="-mr-2 w-11 h-11 flex items-center justify-center text-faint hover:text-main rounded-btn transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -73,12 +74,12 @@ export function TasksFilterSheet({
             <Hash className="w-3 h-3 text-accent" />
             <span>{t('filter.byTag')}</span>
           </span>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={clearTags}
               aria-pressed={selectedTags.length === 0}
-              className={`min-h-[32px] px-3 text-xs rounded-full border transition-colors cursor-pointer ${
+              className={`min-h-11 px-3.5 text-sm rounded-full border transition-colors cursor-pointer ${
                 selectedTags.length === 0
                   ? 'bg-accent text-on-accent border-accent font-semibold'
                   : 'bg-canvas border-border text-muted'
@@ -95,14 +96,14 @@ export function TasksFilterSheet({
                   type="button"
                   onClick={() => toggleTag(tag)}
                   aria-pressed={isSelected}
-                  className={`min-h-[32px] px-3 text-xs rounded-full border transition-colors flex items-center gap-1 cursor-pointer ${
+                  className={`min-h-11 px-3.5 text-sm rounded-full border transition-colors flex items-center gap-1 cursor-pointer ${
                     isSelected
                       ? 'bg-accent text-on-accent border-accent font-semibold'
                       : 'bg-canvas border-border text-muted'
                   }`}
                 >
                   <span>#{tag}</span>
-                  <span className="text-[10px] opacity-75">({count})</span>
+                  <span className="text-xs opacity-75">({count})</span>
                 </button>
               );
             })}
@@ -115,13 +116,13 @@ export function TasksFilterSheet({
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted block">
               {t('tasks:filter.grouping')}
             </span>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-2">
               {groupOptions.map((g) => (
                 <button
                   key={g.id}
                   type="button"
                   onClick={() => setGroupBy(g.id)}
-                  className={`min-h-[36px] px-3 text-xs rounded-btn border text-left transition-colors cursor-pointer ${
+                  className={`min-h-11 px-3 text-sm rounded-btn border text-left transition-colors cursor-pointer ${
                     groupBy === g.id
                       ? 'bg-accent-dim border-accent text-accent font-semibold'
                       : 'bg-canvas border-border text-muted hover:text-main'
@@ -140,7 +141,7 @@ export function TasksFilterSheet({
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted block">
               {t('tasks:filter.sorting')}
             </span>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-2">
               {([
                 { id: 'custom', label: t('view.sortCustom') },
                 { id: 'created', label: t('view.sortCreated') },
@@ -152,7 +153,7 @@ export function TasksFilterSheet({
                   key={s.id}
                   type="button"
                   onClick={() => setSortBy(s.id)}
-                  className={`min-h-[36px] px-3 text-xs rounded-btn border text-left transition-colors cursor-pointer ${
+                  className={`min-h-11 px-3 text-sm rounded-btn border text-left transition-colors cursor-pointer ${
                     sortBy === s.id
                       ? 'bg-accent-dim border-accent text-accent font-semibold'
                       : 'bg-canvas border-border text-muted hover:text-main'
@@ -173,14 +174,14 @@ export function TasksFilterSheet({
               setGroupBy(defaultGroupBy);
               setSortBy('custom');
             }}
-            className="btn-ghost h-9 px-3 text-xs text-muted hover:text-main cursor-pointer"
+            className="btn-ghost h-11 px-3 text-sm text-muted hover:text-main cursor-pointer"
           >
             {t('filter.reset')}
           </button>
           <button
             type="button"
             onClick={() => setShowFilterModal(false)}
-            className="btn-primary h-9 px-5 text-xs font-semibold cursor-pointer"
+            className="btn-primary h-11 px-6 text-sm font-semibold cursor-pointer"
           >
             {t('common:done')}
           </button>
