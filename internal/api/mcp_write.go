@@ -117,13 +117,8 @@ func (s *Server) editableNote(userID, docID string) error {
 	return nil
 }
 
-// applyNoteOps runs bullet operations as the agent and tells open editors and lists about them
-func (s *Server) applyNoteOps(userID string, actor *apiActor, docID string, ops []collab.Op) error {
-	return s.applyNoteOpsCtx(context.Background(), userID, actor, docID, ops)
-}
-
-// applyNoteOpsCtx is applyNoteOps that stops waiting for the note when ctx ends (the client went away)
-func (s *Server) applyNoteOpsCtx(ctx context.Context, userID string, actor *apiActor, docID string, ops []collab.Op) error {
+// mcpCollabActor: the agent as the writer of note changes (its own client id, so editors' leases count)
+func (s *Server) mcpCollabActor(userID string, actor *apiActor) collab.Actor {
 	a := collab.Actor{UserID: userID, ClientID: collab.MCPHolder}
 	if actor != nil && actor.KeyID != "" {
 		a.ClientID = collab.MCPKeyHolderPrefix + actor.KeyID
@@ -131,7 +126,17 @@ func (s *Server) applyNoteOpsCtx(ctx context.Context, userID string, actor *apiA
 	if u, err := s.store.GetUserByID(userID); err == nil {
 		a.Name = u.DisplayName
 	}
-	results, _, err := s.store.ApplyDocOpsCtx(ctx, docID, a, ops, s.leases.View(docID))
+	return a
+}
+
+// applyNoteOps runs bullet operations as the agent and tells open editors and lists about them
+func (s *Server) applyNoteOps(userID string, actor *apiActor, docID string, ops []collab.Op) error {
+	return s.applyNoteOpsCtx(context.Background(), userID, actor, docID, ops)
+}
+
+// applyNoteOpsCtx is applyNoteOps that stops waiting for the note when ctx ends (the client went away)
+func (s *Server) applyNoteOpsCtx(ctx context.Context, userID string, actor *apiActor, docID string, ops []collab.Op) error {
+	results, _, err := s.store.ApplyDocOpsCtx(ctx, docID, s.mcpCollabActor(userID, actor), ops, s.leases.View(docID))
 	if err != nil {
 		return err
 	}

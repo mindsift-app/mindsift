@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/collab"
@@ -12,8 +13,9 @@ import (
 )
 
 // MCP tools that change the structure of a note like the editor does: move a bullet with its children
-// (drag and drop, Alt+Shift+arrows, Tab and Shift+Tab). They go through the editor's operations
-// (applyNoteOpsCtx) as well, so open editors follow live and a bullet someone is editing stays put.
+// (drag and drop, Alt+Shift+arrows, Tab and Shift+Tab) and turn a bullet into a note of its own (/extract).
+// They go through the editor's operations (applyNoteOpsCtx) as well, so open editors follow live and a
+// bullet someone is editing stays put.
 
 // mcpUnit: a bullet with the conflict copies right below it on its level, which move with it in the
 // editor (outlineList.ts branchEnd)
@@ -302,4 +304,83 @@ var mcpStructureTools = []mcpTool{
 			return res, err
 		},
 	},
+	{
+		Name: "extract_note_bullet",
+		Description: "Turn a bullet with the bullets below it into a note of its own, like the editor's /extract: the new note starts with that bullet, " +
+			"its children below it, shared like the original; in the original note the bullet becomes a plain bullet with a [[link]] to the new note and its children go. " +
+			"Bullet ids come from get_note. Returns the original note (bullets) and newNote (id, title, url).",
+		Scope: storage.ScopeNotesWrite,
+		Schema: schema([]string{"noteId", "bulletId"}, map[string]any{
+			"noteId":     prop("string", "Note id"),
+			"bulletId":   prop("string", "Id of the bullet to turn into a note"),
+			"title":      prop("string", "Title of the new note, optional (default: the bullet's text; made unique with (2), (3) … if taken)"),
+			"folderPath": prop("string", "Folder of the new note, e.g. Projekte/MindSift; empty string = top level; leave out for the folder of the original note"),
+		}),
+		run: func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+			var a struct {
+				NoteID, BulletID, Title string
+				FolderPath              *string
+			}
+			if err := decodeArgs(args, &a); err != nil {
+				return nil, err
+			}
+			return s.mcpExtractBullet(ctx, userID, actor, a.NoteID, a.BulletID, a.Title, a.FolderPath)
+		},
+	},
+}
+
+// mcpExtractBullet does what the editor's /extract does: the server creates the note
+// (storage.ExtractBranchAs), then the branch is replaced by the link as a change of the agent's own
+// (useBranchActions.ts handleExtractBlock).
+func (s *Server) mcpExtractBullet(ctx context.Context, userID string, actor *apiActor, noteID, bulletID, title string, folderPath *string) (any, error) {
+	if err := s.editableNote(userID, noteID); err != nil {
+		return nil, err
+	}
+	if folderPath != nil {
+		folder := strings.Trim(strings.TrimSpace(*folderPath), "/")
+		if err := s.store.CheckCreateInFolder(userID, folder); err != nil {
+			return nil, err
+		}
+		folderPath = &folder
+	}
+	d, err := s.noteDoc(noteID)
+	if err != nil {
+		return nil, err
+	}
+	b, err := liveBullet(d, bulletID)
+	if err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	created, link, err := s.store.ExtractBranchAs(userID, noteID, b.ID, title, folderPath, s.mcpCollabActor(userID, actor), s.leases.View(noteID))
+	if err != nil {
+		return nil, err
+	}
+	// The bullet itself went into the note: a plain bullet with the link stays (not a to-do, heading …)
+	typ, unchecked := "bullet", false
+	ops := []collab.Op{
+		{OpID: domain.NewID("op"), Kind: collab.OpSetContent, BlockID: b.ID, BaseVersion: b.Version, Content: &link},
+		{OpID: domain.NewID("op"), Kind: collab.OpSetProps, BlockID: b.ID, Patch: &collab.PropsPatch{Type: &typ, Checked: &unchecked}},
+	}
+	for _, kid := range d.Children(b.ID) {
+		ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpDelete, BlockID: kid.ID})
+	}
+	if err := s.applyNoteOpsCtx(ctx, userID, actor, noteID, ops); err != nil {
+		// The original stays as it was: the new note goes into the trash again
+		if undoErr := s.store.UndoExtract(userID, created.ID); undoErr != nil {
+			slog.Warn("MCP extract_note_bullet: new note not trashed after a failed change", "doc_id", created.ID, "error", undoErr)
+		}
+		return nil, err
+	}
+	if full, err := s.store.GetDocumentByID(userID, created.ID); err == nil {
+		created = full
+	}
+	s.broadcastDocToAuthorizedUsers(created.ID, "DOC_CREATED")
+	res, err := noteResult(s, userID, noteID)
+	if m, ok := res.(map[string]any); ok {
+		m["newNote"] = s.toNoteView(created)
+	}
+	return res, err
 }

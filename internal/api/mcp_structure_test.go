@@ -276,3 +276,114 @@ func TestMCPMoveKeepsConflictCopies(t *testing.T) {
 		t.Fatalf("copy must move along: %s %s", got, msg)
 	}
 }
+
+// extract_note_bullet does what /extract does: a new note with the branch, a link in its place.
+func TestMCPExtractNoteBullet(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	call := mcpCaller(t, srv)
+	key, _ := store.CreateAPIKey(claims.UserID, "Agent", []string{"notes:read", "notes:write"})
+	doc, err := store.CreateDocument(claims.UserID, "", "Sammlung", "", "Projekte", []domain.DocumentBlock{
+		{ID: "blk_ex_a", Type: "todo", Content: "Reise planen #urlaub", Level: 0, Checked: true},
+		{ID: "blk_ex_a1", Type: "text", Content: "Zug buchen", Level: 1},
+		{ID: "blk_ex_a2", Type: "text", Content: "Hotel", Level: 1},
+		{ID: "blk_ex_a21", Type: "text", Content: "Mit Frühstück", Level: 2},
+		{ID: "blk_ex_b", Type: "text", Content: "Rest", Level: 0},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	notes := func() int {
+		docs, _ := store.GetDocuments(claims.UserID)
+		return len(docs)
+	}
+
+	// Default title from the bullet, the folder of the original
+	res, isErr, msg := call(key.RawKey, "extract_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_ex_a"}`)
+	if isErr {
+		t.Fatalf("extract: %s", msg)
+	}
+	created, _ := res["newNote"].(map[string]any)
+	newID, _ := created["id"].(string)
+	if newID == "" || created["title"] != "Reise planen" || created["folderPath"] != "Projekte" || created["url"] == "" {
+		t.Fatalf("new note: %v", created)
+	}
+	// The original: the bullet is a plain bullet with the link, its children are gone
+	if got := strings.Join(bulletTexts(res), "|"); got != "0:[[Reise planen]]|0:Rest" {
+		t.Fatalf("original after extract: %s", got)
+	}
+	typ, content, _ := snapBullet(t, srv, doc.ID, "blk_ex_a")
+	if typ != "bullet" || !strings.Contains(content, newID) {
+		t.Fatalf("link bullet: %s %q", typ, content)
+	}
+	if b := bulletByID(t, res, "blk_ex_a"); b["checked"] != nil {
+		t.Fatalf("the link bullet is no done to-do: %v", b)
+	}
+	// The new note holds the branch with its levels
+	got, _, _ := call(key.RawKey, "get_note", `{"id":"`+newID+`"}`)
+	if s := strings.Join(bulletTexts(got), "|"); s != "0:Reise planen #urlaub|1:Zug buchen|1:Hotel|2:Mit Frühstück" {
+		t.Fatalf("new note bullets: %s", s)
+	}
+	// The link works: the new note lists the original as linking to it, and the editor's way back finds it
+	backlinks, _ := store.GetBacklinks(claims.UserID, newID)
+	if len(backlinks) != 1 || backlinks[0].DocID != doc.ID {
+		t.Fatalf("backlinks: %+v", backlinks)
+	}
+	if back, err := store.InlineNote(claims.UserID, doc.ID, "blk_ex_a"); err != nil || back.SourceID != newID || back.Head == nil || len(back.Blocks) != 3 {
+		t.Fatalf("inline back: %+v %v", back, err)
+	}
+	if err := store.RestoreDocument(claims.UserID, newID); err != nil {
+		t.Fatal(err)
+	}
+
+	// Own title (taken: made unique) and folder (created if missing)
+	res, isErr, msg = call(key.RawKey, "extract_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_ex_b","title":"Reise planen","folderPath":"/Archiv/2026/"}`)
+	if isErr {
+		t.Fatalf("extract with title and folder: %s", msg)
+	}
+	if c := res["newNote"].(map[string]any); c["title"] != "Reise planen (2)" || c["folderPath"] != "Archiv/2026" {
+		t.Fatalf("title and folder: %v", c)
+	}
+
+	// Wrong input: nothing created
+	before := notes()
+	for name, args := range map[string]string{
+		"unknown bullet": `"bulletId":"blk_nope"`,
+		"already a link": `"bulletId":"blk_ex_a"`,
+		"no bullet":      `"title":"x"`,
+	} {
+		if _, isErr, msg := call(key.RawKey, "extract_note_bullet", `{"noteId":"`+doc.ID+`",`+args+`}`); !isErr || strings.Contains(msg, "Internal error") {
+			t.Errorf("%s: want a clear tool error, got %v %s", name, isErr, msg)
+		}
+	}
+	// A bullet of the branch someone is editing: refused, no note left behind
+	doc2, _ := store.CreateDocument(claims.UserID, "", "Zweite", "", "", []domain.DocumentBlock{
+		{ID: "blk_ex_c", Type: "text", Content: "C", Level: 0},
+		{ID: "blk_ex_c1", Type: "text", Content: "C1", Level: 1},
+	}, nil, false)
+	before = notes()
+	srv.leases.Hold(doc2.ID, collab.Actor{UserID: claims.UserID, ClientID: "browser"}, []string{"blk_ex_c1"})
+	if _, isErr, msg := call(key.RawKey, "extract_note_bullet", `{"noteId":"`+doc2.ID+`","bulletId":"blk_ex_c"}`); !isErr || strings.Contains(msg, "Internal error") {
+		t.Fatalf("leased child: %v %s", isErr, msg)
+	}
+	if notes() != before {
+		t.Fatal("a refused extract left a note behind")
+	}
+
+	// No write right: a notes:read key, a read-only share
+	reader, _ := store.CreateAPIKey(claims.UserID, "Leser", []string{"notes:read"})
+	if _, isErr, _ := call(reader.RawKey, "extract_note_bullet", `{"noteId":"`+doc2.ID+`","bulletId":"blk_ex_c"}`); !isErr {
+		t.Fatal("notes:read must not extract")
+	}
+	other, _ := newTestUser(t, store, "nur-lesen@example.com")
+	if _, err := store.CreateDocShare(claims.UserID, doc2.ID, other.ID, "read"); err != nil {
+		t.Fatal(err)
+	}
+	otherKey, _ := store.CreateAPIKey(other.ID, "Agent", []string{"notes:read", "notes:write"})
+	if _, isErr, msg := call(otherKey.RawKey, "extract_note_bullet", `{"noteId":"`+doc2.ID+`","bulletId":"blk_ex_c"}`); !isErr || !strings.Contains(msg, "write") {
+		t.Fatalf("read-only share: %v %s", isErr, msg)
+	}
+	if notes() != before {
+		t.Fatal("refused extracts created notes")
+	}
+}
