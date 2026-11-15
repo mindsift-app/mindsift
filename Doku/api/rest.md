@@ -357,8 +357,8 @@ Duplicate operations (same `opId`) are not reapplied; the response returns the p
 | GET/POST | `/lists/{id}/shares` | Retrieve or create shares (`targetType`, `targetId`, `role`: `editor`/`viewer`) |
 | DELETE | `/lists/{id}/shares/{shareId}` | Remove share |
 | POST | `/lists/{id}/items` | Add item (`content`, `category`, `quantity`) |
-| PATCH | `/lists/{id}/items/{itemId}` | Check off item (`isCompleted`) |
-| PUT | `/lists/{id}/items/{itemId}` | Update item (`content`, `category`, `quantity`) |
+| PATCH | `/lists/{id}/items/{itemId}` | Check off or reopen item (`isCompleted`: the wanted state, not a toggle; already in that state, nothing is written or broadcast). Optional `changedAt` and `sentAt` (sender's clock, ms since 1970): a change made offline and sent later; it is ignored when the checked state changed after it |
+| PUT | `/lists/{id}/items/{itemId}` | Update item (`content`, `category`, `quantity`; only the fields sent are written) |
 | DELETE | `/lists/{id}/items/{itemId}` | Delete item |
 | POST | `/lists/{id}/items/{itemId}/move` | Move to another list (`targetListId`); requires edit permissions on both lists; item is placed at the top |
 | POST | `/lists/{id}/items/reorder` | Order/category (`items[{id, sortOrder, category, content}]`); `PUT` does the same and stays for older clients |
