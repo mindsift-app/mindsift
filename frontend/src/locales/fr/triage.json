@@ -109,6 +109,8 @@
   "fab": {
     "nothing": "Rien n'a été reconnu",
     "saved": "Enregistré dans le Quick Dump",
+    "savedDue": "Enregistré dans le Quick Dump · Échéance : {{due}}",
+    "undoTitle": "Garder le texte tel que dicté, sans échéance",
     "saveFailed": "Échec de l'enregistrement",
     "unsupported": "Ce navigateur ne prend pas en charge la saisie vocale",
     "releaseCancel": "🗑️ Relâcher pour annuler",

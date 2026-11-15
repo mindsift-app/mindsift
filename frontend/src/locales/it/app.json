@@ -101,6 +101,8 @@
     "dictateCancel": "Rilascia per annullare",
     "dictateSaving": "Salvataggio…",
     "dictateSaved": "Salvato nel Quick Dump",
+    "dictateSavedDue": "Salvato nel Quick Dump · Scadenza: {{due}}",
+    "dictateUndoTitle": "Mantieni il testo come dettato, senza scadenza",
     "dictateNothing": "Non è stato riconosciuto nulla",
     "search": "Cerca",
     "searchKey": "Ctrl K",

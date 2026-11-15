@@ -5,16 +5,21 @@ import { Mic, Plus } from 'lucide-react';
 import { triggerHaptic } from '../../lib/api';
 import { useVoiceInput } from '../../lib/useVoiceInput';
 import { VoiceWave } from '../../components/VoiceWave';
+import { formatDue } from '../../lib/due';
+import type { DictationOutcome } from './captureDictation';
 
 export interface HoldToRecordFabProps {
   onTap: () => void;
-  onTranscript: (text: string) => Promise<void> | void;
+  // Saves the text; with a date recognised in it, the answer names it and how to take it back
+  onTranscript: (text: string) => Promise<DictationOutcome | void> | DictationOutcome | void;
 }
 
 const HOLD_DELAY_MS = 350;
 const CANCEL_DRAG_PX = 60;
 const STOP_TIMEOUT_MS = 1500;
 const TOAST_DURATION_MS = 2500;
+// A saved date stays on screen this long with "Rückgängig"
+const UNDO_TOAST_MS = 7000;
 
 export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTranscript }) => {
   const { t } = useTranslation('triage');
@@ -22,6 +27,8 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
   const [isCancelZone, setIsCancelZone] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Undo of the date recognised in the last dictation, while its toast shows
+  const [toastUndo, setToastUndo] = useState<(() => Promise<void>) | null>(null);
 
   const isPressedRef = useRef(false);
   // A press that turned into a hold must not also count as a tap when the browser sends its click
@@ -51,17 +58,29 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
     }
   };
 
-  const showToast = (msg: string, sticky = false) => {
+  const showToast = (msg: string, sticky = false, undo?: () => Promise<void>) => {
     if (toastTimerRef.current !== null) {
       window.clearTimeout(toastTimerRef.current);
       toastTimerRef.current = null;
     }
     setToastMessage(msg);
+    // A function in state is read as an updater: wrap it
+    setToastUndo(undo ? () => undo : null);
     if (sticky) return;
     toastTimerRef.current = window.setTimeout(() => {
       setToastMessage(null);
+      setToastUndo(null);
       toastTimerRef.current = null;
-    }, TOAST_DURATION_MS);
+    }, undo ? UNDO_TOAST_MS : TOAST_DURATION_MS);
+  };
+
+  const hideToast = () => {
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+    setToastMessage(null);
+    setToastUndo(null);
   };
 
   const finalizeRecording = async (text: string) => {
@@ -75,9 +94,10 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
       return;
     }
     try {
-      await onTranscript(trimmed);
+      const outcome = await onTranscript(trimmed);
       triggerHaptic(25);
-      showToast(i18n.t('triage:fab.saved'));
+      if (outcome && outcome.due) showToast(i18n.t('triage:fab.savedDue', { due: formatDue(outcome.due) }), false, outcome.undo);
+      else showToast(i18n.t('triage:fab.saved'));
     } catch {
       showToast(i18n.t('triage:fab.saveFailed'));
     }
@@ -281,13 +301,36 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
         </div>
       )}
 
-      {!isRecording && toastMessage && (
+      {!isRecording && toastMessage && !toastUndo && (
         <div
           role="status"
           aria-live="polite"
           className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 w-max max-w-[calc(100vw-1.5rem)] px-4 py-2 rounded-pill bg-panel-elevated border border-border text-main text-xs font-medium shadow-panel pointer-events-none text-center"
         >
           {toastMessage}
+        </div>
+      )}
+
+      {/* Saved with a recognised date: the hint names it and can take it back (same look as the tasks' undo) */}
+      {!isRecording && toastMessage && toastUndo && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 w-max max-w-[calc(100vw-1.5rem)] pl-3 pr-2 rounded-card text-xs text-main bg-panel-elevated border border-border shadow-panel flex items-center gap-3"
+        >
+          <span>{toastMessage}</span>
+          <button
+            type="button"
+            onClick={() => {
+              const undo = toastUndo;
+              hideToast();
+              undo().catch(() => showToast(i18n.t('triage:fab.saveFailed')));
+            }}
+            className="font-semibold text-accent hover:underline min-h-[44px] px-1 shrink-0 cursor-pointer"
+            title={t('fab.undoTitle')}
+          >
+            {t('undo')}
+          </button>
         </div>
       )}
 

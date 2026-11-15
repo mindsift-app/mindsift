@@ -120,6 +120,58 @@ describe('HoldToRecordFab', () => {
     expect(screen.getByRole('status').textContent).toContain('Im Quick Dump gespeichert');
   });
 
+  it('names a recognised date after saving and takes it back with Rückgängig', async () => {
+    vi.setSystemTime(new Date(2026, 10, 16, 10, 0));
+    const undo = vi.fn().mockResolvedValue(undefined);
+    const onTranscript = vi.fn().mockResolvedValue({ due: '2026-11-17T14:00', undo });
+
+    render(<HoldToRecordFab onTap={vi.fn()} onTranscript={onTranscript} />);
+    const btn = screen.getByRole('button', { name: /gedrückt halten zum Sprechen/i });
+    fireEvent.pointerDown(btn, { clientY: 600, button: 0 });
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+    const rec = FakeSpeechRecognition.instances[0];
+    act(() => {
+      rec.emitResult('Zahnarzt morgen um 14 Uhr');
+    });
+    await act(async () => {
+      fireEvent.pointerUp(btn, { clientY: 600 });
+      fireEvent.click(btn);
+    });
+
+    expect(onTranscript).toHaveBeenCalledWith('Zahnarzt morgen um 14 Uhr');
+    expect(screen.getByRole('status').textContent).toContain('Im Quick Dump gespeichert · Fällig: Morgen, 14:00');
+    // Longer than the plain hint, so there is time to take it back
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Rückgängig' }));
+    });
+    expect(undo).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('shows the plain hint without Rückgängig when no date was recognised', async () => {
+    const onTranscript = vi.fn().mockResolvedValue(undefined);
+    render(<HoldToRecordFab onTap={vi.fn()} onTranscript={onTranscript} />);
+    const btn = screen.getByRole('button', { name: /gedrückt halten zum Sprechen/i });
+    fireEvent.pointerDown(btn, { clientY: 600, button: 0 });
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+    act(() => {
+      FakeSpeechRecognition.instances[0].emitResult('Milch kaufen');
+    });
+    await act(async () => {
+      fireEvent.pointerUp(btn, { clientY: 600 });
+      fireEvent.click(btn);
+    });
+    expect(screen.getByRole('status').textContent).toBe('Im Quick Dump gespeichert');
+    expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
+  });
+
   it('cancels recording when dragged up by more than 60 px and released', () => {
     const onTap = vi.fn();
     const onTranscript = vi.fn();

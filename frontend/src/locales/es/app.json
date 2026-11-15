@@ -101,6 +101,8 @@
     "dictateCancel": "Suelta para cancelar",
     "dictateSaving": "Guardando…",
     "dictateSaved": "Guardado en Quick Dump",
+    "dictateSavedDue": "Guardado en Quick Dump · Vence: {{due}}",
+    "dictateUndoTitle": "Mantener el texto como se dictó, sin fecha de vencimiento",
     "dictateNothing": "No se ha reconocido nada",
     "search": "Buscar",
     "searchKey": "Ctrl K",

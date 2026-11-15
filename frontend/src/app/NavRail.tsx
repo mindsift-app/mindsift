@@ -21,6 +21,7 @@ import { APP_VERSION } from '../version';
 import { ActiveTab } from './appTabs';
 import { useConnectionStatus } from './AppHeader';
 import { RailQuickDumpButton } from './RailQuickDumpButton';
+import type { DictationOutcome } from '../features/capture/captureDictation';
 
 // Expanded or not, per device (a convenience; private windows simply start collapsed)
 export const NAV_RAIL_KEY = 'mindsift:nav-rail-expanded';
@@ -64,8 +65,8 @@ interface NavRailProps {
   demoDeadline: number | null;
   handleDemoCountdownElapsed: () => void;
   onQuickDump: () => void;
-  // Text dictated by holding the + (saved into the inbox)
-  onDictated: (text: string) => Promise<void> | void;
+  // Text dictated by holding the + (saved into the inbox; names a recognised date)
+  onDictated: (text: string) => Promise<DictationOutcome | void> | DictationOutcome | void;
   onSearch: () => void;
   handleOpenHelp: () => void;
   user: User;

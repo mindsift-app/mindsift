@@ -2,18 +2,24 @@ import React, { useEffect, useRef, useState } from 'react';
 import i18n from '../../i18n';
 import { useVoiceInput } from '../../lib/useVoiceInput';
 import { showError } from '../../components/ErrorNotice';
+import type { DictationOutcome } from './captureDictation';
 
 export type DictationPhase = 'idle' | 'recording' | 'saving' | 'done';
 
 interface HoldToDictateOptions {
-  /** Saves the recognised text (the inbox, like the phone's hold on the +). */
-  onSave: (text: string) => Promise<void> | void;
+  /**
+   * Saves the recognised text (the inbox, like the phone's hold on the +). With a date recognised in it, the
+   * answer names it and how to take it back; the done state then lasts long enough to do so.
+   */
+  onSave: (text: string) => Promise<DictationOutcome | void> | DictationOutcome | void;
 }
 
 const HOLD_DELAY_MS = 350;
 // The browser's recognition sometimes never reports its end: save what was heard after this
 const STOP_TIMEOUT_MS = 1500;
 const DONE_MS = 800;
+// A saved date stays on screen this long with "Rückgängig"
+const UNDO_MS = 7000;
 const NOTICE_MS = 2000;
 
 /**
@@ -27,6 +33,8 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
   const [outside, setOutsideState] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
+  // The date recognised in the last dictation and its undo, while the done state shows it
+  const [saved, setSaved] = useState<DictationOutcome | null>(null);
 
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const phaseRef = useRef<DictationPhase>('idle');
@@ -84,12 +92,15 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
     }
     setPhase('saving');
     try {
-      await onSave(trimmed);
+      const outcome = await onSave(trimmed);
+      const withDate = outcome && outcome.due ? outcome : null;
+      setSaved(withDate);
       setPhase('done');
       doneTimerRef.current = window.setTimeout(() => {
         doneTimerRef.current = null;
+        setSaved(null);
         setPhase('idle');
-      }, DONE_MS);
+      }, withDate ? UNDO_MS : DONE_MS);
     } catch {
       setPhase('idle');
       showError(i18n.t('triage:fab.saveFailed'));
@@ -147,6 +158,7 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
     clearTimer(doneTimerRef);
     clearTimer(noticeTimerRef);
     setNotice(null);
+    setSaved(null);
     const startedAt = Date.now();
     setSeconds(0);
     setPhase('recording');
@@ -236,5 +248,19 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
     return true;
   };
 
-  return { phase, outside, seconds, notice, level: voice.level, buttonRef, onPointerDown, consumeClick };
+  /** Takes the recognised date of the last dictation back (text as dictated, no due date). */
+  const undoSaved = async () => {
+    const current = saved;
+    if (!current) return;
+    clearTimer(doneTimerRef);
+    setSaved(null);
+    setPhase('idle');
+    try {
+      await current.undo();
+    } catch {
+      showError(i18n.t('triage:fab.saveFailed'));
+    }
+  };
+
+  return { phase, outside, seconds, notice, saved, level: voice.level, buttonRef, onPointerDown, consumeClick, undoSaved };
 }

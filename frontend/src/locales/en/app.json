@@ -101,6 +101,8 @@
     "dictateCancel": "Release to cancel",
     "dictateSaving": "Saving…",
     "dictateSaved": "Saved to Quick Dump",
+    "dictateSavedDue": "Saved to Quick Dump · Due: {{due}}",
+    "dictateUndoTitle": "Keep the text as dictated, without a due date",
     "dictateNothing": "Nothing recognised",
     "search": "Search",
     "searchKey": "Ctrl K",

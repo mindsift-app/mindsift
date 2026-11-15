@@ -124,6 +124,50 @@ describe('RailQuickDumpButton', () => {
     expect(onQuickDump).toHaveBeenCalledTimes(1);
   });
 
+  it('names a recognised date in the tip, keeps it there with Rückgängig and takes the date back on click', async () => {
+    vi.setSystemTime(new Date(2026, 10, 16, 10, 0));
+    const undo = vi.fn().mockResolvedValue(undefined);
+    const { btn, onDictated, onQuickDump } = setup();
+    onDictated.mockResolvedValue({ due: '2026-11-17T14:00', undo });
+    hold(btn);
+    releaseAt(20, 110);
+    fireEvent.click(btn);
+    await act(async () => {
+      voice.options!.onText('Zahnarzt morgen um 14 Uhr', true);
+    });
+    expect(onDictated).toHaveBeenCalledWith('Zahnarzt morgen um 14 Uhr');
+    expect(screen.getByRole('status').textContent).toContain('Im Quick Dump gespeichert · Fällig: Morgen, 14:00');
+
+    // Still there after the check mark would have gone, and the + opens the window meanwhile
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    fireEvent.click(btn, { detail: 0 });
+    expect(onQuickDump).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Rückgängig' }));
+    });
+    expect(undo).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(btn.getAttribute('data-dictation')).toBeNull();
+  });
+
+  it('lets the date hint go by itself after a few seconds', async () => {
+    const undo = vi.fn();
+    const { btn, onDictated } = setup();
+    onDictated.mockResolvedValue({ due: '2026-11-17', undo });
+    hold(btn);
+    releaseAt(20, 110);
+    await act(async () => {
+      voice.options!.onText('Zahnarzt morgen', true);
+    });
+    act(() => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(undo).not.toHaveBeenCalled();
+  });
+
   it('throws the recording away when released beside the button', () => {
     const { btn, onQuickDump, onDictated } = setup();
     hold(btn);

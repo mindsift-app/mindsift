@@ -101,6 +101,8 @@
     "dictateCancel": "Loslassen bricht ab",
     "dictateSaving": "Wird gespeichert…",
     "dictateSaved": "Im Quick Dump gespeichert",
+    "dictateSavedDue": "Im Quick Dump gespeichert · Fällig: {{due}}",
+    "dictateUndoTitle": "Text wie diktiert behalten, ohne Fälligkeit",
     "dictateNothing": "Nichts erkannt",
     "search": "Suche",
     "searchKey": "Strg K",
