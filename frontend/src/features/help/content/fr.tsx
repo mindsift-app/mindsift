@@ -475,7 +475,7 @@ const fr: HelpContent = {
             <strong className="text-main">curl et domotique :</strong> avec les droits de lecture, <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">GET /api/v1/thoughts?due=today</code> renvoie les tâches du jour au format JSON (par ex. pour un capteur Home Assistant) ; avec les droits de modification, tu peux cocher des tâches. Via <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code>, Home Assistant, n8n ou des scripts peuvent injecter directement des alertes ou des points dans la boîte de réception, les tâches ou les listes.
           </p>
           <p>
-            <strong className="text-main">Agents IA (MCP) :</strong> Claude Code, Cursor, Codex et Claude Desktop se connectent via le protocole standardisé Model Context Protocol (MCP) avec une clé d'API. claude.ai et ChatGPT se connectent sans clé comme connecteur : MindSift demande lors de la connexion quelles autorisations accorder.
+            <strong className="text-main">Agents IA (MCP) :</strong> Claude Code, Cursor, Codex et Claude Desktop se connectent via le protocole standardisé Model Context Protocol (MCP) avec une clé d'API. claude.ai et ChatGPT se connectent sans clé comme connecteur : MindSift demande lors de la connexion quelles autorisations accorder. Un agent ajoute des images (p. ex. une image qu’il a générée ou une capture d’écran) à une note comme puce à part entière : en fichier ou depuis une adresse https que MindSift copie dans la note (JPEG, PNG, GIF, WebP).
           </p>
         </div>
       ),

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -48,38 +50,47 @@ func (s *Server) canEditDoc(userID, docID string) bool {
 
 // storeMedia checks limits and writes the file; size limits must have been applied while reading.
 func (s *Server) storeMedia(w http.ResponseWriter, userID, docID string, data []byte, declared, sourceURL string) (*storage.Media, bool) {
-	mime, kind, ok := detectMedia(data, declared)
-	if !ok {
-		writeError(w, http.StatusUnsupportedMediaType, "Nicht unterstütztes Format (Bilder: JPEG, PNG, GIF, WebP; Audio: WebM, Ogg, MP3, WAV, M4A)")
+	m, status, err := s.saveMedia(userID, docID, data, declared, sourceURL)
+	if err != nil {
+		writeErrorFrom(w, status, err)
 		return nil, false
 	}
+	return m, true
+}
+
+// saveMedia is the one way a file gets into a note (upload, copy of an external image, MCP add_note_image):
+// format detected from the content, size limit, quota, media row and file. On failure it returns the
+// HTTP status and a message meant for people.
+func (s *Server) saveMedia(userID, docID string, data []byte, declared, sourceURL string) (*storage.Media, int, error) {
+	mime, kind, ok := detectMedia(data, declared)
+	if !ok {
+		return nil, http.StatusUnsupportedMediaType, errors.New("Nicht unterstütztes Format (Bilder: JPEG, PNG, GIF, WebP; Audio: WebM, Ogg, MP3, WAV, M4A)")
+	}
 	if limit := s.mediaLimit(kind); int64(len(data)) > limit {
-		writeError(w, http.StatusRequestEntityTooLarge, tr(w, "Datei zu groß (höchstens {mb} MB)", "mb", strconv.FormatInt(limit>>20, 10)))
-		return nil, false
+		return nil, http.StatusRequestEntityTooLarge, i18n.NewError("Datei zu groß (höchstens {mb} MB)", "mb", strconv.FormatInt(limit>>20, 10))
 	}
 	if quota := int64(s.cfg.Media.QuotaMB) << 20; quota > 0 {
 		used, _ := s.store.MediaUsage(userID)
 		if used+int64(len(data)) > quota {
-			writeError(w, http.StatusRequestEntityTooLarge, tr(w, "Speicherplatz für Medien aufgebraucht ({mb} MB)", "mb", strconv.Itoa(s.cfg.Media.QuotaMB)))
-			return nil, false
+			return nil, http.StatusRequestEntityTooLarge, i18n.NewError("Speicherplatz für Medien aufgebraucht ({mb} MB)", "mb", strconv.Itoa(s.cfg.Media.QuotaMB))
 		}
 	}
+	errSave := errors.New("Datei konnte nicht gespeichert werden")
 	m, err := s.store.CreateMedia(docID, userID, kind, mime, int64(len(data)), sourceURL)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Datei konnte nicht gespeichert werden")
-		return nil, false
+		slog.Error("Storing a media entry failed", "error", err)
+		return nil, http.StatusInternalServerError, errSave
 	}
 	path := s.mediaPath(m)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err == nil {
 		err = os.WriteFile(path, data, 0o644)
 		if err == nil {
-			return m, true
+			return m, 0, nil
 		}
 		slog.Error("Writing a media file failed", "path", path, "error", err)
 	}
 	logFailed("Removing the entry of a media file that was not written", s.store.DeleteMediaRow(m.ID), "id", m.ID)
-	writeError(w, http.StatusInternalServerError, "Datei konnte nicht gespeichert werden")
-	return nil, false
+	return nil, http.StatusInternalServerError, errSave
 }
 
 func mediaResponse(m *storage.Media) map[string]any {
@@ -133,41 +144,53 @@ func (s *Server) handleFetchMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	src := strings.TrimSpace(req.URL)
-	// Same protection as alarm webhooks: https only, no addresses in the server's own network
-	if err := validateWebhookURL(src, false, false); err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
-		return
-	}
-	limit := s.mediaLimit("image")
-	httpReq, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, src, nil)
-	httpReq.Header.Set("Accept", "image/*")
-	httpReq.Header.Set("User-Agent", "MindSift (image copy)")
-	resp, err := guardedClient(false).Do(httpReq)
+	data, status, err := s.fetchExternalImage(r.Context(), src)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "Bild konnte nicht geladen werden")
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		writeError(w, http.StatusBadGateway, tr(w, "Bild konnte nicht geladen werden (HTTP {status})", "status", strconv.Itoa(resp.StatusCode)))
-		return
-	}
-	data, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
-	if err != nil {
-		writeError(w, http.StatusBadGateway, "Bild konnte nicht geladen werden")
-		return
-	}
-	if int64(len(data)) > limit {
-		writeError(w, http.StatusRequestEntityTooLarge, tr(w, "Bild zu groß (höchstens {mb} MB)", "mb", strconv.FormatInt(limit>>20, 10)))
-		return
-	}
-	if _, kind, ok := detectMedia(data, ""); !ok || kind != "image" {
-		writeError(w, http.StatusUnsupportedMediaType, "Unter dieser Adresse liegt kein Bild (JPEG, PNG, GIF, WebP)")
+		writeErrorFrom(w, status, err)
 		return
 	}
 	if m, ok := s.storeMedia(w, userID, docID, data, "", src); ok {
 		writeJSON(w, http.StatusCreated, mediaResponse(m))
 	}
+}
+
+// mediaFetchClient: the client external images are copied with; the guard refuses the server's own
+// network at connect time (DNS tricks, redirects). Tests replace it to reach a local TLS server.
+var mediaFetchClient = func() *http.Client { return guardedClient(false) }
+
+// fetchExternalImage loads an image from an https address outside the server's own network (same
+// protection as alarm webhooks) within the image size limit; on failure it returns the HTTP status and a
+// message meant for people. Used by the copy in the editor and by MCP add_note_image.
+func (s *Server) fetchExternalImage(ctx context.Context, src string) ([]byte, int, error) {
+	if err := validateWebhookURL(src, false, false); err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+	limit := s.mediaLimit("image")
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, src, nil)
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.New("Ungültige URL")
+	}
+	httpReq.Header.Set("Accept", "image/*")
+	httpReq.Header.Set("User-Agent", "MindSift (image copy)")
+	resp, err := mediaFetchClient().Do(httpReq)
+	if err != nil {
+		return nil, http.StatusBadGateway, errors.New("Bild konnte nicht geladen werden")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, http.StatusBadGateway, i18n.NewError("Bild konnte nicht geladen werden (HTTP {status})", "status", strconv.Itoa(resp.StatusCode))
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
+	if err != nil {
+		return nil, http.StatusBadGateway, errors.New("Bild konnte nicht geladen werden")
+	}
+	if int64(len(data)) > limit {
+		return nil, http.StatusRequestEntityTooLarge, i18n.NewError("Bild zu groß (höchstens {mb} MB)", "mb", strconv.FormatInt(limit>>20, 10))
+	}
+	if _, kind, ok := detectMedia(data, ""); !ok || kind != "image" {
+		return nil, http.StatusUnsupportedMediaType, errors.New("Unter dieser Adresse liegt kein Bild (JPEG, PNG, GIF, WebP)")
+	}
+	return data, 0, nil
 }
 
 // handleGetMedia: GET /media/{id} with range requests (seeking in audio). Readable for whoever may read

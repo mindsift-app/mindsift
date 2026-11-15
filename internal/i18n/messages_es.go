@@ -574,4 +574,8 @@ var messagesES = map[string]string{
 	"Ein Eintrag im Backup ist zu groß (max. {mb} MB)":                                            "Una entrada de la copia de seguridad es demasiado grande (máx. {mb} MB)",
 	"Gerade läuft schon ein Import. Bitte versuche es gleich noch einmal.":                        "Ya hay una importación en curso. Inténtalo de nuevo en un momento.",
 	"Zu viele falsche Passwörter für diesen Link. Bitte versuche es in {minutes} Minuten erneut.": "Demasiadas contraseñas incorrectas para este enlace. Inténtalo de nuevo dentro de {minutes} minutos.",
+	"Genau eins angeben: 'data' (Bild als base64) oder 'url' (https-Adresse eines Bildes)":        "Indica exactamente uno: 'data' (imagen en base64) o 'url' (dirección https de una imagen)",
+	"'data' ist kein gültiges base64 (eine data:-URL braucht ;base64,)":                           "'data' no es base64 válido (una URL data: necesita ;base64,)",
+	"Kein unterstütztes Bild (JPEG, PNG, GIF, WebP; kein SVG)":                                    "No es una imagen compatible (JPEG, PNG, GIF, WebP; sin SVG)",
+	"Anfrage zu groß (höchstens {mb} MB; ein Bild für add_note_image höchstens {img} MB)":         "Solicitud demasiado grande (máximo {mb} MB; una imagen para add_note_image como máximo {img} MB)",
 }

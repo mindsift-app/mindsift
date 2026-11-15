@@ -574,4 +574,8 @@ var messagesFR = map[string]string{
 	"Ein Eintrag im Backup ist zu groß (max. {mb} MB)":                                            "Une entrée de la sauvegarde est trop volumineuse (max. {mb} Mo)",
 	"Gerade läuft schon ein Import. Bitte versuche es gleich noch einmal.":                        "Une importation est déjà en cours. Réessaie dans un instant.",
 	"Zu viele falsche Passwörter für diesen Link. Bitte versuche es in {minutes} Minuten erneut.": "Trop de mots de passe incorrects pour ce lien. Réessaie dans {minutes} minutes.",
+	"Genau eins angeben: 'data' (Bild als base64) oder 'url' (https-Adresse eines Bildes)":        "Indiquez exactement un seul : 'data' (image en base64) ou 'url' (adresse https d’une image)",
+	"'data' ist kein gültiges base64 (eine data:-URL braucht ;base64,)":                           "'data' n’est pas du base64 valide (une URL data: nécessite ;base64,)",
+	"Kein unterstütztes Bild (JPEG, PNG, GIF, WebP; kein SVG)":                                    "Image non prise en charge (JPEG, PNG, GIF, WebP ; pas de SVG)",
+	"Anfrage zu groß (höchstens {mb} MB; ein Bild für add_note_image höchstens {img} MB)":         "Requête trop volumineuse (au plus {mb} Mo ; une image pour add_note_image au plus {img} Mo)",
 }

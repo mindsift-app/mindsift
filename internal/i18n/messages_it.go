@@ -574,4 +574,8 @@ var messagesIT = map[string]string{
 	"Ein Eintrag im Backup ist zu groß (max. {mb} MB)":                                            "Una voce del backup è troppo grande (max. {mb} MB)",
 	"Gerade läuft schon ein Import. Bitte versuche es gleich noch einmal.":                        "È già in corso un’importazione. Riprova tra un momento.",
 	"Zu viele falsche Passwörter für diesen Link. Bitte versuche es in {minutes} Minuten erneut.": "Troppe password errate per questo link. Riprova tra {minutes} minuti.",
+	"Genau eins angeben: 'data' (Bild als base64) oder 'url' (https-Adresse eines Bildes)":        "Indica esattamente uno: 'data' (immagine in base64) o 'url' (indirizzo https di un’immagine)",
+	"'data' ist kein gültiges base64 (eine data:-URL braucht ;base64,)":                           "'data' non è base64 valido (un URL data: richiede ;base64,)",
+	"Kein unterstütztes Bild (JPEG, PNG, GIF, WebP; kein SVG)":                                    "Immagine non supportata (JPEG, PNG, GIF, WebP; niente SVG)",
+	"Anfrage zu groß (höchstens {mb} MB; ein Bild für add_note_image höchstens {img} MB)":         "Richiesta troppo grande (al massimo {mb} MB; un’immagine per add_note_image al massimo {img} MB)",
 }

@@ -52,6 +52,7 @@ const MCP_TOOLS = [
   'create_note',
   'update_note',
   'add_note_bullet',
+  'add_note_image',
   'update_note_bullet',
   'delete_note_bullet',
   'delete_note',

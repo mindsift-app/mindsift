@@ -574,4 +574,8 @@ var messagesEN = map[string]string{
 	"Ein Eintrag im Backup ist zu groß (max. {mb} MB)":                                            "An entry in the backup is too large (max. {mb} MB)",
 	"Gerade läuft schon ein Import. Bitte versuche es gleich noch einmal.":                        "An import is already running. Please try again in a moment.",
 	"Zu viele falsche Passwörter für diesen Link. Bitte versuche es in {minutes} Minuten erneut.": "Too many wrong passwords for this link. Please try again in {minutes} minutes.",
+	"Genau eins angeben: 'data' (Bild als base64) oder 'url' (https-Adresse eines Bildes)":        "Give exactly one: 'data' (image as base64) or 'url' (https address of an image)",
+	"'data' ist kein gültiges base64 (eine data:-URL braucht ;base64,)":                           "'data' is not valid base64 (a data: URL needs ;base64,)",
+	"Kein unterstütztes Bild (JPEG, PNG, GIF, WebP; kein SVG)":                                    "Not a supported image (JPEG, PNG, GIF, WebP; no SVG)",
+	"Anfrage zu groß (höchstens {mb} MB; ein Bild für add_note_image höchstens {img} MB)":         "Request too large (at most {mb} MB; an image for add_note_image at most {img} MB)",
 }

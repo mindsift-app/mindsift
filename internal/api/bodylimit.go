@@ -22,6 +22,8 @@ func (s *Server) bodyLimitFor(path string) int64 {
 		return storage.MaxImportUploadBytes + 1<<20
 	case strings.HasPrefix(path, "/api/v1/docs/") && strings.HasSuffix(path, "/sync"):
 		return syncMaxBody
+	case path == mcpPath:
+		return s.mcpBodyLimit()
 	}
 	return defaultMaxBody
 }

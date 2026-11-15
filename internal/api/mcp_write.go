@@ -141,6 +141,40 @@ func liveBullet(d *collab.Doc, id string) (*collab.Block, error) {
 	return b, nil
 }
 
+// bulletPlace: where a new bullet goes — right after afterID on its level, as the last child of
+// parentID, or at the end of the note — as its parent and order key
+func bulletPlace(d *collab.Doc, afterID, parentID string) (parent, key string, err error) {
+	prev, next := "", ""
+	switch {
+	case afterID != "":
+		after, err := liveBullet(d, afterID)
+		if err != nil {
+			return "", "", err
+		}
+		parent, prev = after.ParentID, after.OrderKey
+		for _, sib := range d.Children(parent) {
+			if sib.OrderKey > after.OrderKey || (sib.OrderKey == after.OrderKey && sib.ID > after.ID) {
+				next = sib.OrderKey
+				break
+			}
+		}
+	case parentID != "":
+		if _, err := liveBullet(d, parentID); err != nil {
+			return "", "", err
+		}
+		parent = parentID
+		if kids := d.Children(parent); len(kids) > 0 {
+			prev = kids[len(kids)-1].OrderKey
+		}
+	default:
+		if top := d.Children(""); len(top) > 0 {
+			prev = top[len(top)-1].OrderKey
+		}
+	}
+	key, err = collab.KeyBetween(prev, next)
+	return parent, key, err
+}
+
 func noteResult(s *Server, userID, docID string) (any, error) {
 	d, err := s.noteDoc(docID)
 	if err != nil {
@@ -248,34 +282,7 @@ var mcpWriteTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			parent, prev, next := "", "", ""
-			switch {
-			case a.AfterID != "":
-				after, err := liveBullet(d, a.AfterID)
-				if err != nil {
-					return nil, err
-				}
-				parent, prev = after.ParentID, after.OrderKey
-				for _, sib := range d.Children(parent) {
-					if sib.OrderKey > after.OrderKey || (sib.OrderKey == after.OrderKey && sib.ID > after.ID) {
-						next = sib.OrderKey
-						break
-					}
-				}
-			case a.ParentID != "":
-				if _, err := liveBullet(d, a.ParentID); err != nil {
-					return nil, err
-				}
-				parent = a.ParentID
-				if kids := d.Children(parent); len(kids) > 0 {
-					prev = kids[len(kids)-1].OrderKey
-				}
-			default:
-				if top := d.Children(""); len(top) > 0 {
-					prev = top[len(top)-1].OrderKey
-				}
-			}
-			key, err := collab.KeyBetween(prev, next)
+			parent, key, err := bulletPlace(d, a.AfterID, a.ParentID)
 			if err != nil {
 				return nil, err
 			}
@@ -300,6 +307,26 @@ var mcpWriteTools = []mcpTool{
 				m["addedId"] = id
 			}
 			return res, err
+		},
+	},
+	{
+		Name: "add_note_image",
+		Description: "Add an image to a note as its own bullet (e.g. a picture you generated or a screenshot), placed like add_note_bullet. " +
+			"Give exactly one of data or url. data: the image file as base64 (standard alphabet; a data:image/…;base64, prefix is accepted too). " +
+			"url: an https address of an image on the internet; MindSift copies the image into the note (addresses in the server's own network are refused). " +
+			"Accepted: JPEG, PNG, GIF, WebP (no SVG), at most " + mcpImageLimitText + " per image (the server's limit for images in notes; the error names it if it is lower). " +
+			"Returns the note with addedId (the bullet) and mediaId.",
+		Scope: storage.ScopeNotesWrite,
+		Schema: schema([]string{"noteId"}, map[string]any{
+			"noteId":   prop("string", "Note id"),
+			"data":     prop("string", "The image as base64, without line breaks (or with a data: prefix); leave out when giving url"),
+			"url":      prop("string", "https address of an image to copy into the note; leave out when giving data"),
+			"caption":  prop("string", "Caption shown under the image, optional"),
+			"afterId":  prop("string", "Insert right after this bullet, on its level (optional)"),
+			"parentId": prop("string", "Insert as the last child of this bullet (optional; ignored with afterId)"),
+		}),
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+			return s.mcpAddNoteImage(userID, actor, args)
 		},
 	},
 	{

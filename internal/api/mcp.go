@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -104,8 +106,18 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 		actor = &apiActor{Via: storage.OriginMCP}
 	}
 
+	// An image for add_note_image may take longer than the usual 15 s to send on a slow line
+	if r.ContentLength > defaultMaxBody {
+		allowLongTransfer(w)
+	}
 	var raw json.RawMessage
 	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+		var tooBig *http.MaxBytesError
+		if errors.As(err, &tooBig) {
+			writeRPC(w, nil, nil, &jsonrpcError{rpcInvalidRequest, i18n.T("en", "Anfrage zu groß (höchstens {mb} MB; ein Bild für add_note_image höchstens {img} MB)",
+				"mb", strconv.FormatInt(s.mcpBodyLimit()>>20, 10), "img", strconv.FormatInt(s.mediaLimit("image")>>20, 10))})
+			return
+		}
 		writeRPC(w, nil, nil, &jsonrpcError{rpcParseError, "Ungültiges JSON"})
 		return
 	}
@@ -205,6 +217,15 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeRPC(w, req.ID, nil, &jsonrpcError{rpcMethodNotFound, "Methode nicht unterstützt: " + req.Method})
 	}
+}
+
+// mcpBodyLimit: an MCP request may carry one image of the largest allowed size as base64 (add_note_image),
+// which is a third larger than the file, plus room for the rest of the call.
+func (s *Server) mcpBodyLimit() int64 {
+	if n := base64.StdEncoding.EncodedLen(int(s.mediaLimit("image"))) + 1<<20; int64(n) > defaultMaxBody {
+		return int64(n)
+	}
+	return defaultMaxBody
 }
 
 // handleMCPNoStream: the endpoint is stateless and has no server-initiated stream (GET) or session to
