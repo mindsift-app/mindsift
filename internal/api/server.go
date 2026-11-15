@@ -124,6 +124,8 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		srv.background(srv.startNotificationJobs)
 		srv.background(srv.startBackupScheduler)
 		srv.background(srv.startDoneCleanupTicker)
+		// The command line changes no demo (internal/cli)
+		srv.background(srv.startCLIEventWatcher)
 	}
 	return srv
 }

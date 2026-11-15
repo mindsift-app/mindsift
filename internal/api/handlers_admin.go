@@ -357,19 +357,27 @@ func (s *Server) handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	allowLongWork(w)
-	if err := s.store.DeleteUser(targetUserID); err != nil {
+	if err := s.deleteAccount(targetUserID, targetUser, time.Now()); err != nil {
 		writeInternal(w, err)
 		return
 	}
-	// Deleted by someone else: the backups stay for the retention period (a mistake can be undone);
-	// a rejected registration has nothing worth keeping
-	if targetUser != nil && !s.store.IsPendingRegistration(targetUserID) {
-		s.keepUserBackups(targetUser, time.Now())
-	} else {
-		s.removeUserBackups(targetUserID)
-	}
-	s.store.ClearPendingRegistration(targetUserID)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
+}
+
+// deleteAccount deletes an account with its data on behalf of someone else (administration, command
+// line). Its backups stay for the retention period, so a mistake can be undone; a rejected registration
+// has nothing worth keeping. u is the account as read before (nil when it was not found).
+func (s *Server) deleteAccount(userID string, u *domain.User, now time.Time) error {
+	if err := s.store.DeleteUser(userID); err != nil {
+		return err
+	}
+	if u != nil && !s.store.IsPendingRegistration(userID) {
+		s.keepUserBackups(u, now)
+	} else {
+		s.removeUserBackups(userID)
+	}
+	s.store.ClearPendingRegistration(userID)
+	return nil
 }
 
 // --- INVITES MANAGEMENT ---
