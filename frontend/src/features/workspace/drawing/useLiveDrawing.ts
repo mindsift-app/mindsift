@@ -37,6 +37,8 @@ export type LiveRefusal = 'forbidden' | 'locked' | 'limit' | 'busy' | 'too_many'
 export interface LiveOptions {
   docId: string;
   blockId: string;
+  /** The sync engine of the note this drawing is in: gets the bullet's lease after "Fertig" */
+  noteClientId?: string;
   /** null: drawing alone, no session (yet) */
   mode: LiveMode | null;
   /** Draw along in a running session only (someone asked to join one): if it ended meanwhile, none starts */
@@ -438,7 +440,8 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       flushTimer.current = null;
       setSaving(true);
       setError(null);
-      send('DRAW_DONE', { clientId: noteClientId(optsRef.current!.docId) || '' });
+      const o = optsRef.current!;
+      send('DRAW_DONE', { clientId: o.noteClientId || noteClientId(o.docId) || '' });
       if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
       saveTimer.current = window.setTimeout(() => {
         setSaving(false);

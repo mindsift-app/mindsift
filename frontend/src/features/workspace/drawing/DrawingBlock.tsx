@@ -8,7 +8,7 @@ import { ConfirmPopover } from '../../../components/ConfirmPopover';
 import { AvatarStack } from '../../../components/AvatarStack';
 import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
 import { useLatestRef } from '../../../lib/useLatestRef';
-import { NoteSharedContext } from './noteShared';
+import { NoteClientContext, NoteSharedContext } from './noteShared';
 
 // The editor (with the live drawing) is a chunk of its own, loaded when a drawing is opened; the service
 // worker precaches it with the other assets, so it opens offline as well
@@ -111,6 +111,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   const { t } = useTranslation('workspace');
   // Shared with someone: "Gemeinsam zeichnen" in the editor (someone else could join)
   const shared = useContext(NoteSharedContext);
+  const noteClientId = useContext(NoteClientContext);
   const drawing = useMemo(() => parseDrawing(content), [content]);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
@@ -536,9 +537,9 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
             readOnly={editing === 'view'}
             live={
               docId && (editing === 'draw' || editing === 'watch')
-                ? { docId, blockId, mode: editing, canDraw: canEdit && isWebSocketConnected() }
+                ? { docId, blockId, mode: editing, canDraw: canEdit && isWebSocketConnected(), noteClientId }
                 : docId && editing === 'solo'
-                ? { docId, blockId, mode: null, canDraw: true, canStart: shared }
+                ? { docId, blockId, mode: null, canDraw: true, canStart: shared, noteClientId }
                 : undefined
             }
             onClose={(next, wasLive) => {

@@ -37,7 +37,7 @@ import { formatNumber } from '../../lib/format';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
 import type { BlockLock } from './OutlinerBlock';
-import { NoteSharedContext } from './drawing/noteShared';
+import { NoteClientContext, NoteSharedContext } from './drawing/noteShared';
 import { extractHashtags } from '../../lib/hashtags';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { useTranslation } from 'react-i18next';
@@ -820,6 +820,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   return (
     // Drawings in a shared note may start a live session ("Gemeinsam zeichnen")
     <NoteSharedContext.Provider value={!!engineState?.shared}>
+    {/* The ref is read on render: the engine starts in an effect, and every engine state renders again */}
+    {/* eslint-disable-next-line react-hooks/refs */}
+    <NoteClientContext.Provider value={engineRef.current?.clientId}>
     <div
       ref={scrollRef}
       className={embedded ? 'flex flex-col bg-editor' : 'flex-1 flex flex-col h-full min-h-0 bg-editor overflow-y-auto overscroll-y-contain'}
@@ -1284,6 +1287,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         </div>
       )}
     </div>
+    </NoteClientContext.Provider>
     </NoteSharedContext.Provider>
   );
 };
