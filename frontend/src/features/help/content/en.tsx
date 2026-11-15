@@ -323,7 +323,7 @@ const en: HelpContent = {
               <strong className="text-main">Backlinks:</strong> at the end of every note, “Linked to this note” shows which other notes link to it with <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[title]]</code>. Clicking a place jumps right there.
             </li>
             <li>
-              <strong className="text-main">Trash:</strong> deleted notes (also from deleted folders) land in the “Trash” at the bottom of the folder bar or in the mobile menu. There you can view them read-only, restore them or delete them for good. While a note is in the trash, the people it was shared with do not see it either. After the period set in Account settings → Retention (default 30 days) it is deleted for good. Deleted tasks are in the “Trash” tab of the tasks, discarded thoughts in the triage trash.
+              <strong className="text-main">Trash:</strong> you delete your own notes with ⋯ → “Delete note” or the trash button that appears when you hover over a note in the folder bar (it asks first). Deleted notes (also from deleted folders) land in the “Trash” at the bottom of the folder bar or in the mobile menu. There you can view them read-only, restore them or delete them for good. While a note is in the trash, the people it was shared with do not see it either. After the period set in Account settings → Retention (default 30 days) it is deleted for good. Deleted tasks are in the “Trash” tab of the tasks, discarded thoughts in the triage trash.
             </li>
           </ul>
         </div>

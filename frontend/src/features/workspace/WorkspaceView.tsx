@@ -458,6 +458,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [pendingFolderDelete, setPendingFolderDelete] = useState<{ path: string; x: number; y: number } | null>(null);
   const requestDeleteFolder = (path: string, at: { x: number; y: number }) => setPendingFolderDelete({ path, ...at });
   const closeFolderDelete = useCallback(() => setPendingFolderDelete(null), []);
+  // Likewise a note's delete button in the tree
+  const [pendingDocDelete, setPendingDocDelete] = useState<{ id: string; x: number; y: number } | null>(null);
+  const requestDeleteDoc = useCallback((id: string, at: { x: number; y: number }) => setPendingDocDelete({ id, ...at }), []);
+  const closeDocDelete = useCallback(() => setPendingDocDelete(null), []);
 
   const handleDeleteFolder = async (folderPath: string) => {
     try {
@@ -933,6 +937,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             handleOpenNewFolder={handleOpenNewFolder}
             handleShareFolderClick={handleShareFolderClick}
             requestDeleteFolder={requestDeleteFolder}
+            requestDeleteDoc={requestDeleteDoc}
             onOpenDoc={(id) => {
               setSelectedDocId(id);
               setSubView('editor');
@@ -1153,6 +1158,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         setNewNoteTemplate={setNewNoteTemplate}
         handleCreateDocument={handleCreateDocument}
         pendingFolderDelete={pendingFolderDelete}
+        pendingDocDelete={pendingDocDelete}
+        closeDocDelete={closeDocDelete}
+        handleDeleteDocument={handleDeleteDocument}
         closeFolderDelete={closeFolderDelete}
         handleDeleteFolder={handleDeleteFolder}
         docs={docs}

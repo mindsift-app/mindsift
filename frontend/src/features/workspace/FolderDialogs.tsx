@@ -35,6 +35,10 @@ interface FolderDialogsProps {
   setNewNoteTemplate: (id: string) => void;
   handleCreateDocument: (folderPath?: string, title?: string, icon?: string, templateId?: string) => Promise<unknown>;
   pendingFolderDelete: { path: string; x: number; y: number } | null;
+  /** A note's delete button was clicked: asks before the note goes to the trash */
+  pendingDocDelete?: { id: string; x: number; y: number } | null;
+  closeDocDelete?: () => void;
+  handleDeleteDocument?: (docId: string) => Promise<void>;
   closeFolderDelete: () => void;
   handleDeleteFolder: (path: string) => Promise<void>;
   docs: Document[];
@@ -62,6 +66,9 @@ export function FolderDialogs({
   handleCreateDocument,
   pendingFolderDelete,
   closeFolderDelete,
+  pendingDocDelete,
+  closeDocDelete,
+  handleDeleteDocument,
   handleDeleteFolder,
   docs,
 }: FolderDialogsProps) {
@@ -160,6 +167,22 @@ export function FolderDialogs({
             />
           );
         })()}
+
+      {pendingDocDelete && closeDocDelete && handleDeleteDocument && (
+        <ConfirmPopover
+          x={pendingDocDelete.x}
+          y={pendingDocDelete.y}
+          danger
+          confirmLabel={t('folder.toTrash')}
+          message={t('folder.confirmDeleteNote')}
+          onCancel={closeDocDelete}
+          onConfirm={() => {
+            const { id } = pendingDocDelete;
+            closeDocDelete();
+            void handleDeleteDocument(id);
+          }}
+        />
+      )}
     </>
   );
 }

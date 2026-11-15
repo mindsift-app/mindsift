@@ -271,6 +271,8 @@
     "createFailed": "Échec de la création du dossier",
     "subfolderIn": "Sous-dossier dans \"{{path}}\"",
     "toTrash": "Déplacer dans la corbeille",
+    "deleteNote": "Supprimer la note",
+    "confirmDeleteNote": "Mettre à la corbeille ?",
     "confirmDelete": "Supprimer vraiment le dossier <b>« {{name}} »</b> ?",
     "confirmDeleteWithNotes_one": "Supprimer vraiment le dossier <b>« {{name}} »</b> contenant {{count}} note ?",
     "confirmDeleteWithNotes_other": "Supprimer vraiment le dossier <b>« {{name}} »</b> contenant {{count}} notes ?",

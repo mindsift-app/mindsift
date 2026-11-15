@@ -271,6 +271,8 @@
     "createFailed": "Creazione della cartella non riuscita",
     "subfolderIn": "Sottocartella in \"{{path}}\"",
     "toTrash": "Nel cestino",
+    "deleteNote": "Elimina nota",
+    "confirmDeleteNote": "Spostare nel cestino?",
     "confirmDelete": "Vuoi davvero eliminare la cartella <b>«{{name}}»</b>?",
     "confirmDeleteWithNotes_one": "Vuoi davvero eliminare la cartella <b>«{{name}}»</b> contenente {{count}} nota?",
     "confirmDeleteWithNotes_other": "Vuoi davvero eliminare la cartella <b>«{{name}}»</b> contenente {{count}} note?",

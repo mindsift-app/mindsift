@@ -1,6 +1,6 @@
 import React from 'react';
 import { Folder, FolderOpen, FolderPlus, Plus, Trash, Users } from 'lucide-react';
-import { SharedFolder } from '../../lib/types';
+import { Document, SharedFolder } from '../../lib/types';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
 import { isFolderShared } from './workspaceListing';
 import { TemplateMark } from './NoteTemplates';
@@ -23,6 +23,8 @@ interface FolderTreeItemProps {
   handleShareFolderClick: (folderPath: string, existingSf?: SharedFolder) => void;
   // Asks first (popover at the given point), then moves the folder to the trash
   handleDeleteFolder: (folderPath: string, at: { x: number; y: number }) => void;
+  // Asks first (popover at the given point), then moves the note to the trash
+  requestDeleteDoc?: (docId: string, at: { x: number; y: number }) => void;
   onSelectDoc: (id: string) => void;
   // Dropping a note onto another one offers to merge them
   docDropProps: (targetId: string) => React.HTMLAttributes<HTMLDivElement>;
@@ -46,6 +48,42 @@ export const DocRowIcon: React.FC<{ icon?: string }> = ({ icon }) => (
   <span className="w-3.5 shrink-0 inline-flex justify-center">{icon}</span>
 );
 
+/** Where a delete confirmation opens: at the pointer, or below the button for keyboard clicks */
+const deleteAt = (e: React.MouseEvent<HTMLElement>) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  const byPointer = e.clientX !== 0 || e.clientY !== 0;
+  return byPointer ? { x: e.clientX, y: e.clientY } : { x: r.left, y: r.bottom };
+};
+
+/** Classes for a note row: `group/doc` lets its delete button show on hover like the folder's buttons */
+export const DOC_ROW_GROUP = 'group/doc';
+
+// Delete button at the end of a note row, as the folder rows have it (shown on hover): only for notes the
+// person may delete (their own, like "Notiz löschen" in the note's ⋯ menu); asks first
+export const DocRowDelete: React.FC<{ doc: Document; onRequestDelete?: (docId: string, at: { x: number; y: number }) => void }> = ({
+  doc,
+  onRequestDelete,
+}) => {
+  const { t } = useTranslation('workspace');
+  if (!onRequestDelete || !(doc.isOwner || doc.permission === 'owner')) return null;
+  return (
+    <button
+      type="button"
+      draggable={false}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onRequestDelete(doc.id, deleteAt(e));
+      }}
+      className="-my-1.5 sm:my-0 p-1 h-11 w-11 sm:h-6 sm:w-6 shrink-0 flex items-center justify-center text-faint hover:text-status-err transition-colors cursor-pointer opacity-0 pointer-events-none group-hover/doc:opacity-100 group-hover/doc:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
+      title={t('folder.deleteNote')}
+      aria-label={t('folder.deleteNote')}
+    >
+      <Trash className="w-3 h-3" />
+    </button>
+  );
+};
+
 // One folder of the notes sidebar with its subfolders and notes (recursive)
 export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   node,
@@ -63,6 +101,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   handleOpenNewFolder,
   handleShareFolderClick,
   handleDeleteFolder,
+  requestDeleteDoc,
   onSelectDoc,
   docDropProps,
   mergeHoverId,
@@ -208,6 +247,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               handleOpenNewFolder={handleOpenNewFolder}
               handleShareFolderClick={handleShareFolderClick}
               handleDeleteFolder={handleDeleteFolder}
+              requestDeleteDoc={requestDeleteDoc}
               onSelectDoc={onSelectDoc}
               docDropProps={docDropProps}
               mergeHoverId={mergeHoverId}
@@ -227,7 +267,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               onMouseDown={(e) => e.shiftKey && e.preventDefault()}
               onClick={(e) => onDocRowClick(e, d.id, () => onSelectDoc(d.id))}
               style={{ paddingLeft: `${(depth + 1) * 12 + 9}px` }}
-              className={`relative w-full flex items-center gap-1.5 pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+              className={`${DOC_ROW_GROUP} relative w-full flex items-center gap-1.5 pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                 mergeHoverId === d.id
                   ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                   : markedDocIds.has(d.id)
@@ -247,6 +287,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               <DocRowIcon icon={d.icon} />
               <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
               {d.isTemplate && <TemplateMark />}
+              <DocRowDelete doc={d} onRequestDelete={requestDeleteDoc} />
             </div>
           ))}
 
