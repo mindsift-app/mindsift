@@ -502,18 +502,26 @@ type ThoughtPatch struct {
 }
 
 // taskStatus is a task's status as stored: completed, its Kanban column and when either last changed
-// (thoughts.status_changed_at, doneTimeLayout; empty: not since migration 65).
+// (thoughts.status_changed_at, doneTimeLayout; empty: not since migration 65), with its list and that
+// list's stored columns (nil: none) for working out the column of a plain tick.
 type taskStatus struct {
 	done      bool
 	column    string
 	changedAt string
+	listID    string
+	columns   []domain.KanbanColumn
 }
 
 func (s *Store) taskStatus(taskID string) (taskStatus, error) {
 	var st taskStatus
 	var done int
-	err := s.db.QueryRow(`SELECT is_completed, kanban_status, status_changed_at FROM thoughts WHERE id = ?`, taskID).Scan(&done, &st.column, &st.changedAt)
+	var cols string
+	err := s.db.QueryRow(`SELECT t.is_completed, t.kanban_status, t.status_changed_at, t.task_list_id, COALESCE(tl.columns, '')
+		FROM thoughts t LEFT JOIN task_lists tl ON tl.id = t.task_list_id WHERE t.id = ?`, taskID).Scan(&done, &st.column, &st.changedAt, &st.listID, &cols)
 	st.done = done != 0
+	if cols != "" {
+		_ = json.Unmarshal([]byte(cols), &st.columns)
+	}
 	if st.column == "" {
 		st.column = "todo"
 		if st.done {
@@ -583,13 +591,18 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 	if p.Tags != nil {
 		thought.Tags = *p.Tags
 	}
+	// The columns of the list the task ends up in: a plain tick goes to its last column marked as done, a
+	// reopened task to its first open column, and a column alone completes the task if it is marked as done
+	var cols []domain.KanbanColumn
+	if statusPatch {
+		cols = stored.columns
+		if p.TaskListID != nil && *p.TaskListID != stored.listID {
+			cols = s.listColumns(*p.TaskListID)
+		}
+	}
 	if p.IsCompleted != nil {
 		thought.IsCompleted = *p.IsCompleted
-		if *p.IsCompleted {
-			thought.KanbanStatus = "done"
-		} else if thought.KanbanStatus == "done" {
-			thought.KanbanStatus = "todo"
-		}
+		thought.KanbanStatus = statusColumn(cols, *p.IsCompleted, thought.KanbanStatus)
 	}
 	if p.DueDate != nil {
 		thought.DueDate = domain.NormalizeDue(*p.DueDate)
@@ -607,7 +620,7 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 	if p.KanbanStatus != nil && *p.KanbanStatus != "" {
 		thought.KanbanStatus = *p.KanbanStatus
 		if p.IsCompleted == nil {
-			thought.IsCompleted = *p.KanbanStatus == "done"
+			thought.IsCompleted = doneColumn(cols, *p.KanbanStatus)
 		}
 	}
 	if p.Notes != nil {
@@ -897,11 +910,15 @@ func (s *Store) SyncTaskFromBlockCheck(userID, taskID string, checked bool) {
 		return
 	}
 	doneInt := 0
-	kanban := "todo"
 	if checked {
 		doneInt = 1
-		kanban = "done"
 	}
+	var listID, column string
+	if err := s.db.QueryRow(`SELECT task_list_id, kanban_status FROM thoughts WHERE id = ? AND user_id = ?`, taskID, userID).Scan(&listID, &column); err != nil {
+		logDBErr(rowErr(err))
+		return
+	}
+	kanban := statusColumn(s.listColumns(listID), checked, column)
 	res, _ := s.db.Exec(`UPDATE thoughts SET is_completed = ?, kanban_status = ?, alarm_sent = CASE WHEN ? = 0 THEN 0 ELSE alarm_sent END,
 		 alarm_failures = CASE WHEN ? = 0 THEN 0 ELSE alarm_failures END
 		 WHERE id = ? AND user_id = ? AND is_completed != ?`, doneInt, kanban, doneInt, doneInt, taskID, userID, doneInt)

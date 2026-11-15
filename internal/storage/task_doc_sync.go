@@ -242,10 +242,8 @@ func (s *Store) ReconcileDocTaskLinksNotify(docID string, plan func([]TaskReconc
 		var args []any
 		if b.Props.Checked != t.IsCompleted {
 			after.IsCompleted = b.Props.Checked
-			after.KanbanStatus = "todo"
-			if after.IsCompleted {
-				after.KanbanStatus = "done"
-			}
+			// The list's last column marked as done (one it stands in stays), or back to its first open one
+			after.KanbanStatus = statusColumn(s.listColumns(t.TaskListID), after.IsCompleted, t.KanbanStatus)
 			sets = append(sets, "is_completed = ?", "kanban_status = ?")
 			args = append(args, boolInt(after.IsCompleted), after.KanbanStatus)
 			if !after.IsCompleted {
