@@ -98,11 +98,11 @@ Selection over several bullets in Chromium and Firefox, in two notes (callout at
 - a click outside the note ends the selection
 - Backspace deletes the whole selection
 
-Run it after every change to selecting, copying or deleting in notes.
+Run it after every change to selecting, copying or deleting in notes. Its test notes are deleted for good at the end, also when a check fails.
 
 ## paste-image.e2e.mjs
 
-Pasting an image (desktop, Chromium and Firefox), through a synthetic paste event with a PNG drawn on a canvas: in an empty bullet the bullet becomes the image, in a bullet with text the image becomes an image bullet below it; both are stored on the server and load in the note. Ctrl+Z removes the pasted image bullet again. Bullets with an image copied within MindSift and pasted keep the image's reference and upload nothing.
+Pasting an image (desktop, Chromium and Firefox), through a synthetic paste event with a PNG drawn on a canvas: in an empty bullet the bullet becomes the image, in a bullet with text the image becomes an image bullet below it; both are stored on the server and load in the note. The cursor then goes below the image: to the start of the bullet that follows, or into a new empty bullet when nothing follows (Ctrl+Z takes back the image and that bullet in one step). Ctrl+Z removes the pasted image bullet again. Bullets with an image copied within MindSift and pasted keep the image's reference and upload nothing. Its test notes are deleted for good at the end, also when a check fails.
 
 ## secrets.e2e.mjs
 
