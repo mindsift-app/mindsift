@@ -8,6 +8,7 @@ import { voiceConfigFromStatus } from '../lib/voice';
 import i18n from '../i18n';
 import { useLatestRef } from '../lib/useLatestRef';
 import { setServerLinkPreviews } from '../lib/linkPreview';
+import { setServerImageQuality } from '../lib/media';
 import { OWN_ECHO_WINDOW_MS, createStatsScheduler, eventChangesDeck, eventChangesStats } from './realtimeCounters';
 
 type AccountLoad = [
@@ -208,6 +209,11 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   useEffect(() => {
     setServerLinkPreviews(authStatus.linkPreviews !== false);
   }, [authStatus.linkPreviews]);
+
+  // How strongly new pictures are compressed before upload (the administration's choice)
+  useEffect(() => {
+    setServerImageQuality(authStatus.imageQuality);
+  }, [authStatus.imageQuality]);
 
   // The demo database was reset: drop cached answers of the old data, remount the views (they load
   // fresh data), refresh counters and the countdown. Sessions stay valid (fixed demo account IDs).

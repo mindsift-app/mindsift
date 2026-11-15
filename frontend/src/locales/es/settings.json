@@ -748,6 +748,11 @@
     "calendarFeedsHint": "Cada persona puede suscribirse a sus tareas abiertas con fecha de vencimiento en su app de calendario mediante un enlace secreto (solo lectura). Desactivado, ningún enlace existente sigue funcionando.",
     "linkPreviews": "Vistas previas de enlaces",
     "linkPreviewsHint": "Cuando un punto contiene solo una dirección web, el servidor de MindSift obtiene la página y muestra su título, descripción e imagen como tarjeta. Desactivado, el servidor no obtiene ninguna página y la app no muestra tarjetas de vista previa ni el interruptor por dispositivo.",
+    "imageQuality": "Calidad de imagen",
+    "imageQualityHint": "Antes de subirlas, las imágenes se reducen a 2048 píxeles como máximo y se comprimen en el navegador. El tamaño es el mismo en todos los niveles, para que el texto de capturas de pantalla y diagramas siga siendo legible; los niveles más bajos comprimen más y ahorran espacio. Solo se aplica a las imágenes nuevas; los GIF no cambian.",
+    "imageQualityHigh": "Alta (predeterminada)",
+    "imageQualityMedium": "Media",
+    "imageQualityLow": "Ahorro – archivos más pequeños, el texto sigue legible",
     "publicLinkMaxDays": "Duración máxima de un enlace",
     "days_one": "{{count}} día",
     "days_other": "{{count}} días",
@@ -1176,6 +1181,11 @@
       "mfaRequired": {
         "admins": "Administradores",
         "all": "Todos"
+      },
+      "imageQuality": {
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Ahorro"
       }
     },
     "field": {
@@ -1205,6 +1215,7 @@
       "publicLinkMaxDays": "Enlaces públicos como máximo (días)",
       "calendarFeeds": "Suscripciones de calendario",
       "linkPreviews": "Vistas previas de enlaces",
+      "imageQuality": "Calidad de imagen",
       "defaultLanguage": "Idioma predeterminado",
       "timeZone": "Zona horaria",
       "displayName": "Nombre visible",

@@ -646,6 +646,11 @@
     "calendarFeedsHint": "Everyone can subscribe to their open tasks with a due date in their calendar app through a secret link (read only). Switched off, no existing link works any more.",
     "linkPreviews": "Link previews",
     "linkPreviewsHint": "When a bullet holds only a web address, the MindSift server fetches the page and shows its title, description and picture as a card. Off, the server fetches no pages, and the app shows neither preview cards nor the switch per device.",
+    "imageQuality": "Image quality",
+    "imageQualityHint": "Images are shrunk to at most 2048 pixels and compressed in the browser before upload. The size stays the same at every level, so text in screenshots and diagrams stays readable; lower levels compress more and save storage. Applies to newly added images only; GIFs stay unchanged.",
+    "imageQualityHigh": "High (default)",
+    "imageQualityMedium": "Medium",
+    "imageQualityLow": "Economy – smaller files, text stays readable",
     "publicLinkMaxDays": "Longest a link may live",
     "days_one": "{{count}} day",
     "days_other": "{{count}} days",
@@ -1176,6 +1181,11 @@
       "mfaRequired": {
         "admins": "Admins",
         "all": "Everyone"
+      },
+      "imageQuality": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Economy"
       }
     },
     "field": {
@@ -1205,6 +1215,7 @@
       "publicLinkMaxDays": "Public links at most (days)",
       "calendarFeeds": "Calendar subscriptions",
       "linkPreviews": "Link previews",
+      "imageQuality": "Image quality",
       "defaultLanguage": "Default language",
       "timeZone": "Time zone",
       "displayName": "Display name",

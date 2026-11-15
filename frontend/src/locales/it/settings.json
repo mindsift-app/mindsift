@@ -646,6 +646,11 @@
     "calendarFeedsHint": "Ogni persona può abbonarsi alle proprie attività aperte con scadenza nella sua app di calendario tramite un link segreto (sola lettura). Disattivato, nessun link esistente funziona più.",
     "linkPreviews": "Anteprime dei link",
     "linkPreviewsHint": "Quando un punto contiene solo un indirizzo web, il server MindSift recupera la pagina e ne mostra titolo, descrizione e immagine come scheda. Disattivato, il server non recupera nessuna pagina e l'app non mostra né schede di anteprima né l'interruttore per dispositivo.",
+    "imageQuality": "Qualità delle immagini",
+    "imageQualityHint": "Prima del caricamento le immagini vengono ridotte a 2048 pixel al massimo e compresse nel browser. La dimensione resta la stessa a ogni livello, così il testo in screenshot e diagrammi resta leggibile; i livelli più bassi comprimono di più e risparmiano spazio. Vale solo per le nuove immagini; le GIF restano invariate.",
+    "imageQualityHigh": "Alta (predefinita)",
+    "imageQualityMedium": "Media",
+    "imageQualityLow": "Risparmio – file più piccoli, testo leggibile",
     "publicLinkMaxDays": "Durata massima di un link",
     "days_one": "{{count}} giorno",
     "days_other": "{{count}} giorni",
@@ -1176,6 +1181,11 @@
       "mfaRequired": {
         "admins": "Amministratori",
         "all": "Tutti"
+      },
+      "imageQuality": {
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Risparmio"
       }
     },
     "field": {
@@ -1205,6 +1215,7 @@
       "publicLinkMaxDays": "Link pubblici al massimo (giorni)",
       "calendarFeeds": "Abbonamenti calendario",
       "linkPreviews": "Anteprime dei link",
+      "imageQuality": "Qualità delle immagini",
       "defaultLanguage": "Lingua predefinita",
       "timeZone": "Fuso orario",
       "displayName": "Nome visualizzato",

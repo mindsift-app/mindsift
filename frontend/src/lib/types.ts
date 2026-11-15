@@ -77,6 +77,8 @@ export interface AuthStatus {
   publicLinkMaxDays?: number;
   // Preview cards for web addresses in notes (the administration can switch them off; off in the demo)
   linkPreviews?: boolean;
+  // How strongly the app compresses pictures before upload (administration or MEDIA_IMAGE_QUALITY)
+  imageQuality?: 'high' | 'medium' | 'low';
 }
 
 export type VoiceMode = 'server' | 'browser' | 'off';
@@ -520,6 +522,10 @@ export interface SystemSettings {
   calendarFeedsConfiguredViaEnv?: boolean;
   // The server fetches previews of web addresses in notes (off: no cards, nothing fetched; off in the demo)
   linkPreviews?: boolean;
+  // How strongly the app compresses pictures before upload (size always 2048 px at most); fixed when set
+  // via MEDIA_IMAGE_QUALITY
+  imageQuality?: 'high' | 'medium' | 'low';
+  imageQualityConfiguredViaEnv?: boolean;
   // Language for new accounts and everyone whose browser language the app does not speak
   defaultLanguage?: string;
   // The server's time zone (IANA name, '' = not set: TZ, else UTC) and the zone in effect now (read only)
