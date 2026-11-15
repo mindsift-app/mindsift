@@ -18,7 +18,7 @@ interface FolderTreeItemProps {
   handleDropOnFolder: (folderPath: string, e: React.DragEvent) => void;
   handleFolderDragStart: (e: React.DragEvent, path: string) => void;
   handleDocDragStart: (e: React.DragEvent, id: string) => void;
-  handleCreateDocument: (folderPath?: string) => void;
+  handleCreateDocument: (folderPath?: string, e?: React.MouseEvent) => void;
   handleOpenNewFolder: (parentPath?: string, e?: React.MouseEvent) => void;
   handleShareFolderClick: (folderPath: string, existingSf?: SharedFolder) => void;
   // Asks first (popover at the given point), then moves the folder to the trash
@@ -138,7 +138,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              handleCreateDocument(node.fullPath);
+              handleCreateDocument(node.fullPath, e);
             }}
             className="p-1 h-6 w-6 flex items-center justify-center text-muted hover:text-main transition-colors cursor-pointer"
             title={t('folder.newNoteHere')}

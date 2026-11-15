@@ -79,6 +79,8 @@ describe('Neue Notiz from a template', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Neue Notiz anlegen' }));
     });
+    // It opens at the button that was clicked, not in the middle of the window
+    expect((screen.getByPlaceholderText(/Name/).closest('form') as HTMLFormElement).style.getPropertyValue('--sheet-left')).not.toBe('');
     fireEvent.change(screen.getByPlaceholderText(/Name/), { target: { value: 'KW 47' } });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Vorlage' }));

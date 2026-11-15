@@ -16,7 +16,7 @@ interface FolderTreeProps {
   selectedDocId: string | null;
   subView: WorkspaceSubView;
   drag: ReturnType<typeof useDocDragDrop>;
-  handleCreateDocument: (folderPath?: string) => void;
+  handleCreateDocument: (folderPath?: string, e?: React.MouseEvent) => void;
   handleOpenNewFolder: (parentPath?: string, e?: React.MouseEvent) => void;
   handleShareFolderClick: (folderPath: string, existingSf?: SharedFolder) => void;
   requestDeleteFolder: (folderPath: string, at: { x: number; y: number }) => void;

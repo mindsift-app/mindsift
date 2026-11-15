@@ -9,6 +9,12 @@ import { NOTE_TITLE_MAX } from '../../lib/noteTitle';
 import { SelectMenu } from '../../components/SelectMenu';
 import type { TemplateChoice } from './NoteTemplates';
 
+/** The form for a new note: its folder, and on the desktop the point it opens at (centred without) */
+export interface NewNoteSheet {
+  folderPath: string;
+  anchor?: { x: number; y: number } | null;
+}
+
 interface FolderDialogsProps {
   showNewFolderModal: boolean;
   setShowNewFolderModal: (show: boolean) => void;
@@ -17,8 +23,8 @@ interface FolderDialogsProps {
   newFolderName: string;
   setNewFolderName: (name: string) => void;
   handleCreateFolderSubmit: (e: React.FormEvent) => void;
-  newNoteSheet: { folderPath: string } | null;
-  setNewNoteSheet: (sheet: { folderPath: string } | null) => void;
+  newNoteSheet: NewNoteSheet | null;
+  setNewNoteSheet: (sheet: NewNoteSheet | null) => void;
   newNoteTitle: string;
   setNewNoteTitle: (title: string) => void;
   newNoteIcon: string;
@@ -94,6 +100,7 @@ export function FolderDialogs({
             setNewNoteSheet(null);
             void handleCreateDocument(folderPath, newNoteTitle, newNoteIcon, newNoteTemplate);
           }}
+          anchor={newNoteSheet.anchor}
         >
           <div className="flex items-center gap-1.5">
             <EmojiIconButton value={newNoteIcon} onChange={setNewNoteIcon} />
