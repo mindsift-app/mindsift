@@ -49,7 +49,7 @@ export function useTaskActions({
         t.id === task.id ? { ...t, isCompleted: nextState, kanbanStatus: nextKanban } : t
       )
     );
-    await api.updateThought(task.id, { isCompleted: nextState, kanbanStatus: nextKanban });
+    await api.updateThought(task.id, { isCompleted: nextState, kanbanStatus: nextKanban }, { isCompleted: !!task.isCompleted, kanbanStatus: task.kanbanStatus });
     onRefreshStats();
   };
 
@@ -62,7 +62,7 @@ export function useTaskActions({
     setTasks((prev) =>
       prev.map((t) => (t.id === task.id ? { ...t, kanbanStatus: nextStatus, isCompleted } : t))
     );
-    await api.updateThought(task.id, { kanbanStatus: nextStatus, isCompleted });
+    await api.updateThought(task.id, { kanbanStatus: nextStatus, isCompleted }, { isCompleted: !!task.isCompleted, kanbanStatus: task.kanbanStatus });
     onRefreshStats();
   };
 

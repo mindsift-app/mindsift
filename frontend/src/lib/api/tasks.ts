@@ -132,7 +132,8 @@ export const tasksApi = {
       assignees?: string[];
       recurrence?: string;
       reminders?: number[];
-    }
+    },
+    base?: { isCompleted: boolean; kanbanStatus?: string }
   ): Promise<Thought> {
     try {
       return await request<Thought>(`/api/v1/thoughts/${thoughtId}`, {
@@ -143,7 +144,9 @@ export const tasksApi = {
       // Checking a task off (or on) also works offline; other edits need the server
       const onlyStatus = Object.keys(patch).every((k) => k === 'isCompleted' || k === 'kanbanStatus');
       if (!(err instanceof OfflineError) || !onlyStatus) throw err;
-      enqueue('PATCH', `/api/v1/thoughts/${thoughtId}`, patch);
+      // Checked off and on again while offline: nothing to send (it would undo somebody who checked it off
+      // meanwhile; base is the state the caller changed it from). The wanted state is sent, never a toggle.
+      enqueue('PATCH', `/api/v1/thoughts/${thoughtId}`, patch, base);
       return { id: thoughtId, ...patch } as Thought;
     }
   },

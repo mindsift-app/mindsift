@@ -166,12 +166,15 @@ export async function request<T>(path: string, { timeout = 'normal', ...options 
   return data;
 }
 
-// Sends a queued outbox entry with the current token (no timeout, no cache)
+// Sends a queued outbox entry with the current token (no timeout, no cache). A change that carries when it
+// was made (changedAt) also gets when it is sent, both on this device's clock: the server works out how
+// long ago it was made, whatever this clock says (changeTime in internal/api/handlers_lists.go).
 export function sendOutboxEntry(entry: { method: string; path: string; body: Record<string, unknown> }): Promise<Response> {
+  const body = typeof entry.body.changedAt === 'number' ? { ...entry.body, sentAt: Date.now() } : entry.body;
   return fetch(entry.path, {
     method: entry.method,
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(entry.body),
+    body: entry.method === 'DELETE' ? undefined : JSON.stringify(body),
     cache: 'no-store',
   });
 }

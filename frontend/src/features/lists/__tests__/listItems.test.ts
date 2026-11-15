@@ -10,6 +10,7 @@ import {
   groupOpenItems,
   matchHashtags,
   parseListItemInput,
+  withPendingChanges,
 } from '../listItems';
 
 const item = (id: string, content: string, i: Partial<ListItem> = {}) =>
@@ -29,6 +30,23 @@ describe('list items', () => {
     expect(getItemCategory(item('c', 'Milch'))).toBe('');
     expect(getItemDisplayContent(item('d', 'Milch #kühl  frisch'))).toBe('Milch frisch');
     expect(getItemDisplayContent(item('e', '#kühl'))).toBe('#kühl');
+  });
+
+  it('shows changes made offline on top of the loaded items', () => {
+    const loaded = [item('a', 'Milch'), item('b', 'Brot', { isCompleted: true }), item('c', 'Käse', { quantity: '200 g' }), item('d', 'Tee')];
+    const changes = new Map([
+      ['a', { isCompleted: true }],
+      ['b', { isCompleted: false }],
+      ['c', { quantity: '400 g' }],
+      ['d', { deleted: true }],
+    ]);
+    const shown = withPendingChanges(loaded, changes);
+    expect(shown.map((i) => [i.id, i.isCompleted, i.quantity || ''])).toEqual([
+      ['a', true, ''],
+      ['b', false, ''],
+      ['c', false, '400 g'],
+    ]);
+    expect(withPendingChanges(loaded, new Map())).toBe(loaded);
   });
 
   it('drops repeated entries', () => {

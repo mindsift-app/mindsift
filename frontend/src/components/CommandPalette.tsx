@@ -279,7 +279,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       const next = !t.isCompleted;
       setThoughts((prev) => prev.map((x) => (x.id === t.id ? { ...x, isCompleted: next } : x)));
       try {
-        await api.updateThought(t.id, { isCompleted: next });
+        await api.updateThought(t.id, { isCompleted: next }, { isCompleted: !!t.isCompleted });
       } catch {
         setThoughts((prev) => prev.map((x) => (x.id === t.id ? { ...x, isCompleted: !next } : x)));
       }
