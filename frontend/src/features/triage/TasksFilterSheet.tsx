@@ -23,7 +23,7 @@ interface TasksFilterSheetProps {
   showFilterModal: boolean;
 }
 
-// Phone: bottom sheet for filter (open/done/trash), hashtag, grouping and sorting of TasksView
+// Phone: bottom sheet for hashtag filter, grouping and sorting of TasksView
 export function TasksFilterSheet({
   allAvailableTags,
   defaultGroupBy,
@@ -143,7 +143,7 @@ export function TasksFilterSheet({
             </span>
             <div className="grid grid-cols-2 gap-2">
               {([
-                { id: 'custom', label: t('view.sortCustom') },
+                { id: 'custom', label: t('view.sortCustomShort') },
                 { id: 'created', label: t('view.sortCreated') },
                 { id: 'due', label: t('view.sortDue') },
                 { id: 'priority', label: t('view.sortPriority') },

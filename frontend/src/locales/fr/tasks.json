@@ -126,6 +126,7 @@
     "group": "Grouper :",
     "sort": "Trier :",
     "sortCustom": "Manuel (glisser-déposer)",
+    "sortCustomShort": "Manuel",
     "sortCreated": "Date de création",
     "sortDue": "Date d'échéance",
     "sortPriority": "Priorité",
