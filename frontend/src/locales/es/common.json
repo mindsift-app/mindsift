@@ -434,5 +434,9 @@
     "placeholder": "HH:MM",
     "placeholder12": "h:mm AM",
     "open": "Mostrar horas"
+  },
+  "naturalDate": {
+    "recognized": "Fecha de vencimiento reconocida: {{date}}",
+    "ignore": "No usar esta fecha"
   }
 }

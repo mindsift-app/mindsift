@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TriangleAlert, Calendar, Flame, Layers, LoaderCircle, Mic, MicOff, X } from 'lucide-react';
 import { PriorityLevel } from '../lib/types';
@@ -6,6 +6,7 @@ import { triggerHaptic } from '../lib/api';
 import { VoiceWave } from '../components/VoiceWave';
 import { useMobileCapture } from './useMobileCapture';
 import { DateField } from '../components/DateField';
+import { NaturalDateChip, PhraseHighlight } from '../components/NaturalDateHint';
 
 // Phones: the Quick Dump sheet (thought with voice input, priority, optional due date)
 export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof useMobileCapture> }) {
@@ -24,7 +25,9 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
     mobileVoiceActive,
     toggleMobileVoice,
     handleMobileCreateTriage,
+    natural,
   } = capture;
+  const inputRef = useRef<HTMLInputElement | null>(null);
   if (!showMobileCapture) return null;
   return (
     <div
@@ -60,6 +63,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
             </label>
             <div className="relative">
               <input
+                ref={inputRef}
                 type="text"
                 autoFocus
                 value={mobileTriageContent}
@@ -107,7 +111,11 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
                   </button>
                 </div>
               )}
+              {natural.parsed && (
+                <PhraseHighlight inputRef={inputRef} text={mobileTriageContent} spans={natural.parsed.spans} />
+              )}
             </div>
+            {natural.parsed && <NaturalDateChip due={natural.parsed.due} onDismiss={natural.dismiss} className="mt-1.5" />}
           </div>
 
           {/* Priority - 4 Buttons (Identical to TasksView) */}

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const captureThought = vi.fn(async (content: string) => ({ id: 't1', content }));
@@ -61,5 +61,74 @@ describe('InstantCaptureBar', () => {
     // The list chip (the target pill shows the chosen list as well)
     expect(screen.getAllByRole('button', { name: /Wocheneinkauf/ }).length).toBe(2);
     expect(screen.queryByText('Homelab')).toBeNull();
+  });
+
+  describe('dates in the text', () => {
+    beforeEach(() => {
+      // Wednesday 18.11.2026, 10:00
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 10, 18, 10, 0));
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('shows the recognised date as a chip and saves it without the phrase', async () => {
+      await act(async () => {
+        render(<InstantCaptureBar onCaptured={() => {}} lists={lists} />);
+      });
+      const box = screen.getByPlaceholderText('Quick Dump…');
+      fireEvent.change(box, { target: { value: 'Zahnarzt morgen 14 Uhr' } });
+      expect(screen.getByTestId('natural-date-chip').textContent).toContain('Morgen, 14:00');
+      expect(screen.getByTestId('natural-date-mark').textContent).toBe('morgen 14 Uhr');
+      await act(async () => {
+        fireEvent.submit(box.closest('form')!);
+      });
+      expect(captureThought).toHaveBeenCalledWith('Zahnarzt', 'normal', 'manual', '2026-11-19T14:00', {
+        target: 'inbox',
+        targetListId: '',
+        taskListId: '',
+      });
+      expect(screen.queryByTestId('natural-date-chip')).toBeNull();
+    });
+
+    it('keeps the text as typed and sets no date after the ×', async () => {
+      await act(async () => {
+        render(<InstantCaptureBar onCaptured={() => {}} lists={lists} />);
+      });
+      const box = screen.getByPlaceholderText('Quick Dump…');
+      fireEvent.change(box, { target: { value: 'Zahnarzt morgen 14 Uhr' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Datum nicht übernehmen' }));
+      expect(screen.queryByTestId('natural-date-chip')).toBeNull();
+      expect(screen.queryByTestId('natural-date-mark')).toBeNull();
+      // Typing on leaves the phrase dismissed; another phrase brings the chip back
+      fireEvent.change(box, { target: { value: 'Zahnarzt morgen 14 Uhr!' } });
+      expect(screen.queryByTestId('natural-date-chip')).toBeNull();
+      await act(async () => {
+        fireEvent.submit(box.closest('form')!);
+      });
+      expect(captureThought).toHaveBeenCalledWith('Zahnarzt morgen 14 Uhr!', 'normal', 'manual', '', expect.anything());
+      fireEvent.change(box, { target: { value: 'Zahnarzt Freitag' } });
+      expect(screen.getByTestId('natural-date-chip').textContent).toContain('Fr., 20.11.');
+    });
+
+    it('reads no date for list items, and a picked date wins', async () => {
+      await act(async () => {
+        render(<InstantCaptureBar onCaptured={() => {}} lists={lists} defaultShowOptions />);
+      });
+      const box = screen.getByPlaceholderText('Quick Dump…');
+      fireEvent.change(box, { target: { value: 'Milch morgen' } });
+      expect(screen.getByTestId('natural-date-chip')).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: /Direkt auf Liste/ }));
+      expect(screen.queryByTestId('natural-date-chip')).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: /Quick Dump \(Triage\)/ }));
+      expect(screen.getByTestId('natural-date-chip')).toBeTruthy();
+      const picker = screen.getByLabelText('Fällig am:');
+      fireEvent.change(picker, { target: { value: '01.12.2026' } });
+      fireEvent.keyDown(picker, { key: 'Enter' });
+      expect(screen.queryByTestId('natural-date-chip')).toBeNull();
+      await act(async () => {
+        fireEvent.submit(box.closest('form')!);
+      });
+      expect(captureThought).toHaveBeenCalledWith('Milch morgen', 'normal', 'manual', '2026-12-01', expect.anything());
+    });
   });
 });

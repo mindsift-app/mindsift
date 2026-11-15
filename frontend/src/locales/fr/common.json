@@ -434,5 +434,9 @@
     "placeholder": "HH:MM",
     "placeholder12": "h:mm AM",
     "open": "Afficher les heures"
+  },
+  "naturalDate": {
+    "recognized": "Échéance reconnue : {{date}}",
+    "ignore": "Ne pas utiliser cette date"
   }
 }

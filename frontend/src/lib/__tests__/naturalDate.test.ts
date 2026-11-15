@@ -167,8 +167,13 @@ describe('natural dates: German', () => {
   it('names the phrase with its joining words', () => {
     const text = 'Zahnarzt am Freitag um 9 Uhr';
     const parsed = parseNaturalDate(text, 'de', now)!;
-    expect(parsed.spans.map((s) => text.slice(s.start, s.end))).toEqual(['am Freitag', 'um 9 Uhr']);
-    expect(phraseOf(text, parsed)).toBe('am Freitag um 9 Uhr');
+    expect(parsed.spans.map((s) => text.slice(s.start, s.end))).toEqual(['am Freitag um 9 Uhr']);
+    // Apart: two phrases
+    const apart = 'Am Freitag Zahnarzt um 9 Uhr';
+    const two = parseNaturalDate(apart, 'de', now)!;
+    expect(two.spans.map((s) => apart.slice(s.start, s.end))).toEqual(['Am Freitag', 'um 9 Uhr']);
+    expect(two.title).toBe('Zahnarzt');
+    expect(phraseOf(apart, two)).toBe('Am Freitag um 9 Uhr');
   });
 });
 

@@ -530,6 +530,8 @@ export function parseNaturalDate(text: string, lang: string, now: Date): Natural
   if (date) spans.push({ start: extendLead(folded, date.start, v.dateLead), end: date.end });
   if (time) spans.push({ start: extendLead(folded, time.start, v.timeLead), end: time.end });
   spans.sort((a, b) => a.start - b.start);
+  // Next to each other ("morgen 14 Uhr"): one phrase
+  if (spans.length === 2 && !text.slice(spans[0].end, spans[1].start).trim()) spans.splice(0, 2, { start: spans[0].start, end: spans[1].end });
 
   const title = removeSpans(text, spans);
   if (!title) return null;

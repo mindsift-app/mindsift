@@ -6,6 +6,7 @@ import i18n from '../i18n';
 import { showError } from '../components/ErrorNotice';
 import { errorMessage } from '../lib/errorMessage';
 import { useLatestRef } from '../lib/useLatestRef';
+import { applyNaturalDate, useNaturalDate } from '../components/NaturalDateHint';
 
 // State of the Quick Dump sheet on phones: text, priority, due date and voice input; saving puts the
 // thought into the inbox
@@ -19,6 +20,8 @@ export function useMobileCapture(
   const [isVoiceCaptured, setIsVoiceCaptured] = useState(false);
   const [mobileVoiceError, setMobileVoiceError] = useState<string | null>(null);
   const mobileBaseVoiceRef = useRef('');
+  // A date in the text ("Zahnarzt morgen 14 Uhr"), unless one was picked in the date field
+  const natural = useNaturalDate(mobileTriageContent, showMobileCapture && !mobileTriageDueDate);
   // Voice input of the mobile capture sheet: own Whisper server or the browser (lib/voice.ts)
   const mobileVoice = useVoiceInput({
     chunked: true,
@@ -46,16 +49,17 @@ export function useMobileCapture(
 
   const handleMobileCreateTriage = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = mobileTriageContent.trim();
-    if (!trimmed) return;
+    if (!mobileTriageContent.trim()) return;
+    const { title, due } = applyNaturalDate(mobileTriageContent, natural.parsed, mobileTriageDueDate);
     try {
       const thought = await api.captureThought(
-        trimmed,
+        title.trim(),
         mobileTriagePriority,
         isVoiceCaptured ? 'voice' : 'manual',
-        mobileTriageDueDate,
+        due,
         { target: 'inbox' }
       );
+      natural.reset();
       handleCaptured(thought, 'inbox');
       setMobileTriageContent('');
       setMobileTriagePriority('normal');
@@ -94,5 +98,6 @@ export function useMobileCapture(
     toggleMobileVoice,
     handleMobileCreateTriage,
     openMobileTriageCapture,
+    natural,
   };
 }

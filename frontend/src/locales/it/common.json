@@ -434,5 +434,9 @@
     "placeholder": "HH:MM",
     "placeholder12": "h:mm AM",
     "open": "Mostra orari"
+  },
+  "naturalDate": {
+    "recognized": "Scadenza riconosciuta: {{date}}",
+    "ignore": "Non usare questa data"
   }
 }
