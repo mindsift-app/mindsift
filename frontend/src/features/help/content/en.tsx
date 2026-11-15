@@ -23,6 +23,7 @@ import {
   Shapes,
   CloudOff,
   Table as TableIcon,
+  LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -167,6 +168,10 @@ const en: HelpContent = {
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (speak instead of typing: starts right away, tapping “Stop” puts the text into the bullet)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
+                <LayoutTemplate className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/template or /vorlage (insert the content of one of your templates here)</span>
+              </div>
             </div>
           </div>
           <div className="pt-2 border-t border-border">
@@ -253,6 +258,36 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Everywhere:</strong> Copying, pasting, the Markdown export and AI agents (MCP) see the table as a Markdown table; pasted Markdown tables and tables from spreadsheets become a table again.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TEMPLATES
+    {
+      id: 'workspace-templates',
+      category: 'workspace',
+      title: 'Templates (/template)',
+      subtitle: 'Start recurring notes from a template',
+      icon: LayoutTemplate,
+      keywords: ['template', 'templates', 'vorlage', 'pattern', 'meeting', 'weekly plan', 'placeholder', 'date'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Create a template:</strong> Any note can be a template. Write it as usual and choose “Use as template” in the note’s ⋯ menu (“No longer a template” undoes it). You decide where it lives; a folder “Templates” keeps them together. A small mark in the folder tree and next to the title shows that it is a template.
+            </li>
+            <li>
+              <strong className="text-main">Insert:</strong> Type <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/template</kbd> (or <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/vorlage</kbd>) in a bullet and choose the template; the search helps when there are many. Its content goes in like pasted bullets: an empty bullet becomes the template’s first bullet, otherwise it follows below the bullet on its level. Headings, code, tables, drawings, pictures and hidden values come along; to-do checkboxes start open and are not linked to any task.
+            </li>
+            <li>
+              <strong className="text-main">New note:</strong> If you have templates, “New note” asks for name, emoji and template; the new note starts with the template’s content. Without templates the desktop creates the note at once, as before.
+            </li>
+            <li>
+              <strong className="text-main">Placeholders:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{date}}'}</kbd> (or <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{datum}}'}</kbd>) becomes today’s date when inserted, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{title}}'}</kbd> (or <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{titel}}'}</kbd>) the note’s title. In code blocks and drawings they stay as they are.
+            </li>
+            <li>
+              <strong className="text-main">Personal:</strong> Templates are your own choice: you can use any note you may read as a template, also one shared with you. Others do not see your choice, and a shared note is no template for them just because you use it as one.
             </li>
           </ul>
         </div>

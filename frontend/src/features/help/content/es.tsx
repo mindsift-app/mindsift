@@ -23,6 +23,7 @@ import {
   Shapes,
   CloudOff,
   Table as TableIcon,
+  LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -214,6 +215,10 @@ const es: HelpContent = {
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (hablar en lugar de escribir: empieza al instante, pulsar «Detener» inserta el texto en el punto)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
+                <LayoutTemplate className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/plantilla o /template (insertar aquí el contenido de una de tus plantillas)</span>
+              </div>
             </div>
           </div>
           <div className="pt-2 border-t border-border">
@@ -300,6 +305,36 @@ const es: HelpContent = {
             </li>
             <li>
               <strong className="text-main">En todas partes:</strong> Copiar, pegar, la exportación Markdown y los agentes de IA (MCP) ven la tabla como tabla Markdown; las tablas Markdown pegadas y las de hojas de cálculo vuelven a ser una tabla.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TEMPLATES
+    {
+      id: 'workspace-templates',
+      category: 'workspace',
+      title: 'Plantillas (/plantilla)',
+      subtitle: 'Empezar notas recurrentes desde una plantilla',
+      icon: LayoutTemplate,
+      keywords: ['plantilla', 'plantillas', 'template', 'vorlage', 'reunión', 'plan semanal', 'marcador', 'fecha'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Crear una plantilla:</strong> Cualquier nota puede ser una plantilla. Escríbela como siempre y elige «Usar como plantilla» en el menú ⋯ de la nota («Dejar de usar como plantilla» lo deshace). Tú decides dónde está; una carpeta «Plantillas» las mantiene juntas. Una pequeña marca en el árbol de carpetas y junto al título indica que es una plantilla.
+            </li>
+            <li>
+              <strong className="text-main">Insertar:</strong> Escribe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/plantilla</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/template</kbd>) en un punto y elige la plantilla; la búsqueda ayuda cuando hay muchas. Su contenido entra como puntos pegados: un punto vacío se convierte en el primer punto de la plantilla; si no, la plantilla sigue debajo del punto en su nivel. Títulos, código, tablas, dibujos, imágenes y valores ocultos se copian; las casillas de tareas empiezan abiertas y no están vinculadas a ninguna tarea.
+            </li>
+            <li>
+              <strong className="text-main">Nueva nota:</strong> Si tienes plantillas, «Nueva nota» pide nombre, emoji y plantilla; la nota nueva empieza con el contenido de la plantilla. Sin plantillas, en el escritorio la nota se crea al instante, como antes.
+            </li>
+            <li>
+              <strong className="text-main">Marcadores:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{date}}'}</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{datum}}'}</kbd>) se convierte al insertar en la fecha de hoy, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{title}}'}</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{titel}}'}</kbd>) en el título de la nota. En bloques de código y dibujos se quedan como están.
+            </li>
+            <li>
+              <strong className="text-main">Personal:</strong> Las plantillas son tu propia elección: puedes usar como plantilla cualquier nota que puedas leer, también una compartida contigo. Los demás no ven tu elección, y una nota compartida no es una plantilla para ellos solo porque tú la uses así.
             </li>
           </ul>
         </div>

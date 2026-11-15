@@ -23,6 +23,7 @@ import {
   Shapes,
   CloudOff,
   Table as TableIcon,
+  LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -167,6 +168,10 @@ const it: HelpContent = {
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (parla invece di digitare: si avvia subito, tocca «Stop» per inserire il testo nel punto)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
+                <LayoutTemplate className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/modello o /template (inserisci qui il contenuto di uno dei tuoi modelli)</span>
+              </div>
             </div>
           </div>
           <div className="pt-2 border-t border-border">
@@ -253,6 +258,36 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Ovunque:</strong> Copia, incolla, l’esportazione Markdown e gli agenti IA (MCP) vedono la tabella come tabella Markdown; le tabelle Markdown incollate e quelle dei fogli di calcolo tornano a essere una tabella.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TEMPLATES
+    {
+      id: 'workspace-templates',
+      category: 'workspace',
+      title: 'Modelli (/modello)',
+      subtitle: 'Avviare note ricorrenti da un modello',
+      icon: LayoutTemplate,
+      keywords: ['modello', 'modelli', 'template', 'vorlage', 'riunione', 'piano settimanale', 'segnaposto', 'data'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Creare un modello:</strong> Ogni nota può essere un modello. Scrivila come al solito e scegli «Usa come modello» nel menu ⋯ della nota («Non usare più come modello» lo annulla). Decidi tu dove si trova; una cartella «Modelli» li tiene insieme. Un piccolo segno nell’albero delle cartelle e accanto al titolo indica che è un modello.
+            </li>
+            <li>
+              <strong className="text-main">Inserire:</strong> Digita <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/modello</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/template</kbd>) in un punto e scegli il modello; la ricerca aiuta quando sono tanti. Il suo contenuto entra come punti incollati: un punto vuoto diventa il primo punto del modello, altrimenti il modello segue sotto il punto, al suo livello. Titoli, codice, tabelle, disegni, immagini e valori nascosti vengono copiati; le caselle delle attività partono non spuntate e non sono collegate ad alcuna attività.
+            </li>
+            <li>
+              <strong className="text-main">Nuova nota:</strong> Se hai dei modelli, «Nuova nota» chiede nome, emoji e modello; la nuova nota parte con il contenuto del modello. Senza modelli, sul desktop la nota viene creata subito, come prima.
+            </li>
+            <li>
+              <strong className="text-main">Segnaposto:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{date}}'}</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{datum}}'}</kbd>) diventa la data di oggi all’inserimento, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{title}}'}</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{titel}}'}</kbd>) il titolo della nota. Nei blocchi di codice e nei disegni restano come sono.
+            </li>
+            <li>
+              <strong className="text-main">Personale:</strong> I modelli sono una tua scelta: puoi usare come modello qualsiasi nota che puoi leggere, anche una condivisa con te. Gli altri non vedono la tua scelta, e una nota condivisa non è un modello per loro solo perché tu la usi così.
             </li>
           </ul>
         </div>

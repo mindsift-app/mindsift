@@ -23,6 +23,7 @@ import {
   Shapes,
   CloudOff,
   Table as TableIcon,
+  LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -173,6 +174,10 @@ const fr: HelpContent = {
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (parler au lieu de taper : démarre immédiatement, appuyer sur « Arrêter » insère le texte dans la puce)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
+                <LayoutTemplate className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/modèle ou /template (insérer ici le contenu d’un de vos modèles)</span>
+              </div>
             </div>
           </div>
           <div className="pt-2 border-t border-border">
@@ -259,6 +264,36 @@ const fr: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Partout :</strong> La copie, le collage, l’export Markdown et les agents IA (MCP) voient le tableau comme un tableau Markdown ; les tableaux Markdown collés et ceux des tableurs redeviennent un tableau.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TEMPLATES
+    {
+      id: 'workspace-templates',
+      category: 'workspace',
+      title: 'Modèles (/modèle)',
+      subtitle: 'Démarrer des notes récurrentes à partir d’un modèle',
+      icon: LayoutTemplate,
+      keywords: ['modèle', 'modèles', 'modele', 'template', 'vorlage', 'réunion', 'planning', 'espace réservé', 'date'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Créer un modèle :</strong> Toute note peut être un modèle. Rédigez-la comme d’habitude et choisissez « Utiliser comme modèle » dans le menu ⋯ de la note (« Ne plus utiliser comme modèle » l’annule). Vous décidez où elle se trouve ; un dossier « Modèles » les regroupe. Une petite marque dans l’arborescence et à côté du titre indique qu’il s’agit d’un modèle.
+            </li>
+            <li>
+              <strong className="text-main">Insérer :</strong> Tapez <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/modèle</kbd> (ou <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/template</kbd>) dans une puce et choisissez le modèle ; la recherche aide quand il y en a beaucoup. Son contenu arrive comme des puces collées : une puce vide devient la première puce du modèle, sinon le modèle suit sous la puce, à son niveau. Titres, code, tableaux, dessins, images et valeurs masquées sont repris ; les cases à cocher commencent non cochées et ne sont liées à aucune tâche.
+            </li>
+            <li>
+              <strong className="text-main">Nouvelle note :</strong> Si vous avez des modèles, « Nouvelle note » demande le nom, l’emoji et le modèle ; la nouvelle note commence avec le contenu du modèle. Sans modèle, la note est créée immédiatement sur ordinateur, comme avant.
+            </li>
+            <li>
+              <strong className="text-main">Espaces réservés :</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{date}}'}</kbd> (ou <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{datum}}'}</kbd>) devient la date du jour à l’insertion, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{title}}'}</kbd> (ou <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{titel}}'}</kbd>) le titre de la note. Dans les blocs de code et les dessins, ils restent tels quels.
+            </li>
+            <li>
+              <strong className="text-main">Personnel :</strong> Les modèles sont votre propre choix : vous pouvez utiliser comme modèle toute note que vous pouvez lire, même une note partagée avec vous. Les autres ne voient pas votre choix, et une note partagée n’est pas un modèle pour eux simplement parce que vous l’utilisez ainsi.
             </li>
           </ul>
         </div>
