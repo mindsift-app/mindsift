@@ -579,6 +579,8 @@
     "confirmResetMfa": "Réinitialiser la connexion en deux étapes de {{name}} ? L'application d'authentification, les clés d'accès et les codes de récupération sont retirés ; la connexion ne demandera plus que le mot de passe. {{name}} reçoit un e-mail.",
     "mfaReset": "La connexion en deux étapes de {{name}} a été réinitialisée.",
     "mfaBadge": "2FA",
+    "mustChangePassword": "Doit changer de mot de passe",
+    "mustChangePasswordHint": "Doit choisir un nouveau mot de passe à la prochaine connexion",
     "email": "Adresse e-mail",
     "emailChanged": "L’adresse e-mail de {{name}} est maintenant {{email}}.",
     "emailRemoved": "{{name}} n’a plus d’adresse e-mail.",

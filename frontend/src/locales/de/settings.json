@@ -579,6 +579,8 @@
     "confirmResetMfa": "Zwei-Faktor-Anmeldung von {{name}} zurücksetzen? Authenticator-App, Passkeys und Wiederherstellungscodes werden entfernt, die Anmeldung fragt danach nur noch nach dem Passwort. {{name}} bekommt eine Mail.",
     "mfaReset": "Zwei-Faktor-Anmeldung von {{name}} zurückgesetzt.",
     "mfaBadge": "2FA",
+    "mustChangePassword": "Muss Passwort ändern",
+    "mustChangePasswordHint": "Muss bei der nächsten Anmeldung ein neues Passwort wählen",
     "email": "E-Mail-Adresse",
     "emailChanged": "E-Mail-Adresse von {{name}} ist jetzt {{email}}.",
     "emailRemoved": "{{name}} hat jetzt keine E-Mail-Adresse mehr.",
