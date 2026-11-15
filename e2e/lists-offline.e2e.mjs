@@ -94,6 +94,17 @@ async function goOnline(p) {
   await p.ctx.setOffline(false);
   await p.page.evaluate(() => window.dispatchEvent(new Event('online')));
 }
+// A reload while offline. Chromium lifts the offline emulation of the page being left: between beforeunload
+// and pagehide it gets an "online" event with navigator.onLine true, the app sends its outbox, and that
+// request reaches the server unseen by setOffline and by routes (about one run in five; B then shows the
+// entry ticked already). On a phone without reception the page being left has no network either, so its
+// fetch fails here.
+async function reloadOffline(p) {
+  await p.page.evaluate(() => {
+    window.fetch = () => Promise.reject(new TypeError('Failed to fetch'));
+  });
+  await p.page.reload();
+}
 const outbox = (p) => p.page.evaluate(() => JSON.parse(localStorage.getItem('mindsift_outbox') || '[]').length);
 const outboxEmpty = (p) => waitFor(async () => (await outbox(p)) === 0, 15000);
 
@@ -262,12 +273,15 @@ const main = async () => {
     await goOffline(A);
     await tick(A, X, true);
     await sleep(300);
-    await A.page.reload();
+    await reloadOffline(A);
     await A.page.locator('button[title="Listen"]:visible').first().click({ timeout: 30000 });
     await chooseList(A, LIST);
     const afterReload = await waitFor(async () => (await shownChecked(A, X)) === true, 8000);
     check(!!afterReload, '6: nach Neuladen offline zeigt A den Eintrag weiter abgehakt', await shownChecked(A, X));
-    await tick(B, X, true);
+    // A's tick is still waiting: B sees the entry open and ticks it
+    const bOpen = await waitFor(async () => (await shownChecked(B, X)) === false, 5000);
+    check(!!bOpen, '6: A war offline, B sieht den Eintrag noch offen', { b: await shownChecked(B, X), server: await serverItem(admin, list.id, X) });
+    if (bOpen) await tick(B, X, true);
     await goOnline(A);
     await outboxEmpty(A);
     await sleep(1500);
