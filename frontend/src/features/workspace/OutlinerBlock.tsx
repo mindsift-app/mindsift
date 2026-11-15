@@ -1426,8 +1426,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       onMouseMove={handleRowMouseMove}
       onMouseLeave={handleRowMouseLeave}
       onTouchStart={showBubbleForTouch}
-      // data-file-drop: image files dragged over the note would go here (OutlinerTree)
-      className={`outline-row group relative flex items-start gap-1 py-1 px-0.5 sm:px-1.5 transition-all duration-300 data-file-drop:rounded-card data-file-drop:bg-accent/10 data-file-drop:ring-2 data-file-drop:ring-inset data-file-drop:ring-accent ${
+      // data-file-drop: image files dragged over the note would go here (OutlinerTree); looks like the target
+      // of a moved bullet, with the line below the row since the images go under it
+      className={`outline-row group relative flex items-start gap-1 py-1 px-0.5 sm:px-1.5 transition-all duration-300 data-file-drop:rounded-card data-file-drop:bg-accent/10 data-file-drop:border-b-2 data-file-drop:border-accent ${
         inRangeSelection ? 'bg-accent/15' : ''
       } ${
         // Round corners only on a tinted row: on the others they are invisible, but the row's content-visibility
