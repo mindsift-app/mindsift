@@ -430,12 +430,15 @@ func (s *Store) ToggleListItem(itemID string, isCompleted bool, userID, userName
 		completedByName = userName
 	}
 
-	_, err := s.db.Exec(
+	res, err := s.db.Exec(
 		`UPDATE list_items SET is_completed = ?, completed_by = ?, completed_by_name = ?, completed_at = ? WHERE id = ?`,
 		doneInt, completedBy, completedByName, completedAt, itemID,
 	)
 	if err != nil {
 		return nil, err
+	}
+	if n, err := res.RowsAffected(); err == nil && n == 0 {
+		return nil, ErrListItemNotFound // deleted a moment ago
 	}
 
 	it, err := s.getListItem(itemID)
