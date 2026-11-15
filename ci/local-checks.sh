@@ -25,8 +25,11 @@ GO_IMAGE="docker.io/library/golang:1.27.4-alpine"
 # the app chunk (mainViews-*.js), a little above the build of 2026-11 (about 170 and 240 kB; the texts of every
 # language, German included, are chunks of their own). Going over them is not wrong as such, but should be a
 # decision: raise the bound, or load the new part on demand (Doku/architecture.md).
+# 2026-11-16: app chunk raised to 262 for the release's features (templates, pasted and dropped images, live
+# drawing, dates and quantities from text: 257.6 kB). Loading the administration on demand was tried: it
+# split shared modules into extra start chunks and made the start ~6 kB heavier, so the bound went up instead.
 MAX_START_KB=180
-MAX_APP_KB=255
+MAX_APP_KB=262
 
 # Named volumes keep npm and Go downloads between runs. npm ci as in the Dockerfile: exactly the versions of
 # package-lock.json, and a lockfile that does not match package.json fails here as it would in the build.
