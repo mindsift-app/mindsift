@@ -50,7 +50,7 @@ export function PwaInstallSheet({
             <button
               type="button"
               onClick={handleInstallWebApp}
-              className="btn-primary w-full h-12 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 shadow-md transition-transform cursor-pointer"
+              className="btn-primary w-full h-12 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>{t('pwa.installNow')}</span>
@@ -71,7 +71,7 @@ export function PwaInstallSheet({
               <button
                 type="button"
                 onClick={handleInstallWebApp}
-                className="btn-primary w-full h-12 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 shadow-md transition-transform cursor-pointer"
+                className="btn-primary w-full h-12 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>{t('pwa.install')}</span>
