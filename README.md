@@ -174,7 +174,7 @@ It generates the secrets, asks for the admin account (and removes its password f
 
 All settings are explained in [`.env.example`](.env.example).
 
-**Without a container:** the [releases](https://github.com/mindsift-app/mindsift/releases) carry the server as a single file for Linux (amd64 and arm64), frontend included. Start `./mindsift`: it listens on port 8080 and keeps everything in `./data`. The time zone is not taken from the system but from `TZ` or the administration (UTC until one is set).
+**Without a container (not supported):** the [releases](https://github.com/mindsift-app/mindsift/releases) carry the server as a single file for Linux (amd64 and arm64), frontend included. Start `./mindsift`: it listens on port 8080 and keeps everything in `./data`. The time zone is not taken from the system but from `TZ` or the administration (UTC until one is set).
 
 ---
 
@@ -255,7 +255,7 @@ The numbers below come from load tests against the public demo, a deliberately s
 
 **Server**
 
-* **Minimum:** 1 CPU core and 512 MB RAM, Linux on amd64 or arm64 (also a Raspberry Pi with a 64-bit system), with Docker or as a single binary. The server used at most about 200 MB of memory in every test, also at full load.
+* **Minimum:** 1 CPU core and 512 MB RAM, Linux on amd64 or arm64 (also a Raspberry Pi with a 64-bit system), with Docker (Docker Compose is the supported way; the single binary of the releases works, but is not supported). The server used at most about 200 MB of memory in every test, also at full load.
 * **Disk:** room for the database and your files, plus about twice the database size free for updates (backups before migrations, compaction).
 * **More people at once:** several hundred people active at the same moment work on one core; above that the CPU is the limit, and more or faster cores help directly.
 
