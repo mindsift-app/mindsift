@@ -622,6 +622,9 @@ const it: HelpContent = {
               <strong className="text-main">Categorie tramite hashtag:</strong> aggiungi un hashtag come <code className="text-accent font-mono">#frigo</code> o <code className="text-accent font-mono">#verdure</code>. La lista raggruppa automaticamente gli elementi nelle sezioni corrispondenti.
             </li>
             <li>
+              <strong className="text-main">Suggerimenti durante la digitazione:</strong> da due lettere in poi la lista mostra sotto il campo ciò che hai già aggiunto qui, anche elementi spuntati e rimossi da tempo: prima ciò che inizia così, poi ciò che lo contiene, con gli acquisti frequenti e recenti in cima. Ciò che è già aperto nella lista non compare. Tocca un suggerimento, oppure sceglilo con le frecce e Invio, per aggiungerlo con il suo hashtag; Esc chiude i suggerimenti e continuare a scrivere funziona come prima. Mentre scrivi un #hashtag compaiono i suggerimenti degli hashtag. Le liste condivise hanno una cronologia comune; funziona anche offline e sparisce con la lista.
+            </li>
+            <li>
               <strong className="text-main">Sincronizzazione in tempo reale e rimozione completati:</strong> gli elementi spuntati si sincronizzano in tempo reale e mostrano chi li ha spuntati. Il pulsante di pulizia rimuove tutti gli elementi spuntati in un colpo solo.
             </li>
           </ul>

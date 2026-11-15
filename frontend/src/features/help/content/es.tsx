@@ -695,6 +695,9 @@ const es: HelpContent = {
               <strong className="text-main">Categorías por hashtag:</strong> añade un hashtag como <code className="text-accent font-mono">#nevera</code> o <code className="text-accent font-mono">#verduras</code>. La lista agrupa automáticamente los elementos en secciones correspondientes.
             </li>
             <li>
+              <strong className="text-main">Sugerencias al escribir:</strong> a partir de dos letras, la lista muestra debajo del campo lo que ya añadiste aquí antes, también elementos marcados y borrados hace tiempo: primero lo que empieza así, luego lo que lo contiene, con lo frecuente y lo reciente delante. Lo que ya está abierto en la lista no aparece. Tócalo, o elígelo con las flechas y Enter, para añadirlo con su hashtag; Escape cierra las sugerencias y seguir escribiendo funciona como siempre. Mientras escribes un #hashtag aparecen las sugerencias de hashtags. Las listas compartidas tienen un historial común; funciona también sin conexión y desaparece con la lista.
+            </li>
+            <li>
               <strong className="text-main">Sincronización en vivo y borrado de completados:</strong> los elementos marcados se sincronizan en tiempo real y muestran quién los tachó. El botón de borrado elimina los elementos completados todos a la vez.
             </li>
           </ul>

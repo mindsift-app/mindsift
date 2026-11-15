@@ -622,6 +622,9 @@ const en: HelpContent = {
               <strong className="text-main">Categories by hashtag:</strong> add a hashtag like <code className="text-accent font-mono">#fridge</code> or <code className="text-accent font-mono">#vegetables</code>. The list groups the items into matching sections automatically.
             </li>
             <li>
+              <strong className="text-main">Suggestions while typing:</strong> from two letters on, the list shows below the field what you have added here before, also items checked and cleared long ago: first what starts that way, then what contains it, frequent and recent purchases first. Items already open on the list are left out. Tap one, or pick it with the arrow keys and Enter, to add it with its hashtag; Escape closes the suggestions, and typing on works as before. While you type a #hashtag, the hashtag suggestions show instead. Shared lists share one history; it works offline too and goes when the list is deleted.
+            </li>
+            <li>
               <strong className="text-main">Live sync & clearing checked items:</strong> checked items sync in real time and show who checked them. The clear button removes checked items all at once.
             </li>
           </ul>

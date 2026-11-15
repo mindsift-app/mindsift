@@ -793,6 +793,9 @@ const de: HelpContent = {
               <strong className="text-main">Kategorisierung per Hashtag:</strong> Ergänze einen Hashtag wie <code className="text-accent font-mono">#Kühlregal</code> oder <code className="text-accent font-mono">#Gemüse</code>. Die Liste gruppiert die Artikel automatisch in entsprechende Abschnitte.
             </li>
             <li>
+              <strong className="text-main">Vorschläge beim Tippen:</strong> Ab zwei Buchstaben zeigt die Liste darunter, was du hier schon einmal eingetragen hast, auch längst Abgehaktes und Aufgeräumtes: zuerst was so anfängt, dann was es enthält, Häufiges und kürzlich Gekauftes vorn. Was schon offen auf der Liste steht, fehlt. Antippen oder mit den Pfeiltasten wählen und Enter übernimmt den Eintrag samt seinem Hashtag; Escape schließt die Vorschläge, einfach weitertippen geht wie bisher. Tippst du gerade einen #Hashtag, kommen die Hashtag-Vorschläge. Geteilte Listen haben einen gemeinsamen Verlauf, er ist auch offline da und verschwindet mit der Liste.
+            </li>
+            <li>
               <strong className="text-main">Live-Abgleich & Erledigte aufräumen:</strong> Abgehakte Artikel werden in Echtzeit synchronisiert und zeigen an, wer sie erledigt hat. Mit dem Aufräumen-Button entfernst du erledigte Artikel gesammelt.
             </li>
           </ul>

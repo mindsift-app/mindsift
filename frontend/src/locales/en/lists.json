@@ -35,6 +35,10 @@
   "listTitlePlaceholder": "e.g. supermarket, hardware store, drugstore",
   "addedBy": "Added by {{name}}",
   "itemPlaceholder": "What goes on “{{title}}”? (e.g. oat milk #fridge)",
+  "addSheetTitle": "On “{{title}}”",
+  "suggestions": {
+    "title": "Suggestions"
+  },
   "adding": "Adding…",
   "general": "General",
   "openCount": "{{count}} open",

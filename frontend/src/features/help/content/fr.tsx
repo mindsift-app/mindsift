@@ -617,6 +617,9 @@ const fr: HelpContent = {
               <strong className="text-main">Catégories par hashtag :</strong> ajoute un hashtag comme <code className="text-accent font-mono">#frais</code> ou <code className="text-accent font-mono">#légumes</code>. La liste regroupe automatiquement les articles dans les sections correspondantes.
             </li>
             <li>
+              <strong className="text-main">Suggestions pendant la saisie :</strong> dès deux lettres, la liste affiche sous le champ ce que tu as déjà ajouté ici, y compris des articles cochés et nettoyés depuis longtemps : d'abord ce qui commence ainsi, puis ce qui le contient, les achats fréquents et récents en tête. Ce qui est déjà ouvert sur la liste n'apparaît pas. Touche une suggestion, ou choisis-la avec les flèches et Entrée, pour l'ajouter avec son hashtag ; Échap ferme les suggestions, et continuer à taper fonctionne comme avant. Pendant que tu tapes un #hashtag, ce sont les suggestions de hashtags qui s'affichent. Les listes partagées ont un historique commun ; il fonctionne aussi hors ligne et disparaît avec la liste.
+            </li>
+            <li>
               <strong className="text-main">Synchronisation en direct &amp; nettoyage :</strong> les éléments cochés se synchronisent en temps réel et indiquent qui les a cochés. Le bouton de nettoyage supprime tous les éléments cochés d'un seul coup.
             </li>
           </ul>

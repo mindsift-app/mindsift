@@ -35,6 +35,10 @@
   "listTitlePlaceholder": "p. ej. supermercado, ferretería, farmacia",
   "addedBy": "Añadido por {{name}}",
   "itemPlaceholder": "¿Qué va en «{{title}}»? (p. ej. leche de avena #nevera)",
+  "addSheetTitle": "En «{{title}}»",
+  "suggestions": {
+    "title": "Sugerencias"
+  },
   "adding": "Añadiendo…",
   "general": "General",
   "openCount": "{{count}} pendientes",

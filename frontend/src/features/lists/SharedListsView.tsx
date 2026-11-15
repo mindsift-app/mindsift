@@ -4,7 +4,7 @@ import {
   Plus,
   ShoppingCart,
 } from 'lucide-react';
-import { ListItem, SharedList, Team, User } from '../../lib/types';
+import { ListItem, ListItemSuggestion, SharedList, Team, User } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import { readViewMemory, writeViewMemory } from '../../lib/viewSession';
 import { pendingListChanges, pendingListItems } from '../../lib/offline';
@@ -17,6 +17,7 @@ import { FormSheet } from '../../components/FormSheet';
 import { EmojiIconButton } from '../../components/EmojiIconButton';
 import { useMobileActions } from '../../context/MobileActionContext';
 import { collectHashtags, deduplicateItems, findHashtagQuery, matchHashtags, groupOpenItems, parseListItemInput, withPendingChanges } from './listItems';
+import { matchItemSuggestions, withRecordedUse } from './itemSuggestions';
 import { useListDrag } from './useListDrag';
 import { useListRealtime } from './useListRealtime';
 import { useItemEditing } from './useItemEditing';
@@ -95,6 +96,9 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
   const [suggestionIndex, setSuggestionIndex] = useState<number>(0);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [workspaceTags, setWorkspaceTags] = useState<string[]>([]);
+  // Per list: the names added before (itemSuggestions.ts); -1: none chosen, Enter adds what was typed
+  const [itemHistory, setItemHistory] = useState<Record<string, ListItemSuggestion[]>>({});
+  const [itemSuggestionIndex, setItemSuggestionIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Phones: the add form lives in a sheet opened by "+" instead of taking room above the list
@@ -167,6 +171,24 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
     return lists.find((l) => l.id === activeListId) || lists[0] || null;
   }, [lists, activeListId]);
 
+  const safeActiveItems = useMemo(() => deduplicateItems(activeList?.items || []), [activeList?.items]);
+  const openItems = useMemo(() => safeActiveItems.filter((i) => !i.isCompleted), [safeActiveItems]);
+  const completedItems = useMemo(() => safeActiveItems.filter((i) => i.isCompleted), [safeActiveItems]);
+
+  const groupedOpenItems = useMemo(() => groupOpenItems(openItems), [openItems]);
+
+  // The open list's history, loaded once per list while the view is open (offline from the read cache)
+  const activeListIdForHistory = activeList?.id;
+  const historyLoaded = activeListIdForHistory ? itemHistory[activeListIdForHistory] !== undefined : true;
+  useEffect(() => {
+    if (!activeListIdForHistory || historyLoaded) return;
+    const id = activeListIdForHistory;
+    api
+      .getListSuggestions(id)
+      .then((items) => setItemHistory((prev) => (prev[id] ? prev : { ...prev, [id]: items })))
+      .catch(() => {});
+  }, [activeListIdForHistory, historyLoaded]);
+
   // In shared lists every item shows who added it (older items without an author show nothing)
   const isActiveListShared = (activeList?.members?.length || 0) > 1 || (activeList?.shares?.length || 0) > 0;
   const renderItemAuthor = (item: ListItem) => {
@@ -186,22 +208,34 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
   // Realtime: the open list's own connection, entries sent after being offline, list events (useListRealtime.ts)
   useListRealtime(activeList?.id, lists, setLists, loadLists);
 
-  const handleAddItem = async (e: React.FormEvent) => {
+  const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
+    const parsed = parseListItemInput(newItemText, newItemQty);
+    void addItem(parsed.content, parsed.category, parsed.quantity);
+  };
+
+  // A suggestion chosen: its name and category; a hashtag typed in the field and the quantity win
+  const applyItemSuggestion = (s: ListItemSuggestion) => {
+    const typed = parseListItemInput(newItemText, newItemQty);
+    void addItem(s.content, typed.category ?? (s.category || undefined), typed.quantity);
+  };
+
+  const addItem = async (content: string, category: string | undefined, quantity: string) => {
     // Keep the field (and the phone keyboard) for the next item: refocus inside the tap
     inputRef.current?.focus({ preventScroll: true });
-    if (!activeList || !newItemText.trim() || isSubmittingItem) return;
+    if (!activeList || !content.trim() || isSubmittingItem) return;
     setIsSubmittingItem(true);
     triggerHaptic(15);
 
     setShowSuggestions(false);
-    const parsed = parseListItemInput(newItemText, newItemQty);
+    setItemSuggestionIndex(-1);
     setNewItemText('');
     setNewItemQty('');
     setCursorPosition(null);
 
     try {
-      const item = await api.createListItem(activeList.id, parsed.content, parsed.category, parsed.quantity);
+      const item = await api.createListItem(activeList.id, content, category, quantity);
+      setItemHistory((prev) => (prev[activeList.id] ? { ...prev, [activeList.id]: withRecordedUse(prev[activeList.id], content, category) } : prev));
       setLists((prev) =>
         prev.map((l) => {
           if (l.id !== activeList.id) return l;
@@ -294,7 +328,41 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
     }, 10);
   };
 
+  // Names added to this list before, while no hashtag is being typed (its suggestions win)
+  const itemSuggestions = useMemo(
+    () =>
+      showSuggestions && !activeHashtagQuery && activeList
+        ? matchItemSuggestions(itemHistory[activeList.id] || [], parseListItemInput(newItemText).content, openItems)
+        : [],
+    [showSuggestions, activeHashtagQuery, activeList, itemHistory, newItemText, openItems]
+  );
+
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (itemSuggestions.length > 0 && !e.nativeEvent.isComposing) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setItemSuggestionIndex((prev) => (prev + 1) % itemSuggestions.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setItemSuggestionIndex((prev) => (prev <= 0 ? itemSuggestions.length - 1 : prev - 1));
+        return;
+      }
+      if (e.key === 'Enter' && itemSuggestionIndex >= 0 && itemSuggestions[itemSuggestionIndex]) {
+        e.preventDefault();
+        applyItemSuggestion(itemSuggestions[itemSuggestionIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        // Closes the suggestions, not the phone's sheet around the field
+        e.preventDefault();
+        e.stopPropagation();
+        setShowSuggestions(false);
+        setItemSuggestionIndex(-1);
+        return;
+      }
+    }
     if (showSuggestions && activeHashtagQuery && matchingSuggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -321,12 +389,6 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       }
     }
   };
-
-  const safeActiveItems = useMemo(() => deduplicateItems(activeList?.items || []), [activeList?.items]);
-  const openItems = useMemo(() => safeActiveItems.filter((i) => !i.isCompleted), [safeActiveItems]);
-  const completedItems = useMemo(() => safeActiveItems.filter((i) => i.isCompleted), [safeActiveItems]);
-
-  const groupedOpenItems = useMemo(() => groupOpenItems(openItems), [openItems]);
 
   const focusNewItemInput = () => {
     if (isPhoneWidth()) {
@@ -377,6 +439,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
           setCursorPosition(e.target.selectionStart);
           setShowSuggestions(true);
           setSuggestionIndex(0);
+          setItemSuggestionIndex(-1);
         }}
         onKeyDown={handleInputKeyDown}
         onSelect={(e) => {
@@ -428,6 +491,46 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       )}
     </>
   );
+  // Names added to this list before, under the field: on the desktop a dropdown like the hashtags', on
+  // phones part of the sheet (it grows upwards, above the keyboard) with rows a finger can hit
+  const renderItemSuggestions = (desktop: boolean) =>
+    itemSuggestions.length === 0 ? null : (
+      <div
+        role="listbox"
+        aria-label={t('suggestions.title')}
+        className={
+          desktop
+            ? 'absolute left-6 top-full mt-2 w-72 bg-panel-elevated border border-border rounded-btn shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100'
+            : 'w-full bg-panel-elevated border border-border rounded-btn py-1 overflow-hidden'
+        }
+      >
+        <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-faint tracking-wider border-b">{t('suggestions.title')}</div>
+        {itemSuggestions.map((s, idx) => {
+          const isSelected = idx === itemSuggestionIndex;
+          return (
+            <button
+              key={s.content}
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                applyItemSuggestion(s);
+              }}
+              className={`w-full text-left px-3 h-11 sm:h-auto sm:py-1.5 text-base sm:text-xs flex items-center justify-between gap-2 transition-colors ${
+                isSelected ? 'bg-accent/20 text-accent font-medium' : 'text-main hover:bg-panel-hover'
+              }`}
+            >
+              <span className="truncate">{s.content}</span>
+              <span className="flex items-center gap-1.5 shrink-0">
+                {s.category && <span className="text-xs sm:text-[10px] text-muted">#{s.category}</span>}
+                {isSelected && <span className="text-[10px] text-faint font-mono">↵</span>}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    );
   const itemVoice = (className?: string) => (
     <VoiceInputButton
       value={newItemText}
@@ -457,6 +560,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         <Plus className="w-4 h-4 text-accent ml-1 shrink-0" />
         <div className="relative flex-1 min-w-0">
           {renderItemInput(true, 'w-full bg-transparent px-2 py-1 text-sm text-main placeholder-faint focus:outline-hidden')}
+          {renderItemSuggestions(true)}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {itemVoice()}
@@ -479,6 +583,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
           {renderItemInput(false, 'w-full h-11 pl-9 pr-11 input-field text-base')}
           {itemVoice('absolute right-1 top-1/2 -translate-y-1/2')}
         </div>
+        {renderItemSuggestions(false)}
         {quantityInput('w-24 h-11 px-2.5 input-field text-base')}
       </>
     );
@@ -538,7 +643,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
           {/* Phones: "+" opens the add form as a sheet; it stays open for the next item */}
           {isPhone && showAddSheet && (
             <FormSheet
-              title={`Auf „${activeList.title}“`}
+              title={t('addSheetTitle', { title: activeList.title })}
               icon={<ShoppingCart className="w-4 h-4 text-accent" />}
               onClose={() => setShowAddSheet(false)}
               onSubmit={handleAddItem}

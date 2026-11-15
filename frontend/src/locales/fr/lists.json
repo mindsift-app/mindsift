@@ -35,6 +35,10 @@
   "listTitlePlaceholder": "par ex. Supermarché, Bricolage, Pharmacie",
   "addedBy": "Ajouté par {{name}}",
   "itemPlaceholder": "Que mettre sur « {{title}} » ? (par ex. lait d'avoine #frais)",
+  "addSheetTitle": "Sur « {{title}} »",
+  "suggestions": {
+    "title": "Suggestions"
+  },
   "adding": "Ajout en cours…",
   "general": "Général",
   "openCount": "{{count}} à faire",
