@@ -39,7 +39,7 @@ const it: HelpContent = {
       title: 'Outliner gerarchico e sincronizzazione offline',
       subtitle: 'Archiviazione atomica con sincronizzazione collaborativa in tempo reale',
       icon: FileText,
-      keywords: ['workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'esportazione', 'markdown', 'salvataggio'],
+      keywords: ['titolo', 'incollare', 'chatgpt', 'claude', 'codice', 'workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'esportazione', 'markdown', 'salvataggio'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
@@ -51,6 +51,12 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Pienamente utilizzabile offline:</strong> puoi continuare a lavorare anche senza connessione a Internet;
               le modifiche si sincronizzano automaticamente appena torni online.
+            </li>
+            <li>
+              <strong className="text-main">Titolo:</strong> Il titolo di una nota ha al massimo 60 caratteri, così sta su una riga e resta un nome di file utilizzabile nell'esportazione. Vicino al limite il campo mostra il conteggio.
+            </li>
+            <li>
+              <strong className="text-main">Incollare:</strong> Un testo su più righe diventa punti separati. Il codice copiato da pagine di chat come ChatGPT o Claude, o da una documentazione, diventa un blocco di codice con il linguaggio giusto.
             </li>
             <li>
               <strong className="text-main">Esportazione Markdown:</strong> con l'icona di download (<Download className="w-3 h-3 inline text-accent" />) nell'intestazione della nota puoi esportare lo stato corrente in qualsiasi momento come file Markdown standard (<code className="font-mono text-accent">.md</code>) sul tuo computer.

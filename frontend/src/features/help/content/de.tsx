@@ -39,6 +39,11 @@ const de: HelpContent = {
       subtitle: 'Atomare Speicherung mit kollaborativem Echtzeit-Abgleich',
       icon: FileText,
       keywords: [
+        'titel',
+        'einfügen',
+        'chatgpt',
+        'claude',
+        'code',
         'workspace',
         'outliner',
         'datenbank',
@@ -60,6 +65,12 @@ const de: HelpContent = {
             <li>
               <strong className="text-main">Volle Offline-Fähigkeit:</strong> Du kannst auch ohne Internetverbindung nahtlos weiterarbeiten;
               Änderungen synchronisieren sich automatisch, sobald du wieder online bist.
+            </li>
+            <li>
+              <strong className="text-main">Titel:</strong> Ein Notiztitel hat höchstens 60 Zeichen, damit er in eine Zeile passt und beim Export ein brauchbarer Dateiname bleibt. Kurz vor der Grenze zeigt das Feld, wie viele Zeichen es sind.
+            </li>
+            <li>
+              <strong className="text-main">Einfügen:</strong> Text mit mehreren Zeilen wird zu einzelnen Punkten. Code aus Chat-Seiten wie ChatGPT oder Claude und aus Dokumentationen wird zum Code-Block mit der passenden Sprache.
             </li>
             <li>
               <strong className="text-main">Markdown-Export:</strong> Über das Download-Symbol (<Download className="w-3 h-3 inline text-accent" />) im Kopf der Notiz kannst du den aktuellen Stand jederzeit als Standard-Markdown-Datei (<code className="font-mono text-accent">.md</code>) auf deinen Rechner exportieren.
@@ -131,7 +142,7 @@ const de: HelpContent = {
         'h1',
         'h2',
         'h3',
-        'code',
+        'code', 
         'callout',
         'warn',
         'fail',

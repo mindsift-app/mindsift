@@ -39,7 +39,7 @@ const en: HelpContent = {
       title: 'Hierarchical outliner & offline sync',
       subtitle: 'Atomic storage with collaborative real-time sync',
       icon: FileText,
-      keywords: ['workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'export', 'markdown', 'save'],
+      keywords: ['title', 'paste', 'chatgpt', 'claude', 'code', 'workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'export', 'markdown', 'save'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
@@ -51,6 +51,12 @@ const en: HelpContent = {
             <li>
               <strong className="text-main">Fully offline-capable:</strong> you can keep working without an internet connection;
               changes sync automatically once you are back online.
+            </li>
+            <li>
+              <strong className="text-main">Title:</strong> A note title has at most 60 characters, so it fits on one line and stays a usable file name on export. Close to the limit the field shows the count.
+            </li>
+            <li>
+              <strong className="text-main">Pasting:</strong> Text with several lines becomes separate bullets. Code copied from chat pages such as ChatGPT or Claude, or from documentation, becomes a code block with the matching language.
             </li>
             <li>
               <strong className="text-main">Markdown export:</strong> with the download icon (<Download className="w-3 h-3 inline text-accent" />) in the note header you can export the current state as a standard Markdown file (<code className="font-mono text-accent">.md</code>) to your computer at any time.

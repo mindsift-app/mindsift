@@ -39,7 +39,7 @@ const fr: HelpContent = {
       title: 'Outliner hiérarchique & synchronisation hors ligne',
       subtitle: 'Stockage atomique avec synchronisation collaborative en temps réel',
       icon: FileText,
-      keywords: ['workspace', 'outliner', 'base de données', 'sqlite', 'hors ligne', 'indexeddb', 'export', 'markdown', 'sauvegarde'],
+      keywords: ['titre', 'coller', 'chatgpt', 'claude', 'code', 'workspace', 'outliner', 'base de données', 'sqlite', 'hors ligne', 'indexeddb', 'export', 'markdown', 'sauvegarde'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
@@ -51,6 +51,12 @@ const fr: HelpContent = {
             <li>
               <strong className="text-main">Entièrement utilisable hors ligne :</strong> tu peux continuer à travailler sans connexion Internet ;
               les modifications se synchronisent automatiquement dès que tu te reconnectes.
+            </li>
+            <li>
+              <strong className="text-main">Titre :</strong> Un titre de note compte au plus 60 caractères, pour tenir sur une ligne et rester un nom de fichier utilisable à l'export. Près de la limite, le champ affiche le décompte.
+            </li>
+            <li>
+              <strong className="text-main">Coller :</strong> Un texte de plusieurs lignes devient des puces séparées. Le code copié depuis des pages de chat comme ChatGPT ou Claude, ou depuis une documentation, devient un bloc de code avec le bon langage.
             </li>
             <li>
               <strong className="text-main">Export Markdown :</strong> grâce à l'icône de téléchargement (<Download className="w-3 h-3 inline text-accent" />) dans l'en-tête de la note, tu peux exporter à tout moment l'état actuel sous forme de fichier Markdown standard (<code className="font-mono text-accent">.md</code>) sur ton ordinateur.

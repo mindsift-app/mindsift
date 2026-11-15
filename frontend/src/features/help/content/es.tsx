@@ -40,6 +40,11 @@ const es: HelpContent = {
       subtitle: 'Almacenamiento atómico con sincronización colaborativa en tiempo real',
       icon: FileText,
       keywords: [
+        'título',
+        'pegar',
+        'chatgpt',
+        'claude',
+        'código',
         'workspace',
         'outliner',
         'base de datos',
@@ -62,6 +67,12 @@ const es: HelpContent = {
             <li>
               <strong className="text-main">Totalmente funcional sin conexión:</strong> puedes seguir trabajando sin conexión a internet;
               los cambios se sincronizan automáticamente en cuanto vuelvas a estar en línea.
+            </li>
+            <li>
+              <strong className="text-main">Título:</strong> El título de una nota tiene como máximo 60 caracteres, para que quepa en una línea y siga siendo un nombre de archivo útil al exportar. Cerca del límite, el campo muestra el recuento.
+            </li>
+            <li>
+              <strong className="text-main">Pegar:</strong> Un texto de varias líneas se convierte en viñetas separadas. El código copiado de páginas de chat como ChatGPT o Claude, o de una documentación, se convierte en un bloque de código con el lenguaje correspondiente.
             </li>
             <li>
               <strong className="text-main">Exportación a Markdown:</strong> mediante el icono de descarga (<Download className="w-3 h-3 inline text-accent" />) en la cabecera de la nota puedes exportar el estado actual como archivo Markdown estándar (<code className="font-mono text-accent">.md</code>) a tu equipo en cualquier momento.
