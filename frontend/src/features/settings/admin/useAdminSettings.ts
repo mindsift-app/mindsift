@@ -135,6 +135,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           publicLinkMaxDays: sys.publicLinkMaxDays || 14,
           publicLinkMaxDaysConfiguredViaEnv: Boolean(sys.publicLinkMaxDaysConfiguredViaEnv),
           linkPreviews: sys.linkPreviews ?? true,
+          calendarFeeds: sys.calendarFeeds ?? true,
+          calendarFeedsConfiguredViaEnv: Boolean(sys.calendarFeedsConfiguredViaEnv),
           // Shown only (OIDC_* environment)
           oidc: sys.oidc,
           timeZone: sys.timeZone ?? '',

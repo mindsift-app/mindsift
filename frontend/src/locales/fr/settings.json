@@ -41,6 +41,8 @@
       "voiceHint": "Langue, Whisper ou navigateur",
       "retention": "Rétention",
       "retentionHint": "Nettoyer les éléments terminés & corbeilles",
+      "calendar": "Abonnement calendrier",
+      "calendarHint": "Tâches dans Google, Apple, etc.",
       "api": "API",
       "apiHint": "Clés, curl, domotique & agents IA",
       "data": "Export & import",
@@ -632,6 +634,8 @@
     "peopleSearchHint": "Activée, des noms correspondants sont suggérés lors du partage et dans les groupes. Désactivée, il faut connaître l’adresse e-mail ou le nom d’utilisateur exacts ; celles et ceux qui travaillent déjà ensemble sur quelque chose continuent d’y voir leurs noms.",
     "publicLinks": "Liens publics vers les notes",
     "publicLinksHint": "Les propriétaires peuvent partager une note en lecture seule par lien, y compris avec des personnes sans compte, avec mot de passe en option. Les liens expirent toujours et n’apparaissent pas dans les moteurs de recherche. Désactivé, plus aucun lien existant ne fonctionne.",
+    "calendarFeeds": "Abonnements au calendrier",
+    "calendarFeedsHint": "Chaque personne peut s'abonner à ses tâches ouvertes avec échéance dans son application de calendrier via un lien secret (lecture seule). Désactivé, aucun lien existant ne fonctionne plus.",
     "linkPreviews": "Aperçus de liens",
     "linkPreviewsHint": "Quand une puce ne contient qu'une adresse web, le serveur MindSift récupère la page et affiche son titre, sa description et son image sous forme de carte. Désactivé, le serveur ne récupère plus aucune page, et l'app n'affiche ni cartes d'aperçu ni l'interrupteur par appareil.",
     "publicLinkMaxDays": "Durée maximale d’un lien",
@@ -1004,5 +1008,42 @@
       "confirmedDone": "Confirmé. Tu peux effectuer la modification pendant cinq minutes.",
       "linkedDone": "Ton compte est maintenant lié à {{name}}."
     }
+  },
+  "calendarFeed": {
+    "title": "Abonnement au calendrier",
+    "intro": "Tes tâches ouvertes avec échéance apparaissent dans ton application de calendrier habituelle, par exemple Google Agenda, Calendrier d'Apple, Thunderbird ou Outlook. Le calendrier ne fait que les afficher ; les modifications se font toujours dans MindSift.",
+    "switch": "Abonnement au calendrier",
+    "switchHint": "Tes tâches et celles des listes de tâches partagées, échues depuis 30 jours jusqu'à dans un an. Tâches sur la journée comme événements sur la journée, tâches avec heure comme événements de 30 minutes.",
+    "linkLabel": "Lien d'abonnement",
+    "copy": "Copier",
+    "copied": "Copié",
+    "secret": "Toute personne qui connaît ce lien voit tes tâches. Ne le transmets pas ; en cas de doute, crée-en un nouveau.",
+    "renew": "Créer un nouveau lien",
+    "confirmRenew": "Le lien actuel ne fonctionnera plus. Les calendriers abonnés devront être reconfigurés avec le nouveau lien.",
+    "off": "Désactiver",
+    "confirmOff": "Le lien sera supprimé. Les calendriers abonnés ne recevront plus de tâches.",
+    "unreadable": "Le lien enregistré ne peut plus être lu (la clé du serveur a changé). Crée un nouveau lien.",
+    "serverOff": "Les abonnements au calendrier sont désactivés sur ce serveur.",
+    "loadFailed": "Impossible de charger l'abonnement au calendrier",
+    "howTo": "Comment s'abonner",
+    "apps": {
+      "google": {
+        "name": "Google Agenda",
+        "steps": "Dans le navigateur sur calendar.google.com, clique sur + à côté de « Autres agendas » → « À partir de l'URL », colle le lien, « Ajouter l'agenda »."
+      },
+      "apple": {
+        "name": "Calendrier d'Apple",
+        "steps": "Sur Mac : Fichier → Nouvel abonnement à un calendrier, colle le lien. Sur iPhone et iPad : Réglages → Calendrier → Comptes → Ajouter un compte → Autre → Ajouter un calendrier avec abonnement."
+      },
+      "thunderbird": {
+        "name": "Thunderbird",
+        "steps": "Agenda → Nouvel agenda → Sur le réseau, colle le lien comme emplacement, format iCalendar (ICS)."
+      },
+      "outlook": {
+        "name": "Outlook",
+        "steps": "Calendrier → Ajouter un calendrier → S'abonner à partir du web (ou « À partir d'Internet »), colle le lien."
+      }
+    },
+    "note": "Les applications de calendrier ne rechargent les abonnements que de temps en temps, Google par exemple après plusieurs heures. Les modifications dans MindSift y apparaissent donc avec du retard."
   }
 }

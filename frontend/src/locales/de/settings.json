@@ -41,6 +41,8 @@
       "voiceHint": "Sprache, Whisper oder Browser",
       "retention": "Aufbewahrung",
       "retentionHint": "Erledigtes & Papierkörbe aufräumen",
+      "calendar": "Kalender-Abo",
+      "calendarHint": "Aufgaben in Google, Apple & Co.",
       "api": "API",
       "apiHint": "Schlüssel, curl, Smart Home & KI-Agenten",
       "data": "Export & Import",
@@ -632,6 +634,8 @@
     "peopleSearchHint": "Eingeschaltet werden beim Teilen und in Gruppen passende Namen vorgeschlagen. Ausgeschaltet muss man die genaue E-Mail-Adresse oder den Benutzernamen kennen; wer schon gemeinsam an etwas arbeitet, sieht sich dort weiter mit Namen.",
     "publicLinks": "Öffentliche Links zu Notizen",
     "publicLinksHint": "Eigentümer können eine Notiz per Link zum Lesen freigeben, auch für Personen ohne Konto, wahlweise mit Passwort. Links laufen immer ab und landen nicht in Suchmaschinen. Ausgeschaltet funktioniert kein bestehender Link mehr.",
+    "calendarFeeds": "Kalender-Abos",
+    "calendarFeedsHint": "Jede Person kann ihre offenen Aufgaben mit Fälligkeit über einen geheimen Link in ihrer Kalender-App abonnieren (nur lesen). Ausgeschaltet funktioniert kein bestehender Link mehr.",
     "linkPreviews": "Link-Vorschauen",
     "linkPreviewsHint": "Steht in einem Punkt nur eine Web-Adresse, ruft der MindSift-Server die Seite ab und zeigt Titel, Beschreibung und Bild als Karte. Ausgeschaltet ruft der Server keine Seiten mehr ab, und die App zeigt weder Vorschaukarten noch den Schalter pro Gerät.",
     "publicLinkMaxDays": "Längste Laufzeit eines Links",
@@ -1003,5 +1007,42 @@
       "confirmedDone": "Bestätigt. Du kannst die Änderung jetzt fünf Minuten lang vornehmen.",
       "linkedDone": "Dein Konto ist jetzt mit {{name}} verknüpft."
     }
+  },
+  "calendarFeed": {
+    "title": "Kalender-Abo",
+    "intro": "Deine offenen Aufgaben mit Fälligkeit erscheinen in deiner gewohnten Kalender-App, zum Beispiel Google Kalender, Apple Kalender, Thunderbird oder Outlook. Der Kalender zeigt sie nur an, geändert wird weiter in MindSift.",
+    "switch": "Kalender-Abo",
+    "switchHint": "Eigene Aufgaben und Aufgaben aus geteilten Aufgabenlisten, fällig ab vor 30 Tagen bis in einem Jahr. Ganztägige Aufgaben als ganztägige Termine, Aufgaben mit Uhrzeit als 30-Minuten-Termin.",
+    "linkLabel": "Abo-Link",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "secret": "Wer diesen Link kennt, sieht deine Aufgaben. Gib ihn nicht weiter; im Zweifel einen neuen erzeugen.",
+    "renew": "Neuen Link erzeugen",
+    "confirmRenew": "Der bisherige Link funktioniert danach nicht mehr. Kalender, die ihn abonniert haben, musst du mit dem neuen Link neu einrichten.",
+    "off": "Ausschalten",
+    "confirmOff": "Der Link wird gelöscht. Kalender, die ihn abonniert haben, bekommen keine Aufgaben mehr.",
+    "unreadable": "Der gespeicherte Link lässt sich nicht mehr lesen (der Schlüssel des Servers hat sich geändert). Erzeuge einen neuen Link.",
+    "serverOff": "Kalender-Abos sind auf diesem Server ausgeschaltet.",
+    "loadFailed": "Kalender-Abo konnte nicht geladen werden",
+    "howTo": "So abonnierst du den Kalender",
+    "apps": {
+      "google": {
+        "name": "Google Kalender",
+        "steps": "Im Browser unter calendar.google.com links bei „Weitere Kalender“ auf + → „Per URL“, Link einfügen, „Kalender hinzufügen“."
+      },
+      "apple": {
+        "name": "Apple Kalender",
+        "steps": "Auf dem Mac: Ablage → Neues Kalenderabonnement, Link einfügen. Auf iPhone und iPad: Einstellungen → Kalender → Accounts → Account hinzufügen → Andere → Kalenderabo hinzufügen."
+      },
+      "thunderbird": {
+        "name": "Thunderbird",
+        "steps": "Kalender → Neuer Kalender → Im Netzwerk, Link als Adresse einfügen, Format iCalendar (ICS)."
+      },
+      "outlook": {
+        "name": "Outlook",
+        "steps": "Kalender → Kalender hinzufügen → Aus dem Internet abonnieren (bzw. „Aus Internet“), Link einfügen."
+      }
+    },
+    "note": "Kalender-Apps holen Abos nur ab und zu neu, Google zum Beispiel erst nach mehreren Stunden. Änderungen in MindSift erscheinen dort deshalb mit Verzögerung."
   }
 }
