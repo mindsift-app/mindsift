@@ -127,13 +127,9 @@ If something here is out of date or unfair, please open an issue.
 
 ---
 
-## Not yet in MindSift
+## Not in MindSift
 
-### Not yet, but planned
-
-* **Signing out at the provider signs you out of MindSift:** today a MindSift session lasts until it expires, even after you sign out at the provider. (Signing out of MindSift keeps you signed in at the provider, on purpose.)
-
-### Not in MindSift, for a reason
+Left out on purpose, each for a reason:
 
 * **SAML and LDAP:** single sign-on is OpenID Connect only. Providers such as Authentik, Keycloak or Entra ID speak it and connect your LDAP or Active Directory, so MindSift does not have to.
 * **Time zones per person:** one time zone per server (Administration → Server, or `TZ`); reminders, the daily summary and due dates all follow it. Ask if you need more.
@@ -220,7 +216,7 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 
 ### Single sign-on (OIDC)
 
-With an OpenID Connect provider (Authentik, Authelia, Keycloak, Dex, Google and others) the login shows "Sign in with …". Register MindSift there as a confidential client with the redirect URI **`<BASE_URL>/api/v1/auth/oidc/callback`**, set `BASE_URL` and the three `OIDC_*` variables from the table above. Accounts are tied to the provider's identity, never taken over by email address; `OIDC_PASSWORD_LOGIN=false` leaves only the provider's button (administrators keep an emergency access). All options, edge cases and examples for Authentik, Authelia and Keycloak: [Doku/oidc.md](Doku/oidc.md).
+With an OpenID Connect provider (Authentik, Authelia, Keycloak, Dex, Google and others) the login shows "Sign in with …". Register MindSift there as a confidential client with the redirect URI **`<BASE_URL>/api/v1/auth/oidc/callback`**, set `BASE_URL` and the three `OIDC_*` variables from the table above. Accounts are tied to the provider's identity, never taken over by email address; `OIDC_PASSWORD_LOGIN=false` leaves only the provider's button (administrators keep an emergency access). Signing out at the provider signs you out of MindSift too: set the provider's back-channel logout URL to **`<BASE_URL>/api/v1/auth/oidc/backchannel-logout`** (Authentik: *Logout URI* with logout method *Back-channel*; Keycloak: *Backchannel logout URL* with *Backchannel logout session required* on). Signing out of MindSift keeps you signed in at the provider, on purpose. All options, edge cases and examples for Authentik, Authelia and Keycloak: [Doku/oidc.md](Doku/oidc.md).
 
 ---
 

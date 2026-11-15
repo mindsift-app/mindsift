@@ -15,6 +15,7 @@ With an OpenID Connect provider (Authentik, Authelia, Keycloak, Dex, Google and 
 | `OIDC_PASSWORD_LOGIN` | `true` | `false`: only the provider's button; no password sign-in, sign-up with a password or "forgot password". Administrators keep an emergency access with their password at `/?login=password` |
 | `OIDC_ADMIN_GROUP` | empty | Members of this group at the provider are administrators, checked at every sign-in (in and out; the last administrator always stays one). Needs the `groups` claim |
 | `OIDC_SCOPES` | `openid email profile` (+ `groups`) | Other scopes, if the provider needs them |
+| `OIDC_BACKCHANNEL_LOGOUT` | `true` | `false`: signing out at the provider no longer ends MindSift sessions (the back-channel logout URL answers `404`) |
 
 ```env
 OIDC_ISSUER=https://auth.example.com/application/o/mindsift/
@@ -35,6 +36,12 @@ A first sign-in creates a new account with the name and username the provider gi
 
 The provider asks for its own. MindSift does not ask again, and "require two-factor sign-in" in the administration applies only to password sign-ins. Sensitive changes (address, password, deleting, API keys) are confirmed by signing in at the provider again; that counts for five minutes and only in that browser.
 
+## Signing out
+
+**At the provider:** MindSift supports [OpenID Connect Back-Channel Logout 1.0](https://openid.net/specs/openid-connect-backchannel-1_0.html). Enter **`<BASE_URL>/api/v1/auth/oidc/backchannel-logout`** as the client's back-channel logout URL at the provider and, where offered, require the session id (`sid`). When the person signs out there, or an administrator ends their session there, the provider posts a signed logout token to that address and MindSift ends the sessions that were started through that provider session; open tabs drop back to the sign-in page within moments. Without `sid` in the token every session of the account that was started through the provider ends. Sessions started with a password or a passkey stay either way: the provider did not start them, and the password is the administrators' way in while the provider is down. MindSift must be reachable from the provider at that address (the provider calls it server to server, not through the browser). The log has a line per logout with the account and the number of sessions ended; the server's start line names the URL (`backchannel_logout_uri`).
+
+**At MindSift:** signing out of MindSift ends the MindSift session only and keeps you signed in at the provider, on purpose (no RP-initiated logout): other apps behind the same provider stay signed in.
+
 ## Provider down or misconfigured
 
 MindSift starts anyway; the button says the provider cannot be reached, and administrators sign in at `/?login=password`. Half a configuration (an issuer without a client, a secret file that cannot be read, `OIDC_PASSWORD_LOGIN=false` without a provider) stops the start with a message in the log. The administration shows the setup and whether the provider answers under Server & Sharing. Off in the demo.
@@ -45,7 +52,7 @@ All with `BASE_URL=https://notes.example.com`.
 
 ### Authentik
 
-Applications → Providers → OAuth2/OpenID Provider, client type *Confidential*, redirect URI `https://notes.example.com/api/v1/auth/oidc/callback` (strict), scopes `openid`, `email`, `profile` (Authentik sends the groups with `profile`). `OIDC_ISSUER=https://auth.example.com/application/o/<slug>/`.
+Applications → Providers → OAuth2/OpenID Provider, client type *Confidential*, redirect URI `https://notes.example.com/api/v1/auth/oidc/callback` (strict), scopes `openid`, `email`, `profile` (Authentik sends the groups with `profile`). Logout (Authentik 2025.10 and later): *Logout URI* `https://notes.example.com/api/v1/auth/oidc/backchannel-logout` with logout method *Back-channel* (2025.8: the field *Back-channel Logout URI*). `OIDC_ISSUER=https://auth.example.com/application/o/<slug>/`.
 
 ### Authelia
 
@@ -61,12 +68,12 @@ In `identity_providers.oidc.clients`:
   token_endpoint_auth_method: 'client_secret_basic'
 ```
 
-`OIDC_ISSUER=https://auth.example.com`.
+`OIDC_ISSUER=https://auth.example.com`. Authelia does not send back-channel logout tokens yet, so a sign-out there leaves MindSift sessions running until they end. Neither does Microsoft Entra ID, which offers front-channel logout only.
 
 ### Keycloak
 
-A client with *Client authentication* on and *Standard flow*, valid redirect URI as above. For `OIDC_ADMIN_GROUP` add a *Group Membership* mapper with the claim name `groups` (with or without the full path). `OIDC_ISSUER=https://keycloak.example.com/realms/<realm>`.
+A client with *Client authentication* on and *Standard flow*, valid redirect URI as above. Under *Logout settings*: *Backchannel logout URL* `https://notes.example.com/api/v1/auth/oidc/backchannel-logout` and *Backchannel logout session required* on (*Front channel logout* off). For `OIDC_ADMIN_GROUP` add a *Group Membership* mapper with the claim name `groups` (with or without the full path). `OIDC_ISSUER=https://keycloak.example.com/realms/<realm>`.
 
 ## Not supported
 
-SAML and LDAP are not supported, and signing out of MindSift does not sign you out of the provider.
+SAML and LDAP are not supported, and signing out of MindSift does not sign you out of the provider (see [Signing out](#signing-out)). Front-channel logout (the provider loading a MindSift page in a hidden frame) is not supported either; back-channel logout covers it without third-party cookies.
