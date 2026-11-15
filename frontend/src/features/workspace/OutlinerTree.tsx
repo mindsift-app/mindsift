@@ -48,6 +48,8 @@ export interface OutlinerTreeProps {
   onFocusedBlockChange?: (blockId: string | null) => void;
   /** Work in the focused block that does not change its text yet (drawing editor open) */
   onBlockActivity?: (blockId: string) => void;
+  /** The focused field took over the block's text from elsewhere (engine.fieldShows) */
+  onFieldShows?: (blockId: string, content: string) => void;
   lockedBlocks?: Map<string, BlockLock>; // blockId -> the user editing it (someone else)
   onLockedAction?: (holderName: string) => void;
   onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
@@ -125,6 +127,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   initialFocusedBlockId,
   onFocusedBlockChange,
   onBlockActivity,
+  onFieldShows,
   lockedBlocks,
   onLockedAction,
   onResolveConflict,
@@ -1157,6 +1160,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const stableToggleBranch = useLatestCallback(handleToggleBranch);
   const stableNavigateFocus = useLatestCallback(handleNavigateFocus);
   const stableBlockActivity = useLatestCallback(onBlockActivity ?? noop);
+  const stableFieldShows = useLatestCallback(onFieldShows ?? noop);
   const stableOpenTask = useLatestCallback(onOpenTask ?? noop);
   const stableTagClick = useLatestCallback(onTagClick ?? noop);
   const stableWikiLinkClick = useLatestCallback(onWikiLinkClick ?? noop);
@@ -1183,6 +1187,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     Boolean(onExtractBlock),
     Boolean(onInlineBlock),
     Boolean(onBlockActivity),
+    Boolean(onFieldShows),
     Boolean(onOpenTask),
     Boolean(onTagClick),
     Boolean(onWikiLinkClick),
@@ -1236,6 +1241,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onFocusBlock={setFocusedBlockId}
           onBlurBlock={handleBlurBlock}
           onBlockActivity={onBlockActivity ? stableBlockActivity : undefined}
+          onFieldShows={onFieldShows ? stableFieldShows : undefined}
           onOpenTask={onOpenTask ? stableOpenTask : undefined}
           onTagClick={onTagClick ? stableTagClick : undefined}
           onWikiLinkClick={onWikiLinkClick ? stableWikiLinkClick : undefined}

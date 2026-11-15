@@ -258,6 +258,28 @@ const CONFLICT_KEY_NARROWING = 4;
  * unconfirmed operations on top of the confirmed state; tests use it as a stand-in server.
  * conflictId derives the ID of a conflict copy (the server uses a hash of the op ID).
  */
+/** Same as keyAfter in internal/collab/doc.go: close behind b, before the next sibling (deleted ones too). */
+export function keyAfterBlock(d: Doc, b: Block): string {
+  let next = '';
+  d.blocks.forEach((s) => {
+    if (s.parentId === b.parentId && s.orderKey > b.orderKey && (next === '' || s.orderKey < next)) next = s.orderKey;
+  });
+  let k: string;
+  try {
+    k = keyBetween(b.orderKey, next);
+  } catch {
+    k = keyBetween(b.orderKey, '');
+  }
+  for (let i = 0; i < CONFLICT_KEY_NARROWING; i++) {
+    try {
+      k = keyBetween(b.orderKey, k);
+    } catch {
+      break;
+    }
+  }
+  return k;
+}
+
 export function applyOp(d: Doc, op: Op, by = '', conflictId: (opId: string) => string = (id) => `blk_cf_${id}`): { effects: Effect[]; result: Result } {
   const effects: Effect[] = [];
   const emit = (e: Effect) => {
@@ -280,27 +302,7 @@ export function applyOp(d: Doc, op: Op, by = '', conflictId: (opId: string) => s
       emit({ kind: 'move', blockId: b.id, parentId: liveAncestor(d, b.parentId), orderKey: b.orderKey });
     }
   };
-  // Same as keyAfter in internal/collab/doc.go: close behind b, before the next sibling (deleted ones too)
-  const keyAfter = (b: Block): string => {
-    let next = '';
-    d.blocks.forEach((s) => {
-      if (s.parentId === b.parentId && s.orderKey > b.orderKey && (next === '' || s.orderKey < next)) next = s.orderKey;
-    });
-    let k: string;
-    try {
-      k = keyBetween(b.orderKey, next);
-    } catch {
-      k = keyBetween(b.orderKey, '');
-    }
-    for (let i = 0; i < CONFLICT_KEY_NARROWING; i++) {
-      try {
-        k = keyBetween(b.orderKey, k);
-      } catch {
-        break;
-      }
-    }
-    return k;
-  };
+  const keyAfter = (b: Block) => keyAfterBlock(d, b);
 
   switch (op.kind) {
     case 'insert': {

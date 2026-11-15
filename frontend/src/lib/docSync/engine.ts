@@ -4,7 +4,7 @@
 // Doku/modules/collaboration.md.
 import type { DocumentBlock } from '../types';
 import { diffFlat, toDocumentBlocks } from './diff';
-import { applyEffect, applyOp, Block, cloneDoc, Doc, docFromSnapshot, emptyDoc, Op, Result } from './model';
+import { applyEffect, applyOp, Block, cloneDoc, Doc, docFromSnapshot, emptyDoc, keyAfterBlock, Op, Result } from './model';
 import { AppliedEntry, defaultStorage, markUnsent, requestPersistentStorage, SyncStorage } from './persist';
 import { httpTransport, LeaseInfo, Presence, Transport, TransportError } from './transport';
 import { buildStep, failedChecks, touchedBlocks, UndoStep } from './undo';
@@ -87,6 +87,11 @@ function randomHex(bytes: number): string {
   const arr = new Uint8Array(bytes);
   crypto.getRandomValues(arr);
   return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Client IDs under which the server writes into notes itself (collab.ServerHolder, MCPHolder, MCPKeyHolderPrefix). */
+function serverWriter(clientId: string): boolean {
+  return clientId === 'server' || clientId === 'mcp' || clientId.startsWith('mcp-');
 }
 
 /** Random block ID for new blocks (unique across clients). */
@@ -172,6 +177,9 @@ export class DocSyncEngine {
   // goes into that copy instead of making a new copy per keystroke batch. Ends when the field shows the
   // engine's text again or the cursor leaves the block.
   private conflictRedirects = new Map<string, string>();
+  // Blocks whose newest text the server wrote itself (a linked task's new title, an agent), with that
+  // version: typing on in the focused field over such a text keeps the field's text (keepOtherVersion)
+  private serverWritten = new Map<string, number>();
   private undoStack: UndoStep[] = [];
   private redoStack: UndoStep[] = [];
   /** The editor's own part of the undo history (server actions), kept with the steps (undoHistory.ts) */
@@ -344,11 +352,17 @@ export class DocSyncEngine {
     }
     const before = this.local;
     const t = this.now();
+    const copies: Op[] = [];
     for (const op of ops) {
       if (op.kind === 'set_content' && this.uiSeen.has(op.blockId!)) op.baseVersion = this.uiSeen.get(op.blockId!)!.version;
       if (op.kind === 'set_content') this.redirectToConflictCopy(op, this.local);
+      if (op.kind === 'set_content') {
+        const copy = this.keepOtherVersion(op);
+        if (copy) copies.push(copy);
+      }
       if ((op.kind === 'insert' || op.kind === 'set_content') && op.blockId) this.activity.set(op.blockId, t);
     }
+    if (copies.length) ops.unshift(...copies);
     this.enqueue(ops);
     this.record(before, ops);
     // The editor now shows exactly the local state for these blocks
@@ -555,6 +569,46 @@ export class DocSyncEngine {
   }
 
   /**
+   * The focused text field took over the block's text from the engine (someone else changed it while the
+   * cursor sat there and the user had not typed): the user's next edit builds on that version. Without
+   * this it built on the version from before, and the user's own text became a conflict copy.
+   */
+  fieldShows(blockId: string, content: string): void {
+    const cur = this.local.blocks.get(blockId);
+    if (!cur || cur.deleted || cur.content !== content) return;
+    this.seen(cur);
+    this.conflictRedirects.delete(blockId);
+  }
+
+  /**
+   * The user types on in the focused field while the server itself wrote a text into its block that the
+   * field never showed (a linked task renamed in the task view, an agent): the user's typing wins for the
+   * field, so the edit is sent on the newest version, and the server's text is kept as a conflict copy
+   * right below (with Take / Keep both / Drop), so nothing is lost. Returns the copy's insert, or null when
+   * the field did see the newest text. A newer text from another person keeps the rule for people: it
+   * stays, and the stale field's text becomes the copy (the server decides that, see applyFlat).
+   */
+  private keepOtherVersion(op: Op): Op | null {
+    const id = op.blockId!;
+    if (id !== this.focused || this.conflictRedirects.has(id)) return null;
+    const seen = this.uiSeen.get(id);
+    const cur = this.local.blocks.get(id);
+    if (!seen || !cur || cur.deleted || cur.version <= seen.version || cur.content === seen.content || cur.content === op.content) return null;
+    if (this.serverWritten.get(id) !== cur.version) return null;
+    op.baseVersion = cur.version;
+    return {
+      opId: this.newOpId(),
+      kind: 'insert',
+      blockId: newBlockId(),
+      parentId: cur.parentId,
+      orderKey: keyAfterBlock(this.local, cur),
+      type: cur.type,
+      content: cur.content,
+      props: { ...(cur.props.checked ? { checked: true } : {}), conflictOf: id },
+    };
+  }
+
+  /**
    * A text change that only repeats what the editor last showed in agreement with the engine is no edit: the
    * field kept old text while someone else changed the block (e.g. the cursor sat in a locked bullet) and
    * handed it back on leaving. Sending it would turn the other person's text into a conflict.
@@ -743,6 +797,10 @@ export class DocSyncEngine {
         applyEffect(this.confirmed, entry.effect);
         this.lastSeq = entry.seq;
         this.tail.push({ seq: entry.seq, effect: entry.effect });
+        if (entry.effect.kind === 'set_content' && entry.effect.blockId) {
+          if (serverWriter(entry.clientId)) this.serverWritten.set(entry.effect.blockId, entry.effect.version || 0);
+          else this.serverWritten.delete(entry.effect.blockId);
+        }
       }
       if (gap) await this.loadSnapshot();
       // Text typed into the same field while the losing batch was on the wire builds on the losing text

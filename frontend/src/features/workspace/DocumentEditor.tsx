@@ -1070,6 +1070,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 initialFocusedBlockId={initialFocusedBlockId}
                 onFocusedBlockChange={(id) => engineRef.current?.focusBlock(id)}
                 onBlockActivity={(id) => engineRef.current?.touchBlock(id)}
+                onFieldShows={(id, content) => engineRef.current?.fieldShows(id, content)}
                 lockedBlocks={lockedBlocks}
                 onLockedAction={handleLockedAction}
                 onResolveConflict={handleResolveConflict}
@@ -1121,6 +1122,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     onWikiLinkClick={onWikiLinkClick}
                     onCopyBlockLink={handleCopyBlockLink}
                     onFocusedBlockChange={handleTagFocusChange}
+                    onFieldShows={(id, content) => engineRef.current?.fieldShows(id, content)}
                     lockedBlocks={lockedBlocks}
                     onLockedAction={handleLockedAction}
                     onResolveConflict={handleResolveConflict}
@@ -1226,6 +1228,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               initialFocusedBlockId={initialFocusedBlockId}
               onFocusedBlockChange={(id) => engineRef.current?.focusBlock(id)}
               onBlockActivity={(id) => engineRef.current?.touchBlock(id)}
+                onFieldShows={(id, content) => engineRef.current?.fieldShows(id, content)}
               lockedBlocks={lockedBlocks}
               onLockedAction={handleLockedAction}
               onResolveConflict={handleResolveConflict}

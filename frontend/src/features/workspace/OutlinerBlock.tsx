@@ -159,6 +159,8 @@ export interface OutlinerBlockProps {
   onBlurBlock?: (blockId: string) => void;
   /** Work in this block that does not change its text yet (drawing editor open), keeps its lease */
   onBlockActivity?: (blockId: string) => void;
+  /** The focused field took over the block's text from elsewhere: the next edit builds on it */
+  onFieldShows?: (blockId: string, content: string) => void;
   onOpenTask?: (taskId: string) => void;
   onTagClick?: (tag: string) => void;
   onWikiLinkClick?: WikiLinkClickHandler;
@@ -210,6 +212,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   onFocusBlock,
   onBlurBlock,
   onBlockActivity,
+  onFieldShows,
   onOpenTask,
   onTagClick,
   onWikiLinkClick,
@@ -409,6 +412,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     changeContent(next);
   };
   const onUndoRef = useLatestRef(onUndo);
+  const onFieldShowsRef = useLatestRef(onFieldShows);
   const onRedoRef = useLatestRef(onRedo);
 
   // Sync incoming remote changes ONLY when this textarea is NOT actively being edited (or not edited at all)
@@ -432,8 +436,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       setShownContent(block.content || '');
       localContentRef.current = block.content || '';
       editedRef.current = false;
+      if (isActivelyEditing) onFieldShowsRef.current?.(block.id, block.content || '');
     }
-  }, [block.content, isLocallyFocused, localContentRef]);
+  }, [block.id, block.content, isLocallyFocused, localContentRef, onFieldShowsRef]);
 
   useLayoutEffect(() => {
     const pos = pendingCaretRef.current;
