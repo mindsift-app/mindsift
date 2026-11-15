@@ -382,7 +382,8 @@
     "pasteOffline": "Les images ne peuvent être collées qu’avec une connexion. Collez-les à nouveau une fois en ligne.",
     "pasteFailed_one": "Image non collée : {{error}}",
     "pasteFailed_other": "{{count}} images non collées : {{error}}",
-    "pasteTooMany": "{{max}} images au maximum à la fois, les autres n’ont pas été collées."
+    "pasteTooMany": "{{max}} images au maximum à la fois, les autres n’ont pas été collées.",
+    "dropOnlyImages": "Seules les images peuvent être glissées ici."
   },
   "journal": {
     "opening": "Ouverture de {{date}}…",

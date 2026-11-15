@@ -382,7 +382,8 @@
     "pasteOffline": "Las imágenes solo se pueden pegar con conexión. Vuelve a pegarlas cuando estés en línea.",
     "pasteFailed_one": "Imagen no pegada: {{error}}",
     "pasteFailed_other": "{{count}} imágenes no pegadas: {{error}}",
-    "pasteTooMany": "Como máximo {{max}} imágenes a la vez, las demás no se han pegado."
+    "pasteTooMany": "Como máximo {{max}} imágenes a la vez, las demás no se han pegado.",
+    "dropOnlyImages": "Solo se pueden arrastrar imágenes."
   },
   "journal": {
     "opening": "Abriendo {{date}}…",

@@ -55,7 +55,7 @@ import { currentVoiceConfig } from '../../lib/voice';
 import { LinkPreviewCard } from './LinkPreviewCard';
 import { linkCardUrl, hidePreviewContent, linkHost, useLinkPreviewsEnabled } from '../../lib/linkPreview';
 import { mediaContent, parseMediaContent } from '../../lib/media';
-import { MAX_PASTED_IMAGES, PastedImages, pastedImages, uploadPastedImages } from '../../lib/pasteImages';
+import { insertImages, PastedImages, pastedImages } from '../../lib/pasteImages';
 import { codeBlockText } from '../../lib/secretRef';
 import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown';
 import { useMentionInput } from '../../lib/useMentionInput';
@@ -1034,45 +1034,26 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     }
   };
 
-  // Uploads pasted images and turns them into image bullets at anchorId (lib/pasteImages.ts). Every image
-  // that does not make it is reported, nothing disappears without a word.
-  const pasteImages = async (images: PastedImages, anchorId: string) => {
-    const count = images.files.length + images.urls.length;
-    const tooMany = images.dropped > 0 ? i18n.t('workspace:media.pasteTooMany', { max: MAX_PASTED_IMAGES }) : '';
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      showError(i18n.t('workspace:media.pasteOffline'));
-      return;
-    }
-    setPastingImages((n) => n + count);
-    let result: { contents: string[]; errors: unknown[] };
-    try {
-      result = await uploadPastedImages(docId, images);
-    } finally {
-      setPastingImages((n) => Math.max(0, n - count));
-    }
-    if (result.contents.length > 0) {
-      let anchor: DocumentBlock | undefined;
-      if (anchorId === block.id) {
-        // The field's text, including what was typed during the upload and is still waiting to be saved
-        if (debounceTimerRef.current !== null) {
-          window.clearTimeout(debounceTimerRef.current);
-          debounceTimerRef.current = null;
+  // Uploads pasted images and turns them into image bullets at anchorId (lib/pasteImages.ts)
+  const pasteImages = (images: PastedImages, anchorId: string) =>
+    insertImages(
+      docId,
+      images,
+      (contents) => {
+        let anchor: DocumentBlock | undefined;
+        if (anchorId === block.id) {
+          // The field's text, including what was typed during the upload and is still waiting to be saved
+          if (debounceTimerRef.current !== null) {
+            window.clearTimeout(debounceTimerRef.current);
+            debounceTimerRef.current = null;
+          }
+          anchor = { ...latestBlockRef.current, content: localContentRef.current };
+          acceptRemoteUntilRef.current = Date.now() + 1000;
         }
-        anchor = { ...latestBlockRef.current, content: localContentRef.current };
-        acceptRemoteUntilRef.current = Date.now() + 1000;
-      }
-      onPasteImagesRef.current?.(anchorId, result.contents, anchor);
-    }
-    if (result.errors.length > 0) {
-      const offline = (typeof navigator !== 'undefined' && navigator.onLine === false) || result.errors.some((err) => err instanceof TypeError);
-      const error = offline ? i18n.t('workspace:media.pasteOffline') : errorMessage(result.errors[0], i18n.t('workspace:media.uploadFailed'));
-      showError(
-        [i18n.t('workspace:media.pasteFailed', { count: result.errors.length, error }), tooMany].filter(Boolean).join(' ')
-      );
-    } else if (tooMany) {
-      showError(tooMany);
-    }
-  };
+        onPasteImagesRef.current?.(anchorId, contents, anchor);
+      },
+      (delta) => setPastingImages((n) => Math.max(0, n + delta))
+    );
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     if (!canEdit || block.type === 'code') return;
@@ -1445,7 +1426,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       onMouseMove={handleRowMouseMove}
       onMouseLeave={handleRowMouseLeave}
       onTouchStart={showBubbleForTouch}
-      className={`outline-row group relative flex items-start gap-1 py-1 px-0.5 sm:px-1.5 transition-all duration-300 ${
+      // data-file-drop: image files dragged over the note would go here (OutlinerTree)
+      className={`outline-row group relative flex items-start gap-1 py-1 px-0.5 sm:px-1.5 transition-all duration-300 data-file-drop:rounded-card data-file-drop:bg-accent/10 data-file-drop:ring-2 data-file-drop:ring-inset data-file-drop:ring-accent ${
         inRangeSelection ? 'bg-accent/15' : ''
       } ${
         // Round corners only on a tinted row: on the others they are invisible, but the row's content-visibility
@@ -2004,14 +1986,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         )}
 
         {/* Pasted images on their way: the same look as the /image picker while it uploads */}
-        {pastingImages > 0 && (
-          <div
-            data-testid="pasting-images"
-            className="my-1 flex items-center gap-2 px-3 py-3 rounded-card border-2 border-dashed border-border bg-panel text-xs text-muted select-none"
-          >
-            <LoaderCircle className="w-4 h-4 animate-spin text-accent" /> {t('media.pastingImage', { count: pastingImages })}
-          </div>
-        )}
+        {pastingImages > 0 && <PastingImagesNotice count={pastingImages} />}
 
         {/* Conflict copy: text that lost against someone else's change */}
         {block.conflictOf && (
@@ -2347,4 +2322,17 @@ function dimSecretRefs(text: string): React.ReactNode[] {
 
 // Memoized: a note renders only the bullets whose props changed (OutlinerTree keeps its handlers stable),
 // not all of them on every Enter or after every pause in typing
+// Pasted or dropped images on their way: the same look as the /image picker while it uploads
+export const PastingImagesNotice: React.FC<{ count: number }> = ({ count }) => {
+  const { t } = useTranslation('workspace');
+  return (
+    <div
+      data-testid="pasting-images"
+      className="my-1 flex items-center gap-2 px-3 py-3 rounded-card border-2 border-dashed border-border bg-panel text-xs text-muted select-none"
+    >
+      <LoaderCircle className="w-4 h-4 animate-spin text-accent" /> {t('media.pastingImage', { count })}
+    </div>
+  );
+};
+
 export const OutlinerBlock = React.memo(OutlinerBlockView);

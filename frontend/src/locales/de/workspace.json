@@ -379,7 +379,8 @@
     "pasteOffline": "Bilder lassen sich nur mit Verbindung einfügen. Bitte erneut einfügen, sobald du online bist.",
     "pasteFailed_one": "Bild nicht eingefügt: {{error}}",
     "pasteFailed_other": "{{count}} Bilder nicht eingefügt: {{error}}",
-    "pasteTooMany": "Höchstens {{max}} Bilder auf einmal, die übrigen wurden nicht eingefügt."
+    "pasteTooMany": "Höchstens {{max}} Bilder auf einmal, die übrigen wurden nicht eingefügt.",
+    "dropOnlyImages": "Nur Bilder lassen sich hineinziehen."
   },
   "journal": {
     "opening": "{{date}} wird geöffnet…",

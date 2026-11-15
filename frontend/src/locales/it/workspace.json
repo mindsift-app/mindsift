@@ -382,7 +382,8 @@
     "pasteOffline": "Le immagini si possono incollare solo con una connessione. Incollale di nuovo quando sei online.",
     "pasteFailed_one": "Immagine non incollata: {{error}}",
     "pasteFailed_other": "{{count}} immagini non incollate: {{error}}",
-    "pasteTooMany": "Al massimo {{max}} immagini alla volta, le altre non sono state incollate."
+    "pasteTooMany": "Al massimo {{max}} immagini alla volta, le altre non sono state incollate.",
+    "dropOnlyImages": "Si possono trascinare solo immagini."
   },
   "journal": {
     "opening": "Apertura di {{date}}…",

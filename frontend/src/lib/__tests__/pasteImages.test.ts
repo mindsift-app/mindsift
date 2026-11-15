@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dataUrlBlob, MAX_PASTED_IMAGES, pastedImages } from '../pasteImages';
+import { dataUrlBlob, draggedFiles, droppedImages, MAX_PASTED_IMAGES, pastedImages } from '../pasteImages';
 import { clipboard, png } from '../../test/clipboard';
 
 
@@ -82,5 +82,52 @@ describe('dataUrlBlob', () => {
       reader.readAsArrayBuffer(blob);
     });
     expect(Array.from(new Uint8Array(bytes))).toEqual([137, 80, 78, 71]);
+  });
+});
+
+describe('draggedFiles', () => {
+  const pdf = new File([new Uint8Array([1])], 'a.pdf', { type: 'application/pdf' });
+
+  it('tells image files from other files while dragging', () => {
+    expect(draggedFiles(clipboard({ files: [png()] }))).toBe('images');
+    expect(draggedFiles(clipboard({ files: [pdf, png()] }))).toBe('images');
+    expect(draggedFiles(clipboard({ files: [pdf] }))).toBe('other');
+  });
+
+  it('ignores drags without files (a bullet by its handle, text, a link)', () => {
+    expect(draggedFiles(clipboard({ text: 'Hallo' }))).toBeNull();
+    expect(draggedFiles(clipboard({ extra: { 'application/mindsift-block': '{}' } }))).toBeNull();
+    expect(draggedFiles(null)).toBeNull();
+  });
+});
+
+describe('droppedImages', () => {
+  it('takes the image files of a drop whatever text the file manager adds', () => {
+    const file = png();
+    const txt = new File(['x'], 'a.txt', { type: 'text/plain' });
+    const dropped = droppedImages(
+      clipboard({ files: [txt, file], text: '/tmp/a.txt\n/tmp/bild.png', extra: { 'text/uri-list': 'file:///tmp/bild.png' } })
+    );
+    expect(dropped).toEqual({ images: { files: [file], urls: [], keepText: false, dropped: 0 }, otherFiles: 1 });
+  });
+
+  it('keeps at most MAX_PASTED_IMAGES dropped images', () => {
+    const files = Array.from({ length: MAX_PASTED_IMAGES + 2 }, (_, i) => png(`${i}.png`));
+    expect(droppedImages(clipboard({ files })).images?.dropped).toBe(2);
+  });
+
+  it('takes an image dragged out of a browser tab by its HTML or address', () => {
+    expect(droppedImages(clipboard({ html: '<img src="https://example.com/a.png">', text: 'https://example.com/a.png' })).images?.urls).toEqual([
+      'https://example.com/a.png',
+    ]);
+    expect(droppedImages(clipboard({ extra: { 'text/uri-list': 'https://example.com/bild.jpg' } })).images?.urls).toEqual([
+      'https://example.com/bild.jpg',
+    ]);
+  });
+
+  it('leaves text and links to the browser', () => {
+    expect(droppedImages(clipboard({ text: 'Hallo' }))).toEqual({ images: null, otherFiles: 0 });
+    expect(droppedImages(clipboard({ extra: { 'text/uri-list': 'https://example.com/seite' } })).images).toBeNull();
+    expect(droppedImages(clipboard({ html: '<p>Text <img src="https://example.com/a.png"></p>' })).images).toBeNull();
   });
 });

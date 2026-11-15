@@ -208,7 +208,7 @@ const es: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image (subir, fotografiar, pegar o enlazar una imagen; solo en un punto vacío). Una imagen copiada o una captura de pantalla también se pega directamente en la nota con Ctrl+V (Cmd+V, en el móvil mantener pulsado y Pegar): se convierte en un punto de imagen propio, un punto vacío se convierte en la imagen</span>
+                <span>/image (subir, fotografiar, pegar o enlazar una imagen; solo en un punto vacío). Una imagen copiada o una captura de pantalla también se pega directamente en la nota con Ctrl+V (Cmd+V, en el móvil mantener pulsado y Pegar), o en el ordenador arrastrando archivos de imagen (desde el gestor de archivos, o una imagen de una pestaña del navegador) sobre un punto: se convierte en un punto de imagen propio debajo, un punto vacío se convierte en la imagen; arrastradas junto a los puntos o sobre el título, las imágenes van al final de la nota</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />

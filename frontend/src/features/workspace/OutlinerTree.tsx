@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import type { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { DocumentBlock, BlockType } from '../../lib/types';
-import { OutlinerBlock, BlockLock } from './OutlinerBlock';
+import { OutlinerBlock, BlockLock, PastingImagesNotice } from './OutlinerBlock';
 import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToClipboard, putOnClipboard, rememberCopied, type OutlineClipboard } from '../../lib/outlineMarkdown';
@@ -16,10 +16,15 @@ import { TemplateChoice, TemplatePicker } from './NoteTemplates';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
+import { draggedFiles, droppedImages, insertImages, type PastedImages } from '../../lib/pasteImages';
+import i18n from '../../i18n';
 
 export interface OutlinerTreeHandle {
   focusFirstBlock: (cursor?: 'start' | 'end') => void;
   focusBlock: (blockId: string, cursor?: 'start' | 'end') => void;
+  /** Image files dragged over the note outside the bullets (title, margins): dropped, they go to the end of
+   * the note. Takes the drag events (dragenter, dragover, dragleave, drop) of the area around the tree. */
+  fileDragAtEnd: (e: React.DragEvent) => void;
 }
 
 /** What /vorlage needs: the person's templates, how to load one's bullets, the note's title ({{titel}}) */
@@ -31,6 +36,8 @@ export interface TemplateSource {
 
 // Bullets a template copy replaces when the slash command was typed into an empty one of these
 const REPLACEABLE_EMPTY = ['text', 'bullet', 'todo', 'numbered', 'h1', 'h2', 'h3', 'callout', 'warning', 'error'];
+// Where dragged image files go when not onto a bullet: the end of the note (fileDropAt)
+const FILE_DROP_END = '\u0000end';
 // Bullets with a text field the cursor can go to
 const TEXT_FIELD_TYPES = [...REPLACEABLE_EMPTY, 'paragraph', 'code'];
 
@@ -216,9 +223,13 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     []
   );
 
+  // Image files dragged over the note outside the bullets (set further down, with the drop onto bullets)
+  const fileDragAtEndRef = useRef<(e: React.DragEvent) => void>(() => {});
+
   useImperativeHandle(
     ref,
     () => ({
+      fileDragAtEnd: (e: React.DragEvent) => fileDragAtEndRef.current(e),
       focusFirstBlock: (cursor: 'start' | 'end' = 'end') => {
         if (blocks.length > 0) {
           focusBlockInput(blocks[0].id, cursor);
@@ -837,8 +848,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           setDragOverIndex(null);
           return;
         }
+        setDragOverIndex(index);
       }
-      setDragOverIndex(index);
     },
     [blocks, draggedIndex]
   );
@@ -1334,6 +1345,99 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const stableDragOverBlock = useLatestCallback((e: React.DragEvent, blockId: string) => handleDragOverBlock(e, indexOf(blockId)));
   const stableDropBlock = useLatestCallback((blockId: string) => handleDropBlock(indexOf(blockId)));
 
+  // --- Image files dragged onto the note (desktop, file manager, an image out of a browser tab) ---
+  // They become image bullets like pasted images (lib/pasteImages.ts, handlePasteImages): dropped onto a
+  // bullet's row they go there (an empty bullet becomes the image, otherwise they follow it on its level),
+  // between two rows below the upper one, below the last bullet and outside the bullets (fileDragAtEnd) at the
+  // end of the note. Only drags with files count while dragging: a bullet dragged by its handle or text
+  // dragged within a field carry none and stay as they were. An image out of a browser tab without a file
+  // is only known on the drop (its HTML or address). Files without an image get a short hint.
+  const [fileDropAt, setFileDropAt] = useState<string | null>(null);
+  const [droppingImages, setDroppingImages] = useState<{ anchorId: string; count: number } | null>(null);
+  const fileDropRow = (e: React.DragEvent): string | null => {
+    const root = treeRootRef.current;
+    if (!root) return null;
+    const hit = (e.target as HTMLElement | null)?.closest?.('[data-outline-block]');
+    let id = hit && root.contains(hit) ? hit.getAttribute('data-outline-block') : null;
+    if (!id) {
+      // Between rows (or below them): the row above the pointer; below the last one is the end of the note
+      const rows = Array.from(root.querySelectorAll<HTMLElement>(':scope > [data-outline-block]'));
+      const last = rows[rows.length - 1];
+      if (!last || e.clientY > last.getBoundingClientRect().bottom) return FILE_DROP_END;
+      const above = rows.filter((r) => r.getBoundingClientRect().top <= e.clientY).pop() ?? rows[0];
+      id = above.getAttribute('data-outline-block');
+    }
+    return id && !lockedBlocks?.has(id) ? id : null;
+  };
+  const dropImagesAt = (target: string, images: PastedImages) => {
+    const anchorId = target === FILE_DROP_END ? blocks[blocks.length - 1]?.id : target;
+    if (!anchorId) return;
+    const count = images.files.length + images.urls.length;
+    void insertImages(
+      docId,
+      images,
+      (contents) => {
+        // The bullet as its field has it right now, when the cursor is in it (typing not saved yet)
+        const field = textareaMapRef.current.get(anchorId);
+        const current = blocksRef.current.find((b) => b.id === anchorId);
+        const anchor = current && field && document.activeElement === field ? { ...current, content: field.value } : undefined;
+        stablePasteImages(anchorId, contents, anchor);
+      },
+      (delta) =>
+        setDroppingImages((cur) => {
+          const n = (cur?.anchorId === anchorId ? cur.count : 0) + delta;
+          return n > 0 ? { anchorId, count: n } : null;
+        })
+    );
+    return count;
+  };
+  const handleFileDrag = (e: React.DragEvent, atEnd = false) => {
+    if (!canEdit) return;
+    if (e.type === 'dragleave') {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFileDropAt(null);
+      return;
+    }
+    if (e.type === 'drop') {
+      setFileDropAt(null);
+      const { images, otherFiles } = droppedImages(e.dataTransfer);
+      if (!images && otherFiles === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (otherFiles > 0) showError(i18n.t('workspace:media.dropOnlyImages'));
+      const target = atEnd ? FILE_DROP_END : fileDropRow(e);
+      if (images && target) dropImagesAt(target, images);
+      return;
+    }
+    // dragenter, dragover: only file drags; their drop must reach the note (or the browser opens the file)
+    const kind = draggedFiles(e.dataTransfer);
+    if (!kind) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    setFileDropAt(kind === 'images' ? (atEnd ? FILE_DROP_END : fileDropRow(e)) : null);
+  };
+  fileDragAtEndRef.current = (e) => handleFileDrag(e, true);
+  // The row the files would go to gets an outline; set on the element itself, so the bullets do not render
+  // again while the pointer moves over them
+  useEffect(() => {
+    if (!fileDropAt || fileDropAt === FILE_DROP_END) return;
+    const rows = treeRootRef.current?.querySelectorAll(':scope > [data-outline-block]') ?? [];
+    const row = Array.from(rows).find((r) => r.getAttribute('data-outline-block') === fileDropAt);
+    row?.setAttribute('data-file-drop', '');
+    return () => row?.removeAttribute('data-file-drop');
+  }, [fileDropAt]);
+  // The drag left the page or ended somewhere else
+  useEffect(() => {
+    if (!fileDropAt) return;
+    const clear = () => setFileDropAt(null);
+    window.addEventListener('drop', clear);
+    window.addEventListener('dragend', clear);
+    return () => {
+      window.removeEventListener('drop', clear);
+      window.removeEventListener('dragend', clear);
+    };
+  }, [fileDropAt]);
+
   // Each bullet's element is kept with the values it was made from: a bullet whose values are unchanged gets
   // the same element again, and React passes over it without comparing its props one by one. With thousands
   // of bullets, making and comparing them all was most of the time after Enter or a pause in typing. Every
@@ -1424,6 +1528,17 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
         />
       );
     nextRows.set(block.id, { values, element });
+    // Dropped images on their way: below the bullet they go to
+    if (droppingImages?.anchorId === block.id) {
+      return (
+        <React.Fragment key={block.id}>
+          {element}
+          <div style={{ paddingLeft: `calc(var(--outline-indent) * ${Math.max(0, (block.level || 0) - levelOffset)} + 28px)` }}>
+            <PastingImagesNotice count={droppingImages.count} />
+          </div>
+        </React.Fragment>
+      );
+    }
     return element;
   });
   rowCacheRef.current = { treeValues, rows: nextRows };
@@ -1435,13 +1550,17 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       ref={treeRootRef}
       onMouseDownCapture={handleTreeMouseDownCapture}
       onKeyDownCapture={handleTreeKeyDownCapture}
+      onDragEnter={handleFileDrag}
+      onDragOver={handleFileDrag}
+      onDragLeave={handleFileDrag}
+      onDrop={handleFileDrag}
     >
       {rowElements}
 
       {canEdit && trailingArea && (
         <div
           className={`${compact ? 'min-h-10' : 'min-h-56'} mt-0.5 first:mt-0 pt-2 pl-2 transition-colors cursor-text ${
-            dragOverIndex === blocks.length ? 'border-t-2 border-accent bg-accent/10 rounded-sm' : ''
+            dragOverIndex === blocks.length || fileDropAt === FILE_DROP_END ? 'border-t-2 border-accent bg-accent/10 rounded-sm' : ''
           }`}
           onClick={(e) => {
             if (e.target !== e.currentTarget && (e.target as HTMLElement).closest('button, a, input, textarea, select')) {

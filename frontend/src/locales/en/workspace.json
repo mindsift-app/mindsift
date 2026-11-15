@@ -382,7 +382,8 @@
     "pasteOffline": "Images can only be pasted with a connection. Please paste again once you are online.",
     "pasteFailed_one": "Image not pasted: {{error}}",
     "pasteFailed_other": "{{count}} images not pasted: {{error}}",
-    "pasteTooMany": "At most {{max}} images at once, the others were not pasted."
+    "pasteTooMany": "At most {{max}} images at once, the others were not pasted.",
+    "dropOnlyImages": "Only images can be dragged in."
   },
   "journal": {
     "opening": "Opening {{date}}…",
