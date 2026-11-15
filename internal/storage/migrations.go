@@ -82,6 +82,7 @@ var migrations = []migration{
 	{54, "Record of changes made on the command line", (*Store).migrateCLIEvents},
 	{55, "Calendar subscription per person", (*Store).migrateCalendarFeeds},
 	{56, "When a list item was last ticked or opened", (*Store).migrateListItemDoneChangedAt},
+	{59, "Provider session id of OIDC sessions (back-channel logout)", (*Store).migrateOIDCSessionID},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a

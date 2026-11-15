@@ -96,8 +96,10 @@ type oidcTicket struct {
 	userID       string
 	sessionID    string
 	tokenVersion int
-	bind         string
-	created      time.Time
+	// oidcSID: the provider's session (the ID token's sid), kept with the new session for back-channel logout
+	oidcSID string
+	bind    string
+	created time.Time
 }
 
 type oidcConfirmation struct {
@@ -120,6 +122,8 @@ type oidcService struct {
 	flows     map[string]*oidcFlow
 	tickets   map[string]*oidcTicket
 	confirmed map[string]oidcConfirmation // by session id
+	// logoutJTIs: jti of accepted back-channel logout tokens → until when they are remembered (oidc_logout.go)
+	logoutJTIs map[string]time.Time
 }
 
 // newOIDCService: the sign-in through the provider when the variables set it up and it can be used; reason says
@@ -140,6 +144,7 @@ func newOIDCService(cfg *config.Config) (*oidcService, string) {
 		flows:       map[string]*oidcFlow{},
 		tickets:     map[string]*oidcTicket{},
 		confirmed:   map[string]oidcConfirmation{},
+		logoutJTIs:  map[string]time.Time{},
 	}, ""
 }
 
@@ -156,7 +161,7 @@ func (s *Server) logOIDCSetup(reason string) {
 	}
 	slog.Info("Sign-in through an OIDC provider is on", "name", s.oidc.cfg.Name, "issuer", s.oidc.cfg.Issuer,
 		"redirect_uri", s.oidc.redirectURL, "auto_create", s.oidc.cfg.AutoCreate, "password_login", s.oidc.cfg.PasswordLogin,
-		"admin_group", s.oidc.cfg.AdminGroup)
+		"admin_group", s.oidc.cfg.AdminGroup, "backchannel_logout_uri", s.oidcLogoutURL())
 	go func() {
 		if _, err := s.oidc.discover(time.Now()); err == nil {
 			slog.Info("OIDC provider found", "issuer", s.oidc.cfg.Issuer)
@@ -329,6 +334,14 @@ func (s *Server) passwordLoginOn() bool {
 // administrators may (emergency access while the provider is down).
 func (s *Server) passwordLoginFor(user *domain.User) bool {
 	return s.passwordLoginOn() || (user != nil && user.Role == domain.RoleAdmin)
+}
+
+// oidcLogoutURL: where the provider sends back-channel logout tokens; "" while that is off.
+func (s *Server) oidcLogoutURL() string {
+	if s.oidc == nil || !s.oidc.cfg.BackchannelLogout {
+		return ""
+	}
+	return strings.TrimRight(s.cfg.BaseURL, "/") + oidcLogoutPath
 }
 
 // oidcName: the provider's name on the button and in messages.
@@ -522,6 +535,8 @@ type oidcIdentity struct {
 	groups          []string
 	hasGroups       bool
 	authTime        time.Time
+	// sid: the provider's session id, when it sends one (back-channel logout names it)
+	sid string
 }
 
 // errOIDCUnreachable: the provider could not be asked (as opposed to an answer that was refused).
@@ -574,6 +589,8 @@ func (s *Server) oidcVerify(ctx context.Context, f *oidcFlow, code string) (*oid
 	if err := idt.Claims(&claims); err != nil {
 		return nil, err
 	}
+	// Only the ID token's own sid counts, not one userinfo adds
+	idSID, _ := claims["sid"].(string)
 	azp, _ := claims["azp"].(string)
 	if (len(idt.Audience) > 1 || azp != "") && azp != clientID {
 		return nil, fmt.Errorf("the ID token's azp %q is not this client", azp)
@@ -616,6 +633,9 @@ func (s *Server) oidcVerify(ctx context.Context, f *oidcFlow, code string) (*oid
 	case string:
 		id.hasGroups = true
 		id.groups = strings.Fields(strings.ReplaceAll(g, ",", " "))
+	}
+	if len(idSID) <= 255 {
+		id.sid = idSID
 	}
 	if at, ok := claims["auth_time"].(float64); ok && at > 0 {
 		id.authTime = time.Unix(int64(at), 0)
@@ -662,7 +682,7 @@ func (s *Server) handleOIDCCallback(w http.ResponseWriter, r *http.Request) {
 			s.oidcBack(w, r, f.returnTo, "oidc_error", code)
 			return
 		}
-		ticket.userID, ticket.tokenVersion = user.ID, user.TokenVersion
+		ticket.userID, ticket.tokenVersion, ticket.oidcSID = user.ID, user.TokenVersion, id.sid
 	default:
 		if code := s.oidcConfirmIdentity(f, id); code != "" {
 			s.oidcBack(w, r, f.returnTo, "oidc_error", code)
@@ -893,7 +913,7 @@ func (s *Server) handleOIDCExchange(w http.ResponseWriter, r *http.Request) {
 			expired()
 			return
 		}
-		token, err := s.startSession(r, user, storage.SessionViaOIDC)
+		token, err := s.startOIDCSession(r, user, t.oidcSID)
 		if err != nil {
 			slog.Error("Creating the sign-in token failed", "user_id", user.ID, "error", err)
 			writeError(w, http.StatusInternalServerError, "Token konnte nicht erstellt werden")

@@ -148,3 +148,71 @@ func (s *Store) SessionVia(sessionID string) string {
 	}
 	return via
 }
+
+// maxOIDCSIDLength caps the provider's session id kept with a session (Keycloak and Authentik send UUIDs or hashes)
+const maxOIDCSIDLength = 255
+
+// migrateOIDCSessionID is migration 59: sessions started through the provider remember its session id (sid), so a
+// back-channel logout from the provider ends exactly those sessions.
+func (s *Store) migrateOIDCSessionID() error {
+	if err := s.addColumnIfMissing("sessions", "oidc_sid", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	return s.execSchemaStatement(`CREATE INDEX IF NOT EXISTS idx_sessions_oidc_sid ON sessions(oidc_sid) WHERE oidc_sid != ''`)
+}
+
+// RevokeOIDCSessions ends the active sessions the provider signed out (back-channel logout): with sid those of
+// that provider session, limited to userID when it is set; without sid every session of userID started through
+// the provider. Sessions started with a password or passkey stay. Returns the accounts whose sessions ended
+// and how many sessions ended.
+func (s *Store) RevokeOIDCSessions(userID, sid string) ([]string, int, error) {
+	if sid == "" && userID == "" {
+		return nil, 0, nil
+	}
+	if len(sid) > maxOIDCSIDLength {
+		return nil, 0, nil
+	}
+	where := `via = ? AND revoked_at = ''`
+	args := []any{SessionViaOIDC}
+	if sid != "" {
+		where += ` AND oidc_sid = ?`
+		args = append(args, sid)
+	}
+	if userID != "" {
+		where += ` AND user_id = ?`
+		args = append(args, userID)
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	rows, err := tx.Query(`SELECT DISTINCT user_id FROM sessions WHERE `+where, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	var users []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return nil, 0, err
+		}
+		users = append(users, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, 0, err
+	}
+	if len(users) == 0 {
+		return nil, 0, nil
+	}
+	res, err := tx.Exec(`UPDATE sessions SET revoked_at = ? WHERE `+where, append([]any{nowUTC()}, args...)...)
+	if err != nil {
+		return nil, 0, err
+	}
+	n, _ := res.RowsAffected()
+	if err := tx.Commit(); err != nil {
+		return nil, 0, err
+	}
+	return users, int(n), nil
+}

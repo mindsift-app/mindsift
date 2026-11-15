@@ -368,14 +368,15 @@ func TestOIDCConfigFromEnvironment(t *testing.T) {
 	if err := c.Resolve(); err != nil {
 		t.Fatal(err)
 	}
-	if c.ClientSecret != "aus-der-datei" || c.Name != "SSO" || !c.AutoCreate || c.PasswordLogin ||
+	if c.ClientSecret != "aus-der-datei" || c.Name != "SSO" || !c.AutoCreate || c.PasswordLogin || !c.BackchannelLogout ||
 		strings.Join(c.Scopes, " ") != "openid email profile groups" {
 		t.Fatalf("OIDC = %+v", c)
 	}
 	t.Setenv("OIDC_SCOPES", "email,profile")
 	t.Setenv("OIDC_NAME", "Authentik")
+	t.Setenv("OIDC_BACKCHANNEL_LOGOUT", "false")
 	c = Load().OIDC
-	if err := c.Resolve(); err != nil || strings.Join(c.Scopes, " ") != "openid email profile" || c.Name != "Authentik" {
+	if err := c.Resolve(); err != nil || strings.Join(c.Scopes, " ") != "openid email profile" || c.Name != "Authentik" || c.BackchannelLogout {
 		t.Fatalf("OIDC_SCOPES: %+v %v", c, err)
 	}
 }
@@ -413,6 +414,8 @@ func TestOIDCConfigRefusesHalfASetup(t *testing.T) {
 	ok := OIDCConfig{Issuer: "https://idp.example", ClientID: "a", ClientSecret: "Kr0k0dil"}
 	notBool := ok
 	notBool.rawAutoCreate = "vielleicht"
+	logoutNotBool := ok
+	logoutNotBool.rawBackchannelLogout = "vielleicht"
 	cases := []struct {
 		name string
 		c    OIDCConfig
@@ -426,6 +429,7 @@ func TestOIDCConfigRefusesHalfASetup(t *testing.T) {
 		{"missing secret file", OIDCConfig{Issuer: "https://idp.example", ClientID: "a", ClientSecretFile: secret + ".fehlt"}, "reading OIDC_CLIENT_SECRET_FILE failed"},
 		{"no http address", OIDCConfig{Issuer: "idp.example", ClientID: "a", ClientSecret: "b"}, "is not an http(s) address"},
 		{"no boolean", notBool, "OIDC_AUTO_CREATE"},
+		{"logout no boolean", logoutNotBool, "OIDC_BACKCHANNEL_LOGOUT"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

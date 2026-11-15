@@ -122,19 +122,23 @@ type Config struct {
 // button (OIDC_NAME); members of AdminGroup at the provider (OIDC_ADMIN_GROUP) are administrators.
 // AutoCreate (OIDC_AUTO_CREATE, default true) creates accounts at the first sign-in; PasswordLogin
 // (OIDC_PASSWORD_LOGIN, default true) false leaves the password only to administrators (emergency access).
+// BackchannelLogout (OIDC_BACKCHANNEL_LOGOUT, default true) lets the provider end MindSift sessions when the
+// person signs out there (OpenID Connect Back-Channel Logout 1.0).
 // An existing account is never taken over by its address; its owner links it in the settings.
 type OIDCConfig struct {
-	Issuer           string
-	ClientID         string
-	ClientSecret     string
-	ClientSecretFile string
-	Name             string
-	AdminGroup       string
-	Scopes           []string
-	AutoCreate       bool
-	PasswordLogin    bool
-	// The values of OIDC_AUTO_CREATE and OIDC_PASSWORD_LOGIN as set, so Resolve can refuse what is no boolean
-	rawAutoCreate, rawPasswordLogin string
+	Issuer            string
+	ClientID          string
+	ClientSecret      string
+	ClientSecretFile  string
+	Name              string
+	AdminGroup        string
+	Scopes            []string
+	AutoCreate        bool
+	PasswordLogin     bool
+	BackchannelLogout bool
+	// The values of OIDC_AUTO_CREATE, OIDC_PASSWORD_LOGIN and OIDC_BACKCHANNEL_LOGOUT as set, so Resolve can
+	// refuse what is no boolean
+	rawAutoCreate, rawPasswordLogin, rawBackchannelLogout string
 }
 
 // Configured: OIDC_ISSUER is set (whether it can be used is up to Resolve, BASE_URL and the demo).
@@ -145,15 +149,16 @@ var DefaultOIDCScopes = []string{"openid", "email", "profile"}
 
 func loadOIDC() OIDCConfig {
 	c := OIDCConfig{
-		Issuer:           strings.TrimSpace(os.Getenv("OIDC_ISSUER")),
-		ClientID:         strings.TrimSpace(os.Getenv("OIDC_CLIENT_ID")),
-		ClientSecret:     strings.TrimSpace(os.Getenv("OIDC_CLIENT_SECRET")),
-		ClientSecretFile: strings.TrimSpace(os.Getenv("OIDC_CLIENT_SECRET_FILE")),
-		Name:             strings.TrimSpace(os.Getenv("OIDC_NAME")),
-		AdminGroup:       strings.TrimSpace(os.Getenv("OIDC_ADMIN_GROUP")),
-		Scopes:           strings.Fields(strings.ReplaceAll(os.Getenv("OIDC_SCOPES"), ",", " ")),
-		rawAutoCreate:    strings.TrimSpace(os.Getenv("OIDC_AUTO_CREATE")),
-		rawPasswordLogin: strings.TrimSpace(os.Getenv("OIDC_PASSWORD_LOGIN")),
+		Issuer:               strings.TrimSpace(os.Getenv("OIDC_ISSUER")),
+		ClientID:             strings.TrimSpace(os.Getenv("OIDC_CLIENT_ID")),
+		ClientSecret:         strings.TrimSpace(os.Getenv("OIDC_CLIENT_SECRET")),
+		ClientSecretFile:     strings.TrimSpace(os.Getenv("OIDC_CLIENT_SECRET_FILE")),
+		Name:                 strings.TrimSpace(os.Getenv("OIDC_NAME")),
+		AdminGroup:           strings.TrimSpace(os.Getenv("OIDC_ADMIN_GROUP")),
+		Scopes:               strings.Fields(strings.ReplaceAll(os.Getenv("OIDC_SCOPES"), ",", " ")),
+		rawAutoCreate:        strings.TrimSpace(os.Getenv("OIDC_AUTO_CREATE")),
+		rawPasswordLogin:     strings.TrimSpace(os.Getenv("OIDC_PASSWORD_LOGIN")),
+		rawBackchannelLogout: strings.TrimSpace(os.Getenv("OIDC_BACKCHANNEL_LOGOUT")),
 	}
 	// Taking over an existing account by its address at the provider is gone; an installation that still
 	// sets the variable starts as before, the log says what to do instead
@@ -191,7 +196,11 @@ func (c *OIDCConfig) Resolve() error {
 	if !ok {
 		return fmt.Errorf("OIDC_PASSWORD_LOGIN is %q: set true or false", c.rawPasswordLogin)
 	}
-	c.AutoCreate, c.PasswordLogin = autoCreate, passwordLogin
+	backchannelLogout, ok := parseBool(c.rawBackchannelLogout, true)
+	if !ok {
+		return fmt.Errorf("OIDC_BACKCHANNEL_LOGOUT is %q: set true or false", c.rawBackchannelLogout)
+	}
+	c.AutoCreate, c.PasswordLogin, c.BackchannelLogout = autoCreate, passwordLogin, backchannelLogout
 	if c.Issuer == "" {
 		switch {
 		case c.ClientID != "" || c.ClientSecret != "" || c.ClientSecretFile != "":

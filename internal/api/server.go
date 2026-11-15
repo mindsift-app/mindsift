@@ -248,6 +248,8 @@ func (s *Server) Router() http.Handler {
 	r.Post("/api/v1/auth/oidc/start", s.oidcOnly(s.handleOIDCStart))
 	r.Get("/api/v1/auth/oidc/callback", s.oidcOnly(s.handleOIDCCallback))
 	r.Post("/api/v1/auth/oidc/exchange", s.oidcOnly(s.handleOIDCExchange))
+	// The provider ends sessions when the person signs out there (oidc_logout.go)
+	r.Post(oidcLogoutPath, s.oidcOnly(s.handleOIDCBackchannelLogout))
 	r.Post("/api/v1/auth/reset-password", s.handleResetPassword)
 	r.Post("/api/v1/webhooks/ingest", s.handleWebhookIngest)
 	// Public links to notes (no login; the token is the access, publiclinks.go)
