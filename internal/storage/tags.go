@@ -113,15 +113,15 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 	defer rows.Close()
 
 	type rawMatch struct {
-		blockID          string
-		docID            string
-		title            string
-		icon             string
-		folderPath       string
-		blocksJSON       string
-		updatedAt        string
-		docUserID        string
-		ownerName        string
+		blockID    string
+		docID      string
+		title      string
+		icon       string
+		folderPath string
+		blocksJSON string
+		updatedAt  string
+		docUserID  string
+		ownerName  string
 	}
 
 	var rawMatches []rawMatch

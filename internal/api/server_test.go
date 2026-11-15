@@ -1644,7 +1644,7 @@ func (r *signalRecorder) Write(p []byte) (int, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	n, err := r.ResponseRecorder.Write(p)
-	if strings.Contains(r.ResponseRecorder.Body.String(), r.marker) {
+	if strings.Contains(r.Body.String(), r.marker) {
 		r.once.Do(func() { close(r.seen) })
 	}
 	return n, err
@@ -1653,7 +1653,7 @@ func (r *signalRecorder) Write(p []byte) (int, error) {
 func (r *signalRecorder) body() string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return r.ResponseRecorder.Body.String()
+	return r.Body.String()
 }
 
 func (r *signalRecorder) WriteString(s string) (int, error) { return r.Write([]byte(s)) }
