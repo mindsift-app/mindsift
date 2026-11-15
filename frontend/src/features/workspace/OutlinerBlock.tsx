@@ -1501,7 +1501,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                 ? 'bg-accent ring-2 ring-accent/30'
                 : activeFocus
                 ? 'bg-main scale-125'
-                : 'bg-faint group-hover/bullet:bg-accent group-hover/bullet:scale-125'
+                : // Resting dots stay quiet next to the text (a quarter of the faint colour, in every theme)
+                  'bg-faint/25 group-hover/bullet:bg-accent group-hover/bullet:scale-125'
             } ${
               // Empty rows show the dot only near the pointer (to-dos keep it: the guide lines start there)
               isEmpty
