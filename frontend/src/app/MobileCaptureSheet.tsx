@@ -28,7 +28,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
   if (!showMobileCapture) return null;
   return (
     <div
-      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/60 animate-in fade-in duration-150"
+      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={() => setShowMobileCapture(false)}
     >
       <div

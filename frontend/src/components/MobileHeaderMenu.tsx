@@ -19,7 +19,7 @@ export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLab
     <div className="sm:hidden fixed inset-0 m-0! z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 m-0! bg-black/60 animate-in fade-in duration-150"
+        className="fixed inset-0 m-0! bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
         onClick={() => {
           triggerHaptic(8);
           closeMenu();

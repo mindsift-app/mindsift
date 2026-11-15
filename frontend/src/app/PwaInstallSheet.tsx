@@ -15,7 +15,7 @@ export function PwaInstallSheet({
   if (!showPwaInstallModal || isStandaloneApp) return null;
   return (
     <div
-      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/65 animate-in fade-in duration-150"
+      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/65 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={handleDismissPwaModal}
     >
       <div
