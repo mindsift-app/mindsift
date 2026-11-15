@@ -453,6 +453,14 @@ body {
   .rail-item[aria-expanded='true'] > .rail-tip {
     opacity: 0;
   }
+  /* Dictation on the Quick Dump's + (app/RailQuickDumpButton.tsx): its live status replaces the tip */
+  .rail-item[data-dictation] > .rail-tip {
+    opacity: 0;
+  }
+  .rail-tip.rail-tip-live {
+    opacity: 1;
+    transition: none;
+  }
 
   /* Toolbars of the views from sm on (Doku/ui-patterns.md "Toolbars"): no frames. Tabs are plain text, the
      open one gets a surface and an accent line below; actions are ghost buttons. Phones keep their look:

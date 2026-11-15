@@ -96,7 +96,12 @@
     "expand": "Navigation ausklappen",
     "collapse": "Navigation einklappen",
     "quickDump": "Quick Dump",
-    "quickDumpTip": "Quick Dump – Gedanken festhalten (C)",
+    "quickDumpTip": "Quick Dump – Gedanken festhalten (C) · Gedrückt halten zum Diktieren",
+    "dictateListening": "Diktat {{time}} – loslassen speichert, Esc bricht ab",
+    "dictateCancel": "Loslassen bricht ab",
+    "dictateSaving": "Wird gespeichert…",
+    "dictateSaved": "Im Quick Dump gespeichert",
+    "dictateNothing": "Nichts erkannt",
     "search": "Suche",
     "searchKey": "Strg K",
     "help": "Hilfe"

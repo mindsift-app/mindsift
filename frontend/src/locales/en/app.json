@@ -96,7 +96,12 @@
     "expand": "Expand navigation",
     "collapse": "Collapse navigation",
     "quickDump": "Quick Dump",
-    "quickDumpTip": "Quick Dump – capture a thought (C)",
+    "quickDumpTip": "Quick Dump – capture a thought (C) · Press and hold to dictate",
+    "dictateListening": "Dictation {{time}} – release to save, Esc cancels",
+    "dictateCancel": "Release to cancel",
+    "dictateSaving": "Saving…",
+    "dictateSaved": "Saved to Quick Dump",
+    "dictateNothing": "Nothing recognised",
     "search": "Search",
     "searchKey": "Ctrl K",
     "help": "Help"

@@ -1,9 +1,10 @@
 import { SquareCheckBig, FileText, Layers, ShoppingCart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { DashboardStats, Thought } from '../lib/types';
-import { api, triggerHaptic } from '../lib/api';
+import { triggerHaptic } from '../lib/api';
 import { CountBadge } from '../components/CountBadge';
 import { HoldToRecordFab } from '../features/capture/HoldToRecordFab';
+import { captureDictation } from '../features/capture/captureDictation';
 import { ActiveTab } from './appTabs';
 
 interface MobileNavProps {
@@ -76,7 +77,7 @@ export function MobileNav({
             }
           }}
           onTranscript={async (text) => {
-            const thought = await api.captureThought(text, 'normal', 'voice', '', { target: 'inbox' });
+            const thought = await captureDictation(text);
             handleCaptured(thought, 'inbox');
           }}
         />

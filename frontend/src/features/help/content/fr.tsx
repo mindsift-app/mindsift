@@ -457,7 +457,7 @@ const fr: HelpContent = {
               <strong className="text-main">Au clavier :</strong> appuie sur <kbd className={kbd}>C</kbd> n'importe où dans l'application (sauf si tu écris dans un champ de texte). <kbd className={kbd}>Entrée</kbd> enregistre et la fenêtre reste ouverte pour l'idée suivante ; <kbd className={kbd}>Échap</kbd> ou un clic à côté la ferme.
             </li>
             <li>
-              <strong className="text-main">Dictée vocale :</strong> clique sur l'icône de micro (<Mic className="w-3.5 h-3.5 inline text-accent" />) ou maintiens appuyé le bouton d'action flottant (+) sur mobile pour dicter ta pensée. La reconnaissance vocale la transcrit en temps réel.
+              <strong className="text-main">Dictée vocale :</strong> clique sur l'icône de micro (<Mic className="w-3.5 h-3.5 inline text-accent" />) ou maintiens appuyé le bouton d'action flottant (+) sur mobile pour dicter ta pensée. La reconnaissance vocale la transcrit en temps réel. Sur ordinateur, le <strong className="text-main">+</strong> rond de la barre de gauche fonctionne de la même façon : maintiens-le appuyé pour dicter, relâche pour enregistrer dans la boîte de réception, relâche à côté du bouton ou appuie sur <kbd className={kbd}>Échap</kbd> pour annuler ; un clic court ouvre toujours la fenêtre.
             </li>
             <li>
               <strong className="text-main">Destination personnalisée :</strong> par défaut, les pensées arrivent dans le Quick Dump (pour triage ultérieur), mais tu peux aussi les envoyer directement comme tâche, note ou élément de liste en un clic.
