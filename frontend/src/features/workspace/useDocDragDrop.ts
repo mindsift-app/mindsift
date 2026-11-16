@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Document } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import i18n from '../../i18n';
-import { announceMoveBranch, BLOCK_DRAG_TYPE, blockDropEffect, isSingleBlockDrop } from './moveBranchEvent';
+import { announceMoveBranch, BLOCK_DRAG_TYPE, isSingleBlockDrop } from './moveBranchEvent';
 
 // A note a bullet can be moved into: writable and not in the trash
 export const canTakeBranch = (d: Document) => !d.isArchived && (d.isOwner || d.permission === 'owner' || d.permission === 'write');
@@ -212,7 +212,7 @@ export function useDocDragDrop({
       if (isBranchDrag(e, targetId)) {
         e.preventDefault();
         e.stopPropagation();
-        e.dataTransfer.dropEffect = blockDropEffect(e);
+        e.dataTransfer.dropEffect = 'move';
         if (mergeHoverId !== targetId) setMergeHoverId(targetId);
         return;
       }
@@ -257,7 +257,7 @@ export function useDocDragDrop({
     onDragOver: (e) => {
       if (!e.dataTransfer.types.includes(BLOCK_DRAG_TYPE)) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = blockDropEffect(e);
+      e.dataTransfer.dropEffect = 'move';
       if (!newNoteHover) setNewNoteHover(true);
     },
     // Moving onto the icon inside the button is no leaving (it flickered)

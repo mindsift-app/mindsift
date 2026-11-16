@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, createEvent, act } from '@testing-library/react';
 import { OutlinerTree } from '../OutlinerTree';
 import type { BlockLock } from '../OutlinerBlock';
@@ -7,7 +7,7 @@ import { DocumentBlock } from '../../../lib/types';
 import type { BranchDrop } from '../../../lib/outlineList';
 
 // Dragging a bullet by its handle (OutlinerTree): it lands on the level of the row it is dropped in front
-// of, and with Ctrl (Apple: Alt) held it goes without its children. The tree operation itself is tested in
+// of, and with Shift held it goes without its children. The tree operation itself is tested in
 // lib/__tests__/outlineList.test.ts.
 
 const ghost = vi.hoisted(() => ({ single: [] as boolean[], started: [] as boolean[] }));
@@ -64,10 +64,11 @@ function transfer(): DataTransfer {
   } as unknown as DataTransfer;
 }
 
-type Mods = { ctrlKey?: boolean; altKey?: boolean; clientX?: number };
+type Mods = { shiftKey?: boolean; ctrlKey?: boolean; altKey?: boolean; clientX?: number };
 // A drag event with the modifier keys held (jsdom has no DragEvent, its plain Event carries no keys)
 async function fire(type: 'dragStart' | 'dragOver' | 'drop', el: Element, data: DataTransfer, mods: Mods = {}) {
   const ev = createEvent[type](el, { dataTransfer: data });
+  Object.defineProperty(ev, 'shiftKey', { value: !!mods.shiftKey });
   Object.defineProperty(ev, 'ctrlKey', { value: !!mods.ctrlKey });
   Object.defineProperty(ev, 'altKey', { value: !!mods.altKey });
   if (mods.clientX !== undefined) Object.defineProperty(ev, 'clientX', { value: mods.clientX });
@@ -81,16 +82,11 @@ const over = (id: string, data: DataTransfer, mods: Mods = {}) => fire('dragOver
 const drop = (id: string, data: DataTransfer) => fire('drop', rowOf(id), data);
 const lastGhost = () => ghost.single[ghost.single.length - 1];
 
-const platform = Object.getOwnPropertyDescriptor(window.navigator, 'platform');
 beforeEach(() => {
   moves = [];
   refused = [];
   ghost.single = [];
   ghost.started = [];
-});
-afterEach(() => {
-  if (platform) Object.defineProperty(window.navigator, 'platform', platform);
-  else delete (window.navigator as { platform?: string }).platform;
 });
 
 describe('dragging a bullet in the outliner', () => {
@@ -98,8 +94,8 @@ describe('dragging a bullet in the outliner', () => {
     renderTree();
     const data = transfer();
     await start('u', data);
-    // Copy is allowed too: with Ctrl the system asks for a copy and would otherwise refuse the drop
-    expect(data.effectAllowed).toBe('copyMove');
+    // Move only: Shift (unlike Ctrl or Alt) never turns a drag into a copy
+    expect(data.effectAllowed).toBe('move');
     await over('br', data);
     expect(data.dropEffect).toBe('move');
     expect(dropLine()?.getAttribute('data-drop-line')).toBe('1');
@@ -129,62 +125,60 @@ describe('dragging a bullet in the outliner', () => {
     expect(moves).toEqual([]);
   });
 
-  it('moves the bullet alone with Ctrl held, switched on and off during the drag', async () => {
+  it('moves the bullet alone with Shift held, switched on and off during the drag', async () => {
     renderTree();
     const data = transfer();
     await start('a', data);
     expect(ghost.started).toEqual([false]);
     // Pressed during the drag: its own child becomes a target, on the level it has after moving up
-    await over('f', data, { ctrlKey: true });
+    await over('f', data, { shiftKey: true });
     expect(lastGhost()).toBe(true);
-    // The operation the system asks for with Ctrl (Linux, Windows: copy), else it refuses the drop
-    expect(data.dropEffect).toBe('copy');
+    expect(data.dropEffect).toBe('move');
     expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
     // Released: the whole branch again
     await over('f', data);
     expect(lastGhost()).toBe(false);
     expect(data.dropEffect).toBe('move');
     expect(dropLine()).toBeNull();
-    await over('u', data, { ctrlKey: true });
+    await over('u', data, { shiftKey: true });
     await drop('u', data);
     expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
   });
 
-  it('moves (never copies) when the system reports the drop as a copy, without the key in the drop event', async () => {
+  it('takes the key as seen during the drag when the drop event does not report it', async () => {
     renderTree();
     const data = transfer();
     await start('a', data);
-    await over('u', data, { ctrlKey: true });
-    expect(data.dropEffect).toBe('copy');
-    // The drop event itself carries no Ctrl here: the state seen while dragging counts
+    await over('u', data, { shiftKey: true });
+    expect(data.dropEffect).toBe('move');
+    // The drop event itself carries no Shift here: the state seen while dragging counts
     await drop('u', data);
     expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
   });
 
-  it('starts alone when Ctrl is held already on grabbing the bullet', async () => {
+  it('starts alone when Shift is held already on grabbing the bullet', async () => {
     renderTree();
     const data = transfer();
-    await start('e', data, { ctrlKey: true });
+    await start('e', data, { shiftKey: true });
     expect(ghost.started).toEqual([true]);
-    await over('br', data, { ctrlKey: true });
+    await over('br', data, { shiftKey: true });
     expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
     await drop('br', data);
     expect(moves).toEqual([['e', { beforeId: 'br' }, 0, true]]);
   });
 
-  it('takes Alt (Option) instead of Ctrl on a Mac', async () => {
-    Object.defineProperty(window.navigator, 'platform', { value: 'MacIntel', configurable: true });
+  it('ignores Ctrl and Alt (Option): only Shift moves the bullet alone', async () => {
     renderTree();
     const data = transfer();
-    await start('a', data);
+    await start('a', data, { ctrlKey: true });
+    expect(ghost.started).toEqual([false]);
     await over('u', data, { ctrlKey: true });
     expect(lastGhost()).toBe(false);
     await over('u', data, { altKey: true });
-    expect(lastGhost()).toBe(true);
-    // Option means copy on macOS as well
-    expect(data.dropEffect).toBe('copy');
+    expect(lastGhost()).toBe(false);
+    expect(data.dropEffect).toBe('move');
     await drop('u', data);
-    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
+    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, false]]);
   });
 
   // jsdom: one level is 22px (DEFAULT_INDENT); the level counts from where the pointer was on grabbing
@@ -270,8 +264,8 @@ describe('dragging a bullet in the outliner', () => {
     await drop('u', data);
     expect(moves).toEqual([['a', { beforeId: 'u' }, 0, false]]);
     // Alone, Folien would get a new parent
-    await start('a', data, { ctrlKey: true });
-    await over('u', data, { ctrlKey: true });
+    await start('a', data, { shiftKey: true });
+    await over('u', data, { shiftKey: true });
     await drop('u', data);
     expect(refused).toEqual(['Bea']);
     expect(moves).toHaveLength(1);

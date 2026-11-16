@@ -21,7 +21,7 @@ Versions without a git tag were development states and were never published as a
 - **Lists suggest earlier items**; tasks filter by several hashtags.
 - **For administrators:** command line (`docker exec mindsift mindsift …`), audit log, update hint, password reset options, two-factor sign-in and passkeys, single sign-on with back-channel logout, server time zone, backups before database updates, Prometheus metrics, outgoing proxy support.
 - **AI agents (MCP):** images, moving and extracting bullets, code blocks, notes from templates; sequence diagrams, state diagrams and Git graphs from Mermaid besides flowcharts and mind maps; a `drawing_help` tool with the drawing syntax.
-- **Drag a single bullet:** hold Ctrl (Option on a Mac) while dragging to move a bullet without its sub-bullets, also onto another note in the sidebar; the preview shows it before you let go.
+- **Drag a single bullet:** hold Shift while dragging to move a bullet without its sub-bullets, also onto another note in the sidebar; the preview shows it before you let go.
 - Images, drawings and audio in notes have indent arrows, shown on hover or after tapping.
 - Images in notes can be resized by dragging their bottom right corner (the aspect ratio stays, up to the width of the note); a button at the top right brings back the default size. The size is kept when copying, in Markdown export (Obsidian's `![caption|320](…)`) and on import.
 - Quick Dump on the desktop: with your own Whisper server you can hold the + in the left rail again right away while earlier dictations are still being recognised; they are saved in the order you spoke them, a counter on the + shows how many are waiting, and one that fails keeps its recording until a reload and offers "Try again".
@@ -49,7 +49,7 @@ Versions without a git tag were development states and were never published as a
 - Administration: the long "Server & sharing" page is split into Sign-in & registration, Sharing, Server, Data and Voice input & AI, each a short page of its own.
 - The calendar subscription carries the instance name and a description ("<instance> – Tasks" in your language).
 - The version and imprint line at the bottom left of the app is gone; the imprint and "About MindSift" sit at the bottom of the help page, like in the settings.
-- Demo: about 35 more sample notes (work, projects, recipes, reading, travel, journal) linked with [[wiki links]] and sharing hashtags; only the help notes keep emoji icons.
+- Demo: about 35 more sample notes (work, projects, recipes, reading, travel) linked with [[wiki links]] and sharing hashtags, and a journal with entries for most of the last three weeks; only the help notes keep emoji icons.
 - Clicking a hashtag below the folder tree filters the tree to the notes carrying it (several hashtags: notes with all of them); a red ✕ beside "Hashtags" clears the filter, and the bar above the trash glows red while it is on. The hashtag page stays reachable through the "Hashtags" tab and hashtags in a note.
 - AI agents (MCP) are encouraged to use colour in diagrams and to structure notes with sub-headings and indented details; the MCP descriptions are much shorter, so clients that cut long descriptions off see them whole.
 
@@ -63,7 +63,6 @@ Versions without a git tag were development states and were never published as a
 - Controls in a block someone else is editing (indent arrows, code language, table + and ⋯, audio caption) stay in place, greyed out, so the layout no longer jumps.
 - Dragging a bullet inside a zoomed-in branch put it in the wrong place.
 - In diagrams drawn from Mermaid, two arrows between the same two boxes (there and back) no longer lie on top of each other.
-- Dragging a bullet with Ctrl held (Mac: Option) to move it without its children works on Linux and Windows too; the browser had refused the drop.
 - Pulling a note back into the note it was extracted from now asks first when people it is shared with link to it from their own notes, instead of silently leaving their links pointing nowhere.
 - Voice input with the browser's speech recognition (Chrome, Edge): a spoken language chosen in the account settings is passed as a full language tag (e.g. de-DE), so Chrome no longer falls back to English.
 - Opening a note no longer slows down for its backlinks in accounts with many notes, and the backlinks show at once; following a plain link no longer claims the linked bullet is gone.

@@ -11,7 +11,7 @@ import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
 import { startBranchDragGhost, type BranchDragGhost } from './branchDragImage';
 import { singleDragKey } from '../../lib/platform';
-import { BLOCK_EFFECT_ALLOWED, blockDropEffect, setBlockDragSingle } from './moveBranchEvent';
+import { setBlockDragSingle } from './moveBranchEvent';
 import type { ConflictChoice } from '../../lib/docSync/engine';
 import { templateBlocks } from '../../lib/noteTemplate';
 import { TemplateChoice, TemplatePicker } from './NoteTemplates';
@@ -190,7 +190,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const dragOverRef = useRef<{ index: number; level: number } | null>(null);
   // Where the pointer was when the drag started: moving right of it chooses a deeper level (dropLevelAt)
   const dragStartXRef = useRef<number | null>(null);
-  // Ctrl (Apple: Alt) held while dragging a bullet: it goes without its children (singleDragKey)
+  // Shift held while dragging a bullet: it goes without its children (singleDragKey)
   const dragSingleRef = useRef(false);
   const dragGhostRef = useRef<BranchDragGhost | null>(null);
 
@@ -865,7 +865,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   // Dragging a bullet by its handle (desktop): it lands in front of the row it is dropped on, by default on
   // that row's level, so it becomes its sibling; with the pointer moved right it goes deeper, up to a child of the
   // bullet above (dropLevelRange: no bullet around it changes parents). Its children keep their depth below
-  // it. Holding Ctrl (Apple: Alt) moves it alone: its children move up into its old place. The key may be
+  // it. Holding Shift moves it alone: its children move up into its old place. The key may be
   // pressed or released during the drag: dragover reports it about every 50 ms, also without moving, while
   // keyboard events often do not arrive during a drag.
   const setSingle = useCallback((single: boolean) => {
@@ -886,8 +886,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
 
   const handleDragStartBlock = useCallback((index: number, e: React.DragEvent) => {
     setDraggedIndex(index);
-    // Copy too, or the system refuses the drop with Ctrl (Mac: Alt) held; the drop moves either way
-    e.dataTransfer.effectAllowed = BLOCK_EFFECT_ALLOWED;
+    e.dataTransfer.effectAllowed = 'move';
     const single = singleDragKey(e);
     dragSingleRef.current = single;
     setBlockDragSingle(single);
@@ -933,7 +932,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     (e: React.DragEvent, index: number) => {
       e.preventDefault();
       if (draggedIndex === null) return;
-      e.dataTransfer.dropEffect = blockDropEffect(e);
+      e.dataTransfer.dropEffect = 'move';
       const single = singleDragKey(e);
       setSingle(single);
       const level = dropLevelAt(e, index, single);
