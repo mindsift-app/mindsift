@@ -107,15 +107,10 @@
     "pillNote": "Note"
   },
   "fab": {
-    "nothing": "Nothing recognized",
-    "saved": "Saved to the quick dump",
-    "savedDue": "Saved to the quick dump · Due: {{due}}",
-    "undoTitle": "Keep the text as dictated, without a due date",
     "saveFailed": "Saving failed",
-    "unsupported": "This browser does not support voice input",
-    "releaseCancel": "🗑️ Release to cancel",
     "listening": "Listening… (release to save)",
-    "dragCancel": "Drag up to cancel",
+    "slideLock": "Slide up to lock",
+    "locked": "Recording – tap to stop",
     "title": "Quick capture (+)",
     "label": "Quick capture – tap to type, press and hold to speak"
   },

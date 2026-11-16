@@ -175,6 +175,7 @@
   },
   "voice": {
     "stop": "Stop recording",
+    "cancelRecording": "Discard recording",
     "transcribing": "Transcribing…",
     "input": "Voice input",
     "failed": "Speech recognition failed",

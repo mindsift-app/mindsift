@@ -172,72 +172,96 @@ describe('HoldToRecordFab', () => {
     expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
   });
 
-  it('cancels recording when dragged up by more than 60 px and released', () => {
-    const onTap = vi.fn();
-    const onTranscript = vi.fn();
-
-    render(<HoldToRecordFab onTap={onTap} onTranscript={onTranscript} />);
-    const btn = screen.getByRole('button', {
-      name: /Schnell erfassen – tippen zum Schreiben, gedrückt halten zum Sprechen/i,
-    });
-
-    fireEvent.pointerDown(btn, { clientY: 600, button: 0 });
-    act(() => {
-      vi.advanceTimersByTime(350);
-    });
-
-    const rec = FakeSpeechRecognition.instances[0];
-    act(() => {
-      rec.emitResult('Verwerfen Test');
-    });
-
-    // Drag up by 80px (> 60px threshold)
-    fireEvent.pointerMove(btn, { clientY: 520 });
-    expect(screen.getByText(/🗑️ Zum Abbrechen loslassen/i)).toBeTruthy();
-
-    fireEvent.pointerUp(btn, { clientY: 520 });
-
-    fireEvent.click(btn);
-
-    expect(rec.aborted).toBe(true);
-    expect(onTap).not.toHaveBeenCalled();
-    expect(onTranscript).not.toHaveBeenCalled();
-  });
-
-  it('resumes normal recording if dragged above 60 px and then pulled back down before release', async () => {
+  it('locks when slid up while held: keeps recording after release, a tap stops and saves', async () => {
     const onTap = vi.fn();
     const onTranscript = vi.fn().mockResolvedValue(undefined);
-
     render(<HoldToRecordFab onTap={onTap} onTranscript={onTranscript} />);
-    const btn = screen.getByRole('button', {
-      name: /Schnell erfassen – tippen zum Schreiben, gedrückt halten zum Sprechen/i,
-    });
+    const btn = screen.getByRole('button', { name: /gedrückt halten zum Sprechen/i });
 
+    fireEvent.pointerDown(btn, { clientY: 600, button: 0, pointerType: 'touch' });
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+    const rec = FakeSpeechRecognition.instances[0];
+    expect(screen.getByTestId('dictation-lock-hint').textContent).toContain('Nach oben ziehen zum Feststellen');
+    expect(btn.getAttribute('data-dictation')).toBe('recording');
+
+    act(() => {
+      rec.emitResult('Paket zur Post bringen');
+    });
+    fireEvent.pointerMove(btn, { clientY: 520, pointerType: 'touch' });
+    expect(btn.getAttribute('data-locked')).toBe('true');
+    expect(screen.getByText('Aufnahme läuft – tippen beendet')).toBeTruthy();
+    expect(screen.queryByTestId('dictation-lock-hint')).toBeNull();
+
+    fireEvent.pointerUp(btn, { clientY: 520, pointerType: 'touch' });
+    fireEvent.click(btn);
+    expect(rec.stopped).toBe(false);
+    expect(rec.aborted).toBe(false);
+    expect(onTap).not.toHaveBeenCalled();
+
+    // A tap on the red button (now named "Aufnahme beenden") stops and saves
+    const stopBtn = screen.getByRole('button', { name: 'Aufnahme beenden' });
+    await act(async () => {
+      fireEvent.pointerDown(stopBtn, { clientY: 600, button: 0, pointerType: 'touch' });
+      fireEvent.pointerUp(stopBtn, { clientY: 600, pointerType: 'touch' });
+      fireEvent.click(stopBtn);
+    });
+    expect(rec.stopped).toBe(true);
+    expect(onTranscript).toHaveBeenCalledWith('Paket zur Post bringen');
+    expect(onTap).not.toHaveBeenCalled();
+  });
+
+  it('keeps recording and saves on release when slid up only a little', async () => {
+    const onTranscript = vi.fn().mockResolvedValue(undefined);
+    render(<HoldToRecordFab onTap={vi.fn()} onTranscript={onTranscript} />);
+    const btn = screen.getByRole('button', { name: /gedrückt halten zum Sprechen/i });
     fireEvent.pointerDown(btn, { clientY: 600, button: 0 });
     act(() => {
       vi.advanceTimersByTime(350);
     });
-
     const rec = FakeSpeechRecognition.instances[0];
     act(() => {
       rec.emitResult('Doch behalten');
     });
-
-    // Drag up into cancel zone
-    fireEvent.pointerMove(btn, { clientY: 510 });
-    expect(screen.getByText(/🗑️ Zum Abbrechen loslassen/i)).toBeTruthy();
-
-    // Drag back down below threshold
-    fireEvent.pointerMove(btn, { clientY: 580 });
-    expect(screen.getByText(/Ich höre zu… \(loslassen speichert\)/i)).toBeTruthy();
-
+    fireEvent.pointerMove(btn, { clientY: 570 });
+    expect(btn.getAttribute('data-locked')).toBeNull();
     await act(async () => {
-      fireEvent.pointerUp(btn, { clientY: 580 });
+      fireEvent.pointerUp(btn, { clientY: 570 });
       fireEvent.click(btn);
     });
-
     expect(rec.aborted).toBe(false);
     expect(onTranscript).toHaveBeenCalledWith('Doch behalten');
+  });
+
+  it('throws the recording away with the small × without asking, held or locked', () => {
+    const onTap = vi.fn();
+    const onTranscript = vi.fn();
+    render(<HoldToRecordFab onTap={onTap} onTranscript={onTranscript} />);
+    const btn = screen.getByRole('button', { name: /gedrückt halten zum Sprechen/i });
+
+    fireEvent.pointerDown(btn, { clientY: 600, button: 0 });
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+    const rec = FakeSpeechRecognition.instances[0];
+    act(() => {
+      rec.emitResult('Verwerfen Test');
+    });
+    fireEvent.pointerMove(btn, { clientY: 500 });
+    fireEvent.pointerUp(btn, { clientY: 500 });
+
+    const cancel = screen.getByRole('button', { name: 'Aufnahme verwerfen' });
+    // 44 px to tap on the phone
+    expect(cancel.className).toContain('w-11');
+    expect(cancel.className).toContain('h-11');
+    fireEvent.click(cancel);
+
+    expect(rec.aborted).toBe(true);
+    expect(onTranscript).not.toHaveBeenCalled();
+    expect(onTap).not.toHaveBeenCalled();
+    expect(btn.getAttribute('data-dictation')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Aufnahme verwerfen' })).toBeNull();
   });
 
   it('shows "Nichts erkannt" and does not save when transcript is empty', async () => {

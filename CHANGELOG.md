@@ -24,7 +24,8 @@ Versions without a git tag were development states and were never published as a
 - **Drag a single bullet:** hold Ctrl (Option on a Mac) while dragging to move a bullet without its sub-bullets, also onto another note in the sidebar; the preview shows it before you let go.
 - Images, drawings and audio in notes have indent arrows, shown on hover or after tapping.
 - Images in notes can be resized by dragging their bottom right corner (the aspect ratio stays, up to the width of the note); a button at the top right brings back the default size. The size is kept when copying, in Markdown export (Obsidian's `![caption|320](…)`) and on import.
-- Quick Dump on the desktop: with your own Whisper server you can hold the + in the left rail again right away while earlier dictations are still being recognised; they are saved in the order you spoke them, a counter on the + shows how many are waiting, and one that fails keeps its recording and offers "Try again".
+- Quick Dump on the desktop: with your own Whisper server you can hold the + in the left rail again right away while earlier dictations are still being recognised; they are saved in the order you spoke them, a counter on the + shows how many are waiting, and one that fails keeps its recording until a reload and offers "Try again".
+- Dictation on the + (desktop rail and phone) locks like in WhatsApp: slide away while holding and the recording keeps running; the red stop button finishes it, a small × discards it (Escape too on the desktop). The phone's + is free again right after a dictation, like the desktop's.
 - **Custom themes in the app:** each custom theme is a row under "Custom themes": rename it in place, change its colours with the colour picker (applied live), export it as a CSS file to share, and add a new one from the template with the + below the list.
 
 ### Changed

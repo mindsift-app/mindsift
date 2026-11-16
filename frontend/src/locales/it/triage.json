@@ -107,15 +107,10 @@
     "pillNote": "Nota"
   },
   "fab": {
-    "nothing": "Nessun audio rilevato",
-    "saved": "Salvato nel Quick Dump",
-    "savedDue": "Salvato nel Quick Dump · Scadenza: {{due}}",
-    "undoTitle": "Mantieni il testo come dettato, senza scadenza",
     "saveFailed": "Salvataggio non riuscito",
-    "unsupported": "L'inserimento vocale non è supportato da questo browser",
-    "releaseCancel": "🗑️ Rilascia per annullare",
     "listening": "Ti ascolto… (rilascia per salvare)",
-    "dragCancel": "Trascina verso l'alto per annullare",
+    "slideLock": "Scorri verso l’alto per bloccare",
+    "locked": "Registrazione in corso – tocca per terminare",
     "title": "Registrazione rapida (+)",
     "label": "Registrazione rapida – tocca per scrivere, tieni premuto per parlare"
   },

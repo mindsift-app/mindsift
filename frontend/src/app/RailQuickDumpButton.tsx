@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, Mic, Plus } from 'lucide-react';
+import { Check, Lock, Mic, Plus, Square, X } from 'lucide-react';
 import { RailItemContent } from '../components/RailItemContent';
 import { CountBadge } from '../components/CountBadge';
 import { useHoldToDictate } from '../features/capture/useHoldToDictate';
@@ -20,14 +20,16 @@ interface RailQuickDumpButtonProps {
 const pad = (n: number) => String(n).padStart(2, '0');
 
 // The Quick Dump's + in the desktop rail (app/NavRail.tsx): a click opens the window, holding it with the
-// mouse dictates straight into the inbox (features/capture/useHoldToDictate.ts). The circle shows the state:
-// microphone with a level ring while recording, a spinning ring while saving, a check mark when done. A date
+// mouse dictates straight into the inbox (features/capture/useHoldToDictate.ts). Moving the mouse away while
+// holding locks the recording: it goes on without holding, and a click on the + stops it. The circle shows
+// the state: red with a stop symbol and a level ring while recording (a small × on its corner throws the
+// recording away), a spinning ring while saving, a check mark when done. A date
 // recognised in the dictation is named in the tip afterwards, with "Rückgängig" to keep the text as spoken.
 // The + can be held again while earlier dictations are still being transcribed; a small counter on it says
 // how many are waiting, and one that failed offers "Erneut versuchen" in the tip.
 export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictated }: RailQuickDumpButtonProps) {
   const { t } = useTranslation('app');
-  const { phase, busy, pending, failed, failedError, retryFailed, discardFailed, outside, seconds, notice, saved, level, buttonRef, onPointerDown, consumeClick, undoSaved } =
+  const { phase, pending, failed, failedError, retryFailed, locked, lockProgress, seconds, notice, saved, level, buttonRef, cancelRef, onPointerDown, clickTaken, cancel, undoSaved } =
     useHoldToDictate({ onSave: onDictated });
   const ringRef = useRef<HTMLSpanElement | null>(null);
   const levelRef = useLatestRef(level);
@@ -35,7 +37,7 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
   // The ring grows with the voice (own server); without a level (browser recognition) it pulses in CSS.
   // Set on the element every frame, so React does not render 60 times a second.
   useEffect(() => {
-    if (phase !== 'recording' || outside) return;
+    if (phase !== 'recording') return;
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     let raf = 0;
     let smooth = 0;
@@ -50,23 +52,28 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
-  }, [phase, outside, levelRef]);
+  }, [phase, levelRef]);
 
   const recording = phase === 'recording';
   let circle = 'bg-panel-elevated border border-border text-main group-hover:bg-panel-hover group-hover:border-strong';
-  if (recording) circle = outside ? 'bg-panel-elevated border border-status-err text-status-err' : 'bg-status-err border border-status-err text-on-accent';
+  if (recording) circle = 'bg-status-err border border-status-err text-on-accent';
   else if (phase === 'saving') circle = 'bg-panel-elevated border border-border text-muted';
   else if (phase === 'done') circle = 'bg-status-ok border border-status-ok text-on-accent';
 
-  const icon = recording || phase === 'saving' ? <Mic className="w-[18px] h-[18px]" /> : phase === 'done' ? <Check className="w-[18px] h-[18px]" /> : <Plus className="w-[18px] h-[18px]" />;
+  let icon = <Plus className="w-[18px] h-[18px]" />;
+  if (recording) icon = <Square className="w-3.5 h-3.5 fill-current" />;
+  else if (phase === 'saving') icon = <Mic className="w-[18px] h-[18px]" />;
+  else if (phase === 'done') icon = <Check className="w-[18px] h-[18px]" />;
 
   let status: string | null = notice;
   const showFailed = !recording && failed > 0;
-  if (recording) status = outside ? t('rail.dictateCancel') : t('rail.dictateListening', { time: `${Math.floor(seconds / 60)}:${pad(seconds % 60)}` });
+  const time = `${Math.floor(seconds / 60)}:${pad(seconds % 60)}`;
+  if (recording) status = locked ? t('rail.dictateLocked', { time }) : t('rail.dictateListening', { time });
   else if (showFailed) status = t('rail.dictateFailed', { count: failed, error: failedError ?? '' });
   else if (phase === 'saving') status = t('rail.dictateSaving', { count: Math.max(pending, 1) });
   else if (phase === 'done') status = saved ? t('rail.dictateSavedDue', { due: formatDue(saved.due) }) : t('rail.dictateSaved');
   const tipButtons = showFailed || (saved && phase === 'done');
+  const cancelLabel = t('common:voice.cancelRecording');
 
   return (
     <div className="relative">
@@ -77,15 +84,15 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
         onContextMenu={(e) => {
           if (phase !== 'idle') e.preventDefault();
         }}
-        // Keyboard, screen readers and short clicks end in a click; after a hold it is ignored
+        // Keyboard, screen readers and short clicks end in a click; after a hold it is ignored, a locked
+        // recording it stops. Dictations still in the queue do not block the window.
         onClick={() => {
-          if (consumeClick()) return;
-          // Dictations still in the queue do not block the window
-          if (busy) return;
+          if (clickTaken()) return;
           onQuickDump();
         }}
         data-tour="capture"
         data-dictation={phase === 'idle' ? undefined : phase}
+        data-locked={locked || undefined}
         className="rail-item rail-plus group select-none"
       >
         <RailItemContent
@@ -93,7 +100,7 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
             <span
               className={`relative w-9 h-9 -m-2 rounded-full flex items-center justify-center shadow-xs transition-colors ${circle}`}
             >
-              {recording && !outside && (
+              {recording && (
                 <span
                   ref={ringRef}
                   aria-hidden
@@ -109,9 +116,10 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
                 />
               )}
               {icon}
-              {/* Dictations handed in and not saved yet (failed ones in the accent colour) */}
+              {/* Dictations handed in and not saved yet (failed ones in the accent colour); while recording
+                  the × sits on that corner */}
               <CountBadge
-                count={pending + failed}
+                count={recording ? 0 : pending + failed}
                 variant={failed > 0 ? 'accent' : 'muted'}
                 position="corner"
               />
@@ -123,6 +131,19 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
           expanded={expanded}
         />
       </button>
+      {/* Throws the current recording away, held or locked (like an online dot on an avatar) */}
+      {recording && (
+        <button
+          ref={cancelRef}
+          type="button"
+          onClick={cancel}
+          title={cancelLabel}
+          aria-label={cancelLabel}
+          className="absolute left-[25px] -top-0.5 w-[18px] h-[18px] rounded-full bg-status-err text-on-accent border-2 border-panel flex items-center justify-center shadow-xs cursor-pointer hover:brightness-110"
+        >
+          <X className="w-2.5 h-2.5 stroke-[3]" />
+        </button>
+      )}
       {status && (
         <span
           role="status"
@@ -131,16 +152,20 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
           // The buttons in it have to take clicks
           style={tipButtons ? { pointerEvents: 'auto' } : undefined}
         >
+          {/* Moving away locks: the lock fills in on the way and stays once locked */}
+          {recording && (
+            <Lock
+              aria-hidden
+              data-testid="dictation-lock-hint"
+              className={`w-3.5 h-3.5 shrink-0 ${locked ? 'text-status-err' : 'text-muted'}`}
+              style={locked ? undefined : { opacity: 0.4 + lockProgress * 0.6 }}
+            />
+          )}
           {status}
           {showFailed && (
-            <>
-              <button type="button" onClick={retryFailed} className="font-semibold text-accent hover:underline cursor-pointer">
-                {t('rail.dictateRetry')}
-              </button>
-              <button type="button" onClick={discardFailed} className="text-muted hover:underline cursor-pointer">
-                {t('rail.dictateDiscard', { count: failed })}
-              </button>
-            </>
+            <button type="button" onClick={retryFailed} className="font-semibold text-accent hover:underline cursor-pointer">
+              {t('rail.dictateRetry')}
+            </button>
           )}
           {!showFailed && saved && phase === 'done' && (
             <button

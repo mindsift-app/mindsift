@@ -1,8 +1,8 @@
 // Dictations waiting for their text and their save, so the next one can be recorded right away
 // (features/capture/useHoldToDictate.ts). Each recording is transcribed as soon as it is handed in, several
 // at once if they overlap, but saved strictly one after another in the order they were recorded. One that
-// fails stays in the queue with its audio or text until it is tried again or thrown away; the ones after it
-// are saved meanwhile.
+// fails stays in the queue with its audio or text until it is tried again; the ones after it are saved
+// meanwhile. Failed ones do not hold the reload for a new version and are lost with it.
 import { errorMessage } from '../../lib/errorMessage';
 import { holdReload } from '../../lib/reloadHold';
 
@@ -20,8 +20,6 @@ export interface DictationSource {
   text: () => Promise<string>;
   /** Asked instead of text() to try again; defaults to text(). */
   retry?: () => Promise<string>;
-  /** Thrown away: answers that still arrive are ignored. */
-  discard?: () => void;
 }
 
 interface Entry {
@@ -32,12 +30,11 @@ interface Entry {
   pending: Promise<string> | null;
   // Set once recognised, so a failed save is tried again without transcribing again
   text: string | null;
-  discarded: boolean;
 }
 
 export interface DictationQueueOptions<R> {
   save: (text: string) => Promise<R> | R;
-  /** The queue changed (an item was added, done, failed or thrown away). */
+  /** The queue changed (an item was added, done or failed). */
   onChange: (items: DictationItem[]) => void;
   onSaved?: (result: R, text: string) => void;
   /** A recording with nothing recognised in it (nothing is saved). */
@@ -61,7 +58,7 @@ export class DictationQueue<R = unknown> {
 
   /** Hands in a recording; its transcription starts at once. */
   add(source: DictationSource): number {
-    const entry: Entry = { id: this.nextId++, state: 'transcribing', source, pending: null, text: null, discarded: false };
+    const entry: Entry = { id: this.nextId++, state: 'transcribing', source, pending: null, text: null };
     entry.pending = this.request(source.text);
     this.entries.push(entry);
     this.changed();
@@ -88,19 +85,6 @@ export class DictationQueue<R = unknown> {
     this.entries.filter((e) => e.state === 'failed').forEach((e) => this.retry(e.id));
   }
 
-  /** Throws a failed item away for good. */
-  discard(id: number): void {
-    const entry = this.entries.find((e) => e.id === id);
-    if (!entry || entry.state !== 'failed') return;
-    entry.discarded = true;
-    entry.source.discard?.();
-    this.remove(entry);
-  }
-
-  discardFailed(): void {
-    this.entries.filter((e) => e.state === 'failed').forEach((e) => this.discard(e.id));
-  }
-
   private request(get: () => Promise<string>): Promise<string> {
     let p: Promise<string>;
     try {
@@ -118,7 +102,6 @@ export class DictationQueue<R = unknown> {
   }
 
   private async run(entry: Entry): Promise<void> {
-    if (entry.discarded) return;
     if (entry.text === null) {
       try {
         entry.text = ((await entry.pending) ?? '').trim();
@@ -126,7 +109,6 @@ export class DictationQueue<R = unknown> {
         this.fail(entry, err);
         return;
       }
-      if (entry.discarded) return;
       if (!entry.text) {
         this.remove(entry);
         this.options.onNothing?.();
@@ -157,8 +139,9 @@ export class DictationQueue<R = unknown> {
   }
 
   private changed(): void {
-    // Dictations not saved yet (failed ones too): the app does not reload for a new version meanwhile
-    holdReload(this, this.entries.length > 0);
+    // Dictations still being transcribed or saved: the app does not reload for a new version meanwhile.
+    // Failed ones wait for "Erneut versuchen" and do not hold it (a reload loses them).
+    holdReload(this, this.entries.some((e) => e.state !== 'failed'));
     this.options.onChange(this.items());
   }
 }

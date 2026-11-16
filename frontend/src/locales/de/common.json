@@ -173,6 +173,7 @@
   },
   "voice": {
     "stop": "Aufnahme beenden",
+    "cancelRecording": "Aufnahme verwerfen",
     "transcribing": "Wird erkannt…",
     "input": "Spracheingabe",
     "failed": "Spracherkennung fehlgeschlagen",
