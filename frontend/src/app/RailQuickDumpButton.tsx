@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Mic, Plus } from 'lucide-react';
 import { RailItemContent } from '../components/RailItemContent';
+import { CountBadge } from '../components/CountBadge';
 import { useHoldToDictate } from '../features/capture/useHoldToDictate';
 import { useLatestRef } from '../lib/useLatestRef';
 import { formatDue } from '../lib/due';
@@ -22,11 +23,12 @@ const pad = (n: number) => String(n).padStart(2, '0');
 // mouse dictates straight into the inbox (features/capture/useHoldToDictate.ts). The circle shows the state:
 // microphone with a level ring while recording, a spinning ring while saving, a check mark when done. A date
 // recognised in the dictation is named in the tip afterwards, with "Rückgängig" to keep the text as spoken.
+// The + can be held again while earlier dictations are still being transcribed; a small counter on it says
+// how many are waiting, and one that failed offers "Erneut versuchen" in the tip.
 export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictated }: RailQuickDumpButtonProps) {
   const { t } = useTranslation('app');
-  const { phase, outside, seconds, notice, saved, level, buttonRef, onPointerDown, consumeClick, undoSaved } = useHoldToDictate({
-    onSave: onDictated,
-  });
+  const { phase, busy, pending, failed, failedError, retryFailed, discardFailed, outside, seconds, notice, saved, level, buttonRef, onPointerDown, consumeClick, undoSaved } =
+    useHoldToDictate({ onSave: onDictated });
   const ringRef = useRef<HTMLSpanElement | null>(null);
   const levelRef = useLatestRef(level);
 
@@ -59,9 +61,12 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
   const icon = recording || phase === 'saving' ? <Mic className="w-[18px] h-[18px]" /> : phase === 'done' ? <Check className="w-[18px] h-[18px]" /> : <Plus className="w-[18px] h-[18px]" />;
 
   let status: string | null = notice;
+  const showFailed = !recording && failed > 0;
   if (recording) status = outside ? t('rail.dictateCancel') : t('rail.dictateListening', { time: `${Math.floor(seconds / 60)}:${pad(seconds % 60)}` });
-  else if (phase === 'saving') status = t('rail.dictateSaving');
+  else if (showFailed) status = t('rail.dictateFailed', { count: failed, error: failedError ?? '' });
+  else if (phase === 'saving') status = t('rail.dictateSaving', { count: Math.max(pending, 1) });
   else if (phase === 'done') status = saved ? t('rail.dictateSavedDue', { due: formatDue(saved.due) }) : t('rail.dictateSaved');
+  const tipButtons = showFailed || (saved && phase === 'done');
 
   return (
     <div className="relative">
@@ -75,7 +80,8 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
         // Keyboard, screen readers and short clicks end in a click; after a hold it is ignored
         onClick={() => {
           if (consumeClick()) return;
-          if (phase === 'recording' || phase === 'saving') return;
+          // Dictations still in the queue do not block the window
+          if (busy) return;
           onQuickDump();
         }}
         data-tour="capture"
@@ -103,6 +109,12 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
                 />
               )}
               {icon}
+              {/* Dictations handed in and not saved yet (failed ones in the accent colour) */}
+              <CountBadge
+                count={pending + failed}
+                variant={failed > 0 ? 'accent' : 'muted'}
+                position="corner"
+              />
             </span>
           }
           label={t('rail.quickDump')}
@@ -116,11 +128,21 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
           role="status"
           aria-live="polite"
           className="rail-tip rail-tip-live flex items-center gap-2"
-          // The undo button in it has to take clicks
-          style={saved ? { pointerEvents: 'auto' } : undefined}
+          // The buttons in it have to take clicks
+          style={tipButtons ? { pointerEvents: 'auto' } : undefined}
         >
           {status}
-          {saved && phase === 'done' && (
+          {showFailed && (
+            <>
+              <button type="button" onClick={retryFailed} className="font-semibold text-accent hover:underline cursor-pointer">
+                {t('rail.dictateRetry')}
+              </button>
+              <button type="button" onClick={discardFailed} className="text-muted hover:underline cursor-pointer">
+                {t('rail.dictateDiscard', { count: failed })}
+              </button>
+            </>
+          )}
+          {!showFailed && saved && phase === 'done' && (
             <button
               type="button"
               onClick={() => void undoSaved()}

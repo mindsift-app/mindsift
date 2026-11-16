@@ -272,4 +272,62 @@ describe('useVoiceInput', () => {
     expect(onText).toHaveBeenLastCalledWith('Erster Teil zweiter Teil', true);
     expect(result.current.state).toBe('idle');
   });
+
+  it('server mode with onRecorded: hands the recording on at stop, a second one starts while the first is transcribed', async () => {
+    getAuthStatus.mockResolvedValue({ voice: { mode: 'server', maxSeconds: 600 } });
+    const answers: Array<(t: string) => void> = [];
+    transcribe.mockImplementation(() => new Promise<string>((res) => answers.push(res)));
+    const onText = vi.fn();
+    const onRecorded = vi.fn();
+    const { result } = renderHook(() => useVoiceInput({ onText, continuous: true, onRecorded }));
+    await waitFor(() => expect(result.current.mode).toBe('server'));
+
+    await act(async () => {
+      await result.current.start();
+    });
+    await act(async () => {
+      await result.current.stop();
+    });
+    expect(onRecorded).toHaveBeenCalledTimes(1);
+    expect(result.current.state).toBe('idle');
+    expect(onText).not.toHaveBeenCalledWith(expect.anything(), true);
+
+    // The microphone is free again although the first text has not arrived
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(result.current.state).toBe('listening');
+    await act(async () => {
+      await result.current.stop();
+    });
+    expect(onRecorded).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(answers).toHaveLength(2));
+
+    answers[1]('Zweites Diktat');
+    answers[0]('Erstes Diktat');
+    await expect(onRecorded.mock.calls[0][0].result()).resolves.toBe('Erstes Diktat');
+    await expect(onRecorded.mock.calls[1][0].result()).resolves.toBe('Zweites Diktat');
+  });
+
+  it('server mode with onRecorded: cancel throws away only the recording in progress', async () => {
+    getAuthStatus.mockResolvedValue({ voice: { mode: 'server', maxSeconds: 600 } });
+    transcribe.mockResolvedValue('Erstes Diktat');
+    const onRecorded = vi.fn();
+    const { result } = renderHook(() => useVoiceInput({ onText: vi.fn(), continuous: true, onRecorded }));
+    await waitFor(() => expect(result.current.mode).toBe('server'));
+
+    await act(async () => {
+      await result.current.start();
+    });
+    await act(async () => {
+      await result.current.stop();
+    });
+    await act(async () => {
+      await result.current.start();
+    });
+    act(() => result.current.cancel());
+    expect(onRecorded).toHaveBeenCalledTimes(1);
+    await expect(onRecorded.mock.calls[0][0].result()).resolves.toBe('Erstes Diktat');
+    expect(transcribe).toHaveBeenCalledTimes(1);
+  });
 });

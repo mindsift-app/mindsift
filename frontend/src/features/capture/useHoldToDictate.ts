@@ -1,10 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import i18n from '../../i18n';
 import { useVoiceInput } from '../../lib/useVoiceInput';
+import { useLatestRef } from '../../lib/useLatestRef';
 import { showError } from '../../components/ErrorNotice';
 import type { DictationOutcome } from './captureDictation';
+import { DictationQueue, type DictationItem } from './dictationQueue';
 
+/** recording: the button is held; saving: earlier dictations are being transcribed or saved (the + can be
+ *  held again meanwhile), or the browser's recognition is finishing; done: the last one was saved. */
 export type DictationPhase = 'idle' | 'recording' | 'saving' | 'done';
+// What the microphone does: stopping = released, the browser's recognition is still sending its last words
+type MicPhase = 'idle' | 'recording' | 'stopping';
 
 interface HoldToDictateOptions {
   /**
@@ -27,9 +33,15 @@ const NOTICE_MS = 2000;
  * (features/capture/HoldToRecordFab.tsx): recording starts after a moment, releasing on the button saves,
  * releasing beside it or Escape throws the recording away. A short click stays a click (consumeClick()
  * says whether the browser's click after a hold has to be ignored). Touch and keyboard only click.
+ *
+ * Released dictations go into a queue (dictationQueue.ts): with the own Whisper server the button can be
+ * held again while earlier ones are still being transcribed; they are saved in the order they were spoken.
+ * One that fails waits with its audio until it is tried again (retryFailed) or thrown away (discardFailed).
  */
 export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
-  const [phase, setPhaseState] = useState<DictationPhase>('idle');
+  const [mic, setMicState] = useState<MicPhase>('idle');
+  const [items, setItems] = useState<DictationItem[]>([]);
+  const [done, setDone] = useState(false);
   const [outside, setOutsideState] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
@@ -37,7 +49,7 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
   const [saved, setSaved] = useState<DictationOutcome | null>(null);
 
   const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const phaseRef = useRef<DictationPhase>('idle');
+  const phaseRef = useRef<MicPhase>('idle');
   const outsideRef = useRef(false);
   const pressedRef = useRef(false);
   const suppressClickRef = useRef(false);
@@ -50,9 +62,9 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
   const tickTimerRef = useRef<number | null>(null);
   const detachRef = useRef<(() => void) | null>(null);
 
-  const setPhase = (next: DictationPhase) => {
+  const setPhase = (next: MicPhase) => {
     phaseRef.current = next;
-    setPhaseState(next);
+    setMicState(next);
     if (next !== 'recording' && tickTimerRef.current !== null) {
       window.clearInterval(tickTimerRef.current);
       tickTimerRef.current = null;
@@ -80,31 +92,41 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
     detachRef.current = null;
   };
 
-  const finalize = async (text: string) => {
+  const onSaveRef = useLatestRef(onSave);
+  // One queue for the button's lifetime, made at the first dictation (only event handlers use it)
+  const queueRef = useRef<DictationQueue<DictationOutcome | void> | null>(null);
+  const queue = () =>
+    (queueRef.current ??= new DictationQueue<DictationOutcome | void>({
+      save: (text) => onSaveRef.current(text),
+      onChange: setItems,
+      onSaved: (outcome) => {
+        const withDate = outcome && outcome.due ? outcome : null;
+        clearTimer(doneTimerRef);
+        setSaved(withDate);
+        setDone(true);
+        doneTimerRef.current = window.setTimeout(() => {
+          doneTimerRef.current = null;
+          setSaved(null);
+          setDone(false);
+        }, withDate ? UNDO_MS : DONE_MS);
+      },
+      onNothing: () => flashNotice(i18n.t('app:rail.dictateNothing')),
+      onFailed: (message) => showError(message),
+      fallbackMessage: () => i18n.t('triage:fab.saveFailed'),
+    }));
+
+  // The browser's recognition delivers the text itself: it joins the queue, so saves keep their order
+  const finalize = (text: string) => {
     if (finalizedRef.current) return;
     finalizedRef.current = true;
     clearTimer(stopTimerRef);
+    if (phaseRef.current !== 'recording') setPhase('idle');
     const trimmed = text.trim();
     if (!trimmed) {
-      setPhase('idle');
       flashNotice(i18n.t('app:rail.dictateNothing'));
       return;
     }
-    setPhase('saving');
-    try {
-      const outcome = await onSave(trimmed);
-      const withDate = outcome && outcome.due ? outcome : null;
-      setSaved(withDate);
-      setPhase('done');
-      doneTimerRef.current = window.setTimeout(() => {
-        doneTimerRef.current = null;
-        setSaved(null);
-        setPhase('idle');
-      }, withDate ? UNDO_MS : DONE_MS);
-    } catch {
-      setPhase('idle');
-      showError(i18n.t('triage:fab.saveFailed'));
-    }
+    queue().add({ text: () => Promise.resolve(trimmed) });
   };
 
   // Same settings as the phone's hold: own Whisper server in chunks, or the browser's recognition
@@ -112,12 +134,20 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
     continuous: true,
     onText: (text, final) => {
       transcriptRef.current = text;
-      if (final) void finalize(text);
+      if (final) finalize(text);
+    },
+    // Own server: the recording is handed on while it is still being transcribed, the + is free at once
+    onRecorded: (transcription) => {
+      finalizedRef.current = true;
+      clearTimer(stopTimerRef);
+      if (phaseRef.current === 'recording') setOutside(false);
+      setPhase('idle');
+      queue().add({ text: () => transcription.result(), retry: () => transcription.retry(), discard: () => transcription.discard() });
     },
     onError: (message) => {
       clearTimer(stopTimerRef);
       finalizedRef.current = true;
-      if (phaseRef.current === 'recording' || phaseRef.current === 'saving') setPhase('idle');
+      if (phaseRef.current !== 'idle') setPhase('idle');
       setOutside(false);
       showError(message);
     },
@@ -159,6 +189,7 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
     clearTimer(noticeTimerRef);
     setNotice(null);
     setSaved(null);
+    setDone(false);
     const startedAt = Date.now();
     setSeconds(0);
     setPhase('recording');
@@ -180,12 +211,12 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
       return;
     }
     setOutside(false);
-    setPhase('saving');
+    setPhase('stopping');
     if (voice.mode !== 'server') {
       stopTimerRef.current = window.setTimeout(() => {
         stopTimerRef.current = null;
         voice.cancel();
-        void finalize(transcriptRef.current);
+        finalize(transcriptRef.current);
       }, STOP_TIMEOUT_MS);
     }
     void voice.stop();
@@ -194,7 +225,8 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.pointerType === 'touch') return;
     if (e.button !== 0) return;
-    if (phaseRef.current === 'recording' || phaseRef.current === 'saving') return;
+    // Earlier dictations still in the queue do not block the next one
+    if (phaseRef.current !== 'idle') return;
     detach();
     clearTimer(holdTimerRef);
     pressedRef.current = true;
@@ -254,7 +286,7 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
     if (!current) return;
     clearTimer(doneTimerRef);
     setSaved(null);
-    setPhase('idle');
+    setDone(false);
     try {
       await current.undo();
     } catch {
@@ -262,5 +294,31 @@ export function useHoldToDictate({ onSave }: HoldToDictateOptions) {
     }
   };
 
-  return { phase, outside, seconds, notice, saved, level: voice.level, buttonRef, onPointerDown, consumeClick, undoSaved };
+  const failed = items.filter((i) => i.state === 'failed');
+  const pending = items.length - failed.length;
+  let phase: DictationPhase = 'idle';
+  if (mic === 'recording') phase = 'recording';
+  else if (mic === 'stopping' || (pending > 0 && !saved)) phase = 'saving';
+  else if (done) phase = 'done';
+
+  return {
+    phase,
+    // The microphone is in use (held, or the browser's recognition is finishing): a click opens nothing
+    busy: mic !== 'idle',
+    // Dictations handed in and not saved yet, and the ones of them that failed (with the last reason)
+    pending,
+    failed: failed.length,
+    failedError: failed.length ? failed[failed.length - 1].error ?? null : null,
+    retryFailed: () => queue().retryFailed(),
+    discardFailed: () => queue().discardFailed(),
+    outside,
+    seconds,
+    notice,
+    saved,
+    level: voice.level,
+    buttonRef,
+    onPointerDown,
+    consumeClick,
+    undoSaved,
+  };
 }
