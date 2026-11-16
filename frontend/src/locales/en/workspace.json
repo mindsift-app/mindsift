@@ -630,6 +630,7 @@
         "forbidden": "You have no access to draw along.",
         "locked": "Someone else is editing the drawing right now – drawing together works once it is free.",
         "limit": "The drawing is too large for the live session. Please remove something, above all freehand strokes.",
+        "limit_live": "The drawing is too large for the live session. Your latest changes stay here; remove something, above all freehand strokes, and they will be sent.",
         "too_many": "You are already drawing live in too many drawings. Close one of them, then open this one again.",
         "busy": "Too many live drawings are running on the server right now. Please open it again later.",
         "busy_live": "The server is not taking more changes to live drawings right now. Your changes stay here and are sent as soon as there is room again.",

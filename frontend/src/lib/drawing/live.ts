@@ -108,6 +108,10 @@ export class LiveMerge {
   private resendTombs = new Set<string>();
   private lastOrder: string[];
   private lastGrid: boolean;
+  // An order or grid of this browser the server has not confirmed yet (no DRAW_ACK since): the session's
+  // full state does not overwrite it (a refused change, or one made while the connection was gone)
+  private ownOrder = false;
+  private ownGrid = false;
 
   /** start: the drawing as the block holds it (its versions count as known, nonce 0) */
   constructor(start: Drawing) {
@@ -149,13 +153,23 @@ export class LiveMerge {
     const cur = doc.els.map((el) => el.id);
     const before = new Set(this.lastOrder);
     const expected = [...this.lastOrder.filter((id) => present.has(id)), ...cur.filter((id) => !before.has(id))];
-    if (!sameIds(cur, expected)) out.order = cur;
+    if (!sameIds(cur, expected)) {
+      out.order = cur;
+      this.ownOrder = true;
+    }
     this.lastOrder = cur;
     if (!!doc.grid !== this.lastGrid) {
       this.lastGrid = !!doc.grid;
       out.grid = this.lastGrid;
+      this.ownGrid = true;
     }
     return out;
+  }
+
+  /** The server took what this browser sent (DRAW_ACK): its order and grid are the session's now */
+  acked() {
+    this.ownOrder = false;
+    this.ownGrid = false;
   }
 
   private baseVer(id: string): number {
@@ -210,13 +224,15 @@ export class LiveMerge {
     return { doc: patchDrawing(doc, applied), applied };
   }
 
-  /** A new order of the elements from someone else */
+  /** A new order of the elements from someone else (newer than an own one) */
   receiveOrder(doc: Drawing, order: string[]): Drawing {
+    this.ownOrder = false;
     this.lastOrder = orderIds(this.lastOrder, order);
     return applyOrder(doc, order);
   }
 
   receiveGrid(doc: Drawing, grid: boolean): Drawing {
+    this.ownGrid = false;
     this.lastGrid = grid;
     if (!!doc.grid === grid) return doc;
     const next: Drawing = { ...doc };
@@ -240,8 +256,22 @@ export class LiveMerge {
   reconcile(doc: Drawing, state: { els: WireElement[]; order?: string[]; grid?: boolean }, held: Set<string> = new Set()): Incoming {
     const incoming = this.receive(doc, state.els, held);
     let next = incoming.doc;
-    if (state.order) next = this.receiveOrder(next, state.order);
-    if (typeof state.grid === 'boolean') next = this.receiveGrid(next, state.grid);
+    // An own order or grid the server has not confirmed stays; the session's is what it knows, so the
+    // next collect() sends the own one again when they differ
+    if (state.order) {
+      if (!this.ownOrder) next = this.receiveOrder(next, state.order);
+      else {
+        this.lastOrder = orderIds(this.lastOrder, state.order);
+        if (sameIds(next.els.map((el) => el.id), this.lastOrder)) this.ownOrder = false;
+      }
+    }
+    if (typeof state.grid === 'boolean') {
+      if (!this.ownGrid) next = this.receiveGrid(next, state.grid);
+      else {
+        this.lastGrid = state.grid;
+        if (!!next.grid === state.grid) this.ownGrid = false;
+      }
+    }
     const there = new Map(state.els.filter((w) => w && typeof w.id === 'string').map((w) => [w.id, metaOf(w)]));
     this.known.forEach((k, id) => {
       const s = there.get(id);

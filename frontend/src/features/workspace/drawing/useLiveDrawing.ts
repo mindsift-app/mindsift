@@ -30,8 +30,9 @@ export interface LiveCursor extends LivePerson {
 export type LiveStatus = 'connecting' | 'live' | 'offline' | 'idle';
 export type LiveEndReason = 'done' | 'discard' | 'expired';
 // busy and too_many: the server takes no further live drawing (from this person, or at all) right now;
-// busy_live: in the session, the server takes no more changes for now (all sessions together are full)
-export type LiveError = 'forbidden' | 'locked' | 'limit' | 'busy' | 'busy_live' | 'too_many' | 'save' | null;
+// busy_live: in the session (or joining it again), the server takes no more changes for now (all sessions
+// together are full); limit_live: in the session, this drawing has grown too big for it. Both keep the changes.
+export type LiveError = 'forbidden' | 'locked' | 'limit' | 'limit_live' | 'busy' | 'busy_live' | 'too_many' | 'save' | null;
 /** Refusals before being in a session (the editor that started it goes back to drawing alone) */
 export type LiveRefusal = 'forbidden' | 'locked' | 'limit' | 'busy' | 'too_many';
 
@@ -284,14 +285,15 @@ export function useLiveDrawing(opts: LiveOptions | null) {
   // The server took the changes again (or had them): the hint goes
   const takenAgain = () => {
     retrying.current = false;
+    merge?.acked();
     setUnsent(false);
-    setError((e) => (e === 'busy_live' || e === 'limit' ? null : e));
+    setError((e) => (e === 'busy_live' || e === 'limit_live' ? null : e));
   };
 
   // A change refused in the session: the drawing keeps it; after a while the whole state of the session
   // comes again, and what it lacks goes out with the next flush (LiveMerge.reconcile)
   const refused = (code: 'busy' | 'limit') => {
-    setError(code === 'busy' ? 'busy_live' : 'limit');
+    setError(code === 'busy' ? 'busy_live' : 'limit_live');
     setUnsent(true);
     retrying.current = false;
     if (refusedTimer.current === null) refusedTimer.current = window.setTimeout(refusedRetry, REFUSED_RETRY_MS);
@@ -301,6 +303,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     refusedTimer.current = null;
     if (!unsentRef.current || left.current || endedRef.current) return;
     if (statusRef.current === 'live' && isWebSocketConnected()) send('DRAW_SYNC');
+    else if (isWebSocketConnected() && modeRef.current === 'draw') join(); // joining again was refused
     else refusedTimer.current = window.setTimeout(refusedRetry, REFUSED_RETRY_MS);
   };
 
@@ -349,6 +352,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
         }
         case 'DRAW_ACK': {
           if (unsentRef.current && retrying.current) takenAgain();
+          else if (!unsentRef.current) merge.acked();
           const seq = Number(p.seq) || 0;
           if (seq > lastSeq.current + 1) resync();
           lastSeq.current = Math.max(lastSeq.current, seq);
@@ -415,8 +419,9 @@ export function useLiveDrawing(opts: LiveOptions | null) {
             case 'limit':
             case 'busy':
             case 'too_many':
-              // A change refused in the session: kept here, sent again later
-              if ((p.code === 'busy' || p.code === 'limit') && joinedRef.current && statusRef.current === 'live') {
+              // A change refused in the session, or joining it again after a lost connection: kept here,
+              // sent again later (drawing goes on meanwhile)
+              if ((p.code === 'busy' || p.code === 'limit') && joinedRef.current && modeRef.current === 'draw') {
                 refused(p.code);
                 break;
               }

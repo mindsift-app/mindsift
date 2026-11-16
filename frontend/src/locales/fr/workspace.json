@@ -630,6 +630,7 @@
         "forbidden": "Tu n’as pas l’accès pour dessiner.",
         "locked": "Quelqu’un d’autre modifie le dessin en ce moment – dessiner ensemble sera possible une fois qu’il sera libre.",
         "limit": "Le dessin est trop grand pour la session en direct. Retire quelque chose, surtout des traits à main levée.",
+        "limit_live": "Le dessin est trop grand pour la session en direct. Tes dernières modifications restent ici ; retire quelque chose, surtout des traits à main levée, et elles seront envoyées.",
         "too_many": "Tu dessines déjà en direct dans trop de dessins. Ferme-en un, puis rouvre celui-ci.",
         "busy": "Trop de dessins en direct sont en cours sur le serveur. Rouvre-le plus tard.",
         "busy_live": "Le serveur n'accepte plus de modifications de dessins en direct pour le moment. Tes modifications restent ici et seront envoyées dès qu'il y aura de nouveau de la place.",

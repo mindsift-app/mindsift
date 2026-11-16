@@ -8,6 +8,7 @@ type SentMessage = { event: string; payload: { els?: { id: string }[] } & Record
 const realtime = vi.hoisted(() => ({
   listeners: [] as ((msg: WSMessage) => void)[],
   sent: [] as SentMessage[],
+  status: null as ((connected: boolean, transport: string) => void) | null,
 }));
 vi.mock('../../../lib/api', async (importOriginal) => {
   const orig = await importOriginal<typeof import('../../../lib/api')>();
@@ -23,6 +24,7 @@ vi.mock('../../../lib/api', async (importOriginal) => {
       };
     },
     onRealtimeStatus: (cb: (connected: boolean, transport: string) => void) => {
+      realtime.status = cb;
       cb(true, 'ws');
       return () => {};
     },
@@ -140,6 +142,43 @@ describe('useLiveDrawing', () => {
     emit('DRAW_ACK', { seq: 1 });
     expect(hook.result.current!.error).toBeNull();
     expect(hook.result.current!.unsent).toBe(false);
+  });
+
+  it('a drawing grown too big for the session keeps its changes with its own hint', () => {
+    const { hook, draw } = setup();
+    draw(rect('n1', 50));
+    act(() => vi.advanceTimersByTime(60));
+    emit('DRAW_ERROR', { code: 'limit' });
+    expect(hook.result.current!.error).toBe('limit_live');
+    expect(hook.result.current!.unsent).toBe(true);
+  });
+
+  it('joining again after a lost connection refused as busy: drawing goes on, joining is tried again', () => {
+    const { hook, draw } = setup();
+    const joins = () => realtime.sent.filter((m) => m.event === 'DRAW_JOIN').length;
+    act(() => realtime.status!(false, 'ws'));
+    expect(hook.result.current!.status).toBe('offline');
+    draw(rect('n1', 50));
+    act(() => realtime.status!(true, 'ws'));
+    const afterReconnect = joins();
+    // The server is full: the browser keeps drawing (no "busy" that would make it read-only)
+    emit('DRAW_ERROR', { code: 'busy' });
+    expect(hook.result.current!.error).toBe('busy_live');
+    expect(hook.result.current!.unsent).toBe(true);
+    act(() => vi.advanceTimersByTime(5000));
+    expect(joins()).toBe(afterReconnect + 1);
+    // In again: the hint goes once the server has taken the changes
+    emit('DRAW_STATE', {
+      ...people,
+      you: 'c_ben',
+      els: [{ ...rect('a'), nonce: 0 }, { ...rect('n1', 50), nonce: 1 }],
+      order: ['a', 'n1'],
+      seq: 0,
+    });
+    expect(hook.result.current!.status).toBe('live');
+    act(() => vi.advanceTimersByTime(60));
+    emit('DRAW_ACK', { seq: 1 });
+    expect(hook.result.current!.error).toBeNull();
   });
 
   it('refused again: tries again later, and the host saves its refused changes with the final state', () => {
