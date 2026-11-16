@@ -6,7 +6,8 @@ var messagesFR = map[string]string{
 	"Kalender-Abo nicht gefunden":                        "Abonnement au calendrier introuvable",
 	"Kalender-Abos sind auf diesem Server ausgeschaltet": "Les abonnements au calendrier sont désactivés sur ce serveur",
 	"Liste: {name}":       "Liste : {name}",
-	"MindSift – Aufgaben": "MindSift – Tâches",
+	"{name} – Aufgaben": "{name} – Tâches",
+	"Offene Aufgaben mit Fälligkeitsdatum aus {name}": "Tâches ouvertes avec une échéance de {name}",
 
 	// MCP: note structure tools
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "Le serveur traite d'autres requêtes volumineuses (images) ; réessayez dans quelques secondes",
