@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SystemSettings } from '../../../lib/types';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { formatDateTime } from '../../../lib/format';
-import { browserTimeZone, serverWallClock, timeZoneLabel, timeZoneList } from '../../../lib/timeZones';
+import { serverWallClock, timeZoneLabel, timeZoneList } from '../../../lib/timeZones';
 
 // How often the shown server time moves on between loads
 const TICK_MS = 15_000;
@@ -45,7 +45,6 @@ export function TimeZoneSetting({
   }, []);
   const wall = st ? serverWallClock(st.now, Math.max(0, now - loadedAt)) : null;
 
-  const browser = browserTimeZone();
   return (
     <div className="p-4 flex flex-wrap items-center justify-between gap-4" data-admin-time-zone>
       <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
@@ -64,11 +63,6 @@ export function TimeZoneSetting({
           <p className={`text-[11px] mt-0.5 ${st.source === 'default' ? 'text-status-warn' : 'text-muted'}`}>
             {t(`timeZone.source.${st.source}`)}
           </p>
-        )}
-        {browser && browser !== st?.zone && (
-          <button type="button" onClick={() => onSave({ timeZone: browser })} className="btn-action h-11 sm:h-8 px-3 text-xs mt-2">
-            {t('timeZone.useBrowser', { zone: timeZoneLabel(browser) })}
-          </button>
         )}
       </div>
       {/* "Not set" is the first option: the server then follows TZ, or UTC */}

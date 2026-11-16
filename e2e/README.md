@@ -32,7 +32,7 @@ The owner shares a note through the share dialog with the role "edit"; checked i
 
 ## table.e2e.mjs
 
-Tables in notes (desktop in Chromium and Firefox, the phone in Chromium): `/table` makes a 2 × 2 table with the bullet's text in the first cell (header bold), Tab and Shift+Tab move between cells, Enter adds a row below, the + adds a column, the ⋯ menu sets the line mode with the cursor staying in its cell, Backspace deletes an empty row, the arrow keys leave the table and come back into its last cell; the server holds the Markdown table and the line mode, and both are there after reloading. On a phone: the + is visible and 44 px, cells are 44 px high and take the cursor when tapped, a wide table scrolls sideways while the page does not. Copying tables (top level and nested) is part of `copy.e2e.mjs`.
+Tables in notes (desktop in Chromium and Firefox, the phone in Chromium): `/table` makes a 2 × 2 table with the bullet's text in the first cell (header bold), Tab and Shift+Tab move between cells, Enter goes into the still empty first row and later adds a row below, the + adds a column, the ⋯ menu sets the line mode with the cursor staying in its cell, Backspace deletes an empty row, the arrow keys leave the table and come back into its last cell; the server holds the Markdown table and the line mode, and both are there after reloading. On a phone: the + is visible and 44 px, cells are 44 px high and take the cursor when tapped, a wide table scrolls sideways while the page does not. Copying tables (top level and nested) is part of `copy.e2e.mjs`.
 
 ## templates.e2e.mjs
 

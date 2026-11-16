@@ -71,7 +71,8 @@ const mcpDrawingHelp = "type drawing: text is either a Mermaid diagram, laid out
 	"colours via style A fill:#9f9 or classDef ok fill:green + class A ok; or a mindmap (one node per line, children indented, first line the root) — " +
 	"or a MindSift drawing model as JSON {\"v\":1,\"els\":[…]}: shapes {\"id\",\"t\":\"rect|ellipse|diamond\",\"x\",\"y\",\"w\",\"h\",\"txt\",\"s\":stroke,\"f\":fill or \"none\",\"sw\":2,\"r\":true for round corners}, " +
 	"text {\"id\",\"t\":\"text\",\"x\",\"y\",\"txt\",\"s\"}, arrows {\"id\",\"t\":\"arrow\",\"from\":shapeId,\"to\":shapeId,\"a\":[x,y],\"b\":[x,y],\"route\":\"straight|curve|elbow\",\"head\":0 none|1 start|2 end|3 both,\"txt\":label,\"s\",\"sw\":2}; " +
-	"colours are main, muted, accent, red, orange, green, blue, purple (they follow the user's theme). Prefer Mermaid."
+	"colours are main, muted, accent, red, orange, green, blue, purple (they follow the user's theme). Prefer Mermaid. " +
+	"Use colour: give start and end, decisions, warnings and groups of related boxes their own fill (style or classDef), it makes a diagram much easier to scan than all boxes alike."
 
 // noteDoc loads the live block tree of a note
 func (s *Server) noteDoc(docID string) (*collab.Doc, error) {
@@ -277,6 +278,7 @@ var mcpWriteTools = []mcpTool{
 		Description: "Add a bullet to a note: after a bullet (same level), as the last child of a bullet, or at the end. " +
 			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, table, code, divider, drawing. " +
 			"[[Note title]] links another note (with |text for an own link text); it keeps working when that note is renamed. " +
+			"All bullets have the same line spacing, so a heading right after text looks cramped: before adding a heading (h1–h3) below other bullets, add an empty text bullet above it to set the section apart. A recommendation, not a rule: leave it out where it does not fit. " +
 			"type table: text is a Markdown table (header row, separator row | --- |, rows; a | inside a cell written \\|; | :---: | centers a column, | ---: | aligns it right). " + mcpCodeHelp + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId"}, map[string]any{

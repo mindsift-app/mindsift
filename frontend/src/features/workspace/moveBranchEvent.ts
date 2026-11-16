@@ -11,6 +11,8 @@ export interface MoveBranchDetail {
   // Empty when dropped onto the "new note" button: the branch becomes a note of its own
   targetId: string;
   targetTitle: string;
+  // Ctrl (Mac: Option) held at the drop: only the bullet moves, its children stay and move up into its place
+  single?: boolean;
 }
 
 export function announceMoveBranch(detail: MoveBranchDetail) {

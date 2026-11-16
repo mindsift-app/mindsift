@@ -138,7 +138,8 @@
   "block": {
     "expand": "Desplegar subpuntos (Ctrl+clic: todos los niveles)",
     "collapse": "Plegar subpuntos (Ctrl+clic: todos los niveles)",
-    "dragZoom": "Arrastra para mover • clic: zoom a la rama (modo de enfoque)",
+    "dragZoom": "Arrastra para mover (con {{key}}: sin subpuntos) • clic: zoom a la rama (modo de enfoque)",
+    "ctrlKey": "Ctrl",
     "clickZoom": "Clic: zoom a esta rama (modo de enfoque)",
     "markOpen": "Marcar como pendiente",
     "markDone": "Marcar como completada",

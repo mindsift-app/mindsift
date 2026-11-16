@@ -5,21 +5,40 @@ import { mediaBlob, mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { loadVoiceConfig } from '../../lib/voice';
 import { useTranslation } from 'react-i18next';
 import { errorMessage } from '../../lib/errorMessage';
+import { IndentArrows, OVERLAY_ARROW_BUTTON } from './IndentArrows';
 
 interface AudioBlockProps {
   content: string;
   canEdit: boolean;
   onCaptionChange: (caption: string) => void;
+  /** Moves the bullet (no text field here to press Tab in) */
+  onIndent?: () => void;
+  onOutdent?: () => void;
+  canIndent?: boolean;
+  canOutdent?: boolean;
+  /** Someone else holds the bullet: arrows and transcribe greyed out, caption read only (canEdit is false then) */
+  locked?: boolean;
 }
 
 // Audio block: player plus caption. With the own Whisper server the recording can be turned into text,
 // which becomes the caption (and so searchable).
-export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCaptionChange }) => {
+export const AudioBlock: React.FC<AudioBlockProps> = ({
+  content,
+  canEdit,
+  onCaptionChange,
+  onIndent,
+  onOutdent,
+  canIndent = false,
+  canOutdent = false,
+  locked = false,
+}) => {
   const { t } = useTranslation('workspace');
   const ref = parseMediaContent(content);
   const mediaId = ref?.id;
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  // Editable, or held by someone else: the controls stay in place (greyed out) so the layout does not jump
+  const editable = canEdit || locked;
   const [caption, setCaption] = useState(ref?.caption || '');
   const [canTranscribe, setCanTranscribe] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -92,19 +111,37 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
   };
 
   return (
-    <div className="my-1 space-y-1">
+    <div className="group/audio my-1 space-y-1">
       {failed ? (
         <div className="flex items-center gap-2 h-12 px-4 rounded-full border border-border bg-panel text-xs text-muted">
           <FileHeadphone className="w-4 h-4" /> {t('media.audioUnavailable')}
         </div>
       ) : src ? (
         <div className="flex items-center gap-2">
+          {editable && (onIndent || onOutdent) && (
+            // Left of the player, like the code block's; on devices that can hover only while the pointer is
+            // over the block (phones always show them)
+            <div
+              className={`flex items-center shrink-0 transition-opacity ${
+                locked ? '' : '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/audio:opacity-100 focus-within:opacity-100'
+              }`}
+            >
+              <IndentArrows
+                onIndent={onIndent}
+                onOutdent={onOutdent}
+                canIndent={canIndent}
+                canOutdent={canOutdent}
+                locked={locked}
+                buttonClassName={OVERLAY_ARROW_BUTTON}
+              />
+            </div>
+          )}
           <audio ref={audioRef} controls preload="metadata" src={src} onLoadedMetadata={fixDuration} className="w-full max-w-md h-11" />
-          {canEdit && canTranscribe && (
+          {editable && canTranscribe && (
             <button
               type="button"
               onClick={() => void transcribe()}
-              disabled={transcribing}
+              disabled={transcribing || locked}
               title={t('media.transcribeTitle')}
               className="btn-secondary rounded-full! h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40"
             >
@@ -119,20 +156,28 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
         </div>
       )}
 
-      {canEdit ? (
+      {editable ? (
         <input
           type="text"
           value={caption}
+          readOnly={locked}
+          aria-label={t('media.caption')}
           onChange={(e) => setCaption(e.target.value)}
-          onBlur={() => commitCaption(caption)}
+          onBlur={() => {
+            if (!locked) commitCaption(caption);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
               (e.target as HTMLInputElement).blur();
             }
           }}
-          placeholder={t('media.caption')}
-          className="w-full bg-transparent border-0 p-0 text-xs text-muted placeholder-faint focus:outline-hidden focus:ring-0"
+          placeholder={locked ? '' : t('media.caption')}
+          // An empty caption only shows while the pointer is over the block (phones always show it); its line
+          // stays, so nothing below moves
+          className={`w-full bg-transparent border-0 p-0 text-xs text-muted placeholder-faint focus:outline-hidden focus:ring-0 transition-opacity ${
+            caption ? '' : '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/audio:opacity-100 focus:opacity-100'
+          }`}
         />
       ) : (
         ref.caption && <p className="text-xs text-muted">{ref.caption}</p>

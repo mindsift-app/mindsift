@@ -52,4 +52,15 @@ describe('TableBlock Enter', () => {
     fireEvent.keyDown(cells[0], { key: 'Enter' });
     expect(exit).not.toHaveBeenCalled();
   });
+
+  it('goes from the header into the empty first row of a new table instead of adding one, and leaves from there', () => {
+    const exit = vi.fn();
+    const { cells, changes } = renderTable('| Zutat | Menge |\n| --- | --- |\n|  |  |', exit);
+    fireEvent.keyDown(cells[1], { key: 'Enter' });
+    expect(changes).toHaveLength(0);
+    expect(document.activeElement).toBe(cells[2]);
+    expect(exit).not.toHaveBeenCalled();
+    fireEvent.keyDown(cells[2], { key: 'Enter' });
+    expect(exit).toHaveBeenCalledTimes(1);
+  });
 });

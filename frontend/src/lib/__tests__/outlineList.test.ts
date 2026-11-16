@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { branchEnd, canDropBefore, dropLevelBefore, insertBelow, listLabel, moveBranch, moveSibling, numberedLabels, outlineRows, sameOutlineShape, unitStart } from '../outlineList';
+import { branchEnd, canDropBefore, dropLevelRange, insertBelow, listLabel, moveBranch, moveSibling, numberedLabels, outlineRows, sameOutlineShape, unitStart } from '../outlineList';
 import type { DocumentBlock } from '../types';
 
 const blk = (id: string, level: number, type: DocumentBlock['type'] = 'numbered'): DocumentBlock => ({
@@ -117,7 +117,7 @@ describe('dragging a bullet (moveBranch)', () => {
   const shape = (list: DocumentBlock[]) => list.map((b) => `${b.id}:${b.level}`).join(' ');
   // Like the outliner: in front of a row, on that row's level
   const dropBefore = (id: string, target: string, single = false) =>
-    moveBranch(tree, id, { beforeId: target }, dropLevelBefore(tree, at(id), at(target), single), single);
+    moveBranch(tree, id, { beforeId: target }, dropLevelRange(tree, at(id), at(target), single)!.min, single);
 
   it('takes the level of the bullet it is dropped in front of and keeps the children below it', () => {
     expect(shape(dropBefore('Arbeit', 'Brot'))).toBe(
@@ -158,8 +158,8 @@ describe('dragging a bullet (moveBranch)', () => {
   });
 
   it('dropped alone in front of its own child, it takes the level that child has once the children moved up', () => {
-    expect(dropLevelBefore(tree, at('Arbeit'), at('Folien'), true)).toBe(0);
-    expect(dropLevelBefore(tree, at('Arbeit'), at('Folien'))).toBe(1);
+    expect(dropLevelRange(tree, at('Arbeit'), at('Folien'), true)?.min).toBe(0);
+    expect(dropLevelRange(tree, at('Arbeit'), at('Folien'))).toBeNull();
     expect(shape(dropBefore('Arbeit', 'Folien', true))).toBe(
       'Einkaufen:0 Milch:1 Brot:1 Vollkorn:2 Bericht:0 Arbeit:0 Folien:0 Urlaub:0'
     );
@@ -189,6 +189,102 @@ describe('dragging a bullet (moveBranch)', () => {
     expect(shape(moveBranch(tree, 'Bericht', { afterId: 'Folien' }, 1))).toBe(
       'Einkaufen:0 Milch:1 Brot:1 Vollkorn:2 Arbeit:0 Folien:1 Bericht:1 Urlaub:0'
     );
+  });
+});
+
+describe('choosing the level of a dropped bullet (dropLevelRange)', () => {
+  // Einkaufen
+  //   Milch
+  //   Brot
+  //     Vollkorn
+  // Arbeit
+  //   Bericht
+  //   Folien
+  // Urlaub
+  const tree = [
+    blk('Einkaufen', 0, 'bullet'), blk('Milch', 1, 'bullet'), blk('Brot', 1, 'bullet'), blk('Vollkorn', 2, 'bullet'),
+    blk('Arbeit', 0, 'bullet'), blk('Bericht', 1, 'bullet'), blk('Folien', 1, 'bullet'), blk('Urlaub', 0, 'bullet'),
+  ];
+  const at = (id: string, list = tree) => list.findIndex((b) => b.id === id);
+  const shape = (list: DocumentBlock[]) => list.map((b) => `${b.id}:${b.level}`).join(' ');
+  const range = (id: string, target: string | null, single = false, list = tree) =>
+    dropLevelRange(list, at(id, list), target === null ? list.length : at(target, list), single);
+
+  it('reaches from the level of the bullet below to one deeper than the bullet above', () => {
+    expect(range('Urlaub', 'Arbeit')).toEqual({ min: 0, max: 3 });
+    expect(range('Urlaub', 'Brot')).toEqual({ min: 1, max: 2 });
+    expect(range('Urlaub', 'Milch')).toEqual({ min: 1, max: 1 });
+    expect(range('Urlaub', 'Einkaufen')).toEqual({ min: 0, max: 0 });
+  });
+
+  it('makes a bullet the last child of a branch, on any level of it', () => {
+    const drop = (level: number) => shape(moveBranch(tree, 'Urlaub', { beforeId: 'Arbeit' }, level));
+    expect(drop(1)).toBe('Einkaufen:0 Milch:1 Brot:1 Vollkorn:2 Urlaub:1 Arbeit:0 Bericht:1 Folien:1');
+    expect(drop(2)).toBe('Einkaufen:0 Milch:1 Brot:1 Vollkorn:2 Urlaub:2 Arbeit:0 Bericht:1 Folien:1');
+    expect(drop(3)).toBe('Einkaufen:0 Milch:1 Brot:1 Vollkorn:2 Urlaub:3 Arbeit:0 Bericht:1 Folien:1');
+  });
+
+  it('counts without the dragged branch: in its own place it can go deeper into the branch above', () => {
+    expect(range('Arbeit', 'Urlaub')).toEqual({ min: 0, max: 3 });
+    expect(shape(moveBranch(tree, 'Arbeit', { beforeId: 'Urlaub' }, 1))).toBe(
+      'Einkaufen:0 Milch:1 Brot:1 Vollkorn:2 Arbeit:1 Bericht:2 Folien:2 Urlaub:0'
+    );
+    expect(range('Arbeit', 'Bericht')).toBeNull();
+    // Alone in front of its own child: after the children moved up
+    expect(range('Arbeit', 'Folien', true)).toEqual({ min: 0, max: 1 });
+    expect(range('Arbeit', 'Bericht', true)).toEqual({ min: 0, max: 3 });
+  });
+
+  it('below the last bullet: from the top level shown to one deeper than the last bullet', () => {
+    expect(range('Milch', null)).toEqual({ min: 0, max: 1 });
+    expect(range('Urlaub', null)).toEqual({ min: 0, max: 2 });
+    expect(shape(moveBranch(tree, 'Milch', { afterId: 'Urlaub' }, 1))).toBe(
+      'Einkaufen:0 Brot:1 Vollkorn:2 Arbeit:0 Bericht:1 Folien:1 Urlaub:0 Milch:1'
+    );
+    // Zoomed into Arbeit: only its children are shown, on level 1 and deeper
+    const zoomed = tree.slice(at('Bericht'), at('Urlaub'));
+    expect(dropLevelRange(zoomed, 0, zoomed.length, false, 1)).toEqual({ min: 1, max: 2 });
+    expect(dropLevelRange(zoomed, 1, 0, false, 1)).toEqual({ min: 1, max: 1 });
+  });
+
+  it('does not put a bullet under a folded one, where it would disappear', () => {
+    const folded = tree.map((b) => (b.id === 'Brot' ? { ...b, collapsed: true } : b));
+    expect(range('Urlaub', 'Arbeit', false, folded)).toEqual({ min: 0, max: 1 });
+    const allFolded = tree.map((b) => (b.id === 'Einkaufen' ? { ...b, collapsed: true } : b));
+    expect(range('Urlaub', 'Arbeit', false, allFolded)).toEqual({ min: 0, max: 0 });
+    expect(range('Einkaufen', null, false, allFolded)).toEqual({ min: 0, max: 1 });
+  });
+
+  it('never gives the bullets around the drop a new parent, on any level offered', () => {
+    const parents = (list: DocumentBlock[]) => {
+      const out = new Map<string, string | null>();
+      list.forEach((b, i) => {
+        let p = i - 1;
+        while (p >= 0 && (list[p].level || 0) >= (b.level || 0)) p--;
+        out.set(b.id, p >= 0 ? list[p].id : null);
+      });
+      return out;
+    };
+    const before = parents(tree);
+    for (const single of [false, true]) {
+      for (let from = 0; from < tree.length; from++) {
+        const dragged = tree[from].id;
+        // Moved alone, the bullet's children get its old parent: that is the point of it
+        const children = new Set(tree.slice(from + 1, branchEnd(tree, from)).map((b) => b.id));
+        for (let to = 0; to <= tree.length; to++) {
+          const r = dropLevelRange(tree, from, to, single);
+          if (!r) continue;
+          const drop = to === tree.length ? { afterId: tree[tree.length - 1].id } : { beforeId: tree[to].id };
+          for (let level = r.min; level <= r.max; level++) {
+            const after = parents(moveBranch(tree, dragged, drop, level, single));
+            for (const [id, parent] of before) {
+              if (id === dragged || (single && children.has(id))) continue;
+              expect([dragged, to, level, id, after.get(id)]).toEqual([dragged, to, level, id, parent]);
+            }
+          }
+        }
+      }
+    }
   });
 });
 
