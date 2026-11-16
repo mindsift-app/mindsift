@@ -15,6 +15,8 @@ import {
   CloudOff,
 } from 'lucide-react';
 import { AboutModal } from '../../components/AboutModal';
+import { LegalLinks } from '../../components/LegalLinks';
+import type { AuthStatus } from '../../lib/types';
 import { Trans, useTranslation } from 'react-i18next';
 import { loadedHelpContent, loadHelpContent } from './content';
 import type { DocCard, HelpCategory, HelpContent } from './content/types';
@@ -23,9 +25,10 @@ import { TourStartCard } from '../tour/TourStartCard';
 
 interface HelpViewProps {
   onBack?: () => void;
+  legal?: AuthStatus['legal'];
 }
 
-export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
+export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
   const [activeCategory, setActiveCategory] = useState<HelpCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAbout, setShowAbout] = useState(false);
@@ -289,11 +292,12 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
         </div>
       )}
 
-      <div className="flex justify-center pt-2">
-        <button type="button" onClick={() => setShowAbout(true)} className="text-[11px] text-muted hover:text-main hover:underline underline-offset-2">
+      {/* Footer like in the settings: legal notices of this instance and project info */}
+      <LegalLinks legal={legal} className="pt-4 border-t border-border">
+        <button type="button" onClick={() => setShowAbout(true)} className="hover:text-main underline-offset-2 hover:underline">
           {t('common:aboutMindSift')}
         </button>
-      </div>
+      </LegalLinks>
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
     </div>
   );

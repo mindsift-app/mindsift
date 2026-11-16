@@ -191,7 +191,6 @@
     "change": "Change icon",
     "choose": "Choose icon"
   },
-  "aboutTitle": "About MindSift & version details",
   "avatar": {
     "readFailed": "Reading the file failed",
     "loadFailed": "Loading the image failed",

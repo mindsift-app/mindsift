@@ -36,7 +36,6 @@ import { SharedImportToast } from './components/SharedImportToast';
 import { EmailConfirmToast } from './components/EmailConfirmToast';
 import { useMobileActions } from './context/MobileActionContext';
 import { MobileHeaderMenu } from './components/MobileHeaderMenu';
-import { AppFooter } from './components/AppFooter';
 import { AboutModal } from './components/AboutModal';
 import { ConfirmHost, askConfirm } from './components/askConfirm';
 import { outboxCount } from './lib/offline';
@@ -898,7 +897,7 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'help' && (
-              <views.HelpView onBack={() => setActiveTab(previousTab || 'triage')} />
+              <views.HelpView onBack={() => setActiveTab(previousTab || 'triage')} legal={authStatus.legal} />
             )}
 
             {activeTab === 'lists' && (
@@ -943,11 +942,6 @@ export const App: React.FC = () => {
         </ViewErrorBoundary>
       </main>
       </div>
-
-      <AppFooter
-        legal={authStatus.legal}
-        onOpenAbout={() => setShowAbout(true)}
-      />
 
       {/* MOBILE BOTTOM NAVIGATION BAR (5 equal columns -> + FAB is dead-center) */}
       <MobileNav
