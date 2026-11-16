@@ -51,6 +51,7 @@ Versions without a git tag were development states and were never published as a
 - Enter at the very start of a bullet adds an empty line above it instead of splitting it; headings, to-dos and their sub-bullets stay as they are.
 - Controls in a block someone else is editing (indent arrows, code language, table + and ⋯, audio caption) stay in place, greyed out, so the layout no longer jumps.
 - Dragging a bullet inside a zoomed-in branch put it in the wrong place.
+- Demo: the reset countdown no longer gets stuck at "resetting"; it picks up the next reset time again, also after a lost connection or when the tab comes back.
 - Many smaller fixes in live drawing, linked to-dos, sharing, reconnecting and translations.
 
 ## [0.95.0] - 2026-11-12
