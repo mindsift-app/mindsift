@@ -173,6 +173,8 @@ export interface OutlinerBlockProps {
   onTemplateCommand?: (blockId: string, anchor: HTMLElement | null) => void;
   onUpdateBlock: (updated: DocumentBlock, immediate?: boolean) => void;
   onCreateBlockBelow: (afterBlockId: string, newContent?: string) => void;
+  /** Enter at the start of a bullet with text: a new empty bullet directly above it */
+  onCreateBlockAbove?: (beforeBlockId: string) => void;
   onDeleteBlock: (blockId: string, deleteSubtree?: boolean) => void;
   onMergeWithPrevious?: (blockId: string, content: string) => boolean;
   onIndentBlock: (blockId: string, delta: 1 | -1) => void;
@@ -194,7 +196,8 @@ export interface OutlinerBlockProps {
   onDragStartBlock?: (blockId: string, e: React.DragEvent) => void;
   onDragOverBlock?: (e: React.DragEvent, blockId: string) => void;
   onDropBlock?: (blockId: string) => void;
-  isDragTarget?: boolean;
+  /** A dragged bullet would land in front of this row, on this level (counted like the row's own indent) */
+  dropIndent?: number | null;
   isTargeted?: boolean;
   registerTextareaRef: (blockId: string, el: HTMLTextAreaElement | null) => void;
   /** Returns the bullet the cursor ends up in (the last pasted line) */
@@ -234,6 +237,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   onTemplateCommand,
   onUpdateBlock,
   onCreateBlockBelow,
+  onCreateBlockAbove,
   onDeleteBlock,
   onMergeWithPrevious,
   onIndentBlock,
@@ -250,7 +254,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   onDragStartBlock,
   onDragOverBlock,
   onDropBlock,
-  isDragTarget,
+  dropIndent,
   isTargeted,
   registerTextareaRef,
   onPasteMultiLines,
@@ -382,6 +386,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   // Callback refs to avoid stale closures in setTimeout, debounce flush, and event listeners
   const onUpdateBlockRef = useLatestRef(onUpdateBlock);
   const onCreateBlockBelowRef = useLatestRef(onCreateBlockBelow);
+  const onCreateBlockAboveRef = useLatestRef(onCreateBlockAbove);
   const onPasteMultiLinesRef = useLatestRef(onPasteMultiLines);
   const onPasteImagesRef = useLatestRef(onPasteImages);
   // Pasted images still uploading (shown below the bullet until they are image bullets)
@@ -1167,6 +1172,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     if (debounceTimerRef.current !== null) flushDebounce(localContentRef.current);
     onIndentBlockRef.current(block.id, -1);
   });
+  // Arrows of blocks without a Tab key of their own (code, image, drawing, table)
+  const canIndentRow = Math.max(0, block.level || 0) < maxAllowedLevel;
+  const canOutdentRow = Math.max(0, block.level || 0) > (levelOffset || 0);
+  // Held by someone else while the note itself may be edited: those arrows stay, greyed out, so nothing moves
+  const indentLocked = !canEdit && !!heldBy && !!canAppendBelow;
   const tableWikiLinkClick = useLatestCallback((link: WikiLink) => onWikiLinkClick?.(link, linkActions(link)));
   const renderTableSecret = useCallback(
     (secretId: string, key: string) => <SecretChip key={key} docId={docId} secretId={secretId} canEdit={canEdit} />,
@@ -1319,6 +1329,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
       const start = e.currentTarget.selectionStart ?? localContent.length;
       const end = e.currentTarget.selectionEnd ?? start;
+      // At the very start of a bullet with text, Enter pushes the bullet down a line: a new empty bullet goes
+      // above it and this one keeps its text, type, children and the cursor
+      if (start === 0 && end === 0 && localContent !== '' && onCreateBlockAboveRef.current) {
+        flushDebounce(localContent);
+        onCreateBlockAboveRef.current(block.id);
+        return;
+      }
       let beforeText = localContent.slice(0, start);
       let afterText = localContent.slice(end);
 
@@ -1433,7 +1450,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       } ${
         // Round corners only on a tinted row: on the others they are invisible, but the row's content-visibility
         // would clip with them, and rounded clips in every bullet made Chrome leave the note's corners unpainted
-        inRangeSelection || isDragTarget || isTargeted || block.conflictOf || lockColor ? 'rounded-card' : ''
+        inRangeSelection || dropIndent != null || isTargeted || block.conflictOf || lockColor ? 'rounded-card' : ''
       } ${
         // Spacing between the rows (OutlinerTree); headings keep their extra margin only as the first bullet
         block.type === 'h1'
@@ -1442,8 +1459,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           ? 'mt-0.5 first:mt-1.5 sm:first:mt-2'
           : 'mt-0.5 first:mt-0'
       } ${
-        isDragTarget
-          ? 'border-t-2 border-accent bg-accent/10'
+        dropIndent != null
+          ? 'bg-accent/10'
           : isTargeted
           ? 'bg-panel-elevated'
           : ''
@@ -1477,6 +1494,19 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       {Array.from({ length: visualLevel }, (_, k) => (
         <span key={k} aria-hidden="true" className="bullet-guide" style={{ left: `calc(var(--outline-indent) * ${k} + 28px)` }} />
       ))}
+      {/* Where a dragged bullet lands: a line with a dot under the place its bullet would take (the dot of a
+          row sits 28px right of its indent, see .bullet-guide), so the level shows before letting go */}
+      {dropIndent != null && (
+        <span
+          aria-hidden="true"
+          data-drop-line={dropIndent}
+          className="absolute top-0 right-1 h-1.5 pointer-events-none"
+          style={{ left: `calc(var(--outline-indent) * ${dropIndent} + 25px)` }}
+        >
+          <span className="absolute left-0 top-0 w-1.5 h-1.5 rounded-full bg-accent" />
+          <span className="absolute left-1 right-0 top-0.5 h-0.5 rounded-full bg-accent" />
+        </span>
+      )}
       {/* Bullet Controls: Collapse Toggle & Bullet (Drag-Handle & Zoom) / Checkbox */}
       <div className="flex items-center gap-0.5 pt-1 select-none shrink-0">
         {hasChildren ? (
@@ -1696,6 +1726,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             // drawing: whoever may edit the note may join (the row itself counts as locked)
             canEdit={liveDrawing ? !!canAppendBelow : canEdit && !lockedBy}
             onLocked={lockedBy && canAppendBelow && onLockedDrawing ? () => onLockedDrawing(lockedBy) : undefined}
+            onIndent={canEdit || indentLocked ? indentTable : undefined}
+            onOutdent={canEdit || indentLocked ? outdentTable : undefined}
+            canIndent={canIndentRow}
+            canOutdent={canOutdentRow}
+            indentLocked={indentLocked}
             autoOpen={drawingAutoOpen}
             actionsTarget={drawingActionsEl}
             // Clicked into or open in the editor counts as the cursor in this bullet (action bubble, lease)
@@ -1723,6 +1758,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           <ImageBlock
             content={localContent}
             canEdit={canEdit}
+            locked={indentLocked}
+            onIndent={indentTable}
+            onOutdent={outdentTable}
+            canIndent={canIndentRow}
+            canOutdent={canOutdentRow}
             onCaptionChange={(caption) => {
               const ref = parseMediaContent(localContent);
               if (!ref) return;
@@ -1797,8 +1837,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
               flushDebounce(localContent);
               onIndentBlockRef.current(block.id, -1);
             }}
-            canIndent={Math.max(0, block.level || 0) < maxAllowedLevel}
-            canOutdent={Math.max(0, block.level || 0) > (levelOffset || 0)}
+            canIndent={canIndentRow}
+            canOutdent={canOutdentRow}
+            locked={indentLocked}
             onExitBelow={(content) => {
               setLocalContent(content);
               localContentRef.current = content;

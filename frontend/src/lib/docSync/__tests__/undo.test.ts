@@ -6,6 +6,7 @@ import { MemoryStorage } from '../persist';
 import type { PushChannel } from '../push';
 import { clearUndoHistories, keepUndoHistory, takeUndoHistory, UNDO_HISTORY_NOTES } from '../undoHistory';
 import { LogEntry, SyncRequest, Transport, TransportError } from '../transport';
+import { moveBranch } from '../../outlineList';
 
 /** Minimal stand-in server (same rules as the Go server, plus configurable leases of others). */
 class Server {
@@ -125,6 +126,27 @@ describe('undo/redo', () => {
     expect(res.message).toBeUndefined();
     expect(res.ok).toBe(true);
     expect(texts(e)).toEqual(['Alpha', 'Beta', 'Gamma', 'Kind', 'Ende']);
+  });
+
+  it('takes back a bullet dragged without its children in one step, the children included', async () => {
+    const server = new Server([['a', 'Arbeit'], ['u', 'Urlaub']]);
+    server.apply({ opId: 'k1', kind: 'insert', blockId: 'b', parentId: 'a', orderKey: 'a0', content: 'Bericht' }, 'seed');
+    server.apply({ opId: 'k2', kind: 'insert', blockId: 'f', parentId: 'a', orderKey: 'a1', content: 'Folien' }, 'seed');
+    const e = await engineFor(server);
+    const shape = () => flat(e).map((b) => `${b.content}:${b.level}`).join(' ');
+    expect(shape()).toBe('Arbeit:0 Bericht:1 Folien:1 Urlaub:0');
+    // As OutlinerTree does with Ctrl held: Arbeit alone in front of Urlaub, its children move up
+    edit(e, (b) => moveBranch(b, 'a', { beforeId: 'u' }, 0, true));
+    expect(shape()).toBe('Bericht:0 Folien:0 Arbeit:0 Urlaub:0');
+    await e.syncNow();
+    const onServer = (id: string) => server.doc.blocks.get(id)!.parentId;
+    expect([onServer('b'), onServer('f'), onServer('a')]).toEqual(['', '', '']);
+    const res = e.undo();
+    expect(res.ok).toBe(true);
+    expect(shape()).toBe('Arbeit:0 Bericht:1 Folien:1 Urlaub:0');
+    expect(e.getState().canUndo).toBe(false);
+    await e.syncNow();
+    expect([onServer('b'), onServer('f')]).toEqual(['a', 'a']);
   });
 
   it('skips undo when someone else changed the block in between', async () => {

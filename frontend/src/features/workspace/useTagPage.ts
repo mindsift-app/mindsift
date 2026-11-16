@@ -12,19 +12,15 @@ export function useTagPage({
   tagFilter,
   blocks,
   engineRef,
-  currentBlocksRef,
   handleCreateBlock,
   handleInsertBlocks,
-  handleMoveBlock,
 }: {
   inTagPage: boolean;
   tagFilter?: string;
   blocks: DocumentBlock[];
   engineRef: React.RefObject<DocSyncEngine | null>;
-  currentBlocksRef: React.RefObject<DocumentBlock[]>;
-  handleCreateBlock: (newBlock: DocumentBlock, afterBlockId?: string) => void;
+  handleCreateBlock: (newBlock: DocumentBlock, afterBlockId?: string, placement?: 'after' | 'before') => void;
   handleInsertBlocks: (afterBlockId: string, updatedCurrentBlock: DocumentBlock, newBlocks: DocumentBlock[]) => void;
-  handleMoveBlock: (blockId: string, targetIndex: number, newLevel?: number) => void;
 }) {
   const [tagFocusId, setTagFocusId] = useState<string | null>(null);
   const [tagFreshIds, setTagFreshIds] = useState<Set<string>>(() => new Set());
@@ -93,9 +89,9 @@ export function useTagPage({
   }, [inTagPage, tagFilter, blocks, tagFocusId, tagFreshIds]);
   /* eslint-enable react-hooks/refs */
   const handleTagCreateBlock = useCallback(
-    (newBlock: DocumentBlock, afterBlockId?: string) => {
+    (newBlock: DocumentBlock, afterBlockId?: string, placement?: 'after' | 'before') => {
       setTagFreshIds((prev) => new Set(prev).add(newBlock.id));
-      handleCreateBlock(newBlock, afterBlockId);
+      handleCreateBlock(newBlock, afterBlockId, placement);
     },
     [handleCreateBlock]
   );
@@ -110,13 +106,5 @@ export function useTagPage({
     },
     [handleInsertBlocks]
   );
-  // Dragging inside one run: its positions are positions in the whole note
-  const tagMoveBlock = (group: DocumentBlock[]) => (blockId: string, targetIndex: number, newLevel?: number) => {
-    const anchor = targetIndex < group.length ? group[targetIndex] : group[group.length - 1];
-    const idx = currentBlocksRef.current.findIndex((b) => b.id === anchor.id);
-    if (idx < 0) return;
-    handleMoveBlock(blockId, targetIndex < group.length ? idx : idx + 1, newLevel);
-  };
-
-  return { tagGroups, handleTagFocusChange, handleTagCreateBlock, handleTagInsertBlocks, tagMoveBlock };
+  return { tagGroups, handleTagFocusChange, handleTagCreateBlock, handleTagInsertBlocks };
 }

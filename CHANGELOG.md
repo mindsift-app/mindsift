@@ -21,6 +21,8 @@ Versions without a git tag were development states and were never published as a
 - **Lists suggest earlier items**; tasks filter by several hashtags.
 - **For administrators:** command line (`docker exec mindsift mindsift …`), audit log, update hint, password reset options, two-factor sign-in and passkeys, single sign-on with back-channel logout, server time zone, backups before database updates, Prometheus metrics, outgoing proxy support.
 - **AI agents (MCP):** images, moving and extracting bullets, code blocks, notes from templates.
+- **Drag a single bullet:** hold Ctrl (Option on a Mac) while dragging to move a bullet without its sub-bullets; the preview shows it before you let go.
+- Images and drawings in notes have indent arrows at the top left, shown on hover or after tapping.
 
 ### Changed
 - **Attention:** the server runs on UTC without `TZ`; set your time zone under Administration → Server.
@@ -33,6 +35,9 @@ Versions without a git tag were development states and were never published as a
 - **Much more on a small server:** 1,200 people at once on 1 CPU core and 1 GB RAM with 0.03 % errors.
 - **Desktop redesign** with a navigation rail, Quick Dump as a window and a calmer look.
 - Offline changes in shared lists and tasks never undo someone else's, and linked to-dos stay in step with their tasks.
+- A dragged bullet takes the level of the bullet it is dropped in front of; the drop line shows that level.
+- An image's empty caption only shows on hover or after tapping; on touch screens the first tap shows the controls, the second opens the image.
+- On phones, code blocks have no indent arrows; the bar above the keyboard indents them.
 
 ### Fixed
 - **Attention:** usernames are unique; existing duplicates are renamed (`anna` → `anna1`).
@@ -40,6 +45,9 @@ Versions without a git tag were development states and were never published as a
 - Repeating tasks repeat again after their next occurrence was deleted.
 - Search finds your own notes even when others have many matches.
 - Imports and restores no longer lose data when they fail.
+- Enter at the very start of a bullet adds an empty line above it instead of splitting it; headings, to-dos and their sub-bullets stay as they are.
+- Indent arrows in a block someone else is editing stay in place, greyed out, so the layout no longer jumps.
+- Dragging a bullet inside a zoomed-in branch put it in the wrong place.
 - Many smaller fixes in live drawing, linked to-dos, sharing, reconnecting and translations.
 
 ## [0.95.0] - 2026-11-12

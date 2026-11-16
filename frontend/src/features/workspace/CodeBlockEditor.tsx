@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import Prism from 'prismjs';
-import { Copy, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { DocumentBlock } from '../../lib/types';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { enterWithIndent, indentUnit } from './codeIndent';
 import { SelectMenu } from '../../components/SelectMenu';
+import { IndentArrows } from './IndentArrows';
 import { ownClipboardText } from '../../lib/outlineMarkdown';
 import { maskSecrets, secretPlaceholder } from '../../lib/secretRef';
 import codeLanguages from './codeLanguages.json';
@@ -237,6 +238,8 @@ export interface CodeBlockEditorProps {
   onOutdent?: () => void;
   canIndent?: boolean;
   canOutdent?: boolean;
+  /** Someone else holds the bullet: arrows and language stay in place, greyed out (canEdit is false then) */
+  locked?: boolean;
   /** Enter on an empty last line leaves the block: that line goes, a new bullet follows below */
   onExitBelow?: (content: string) => void;
 }
@@ -257,6 +260,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
   onOutdent,
   canIndent = false,
   canOutdent = false,
+  locked = false,
   onExitBelow,
 }) => {
   const { t } = useTranslation('workspace');
@@ -536,37 +540,27 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
   // would otherwise turn them page-dark on hover
   const headerControl =
     'min-h-[44px] sm:min-h-0 bg-transparent text-faint hover:text-code-fg focus:text-code-fg font-mono text-[11px] font-medium border border-transparent hover:border-code-fg/20 focus:border-accent rounded-btn py-0.5 outline-hidden';
-  const indentButton = (label: string, icon: React.ReactNode, onClick: (() => void) | undefined, enabled: boolean) => (
-    <button
-      type="button"
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (enabled) onClick?.();
-      }}
-      disabled={!enabled}
-      title={label}
-      aria-label={label}
-      className={`${headerControl} min-w-[44px] sm:min-w-0 px-0.5 flex items-center justify-center cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:text-faint disabled:hover:border-transparent`}
-    >
-      {icon}
-    </button>
-  );
-
   return (
     <div className="group/code relative bg-code rounded-2xl my-0.5 max-w-full overflow-hidden">
       {/* Language at the top left; no header bar */}
       <div className="flex items-center gap-0.5 px-1.5 pt-1 text-[11px] font-mono text-faint">
-        {canEdit && (onIndent || onOutdent) && (
-          <>
-            {indentButton(t('outlineBar.outdent'), <ChevronLeft className="w-3.5 h-3.5" />, onOutdent, canOutdent)}
-            {indentButton(t('outlineBar.indent'), <ChevronRight className="w-3.5 h-3.5" />, onIndent, canIndent)}
-          </>
+        {/* Phones indent with the bar above the keyboard (MobileOutlineBar): no arrows there, the language
+            takes their place */}
+        {(canEdit || locked) && (onIndent || onOutdent) && (
+          <IndentArrows
+            onIndent={onIndent}
+            onOutdent={onOutdent}
+            canIndent={canIndent}
+            canOutdent={canOutdent}
+            locked={locked}
+            buttonClassName={`${headerControl} min-w-[44px] sm:min-w-0 px-0.5 hidden sm:flex items-center justify-center`}
+          />
         )}
-        {canEdit ? (
+        {canEdit || locked ? (
           <SelectMenu
             ariaLabel={t('code.chooseLanguage')}
             title={t('code.chooseLanguage')}
+            disabled={locked}
             value={selectValue}
             onChange={(lang) => onChangeLang?.(lang)}
             buttonClassName={`${headerControl} px-1 gap-1`}

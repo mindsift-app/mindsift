@@ -1,0 +1,198 @@
+import React from 'react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, fireEvent, createEvent, act } from '@testing-library/react';
+import { OutlinerTree } from '../OutlinerTree';
+import type { BlockLock } from '../OutlinerBlock';
+import { DocumentBlock } from '../../../lib/types';
+import type { BranchDrop } from '../../../lib/outlineList';
+
+// Dragging a bullet by its handle (OutlinerTree): it lands on the level of the row it is dropped in front
+// of, and with Ctrl (Apple: Alt) held it goes without its children. The tree operation itself is tested in
+// lib/__tests__/outlineList.test.ts.
+
+const ghost = vi.hoisted(() => ({ single: [] as boolean[], started: [] as boolean[] }));
+vi.mock('../branchDragImage', () => ({
+  startBranchDragGhost: (_e: unknown, _branch: unknown, single: boolean) => {
+    ghost.started.push(single);
+    return { setSingle: (s: boolean) => ghost.single.push(s) };
+  },
+}));
+
+const mk = (id: string, content: string, level = 0): DocumentBlock => ({ id, type: 'bullet', content, level, position: 1 });
+
+// Arbeit
+//   Bericht
+//   Folien
+// Einkaufen
+//   Brot
+// Urlaub
+const blocks = [
+  mk('a', 'Arbeit'), mk('b', 'Bericht', 1), mk('f', 'Folien', 1), mk('e', 'Einkaufen'), mk('br', 'Brot', 1), mk('u', 'Urlaub'),
+];
+
+let moves: Array<[string, BranchDrop, number, boolean | undefined]> = [];
+let refused: string[] = [];
+const renderTree = (locked?: Map<string, BlockLock>) =>
+  render(
+    <OutlinerTree
+      docId="d1"
+      blocks={blocks}
+      canEdit
+      onUpdateBlock={() => {}}
+      onCreateBlock={() => {}}
+      onDeleteBlock={() => {}}
+      onMoveBlock={(id, drop, level, single) => moves.push([id, drop, level, single])}
+      lockedBlocks={locked}
+      onLockedAction={(holder) => refused.push(holder.name)}
+    />
+  );
+
+const rowOf = (id: string) => document.querySelector(`[data-outline-block="${id}"]`) as HTMLElement;
+const dropLine = () => document.querySelector('[data-drop-line]');
+
+function transfer(): DataTransfer {
+  const set: Record<string, string> = {};
+  return {
+    types: [],
+    files: [],
+    items: [],
+    dropEffect: 'none',
+    effectAllowed: 'all',
+    setData: (type: string, v: string) => (set[type] = v),
+    getData: (type: string) => set[type] || '',
+    setDragImage: () => {},
+  } as unknown as DataTransfer;
+}
+
+type Mods = { ctrlKey?: boolean; altKey?: boolean };
+// A drag event with the modifier keys held (jsdom has no DragEvent, its plain Event carries no keys)
+async function fire(type: 'dragStart' | 'dragOver' | 'drop', el: Element, data: DataTransfer, mods: Mods = {}) {
+  const ev = createEvent[type](el, { dataTransfer: data });
+  Object.defineProperty(ev, 'ctrlKey', { value: !!mods.ctrlKey });
+  Object.defineProperty(ev, 'altKey', { value: !!mods.altKey });
+  await act(async () => {
+    fireEvent(el, ev);
+  });
+}
+const start = (id: string, data: DataTransfer, mods: Mods = {}) =>
+  fire('dragStart', rowOf(id).querySelector('button[draggable="true"]')!, data, mods);
+const over = (id: string, data: DataTransfer, mods: Mods = {}) => fire('dragOver', rowOf(id), data, mods);
+const drop = (id: string, data: DataTransfer) => fire('drop', rowOf(id), data);
+const lastGhost = () => ghost.single[ghost.single.length - 1];
+
+const platform = Object.getOwnPropertyDescriptor(window.navigator, 'platform');
+beforeEach(() => {
+  moves = [];
+  refused = [];
+  ghost.single = [];
+  ghost.started = [];
+});
+afterEach(() => {
+  if (platform) Object.defineProperty(window.navigator, 'platform', platform);
+  else delete (window.navigator as { platform?: string }).platform;
+});
+
+describe('dragging a bullet in the outliner', () => {
+  it('lands on the level of the bullet it is dropped in front of and shows that level beforehand', async () => {
+    renderTree();
+    const data = transfer();
+    await start('u', data);
+    expect(data.effectAllowed).toBe('move');
+    await over('br', data);
+    expect(data.dropEffect).toBe('move');
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('1');
+    expect(rowOf('br').contains(dropLine())).toBe(true);
+    await drop('br', data);
+    expect(moves).toEqual([['u', { beforeId: 'br' }, 1, false]]);
+    expect(dropLine()).toBeNull();
+  });
+
+  it('takes a deeper bullet out to the level of the row below it', async () => {
+    renderTree();
+    const data = transfer();
+    await start('br', data);
+    await over('u', data);
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
+    await drop('u', data);
+    expect(moves).toEqual([['br', { beforeId: 'u' }, 0, false]]);
+  });
+
+  it('does not offer its own children as a target', async () => {
+    renderTree();
+    const data = transfer();
+    await start('a', data);
+    await over('f', data);
+    expect(dropLine()).toBeNull();
+    await drop('f', data);
+    expect(moves).toEqual([]);
+  });
+
+  it('moves the bullet alone with Ctrl held, switched on and off during the drag', async () => {
+    renderTree();
+    const data = transfer();
+    await start('a', data);
+    expect(ghost.started).toEqual([false]);
+    // Pressed during the drag: its own child becomes a target, on the level it has after moving up
+    await over('f', data, { ctrlKey: true });
+    expect(lastGhost()).toBe(true);
+    expect(data.dropEffect).toBe('move');
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
+    // Released: the whole branch again
+    await over('f', data);
+    expect(lastGhost()).toBe(false);
+    expect(dropLine()).toBeNull();
+    await over('u', data, { ctrlKey: true });
+    await drop('u', data);
+    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
+  });
+
+  it('starts alone when Ctrl is held already on grabbing the bullet', async () => {
+    renderTree();
+    const data = transfer();
+    await start('e', data, { ctrlKey: true });
+    expect(ghost.started).toEqual([true]);
+    await over('br', data, { ctrlKey: true });
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
+    await drop('br', data);
+    expect(moves).toEqual([['e', { beforeId: 'br' }, 0, true]]);
+  });
+
+  it('takes Alt (Option) instead of Ctrl on a Mac', async () => {
+    Object.defineProperty(window.navigator, 'platform', { value: 'MacIntel', configurable: true });
+    renderTree();
+    const data = transfer();
+    await start('a', data);
+    await over('u', data, { ctrlKey: true });
+    expect(lastGhost()).toBe(false);
+    await over('u', data, { altKey: true });
+    expect(lastGhost()).toBe(true);
+    await drop('u', data);
+    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
+  });
+
+  it('puts a bullet dropped below the last one at the end, on the top level', async () => {
+    renderTree();
+    const data = transfer();
+    await start('b', data);
+    const tail = rowOf('u').nextElementSibling as HTMLElement;
+    await fire('dragOver', tail, data);
+    await fire('drop', tail, data);
+    expect(moves).toEqual([['b', { afterId: 'u' }, 0, false]]);
+  });
+
+  it('is not started while someone else types in a child that would move up', async () => {
+    renderTree(new Map([['f', { userId: 'u2', name: 'Bea' }]]));
+    const data = transfer();
+    // With its children the branch moves as a whole: Folien keeps its parent
+    await start('a', data);
+    await over('u', data);
+    await drop('u', data);
+    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, false]]);
+    // Alone, Folien would get a new parent
+    await start('a', data, { ctrlKey: true });
+    await over('u', data, { ctrlKey: true });
+    await drop('u', data);
+    expect(refused).toEqual(['Bea']);
+    expect(moves).toHaveLength(1);
+  });
+});

@@ -201,3 +201,79 @@ export function moveSibling<T extends Outlined>(blocks: T[], blockId: string, di
   const nextEnd = subtreeEnd(end);
   return [...blocks.slice(0, idx), ...blocks.slice(end, nextEnd), ...blocks.slice(idx, end), ...blocks.slice(nextEnd)];
 }
+
+/** Where a dragged bullet goes: in front of a bullet, or right after one (below the last bullet shown). */
+export type BranchDrop = { beforeId: string } | { afterId: string };
+
+// The parts of a drag: the bullet at `from`, its children (up to childEnd) and its conflict copies (up to end)
+function dragParts<T extends Outlined>(blocks: T[], from: number) {
+  const end = branchEnd(blocks, from);
+  let childEnd = from + 1;
+  while (childEnd < end && lvlOf(blocks[childEnd]) > lvlOf(blocks[from])) childEnd++;
+  return { childEnd, end };
+}
+
+/**
+ * Whether the bullet at `from` may be dropped in front of the bullet at `at`. With its children it cannot go
+ * into its own branch; alone (single) it may go in front of one of its children, which then move up.
+ */
+export function canDropBefore<T extends Outlined>(blocks: T[], from: number, at: number, single = false): boolean {
+  if (from < 0 || at < 0 || at >= blocks.length || at === from) return false;
+  const { childEnd, end } = dragParts(blocks, from);
+  if (at < from || at >= end) return true;
+  return single && at < childEnd;
+}
+
+/**
+ * The level a bullet dropped in front of the bullet at `at` takes: the level of that bullet, so it becomes its
+ * sibling and nothing around it changes parents. Dragged alone (single) in front of one of its own children,
+ * that child's level once the children moved up.
+ */
+export function dropLevelBefore<T extends Outlined>(blocks: T[], from: number, at: number, single = false): number {
+  const level = lvlOf(blocks[at]);
+  if (!single || at <= from) return level;
+  return at < dragParts(blocks, from).childEnd ? level - 1 : level;
+}
+
+/**
+ * Moves the bullet blockId to `drop`, on `level` (at most one deeper than the bullet above it). Its children
+ * and conflict copies come along and keep their depth below it; dragged alone (single), only its conflict
+ * copies come along, and its children move up one level into its old place, in their order. Returns the same
+ * array when nothing changes or the drop is not possible (into its own branch).
+ */
+export function moveBranch<T extends Outlined>(blocks: T[], blockId: string, drop: BranchDrop, level: number, single = false): T[] {
+  const from = blocks.findIndex((b) => b.id === blockId);
+  if (from === -1) return blocks;
+  const own = lvlOf(blocks[from]);
+  const { childEnd, end } = dragParts(blocks, from);
+  const moving = single ? [blocks[from], ...blocks.slice(childEnd, end)] : blocks.slice(from, end);
+  const staying = single ? blocks.slice(from + 1, childEnd).map((b) => ({ ...b, level: lvlOf(b) - 1 })) : [];
+  const movingIds = new Set(moving.map((b) => b.id));
+  const rest = [...blocks.slice(0, from), ...staying, ...blocks.slice(end)];
+
+  let at: number;
+  if ('beforeId' in drop) {
+    if (movingIds.has(drop.beforeId)) return blocks;
+    at = rest.findIndex((b) => b.id === drop.beforeId);
+    if (at === -1) return blocks;
+  } else {
+    // After a moving bullet (it was the last one shown): in its old place
+    const i = rest.findIndex((b) => b.id === drop.afterId);
+    if (i === -1 && !movingIds.has(drop.afterId)) return blocks;
+    at = i === -1 ? from + staying.length : i + 1;
+  }
+
+  const maxAllowed = at > 0 ? lvlOf(rest[at - 1]) + 1 : 0;
+  const newLevel = Math.max(0, Math.min(level, maxAllowed));
+  // Never between a bullet and its conflict copies: behind them instead
+  const landing = rest[at];
+  if (landing?.conflictOf && newLevel <= lvlOf(landing)) {
+    const start = unitStart(rest, at);
+    if (start < at) at = branchEnd(rest, start);
+  }
+
+  const delta = newLevel - own;
+  const moved = delta === 0 ? moving : moving.map((b) => ({ ...b, level: Math.max(0, lvlOf(b) + delta) }));
+  const next = [...rest.slice(0, at), ...moved, ...rest.slice(at)];
+  return next.every((b, i) => b.id === blocks[i].id && lvlOf(b) === lvlOf(blocks[i])) ? blocks : next;
+}

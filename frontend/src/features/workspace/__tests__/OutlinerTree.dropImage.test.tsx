@@ -5,6 +5,7 @@ import { OutlinerTree } from '../OutlinerTree';
 import { DocumentBlock } from '../../../lib/types';
 import { clipboard, png } from '../../../test/clipboard';
 import { BLOCK_DRAG_TYPE } from '../moveBranchEvent';
+import type { BranchDrop } from '../../../lib/outlineList';
 
 // Image files dragged onto a note (OutlinerTree, lib/pasteImages.ts): the same image bullets as a paste
 
@@ -36,7 +37,7 @@ vi.mock('../../../components/ErrorNotice', () => ({ showError: (m: string) => er
 
 let live: DocumentBlock[] = [];
 let inserts = 0;
-const moves: Array<[string, number]> = [];
+const moves: Array<[string, BranchDrop]> = [];
 
 const Harness: React.FC<{ initial: DocumentBlock[]; canEdit?: boolean }> = ({ initial, canEdit = true }) => {
   const [blocks, setBlocks] = useState(initial);
@@ -58,7 +59,7 @@ const Harness: React.FC<{ initial: DocumentBlock[]; canEdit?: boolean }> = ({ in
       }}
       onCreateBlock={(nb) => setBlocks((p) => [...p, nb])}
       onDeleteBlock={(id) => setBlocks((p) => p.filter((x) => x.id !== id))}
-      onMoveBlock={(id, index) => moves.push([id, index])}
+      onMoveBlock={(id, drop) => moves.push([id, drop])}
     />
   );
 };
@@ -206,7 +207,7 @@ describe('dragging image files onto a note', () => {
     await drag('dragOver', rowOf('c'), data);
     expect(document.querySelector('[data-file-drop]')).toBeNull();
     await drag('drop', rowOf('c'), data);
-    expect(moves).toEqual([['a', 2]]);
+    expect(moves).toEqual([['a', { beforeId: 'c' }]]);
     expect(media.uploads).toHaveLength(0);
     expect(errors).toHaveLength(0);
   });

@@ -10,6 +10,7 @@ import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
 import { useLatestRef } from '../../../lib/useLatestRef';
 import { NoteClientContext, NoteSharedContext } from './noteShared';
 import { useToast, WorkspaceToast } from '../WorkspaceToast';
+import { IndentArrows, OVERLAY_ARROW_BUTTON, overlayArrowsClass } from '../IndentArrows';
 
 // The editor (with the live drawing) is a chunk of its own, loaded when a drawing is opened; the service
 // worker precaches it with the other assets, so it opens offline as well
@@ -87,6 +88,13 @@ interface DrawingBlockProps {
   live?: { userId: string; name: string; avatarUrl?: string }[];
   /** Someone else is editing it (drawing alone): a double-click shows why it does not open */
   onLocked?: () => void;
+  /** Moves the bullet: arrows at the top left, over the drawing on hover or once it is tapped */
+  onIndent?: () => void;
+  onOutdent?: () => void;
+  canIndent?: boolean;
+  canOutdent?: boolean;
+  /** The bullet is held by someone else: the arrows stay, greyed out */
+  indentLocked?: boolean;
 }
 
 /** How the editor is open: alone ('solo', a live session can start from there in a shared note), looking
@@ -108,6 +116,11 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   onActivity,
   live,
   onLocked,
+  onIndent,
+  onOutdent,
+  canIndent = false,
+  canOutdent = false,
+  indentLocked = false,
 }) => {
   const { t } = useTranslation('workspace');
   // Shared with someone: "Gemeinsam zeichnen" in the editor (someone else could join)
@@ -466,6 +479,19 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
           <svg className="absolute inset-0 w-full h-full" viewBox={`${shown.x} ${shown.y} ${width / shown.z} ${height / shown.z}`}>
             <DrawingElements els={drawing.els} />
           </svg>
+        )}
+        {(onIndent || onOutdent) && (
+          // Below the live badge while someone draws in it
+          <div className={overlayArrowsClass(focused, 'drawing', liveNames.length > 0)} onDoubleClick={(e) => e.stopPropagation()}>
+            <IndentArrows
+              onIndent={onIndent}
+              onOutdent={onOutdent}
+              canIndent={canIndent}
+              canOutdent={canOutdent}
+              locked={indentLocked}
+              buttonClassName={OVERLAY_ARROW_BUTTON}
+            />
+          </div>
         )}
         {liveNames.length > 0 && (
           <div
