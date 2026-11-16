@@ -28,5 +28,5 @@ Measured on 16 November 2026 on the same demo server, through Cloudflare and the
 | 60 drawings with 3 people each (5 pointer moves a second) | ~25 ms | ~35 ms | 0 |
 
 - **Pointers are bundled:** the server sends each person the pointers of everyone else at most 20 times a second in one message, so the load grows with the number of people instead of its square. 50 people moving their mouse all the time used about a fifth of the core for MindSift.
-- **Limits:** 8 live drawings per person, 256 per server, and together at most `DRAW_LIVE_MAX_MB` (default 128 MB of drawing data); when that is full, drawings keep their changes and send them again once there is room.
+- **Limits:** 8 live drawings per person, 256 per server, and together at most `DRAW_LIVE_MAX_MB` of drawing data (by default a twelfth of the server's memory, at most 128 MB; the server needs about three times what the drawings hold); when that is full, drawings keep their changes and send them again once there is room.
 
