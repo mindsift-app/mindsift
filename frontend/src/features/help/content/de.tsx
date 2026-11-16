@@ -949,7 +949,7 @@ const de: HelpContent = {
     { key: 'Strg + Shift + ↓', scope: 'Workspace Outliner', desc: 'Alle zugeklappten Punkte der Notiz aufklappen' },
     { key: 'Strg + Shift + ↑', scope: 'Workspace Outliner', desc: 'Alle Punkte der Notiz zuklappen (im Fokus-Modus nur im Ast)' },
     { key: 'Strg + Klick auf ▸ / ▾', scope: 'Workspace Outliner', desc: 'Punkt mit allen Unterpunkten auf- bzw. zuklappen' },
-    { key: 'Umschalt beim Ziehen', scope: 'Workspace Outliner', desc: 'Nur den gezogenen Punkt verschieben; seine Unterpunkte bleiben und rücken an seine Stelle auf' },
+    { key: 'Shift beim Ziehen', scope: 'Workspace Outliner', desc: 'Nur den gezogenen Punkt verschieben; seine Unterpunkte bleiben und rücken an seine Stelle auf' },
     { key: 'Strg + Z / Cmd + Z', scope: 'Workspace Outliner', desc: 'Letzte Notiz-Aktion rückgängig machen' },
     { key: 'Strg + Y / Strg + Shift + Z', scope: 'Workspace Outliner', desc: 'Rückgängig gemachte Aktion wiederholen' },
     { key: 'Maus über mehrere Punkte ziehen', scope: 'Workspace Outliner', desc: 'Text über mehrere Punkte markieren; Entf/Backspace löscht ihn, Tippen ersetzt ihn, Strg + C kopiert ihn als Markdown (Einrückung, To-dos, Überschriften)' },
