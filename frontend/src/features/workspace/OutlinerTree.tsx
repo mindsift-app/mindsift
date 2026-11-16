@@ -37,11 +37,8 @@ export interface TemplateSource {
 
 // Bullets a template copy replaces when the slash command was typed into an empty one of these
 const REPLACEABLE_EMPTY = ['text', 'bullet', 'todo', 'numbered', 'h1', 'h2', 'h3', 'callout', 'warning', 'error'];
-// Pointer moves that choose the level of a dragged bullet (dropLevelAt): the indent per level when the CSS
-// variable cannot be read, and where a row's text starts right of its indent (row padding 4px, fold toggle
-// 14px, gaps and the 16px bullet; the bullet's dot sits at 28px, see .bullet-guide in index.css)
+// Indent per level when the CSS variable cannot be read (dropLevelAt)
 const DEFAULT_INDENT = 22;
-const ROW_TEXT_START = 40;
 // Where dragged image files go when not onto a bullet: the end of the note (fileDropAt)
 const FILE_DROP_END = '\u0000end';
 // Bullets with a text field the cursor can go to
@@ -190,6 +187,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   // The level the dragged bullet would take at dragOverIndex (chosen with the pointer, dropLevelAt)
   const [dragOverLevel, setDragOverLevel] = useState(0);
   const dragOverRef = useRef<{ index: number; level: number } | null>(null);
+  // Where the pointer was when the drag started: moving right of it chooses a deeper level (dropLevelAt)
+  const dragStartXRef = useRef<number | null>(null);
   // Ctrl (Apple: Alt) held while dragging a bullet: it goes without its children (singleDragKey)
   const dragSingleRef = useRef(false);
   const dragGhostRef = useRef<BranchDragGhost | null>(null);
@@ -863,7 +862,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   );
 
   // Dragging a bullet by its handle (desktop): it lands in front of the row it is dropped on, by default on
-  // that row's level, so it becomes its sibling; moved further right it goes deeper, up to a child of the
+  // that row's level, so it becomes its sibling; with the pointer moved right it goes deeper, up to a child of the
   // bullet above (dropLevelRange: no bullet around it changes parents). Its children keep their depth below
   // it. Holding Ctrl (Apple: Alt) moves it alone: its children move up into its old place. The key may be
   // pressed or released during the drag: dragover reports it about every 50 ms, also without moving, while
@@ -877,6 +876,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     setDraggedIndex(null);
     setDragOverIndex(null);
     dragOverRef.current = null;
+    dragStartXRef.current = null;
     dragGhostRef.current = null;
     dragSingleRef.current = false;
   }, []);
@@ -887,6 +887,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     e.dataTransfer.effectAllowed = 'move';
     const single = singleDragKey(e);
     dragSingleRef.current = single;
+    dragStartXRef.current = Number.isFinite(e.clientX) ? e.clientX : null;
     dragGhostRef.current = startBranchDragGhost(e, blocks.slice(index, branchEnd(blocks, index)), single) || null;
   }, [blocks]);
 
@@ -904,19 +905,21 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     };
   }, [draggedIndex, setSingle]);
 
-  // The level for a drop in front of the row at index (blocks.length: below the last one) at the pointer's
-  // position: the lowest allowed level while the pointer is left of where that level's text starts, one
-  // deeper for each indent step further right, up to the deepest allowed
+  // The level for a drop in front of the row at index (blocks.length: below the last one): the lowest allowed
+  // (the level of the bullet it lands in front of) as long as the pointer has not moved right since the drag
+  // started; from half an indent step further right one deeper per step, up to the deepest allowed. Measured
+  // from the start, not from the row, so dragging over the middle of a text or grabbing a deep bullet does
+  // not drop it deeper by itself.
   const dropLevelAt = useCallback(
     (e: React.DragEvent, index: number, single: boolean): number | null => {
       if (draggedIndex === null) return null;
       const range = dropLevelRange(blocks, draggedIndex, index, single, levelOffset || 0);
       if (!range) return null;
+      const startX = dragStartXRef.current;
+      if (startX === null || !Number.isFinite(e.clientX)) return range.min;
       const root = treeRootRef.current;
-      const left = root?.getBoundingClientRect().left ?? 0;
       const indent = (root && parseFloat(getComputedStyle(root).getPropertyValue('--outline-indent'))) || DEFAULT_INDENT;
-      const textStart = left + indent * (range.min - (levelOffset || 0)) + ROW_TEXT_START;
-      const steps = Number.isFinite(e.clientX) ? Math.floor((e.clientX - textStart) / indent) : 0;
+      const steps = Math.round((e.clientX - startX) / indent);
       return Math.min(range.max, range.min + Math.max(0, steps));
     },
     [blocks, draggedIndex, levelOffset]
