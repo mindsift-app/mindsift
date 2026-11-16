@@ -156,7 +156,7 @@ const en: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image (upload, photograph, paste or link an image; only in an empty bullet). A copied image or screenshot can also simply be pasted into the note with Ctrl+V (Cmd+V, long-press and Paste on a phone), or on a computer image files (from the file manager, or an image from a browser tab) dragged onto a bullet: it becomes an image bullet of its own below it, an empty bullet becomes the image itself; dragged beside the bullets or onto the title, the images go to the end of the note</span>
+                <span>/image (upload, photograph, paste or link an image; only in an empty bullet). A copied image or screenshot can also simply be pasted into the note with Ctrl+V (Cmd+V, long-press and Paste on a phone), or on a computer image files (from the file manager, or an image from a browser tab) dragged onto a bullet: it becomes an image bullet of its own below it, an empty bullet becomes the image itself; dragged beside the bullets or onto the title, the images go to the end of the note. Drag the bottom right corner of an image to make it larger or smaller (the aspect ratio stays, at most as wide as the note); the button at the top right brings it back to the default size</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
@@ -318,6 +318,9 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">“Tags & filters” view:</strong> the tag overview is in the workspace tabs at the top. It shows all hashtags in use, lets you search their places across all documents and even keep free notes on tag pages.
+            </li>
+            <li>
+              <strong className="text-main">Hashtags in the folder sidebar:</strong> a click on a hashtag below the folders filters the tree: only notes with that hashtag stay, their folders open, all others are hidden. Several selected hashtags show the notes that contain all of them; a second click takes one out again, the red ✕ next to “Hashtags” clears the filter. While it is on, the bar above the trash glows faintly red; a reload removes it.
             </li>
             <li>
               <strong className="text-main">Backlinks:</strong> at the end of every note, “Linked to this note” shows which other notes link to it with <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[title]]</code>. Clicking a place jumps right there.
@@ -653,7 +656,7 @@ const en: HelpContent = {
               <strong className="text-main">Switching themes:</strong> in the profile menu (your profile picture, on the desktop at the bottom of the bar on the left) or under <em>Account settings → Appearance &amp; themes</em>.
             </li>
             <li>
-              <strong className="text-main">Custom theme:</strong> download or paste the template, adjust colors and corners, upload or paste it as a <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> file and choose “Save &amp; activate”. The theme applies right away and is available on all your devices.
+              <strong className="text-main">Custom themes:</strong> under <em>Custom themes</em>, “+” creates a theme with the colours of the template; its name and colour tiles can be changed right in the row (applied at once while the theme is active), and export downloads it as a <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> file that can be imported again and shared. Custom themes are available on all your devices.
             </li>
           </ul>
         </div>

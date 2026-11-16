@@ -23,6 +23,8 @@ Versions without a git tag were development states and were never published as a
 - **AI agents (MCP):** images, moving and extracting bullets, code blocks, notes from templates.
 - **Drag a single bullet:** hold Ctrl (Option on a Mac) while dragging to move a bullet without its sub-bullets, also onto another note in the sidebar; the preview shows it before you let go.
 - Images, drawings and audio in notes have indent arrows, shown on hover or after tapping.
+- Images in notes can be resized by dragging their bottom right corner (the aspect ratio stays, up to the width of the note); a button at the top right brings back the default size. The size is kept when copying, in Markdown export (Obsidian's `![caption|320](…)`) and on import.
+- **Custom themes in the app:** each custom theme is a row under "Custom themes": rename it in place, change its colours with the colour picker (applied live), export it as a CSS file to share, and add a new one from the template with the + below the list.
 
 ### Changed
 - **Attention:** the server runs on UTC without `TZ`; set your time zone under Administration → Server.
@@ -40,6 +42,10 @@ Versions without a git tag were development states and were never published as a
 - On phones, code blocks have no indent arrows; the bar above the keyboard indents them.
 - Tables: Enter goes on into an empty row below instead of adding another one, so typing a new table and leaving it with Enter flows; the ⋯ menu sits above the + for a column.
 - Administration → Server: no button to take the browser's time zone any more; setup suggests it.
+- The calendar subscription carries the instance name and a description ("<instance> – Tasks" in your language).
+- The version and imprint line at the bottom left of the app is gone; the imprint and "About MindSift" sit at the bottom of the help page, like in the settings.
+- Demo: about 35 more sample notes (work, projects, recipes, reading, travel, journal) linked with [[wiki links]] and sharing hashtags; only the help notes keep emoji icons.
+- Clicking a hashtag below the folder tree filters the tree to the notes carrying it (several hashtags: notes with all of them); a red ✕ beside "Hashtags" clears the filter, and the bar above the trash glows red while it is on. The hashtag page stays reachable through the "Hashtags" tab and hashtags in a note.
 - AI agents (MCP) are encouraged to use colour in diagrams and to set headings apart with an empty bullet.
 
 ### Fixed
@@ -51,6 +57,8 @@ Versions without a git tag were development states and were never published as a
 - Enter at the very start of a bullet adds an empty line above it instead of splitting it; headings, to-dos and their sub-bullets stay as they are.
 - Controls in a block someone else is editing (indent arrows, code language, table + and ⋯, audio caption) stay in place, greyed out, so the layout no longer jumps.
 - Dragging a bullet inside a zoomed-in branch put it in the wrong place.
+- Opening a note no longer slows down for its backlinks in accounts with many notes, and the backlinks show at once; following a plain link no longer claims the linked bullet is gone.
+- Demo: the reset countdown no longer gets stuck at "resetting"; it picks up the next reset time again, also after a lost connection or when the tab comes back.
 - Many smaller fixes in live drawing, linked to-dos, sharing, reconnecting and translations.
 
 ## [0.95.0] - 2026-11-12

@@ -2,13 +2,12 @@ import { afterEach, describe, it, expect } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { AppearanceSection } from '../user/AppearanceSection';
 import { useAppearanceSettings } from '../user/useAppearanceSettings';
-import { AVAILABLE_THEMES } from '../../../lib/theme';
 import { setServerLinkPreviews } from '../../../lib/linkPreview';
 
 function Harness() {
   const appearance = useAppearanceSettings('dark', [], () => {});
   return (
-    <AppearanceSection appearance={appearance} activeTheme="dark" themes={AVAILABLE_THEMES} customThemes={[]} onThemeChange={() => {}} />
+    <AppearanceSection appearance={appearance} activeTheme="dark" customThemes={[]} onThemeChange={() => {}} />
   );
 }
 

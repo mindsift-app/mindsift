@@ -11,6 +11,29 @@ describe('media content format', () => {
     expect(mediaContent('audio', 'med_ff', 'Sprachnotiz')).toBe('[Sprachnotiz](media:med_ff)');
   });
 
+  it('stores a width set by hand after the caption, like Obsidian', () => {
+    expect(mediaContent('image', 'med_ab', 'Urlaub', 320)).toBe('![Urlaub|320](media:med_ab)');
+    expect(mediaContent('image', 'med_ab', '', 199.6)).toBe('![|200](media:med_ab)');
+    expect(parseMediaContent('![Urlaub|320](media:med_ab)')).toEqual({ id: 'med_ab', caption: 'Urlaub', width: 320 });
+    expect(parseMediaContent('![|48](media:med_ab)')).toEqual({ id: 'med_ab', caption: '', width: 48 });
+    // Without a width it stays the old format
+    expect(mediaContent('image', 'med_ab', 'Urlaub')).toBe('![Urlaub](media:med_ab)');
+    expect(mediaContent('image', 'med_ab', 'Urlaub', 0)).toBe('![Urlaub](media:med_ab)');
+    // Recordings have no width
+    expect(mediaContent('audio', 'med_ab', 'Notiz', 320)).toBe('[Notiz](media:med_ab)');
+    expect(parseMediaContent('[Spur|2](media:med_ab)')).toEqual({ id: 'med_ab', caption: 'Spur|2' });
+  });
+
+  it('escapes a "|" of the caption, so it is never read as a width', () => {
+    for (const caption of ['A|B', 'Seite|12', 'Ende|', 'C:\\|5']) {
+      const content = mediaContent('image', 'med_ab', caption);
+      expect(parseMediaContent(content)).toEqual({ id: 'med_ab', caption });
+      expect(parseMediaContent(mediaContent('image', 'med_ab', caption, 640))).toEqual({ id: 'med_ab', caption, width: 640 });
+    }
+    // Older content with an unescaped "|" inside the caption keeps it
+    expect(parseMediaContent('![A|B](media:med_ab)')).toEqual({ id: 'med_ab', caption: 'A|B' });
+  });
+
   it('ignores anything that is not a media reference', () => {
     expect(parseMediaContent('![x](https://example.com/a.png)')).toBeNull();
     expect(parseMediaContent('Text ![x](media:med_aa)')).toBeNull();

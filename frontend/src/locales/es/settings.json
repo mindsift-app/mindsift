@@ -428,27 +428,35 @@
     "accentHint": "Sustituye el color de énfasis del tema (botones, enlaces, destacados). Aplica a este dispositivo.",
     "accentPick": "Elegir tu propio color de énfasis",
     "customThemes": "Temas personalizados",
-    "previewCanvas": "Fondo del lienzo",
-    "previewPanel": "Superficie del panel",
-    "previewText": "Color de texto",
     "custom": {
-      "confirmDelete": "¿De verdad quieres eliminar el tema?",
       "delete": "Eliminar",
-      "editTitle": "Editar tema",
       "deleteTitle": "Eliminar tema",
       "downloadTemplate": "Descargar plantilla",
       "copyTemplate": "Copiar plantilla",
-      "pasteTemplate": "Pegar plantilla",
-      "namePlaceholder": "Nombre, p. ej. Bosque",
-      "upload": "Subir archivo CSS",
-      "blocks": "Un tema es código CSS con 6 bloques: <b>1. color de énfasis</b>, <b>2. superficies</b>, <b>3. colores de texto</b>, <b>4. bordes y sombras</b>, <b>5. colores de estado</b> y <b>6. esquinas</b>. Lo más fácil para empezar es usar la plantilla con tus propios valores. Los temas guardados se almacenan en el servidor y están disponibles en todos tus dispositivos.",
-      "edit": "Editar tema personalizado",
-      "add": "Añadir tema personalizado",
-      "saveActivate": "Guardar y activar",
       "copied": "Plantilla copiada al portapapeles.",
-      "copyFailed": "No se pudo copiar – usa «Pegar plantilla» o descárgala.",
+      "copyFailed": "No se puede copiar: descarga la plantilla en su lugar.",
       "saveFailed": "No se pudo guardar el tema",
-      "deleteFailed": "No se pudo eliminar el tema"
+      "deleteFailed": "No se pudo eliminar el tema",
+      "use": "Usar",
+      "nameLabel": "Nombre del tema",
+      "newTheme": "Nuevo tema",
+      "newNamePlaceholder": "Nombre del nuevo tema, p. ej. Bosque",
+      "create": "Crear",
+      "fromTemplate": "Empieza con los colores de la plantilla.",
+      "export": "Exportar como archivo CSS",
+      "deleteQuestion": "¿Eliminar el tema «{{name}}»? No se puede deshacer.",
+      "colorOf": "{{color}} de {{name}}",
+      "unnamed": "Tema propio",
+      "hint": "Un tema es un archivo CSS. «+» crea uno con los colores de la plantilla; al pulsar una casilla de color, el color cambia al instante. Los archivos exportados se pueden volver a importar aquí y compartir con otras personas. Los temas propios se guardan en el servidor y están disponibles en todos tus dispositivos; un color de énfasis propio (más arriba) tiene prioridad sobre el del tema.",
+      "colors": {
+        "bg-app": "Fondo",
+        "bg-panel": "Superficie",
+        "bg-panel-elevated": "Superficie destacada",
+        "text-main": "Texto",
+        "text-muted": "Texto secundario",
+        "accent-primary": "Énfasis"
+      },
+      "import": "Importar CSS"
     },
     "round": "Redondeadas",
     "square": "Rectas",
@@ -873,7 +881,7 @@
   },
   "appearanceExtra": {
     "accentColor": "Color de acento {{color}}",
-    "themeSaved": "Tema «{{name}}» guardado y activado."
+    "themeImported": "Tema «{{name}}» importado y activado."
   },
   "pendingEmail": {
     "waiting": "Pendiente de confirmación: {{email}}. Hemos enviado un enlace a esta dirección; hasta que se pulse, sigue valiendo la anterior.",

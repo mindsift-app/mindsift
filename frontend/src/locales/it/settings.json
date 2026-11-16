@@ -325,27 +325,35 @@
     "accentHint": "Sostituisce il colore in risalto del tema (pulsanti, link, selezioni). Si applica a questo dispositivo.",
     "accentPick": "Scegli il tuo colore in risalto",
     "customThemes": "Temi personalizzati",
-    "previewCanvas": "Sfondo dell'area",
-    "previewPanel": "Superficie del pannello",
-    "previewText": "Colore del testo",
     "custom": {
-      "confirmDelete": "Vuoi davvero eliminare questo tema?",
       "delete": "Elimina",
-      "editTitle": "Modifica tema",
       "deleteTitle": "Elimina tema",
       "downloadTemplate": "Scarica modello",
       "copyTemplate": "Copia modello",
-      "pasteTemplate": "Incolla modello",
-      "namePlaceholder": "Nome, es. Foresta",
-      "upload": "Carica file CSS",
-      "blocks": "Un tema è un file CSS diviso in 6 blocchi: <b>1. colore in risalto</b>, <b>2. superfici</b>, <b>3. colori del testo</b>, <b>4. bordi e ombre</b>, <b>5. colori di stato</b> e <b>6. angoli</b>. Il modo più semplice per iniziare è usare il modello con i propri valori. I temi salvati risiedono sul server e sono disponibili su tutti i tuoi dispositivi.",
-      "edit": "Modifica tema personalizzato",
-      "add": "Aggiungi tema personalizzato",
-      "saveActivate": "Salva e attiva",
       "copied": "Modello copiato negli appunti.",
-      "copyFailed": "Impossibile copiare – usa «Incolla modello» o il download.",
+      "copyFailed": "Impossibile copiare: scarica invece il modello.",
       "saveFailed": "Impossibile salvare il tema",
-      "deleteFailed": "Impossibile eliminare il tema"
+      "deleteFailed": "Impossibile eliminare il tema",
+      "use": "Usa",
+      "nameLabel": "Nome del tema",
+      "newTheme": "Nuovo tema",
+      "newNamePlaceholder": "Nome del nuovo tema, es. Foresta",
+      "create": "Crea",
+      "fromTemplate": "Parte con i colori del modello.",
+      "export": "Esporta come file CSS",
+      "deleteQuestion": "Eliminare il tema «{{name}}»? L'operazione non si può annullare.",
+      "colorOf": "{{color}} di {{name}}",
+      "unnamed": "Tema personalizzato",
+      "hint": "Un tema è un file CSS. «+» ne crea uno con i colori del modello; un clic su un riquadro di colore lo cambia subito. I file esportati si possono reimportare qui e condividere con altri. I temi personalizzati sono salvati sul server e disponibili su tutti i tuoi dispositivi; un colore in risalto personalizzato (più sopra) ha la precedenza su quello del tema.",
+      "colors": {
+        "bg-app": "Sfondo",
+        "bg-panel": "Superficie",
+        "bg-panel-elevated": "Superficie in rilievo",
+        "text-main": "Testo",
+        "text-muted": "Testo secondario",
+        "accent-primary": "Risalto"
+      },
+      "import": "Importa CSS"
     },
     "round": "Arrotondati",
     "square": "Squadrati",
@@ -873,7 +881,7 @@
   },
   "appearanceExtra": {
     "accentColor": "Colore d’accento {{color}}",
-    "themeSaved": "Tema «{{name}}» salvato e attivato."
+    "themeImported": "Tema «{{name}}» importato e attivato."
   },
   "pendingEmail": {
     "waiting": "In attesa di conferma: {{email}}. Abbiamo inviato un link a questo indirizzo: finché non viene cliccato resta valido quello precedente.",

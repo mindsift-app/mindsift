@@ -209,7 +209,7 @@ const de: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image oder /bild (Bild hochladen, fotografieren, einfügen oder per Link; nur im leeren Punkt). Ein kopiertes Bild oder einen Screenshot einfach mit Strg+V (Cmd+V, am Handy lange tippen und Einfügen) in die Notiz einfügen oder am Computer Bilddateien (aus dem Dateimanager oder ein Bild aus einem Browser-Tab) auf einen Punkt ziehen: Es wird ein eigener Bild-Punkt darunter, ein leerer Punkt wird selbst zum Bild; neben die Punkte oder auf den Titel gezogen, kommen die Bilder ans Ende der Notiz</span>
+                <span>/image oder /bild (Bild hochladen, fotografieren, einfügen oder per Link; nur im leeren Punkt). Ein kopiertes Bild oder einen Screenshot einfach mit Strg+V (Cmd+V, am Handy lange tippen und Einfügen) in die Notiz einfügen oder am Computer Bilddateien (aus dem Dateimanager oder ein Bild aus einem Browser-Tab) auf einen Punkt ziehen: Es wird ein eigener Bild-Punkt darunter, ein leerer Punkt wird selbst zum Bild; neben die Punkte oder auf den Titel gezogen, kommen die Bilder ans Ende der Notiz. Ein Bild ziehst du an der Ecke unten rechts größer oder kleiner (das Seitenverhältnis bleibt, höchstens so breit wie die Notiz); der Knopf oben rechts bringt es auf die Standardgröße zurück</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
@@ -381,6 +381,9 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Ansicht „Tags & Filter“:</strong> Im oberen Workspace-Reiter findest du die Tag-Übersicht. Hier siehst du alle verwendeten Hashtags, kannst Fundstellen aus allen Dokumenten gebündelt durchsuchen und sogar eigene freie Notizen auf Tag-Seiten hinterlegen.
+            </li>
+            <li>
+              <strong className="text-main">Hashtags in der Ordnerleiste:</strong> Ein Klick auf einen Hashtag unter den Ordnern filtert den Baum: Es bleiben nur Notizen mit diesem Hashtag, ihre Ordner stehen offen, alle anderen sind ausgeblendet. Mehrere gewählte Hashtags zeigen Notizen, die alle enthalten; ein zweiter Klick nimmt einen wieder heraus, das rote ✕ neben „Hashtags“ hebt den Filter auf. Solange er aktiv ist, leuchtet die Leiste über dem Papierkorb leicht rot; nach dem Neuladen ist er weg.
             </li>
             <li>
               <strong className="text-main">Rückverweise:</strong> Am Ende jeder Notiz siehst du unter „Verlinkt auf diese Notiz“, welche anderen Notizen sie mit <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[Titel]]</code> verlinken. Ein Klick auf die Fundstelle springt direkt dorthin.
@@ -833,7 +836,7 @@ const de: HelpContent = {
               <strong className="text-main">Theme wechseln:</strong> Im Profilmenü (dein Profilbild, am Desktop unten in der Leiste links) oder unter <em>Kontoeinstellungen → Darstellung &amp; Themes</em>.
             </li>
             <li>
-              <strong className="text-main">Eigenes Theme:</strong> Vorlage herunterladen oder einfügen, Farben und Rundungen anpassen, als <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code>-Datei hochladen oder einfügen und „Speichern &amp; aktivieren“. Das Theme greift sofort und steht dir auf allen Geräten zur Verfügung.
+              <strong className="text-main">Eigene Themes:</strong> Unter <em>Eigene Themes</em> legt „+“ ein Theme mit den Farben der Vorlage an; Name und Farbfelder lassen sich direkt in der Zeile ändern (gilt sofort, wenn das Theme aktiv ist), der Export lädt es als <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code>-Datei herunter, die sich wieder importieren und teilen lässt. Eigene Themes stehen dir auf allen Geräten zur Verfügung.
             </li>
           </ul>
         </div>

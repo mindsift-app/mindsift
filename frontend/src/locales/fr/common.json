@@ -191,7 +191,6 @@
     "change": "Changer l'icône",
     "choose": "Choisir une icône"
   },
-  "aboutTitle": "À propos de MindSift et informations sur la version",
   "avatar": {
     "readFailed": "Échec de la lecture du fichier",
     "loadFailed": "Échec du chargement de l'image",

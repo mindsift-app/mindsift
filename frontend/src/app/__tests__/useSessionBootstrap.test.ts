@@ -214,3 +214,94 @@ describe('realtime events', () => {
     expect(mocks.getTriageDeck).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('demo reset countdown', () => {
+  const demoStatus = (seconds: number) => ({
+    needsSetup: false,
+    allowRegistration: false,
+    instanceName: 'MindSift',
+    demoMode: true,
+    demoResetInSeconds: seconds,
+    demoResetMinutes: 20,
+  });
+  const secondsLeft = (deadline: number | null) => Math.round(((deadline ?? 0) - Date.now()) / 1000);
+
+  async function bootDemo(seconds: number) {
+    mocks.getAuthStatus.mockResolvedValue(demoStatus(seconds));
+    const hook = await boot();
+    vi.useFakeTimers();
+    mocks.getAuthStatus.mockClear();
+    mocks.getMe.mockClear();
+    return hook;
+  }
+  afterEach(() => vi.useRealTimers());
+
+  it('asks again after the countdown ran out until the server names the next reset', async () => {
+    const { result } = await bootDemo(3);
+    expect(secondsLeft(result.current.demoDeadline)).toBe(3);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    // The reset is still running: the server names the deadline just passed, then fails once
+    mocks.getAuthStatus.mockResolvedValueOnce(demoStatus(0)).mockRejectedValueOnce(new Error('offline')).mockResolvedValue(demoStatus(1200));
+    act(() => result.current.handleDemoCountdownElapsed());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(mocks.getAuthStatus).toHaveBeenCalledTimes(1);
+    expect(secondsLeft(result.current.demoDeadline)).toBeLessThanOrEqual(0);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000 + 20000);
+    });
+    expect(mocks.getAuthStatus).toHaveBeenCalledTimes(3);
+    // The countdown runs again, and the data of the reset demo are loaded although no DEMO_RESET came
+    expect(secondsLeft(result.current.demoDeadline)).toBe(1200);
+    expect(mocks.getMe).toHaveBeenCalledTimes(1);
+    expect(result.current.demoNotice).toBe('Demo-Instanz wurde zurückgesetzt');
+  });
+
+  it('DEMO_RESET and the countdown reload the data once and the countdown starts over', async () => {
+    const { result } = await bootDemo(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    // The event comes before the server announces the next deadline: asked again 5 s later
+    mocks.getAuthStatus.mockResolvedValueOnce(demoStatus(0)).mockResolvedValue(demoStatus(1199));
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: { event: 'DEMO_RESET', payload: {}, timestamp: '' } }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    act(() => result.current.handleDemoCountdownElapsed());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(mocks.getAuthStatus).toHaveBeenCalledTimes(2);
+    expect(secondsLeft(result.current.demoDeadline)).toBe(1199);
+    expect(mocks.getMe).toHaveBeenCalledTimes(1);
+    // The next round works the same way
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1199 * 1000);
+    });
+    mocks.getAuthStatus.mockResolvedValue(demoStatus(1200));
+    act(() => result.current.handleDemoCountdownElapsed());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(secondsLeft(result.current.demoDeadline)).toBe(1200);
+    expect(mocks.getMe).toHaveBeenCalledTimes(2);
+  });
+
+  it('asks for the next reset after the connection came back', async () => {
+    const { result } = await bootDemo(600);
+    mocks.getAuthStatus.mockResolvedValue(demoStatus(590));
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected: false, transport: 'ws' } }));
+      window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected: true, transport: 'ws' } }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(mocks.getAuthStatus).toHaveBeenCalledTimes(1);
+    expect(secondsLeft(result.current.demoDeadline)).toBe(590);
+    // The deadline had not passed: no reset, nothing reloaded
+    expect(mocks.getMe).not.toHaveBeenCalled();
+  });
+});

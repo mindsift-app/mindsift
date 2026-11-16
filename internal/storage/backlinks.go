@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"sort"
 	"strings"
@@ -55,8 +56,9 @@ func (s *Store) GetBacklinks(userID, docID string) ([]Backlink, error) {
 	title = strings.TrimSpace(title)
 	out := []Backlink{}
 
-	// The tree of the user: what they can open, with their own folder paths
-	docs, err := s.GetDocuments(userID)
+	// The tree of the user: what they can open, with their own folder paths. Without bullets: loading
+	// the bullets of every note took most of the time on each opened note.
+	docs, err := s.getDocuments(context.Background(), userID, false)
 	if err != nil {
 		return nil, err
 	}
@@ -65,9 +67,19 @@ func (s *Store) GetBacklinks(userID, docID string) ([]Backlink, error) {
 		byID[d.ID] = i
 	}
 
+	// Only the bullets of those notes (by the index on document_id), not of every note on the server, and
+	// only those holding the note's id or its title (SQLite's lower() only folds ASCII: for other titles
+	// every bullet with a link is read); linksTo decides
+	titleHint := strings.ToLower(title)
+	if title == "" {
+		titleHint = docID
+	} else if !isASCII(title) {
+		titleHint = "[["
+	}
 	rows, err := s.db.Query(`SELECT id, document_id, content FROM blocks
-		WHERE deleted = 0 AND document_id != ? AND content LIKE '%[[%'
-		ORDER BY document_id, order_key`, docID)
+		WHERE document_id IN (SELECT value FROM json_each(?1)) AND deleted = 0 AND document_id != ?2
+		AND content LIKE '%[[%' AND (instr(content, ?2) > 0 OR instr(lower(content), ?3) > 0)
+		ORDER BY document_id, order_key`, docIDsJSON(docs), docID, titleHint)
 	if err != nil {
 		return nil, err
 	}
@@ -100,4 +112,13 @@ func (s *Store) GetBacklinks(userID, docID string) ([]Backlink, error) {
 	}
 	sort.SliceStable(out, func(i, j int) bool { return strings.ToLower(out[i].Title) < strings.ToLower(out[j].Title) })
 	return out, nil
+}
+
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 0x80 {
+			return false
+		}
+	}
+	return true
 }

@@ -325,27 +325,35 @@
     "accentHint": "Remplace la couleur d'accent du thème (boutons, liens, sélections). S'applique à cet appareil.",
     "accentPick": "Choisir sa propre couleur d'accent",
     "customThemes": "Thèmes personnalisés",
-    "previewCanvas": "Fond du canevas",
-    "previewPanel": "Surface des panneaux",
-    "previewText": "Couleur du texte",
     "custom": {
-      "confirmDelete": "Supprimer vraiment le thème ?",
       "delete": "Supprimer",
-      "editTitle": "Modifier le thème",
       "deleteTitle": "Supprimer le thème",
       "downloadTemplate": "Télécharger le modèle",
       "copyTemplate": "Copier le modèle",
-      "pasteTemplate": "Coller le modèle",
-      "namePlaceholder": "Nom, par ex. Forêt",
-      "upload": "Téléverser le fichier CSS",
-      "blocks": "Un thème est un fichier CSS composé de 6 blocs : <b>1. couleur d'accent</b>, <b>2. surfaces</b>, <b>3. couleurs du texte</b>, <b>4. bordures & ombres</b>, <b>5. couleurs d'état</b> et <b>6. arrondis</b>. Le moyen le plus simple est de partir du modèle avec tes propres valeurs. Les thèmes enregistrés restent sur le serveur et sont disponibles sur tous tes appareils.",
-      "edit": "Modifier le thème personnalisé",
-      "add": "Ajouter un thème personnalisé",
-      "saveActivate": "Enregistrer & activer",
       "copied": "Modèle copié dans le presse-papiers.",
-      "copyFailed": "Copie impossible – utilise « Coller le modèle » ou le téléchargement.",
+      "copyFailed": "Copie impossible – téléchargez plutôt le modèle.",
       "saveFailed": "Impossible d'enregistrer le thème",
-      "deleteFailed": "Impossible de supprimer le thème"
+      "deleteFailed": "Impossible de supprimer le thème",
+      "use": "Utiliser",
+      "nameLabel": "Nom du thème",
+      "newTheme": "Nouveau thème",
+      "newNamePlaceholder": "Nom du nouveau thème, par ex. Forêt",
+      "create": "Créer",
+      "fromTemplate": "Commence avec les couleurs du modèle.",
+      "export": "Exporter en fichier CSS",
+      "deleteQuestion": "Supprimer le thème « {{name}} » ? Cette action est irréversible.",
+      "colorOf": "{{color}} de {{name}}",
+      "unnamed": "Thème personnalisé",
+      "hint": "Un thème est un fichier CSS. « + » en crée un avec les couleurs du modèle ; un clic sur une case de couleur change la couleur aussitôt. Les fichiers exportés peuvent être réimportés ici et partagés. Les thèmes personnalisés sont enregistrés sur le serveur et disponibles sur tous vos appareils ; une couleur d'accent personnalisée (plus haut) l'emporte sur celle du thème.",
+      "colors": {
+        "bg-app": "Arrière-plan",
+        "bg-panel": "Surface",
+        "bg-panel-elevated": "Surface en relief",
+        "text-main": "Texte",
+        "text-muted": "Texte secondaire",
+        "accent-primary": "Accent"
+      },
+      "import": "Importer un CSS"
     },
     "round": "Arrondi",
     "square": "Carré",
@@ -873,7 +881,7 @@
   },
   "appearanceExtra": {
     "accentColor": "Couleur d’accent {{color}}",
-    "themeSaved": "Thème « {{name}} » enregistré et activé."
+    "themeImported": "Thème « {{name}} » importé et activé."
   },
   "pendingEmail": {
     "waiting": "En attente de confirmation : {{email}}. Nous avons envoyé un lien à cette adresse – tant qu'il n'est pas cliqué, l'ancienne reste valable.",

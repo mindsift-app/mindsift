@@ -4495,7 +4495,7 @@
     "/api/v1/workspace/tags": {
       "get": {
         "summary": "Overview of the hashtags",
-        "description": "Tag overview and details",
+        "description": "Tag overview: [{tag, count, docIds}] for the notes the caller can see; docIds = the notes carrying the hashtag (sorted, [] for a hashtag with only a tag page)",
         "tags": [
           "Workspace"
         ],

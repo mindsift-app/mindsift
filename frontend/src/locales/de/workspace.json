@@ -371,6 +371,8 @@
     "caption": "Beschriftung hinzufügen…",
     "imageUnavailable": "Bild nicht verfügbar (offline oder gelöscht)",
     "enlarge": "Vergrößern",
+    "resize": "Ziehen, um die Größe zu ändern",
+    "resetSize": "Standardgröße",
     "closeEsc": "Schließen (Esc)",
     "saving": "Wird gespeichert…",
     "uploading": "Wird hochgeladen…",
@@ -422,7 +424,12 @@
   },
   "sidebar": {
     "hashtags": "Hashtags (#)",
-    "trashTitle": "Papierkorb – Notizen hierher ziehen, um sie zu löschen"
+    "trashTitle": "Papierkorb – Notizen hierher ziehen, um sie zu löschen",
+    "tagFilterOn": "Nur Notizen mit #{{tag}} zeigen",
+    "tagFilterOff": "#{{tag}} nicht mehr filtern",
+    "clearFilter": "Hashtag-Filter aufheben",
+    "filterActive": "Filter aktiv",
+    "filterNoMatch": "Keine Notiz enthält alle gewählten Hashtags."
   },
   "outlineBar": {
     "label": "Punkt bearbeiten",

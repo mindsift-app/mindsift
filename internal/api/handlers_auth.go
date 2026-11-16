@@ -115,7 +115,7 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 	// Countdown to the next demo reset; seconds as well, so client clocks do not matter
 	if next := s.demoNextReset(); !next.IsZero() {
 		status["demoNextReset"] = next.UTC().Format(time.RFC3339)
-		status["demoResetInSeconds"] = int(time.Until(next).Seconds())
+		status["demoResetInSeconds"] = max(0, int(time.Until(next).Seconds()))
 		status["demoResetMinutes"] = s.cfg.DemoResetMinutes
 	}
 	writeJSON(w, http.StatusOK, status)

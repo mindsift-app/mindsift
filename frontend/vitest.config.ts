@@ -9,5 +9,7 @@ export default defineConfig({
     // Vitest's 5 s per test fails heavy component tests (user list, setup wizard, code editor) when the
     // machine is busy, e.g. ci/local-checks.sh beside other builds; a passing test is not slowed by it
     testTimeout: 30_000,
+    // Vitest empties CSS imports, even ?raw ones; the theme template is read as text by the custom themes
+    css: { include: [/theme-template\.css/] },
   },
 });

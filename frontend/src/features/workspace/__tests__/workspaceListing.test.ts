@@ -6,6 +6,8 @@ import {
   collectRollupTodos,
   countHashtags,
   countOpenTodos,
+  docsWithAllTags,
+  filterFolderTree,
   filterTags,
   folderAncestors,
   groupRollupTodosByFolder,
@@ -83,10 +85,43 @@ describe('workspace listing', () => {
     ];
     // A bullet counts once per hashtag, as the server's block_tags
     expect(countHashtags(notes)).toEqual([
-      { tag: 'haus', count: 3 },
-      { tag: 'garten', count: 2 },
-      { tag: 'auto', count: 1 },
+      { tag: 'haus', count: 3, docIds: ['x'] },
+      { tag: 'garten', count: 2, docIds: ['x', 'y'] },
+      { tag: 'auto', count: 1, docIds: ['y'] },
     ]);
+  });
+
+  describe('hashtag filter of the sidebar', () => {
+    const summary = [
+      { tag: 'haus', count: 4, docIds: ['a', 'b', 'c'] },
+      { tag: 'garten', count: 2, docIds: ['b', 'c', 'd'] },
+      { tag: 'auto', count: 1, docIds: ['a'] },
+    ];
+
+    it('keeps the notes carrying every selected hashtag', () => {
+      expect(docsWithAllTags(summary, [])).toBeNull();
+      expect([...docsWithAllTags(summary, ['haus'])!]).toEqual(['a', 'b', 'c']);
+      expect([...docsWithAllTags(summary, ['haus', 'garten'])!]).toEqual(['b', 'c']);
+      expect([...docsWithAllTags(summary, ['garten', 'auto'])!]).toEqual([]);
+      // A hashtag no note carries any more matches nothing
+      expect([...docsWithAllTags(summary, ['haus', 'weg'])!]).toEqual([]);
+    });
+
+    it('cuts the folder tree to the matching notes and folders, listing the folders left', () => {
+      const n = (id: string, folderPath: string) => ({ id, title: id, folderPath }) as Document;
+      const tree = buildFolderTree(
+        ['Privat', 'Privat/Garten', 'Arbeit', 'Leer'],
+        [n('a', 'Privat'), n('b', 'Privat/Garten'), n('x', 'Privat/Garten'), n('y', 'Arbeit')],
+        []
+      );
+      const paths: string[] = [];
+      const cut = filterFolderTree(tree, new Set(['b']), paths);
+      expect(cut.map((f) => f.fullPath)).toEqual(['Privat']);
+      expect(cut[0].docs).toEqual([]);
+      expect(cut[0].subfolders.map((f) => [f.fullPath, f.docs.map((d) => d.id)])).toEqual([['Privat/Garten', ['b']]]);
+      expect(paths.sort()).toEqual(['Privat', 'Privat/Garten']);
+      expect(filterFolderTree(tree, new Set(['nichts']))).toEqual([]);
+    });
   });
 
   describe('notes of the note list (no bullets, counts per note)', () => {
@@ -96,8 +131,8 @@ describe('workspace listing', () => {
 
     it('counts hashtags and open to-dos from the counts of the list', () => {
       expect(countHashtags([a, b])).toEqual([
-        { tag: 'einkauf', count: 3 },
-        { tag: 'haus', count: 3 },
+        { tag: 'einkauf', count: 3, docIds: ['a'] },
+        { tag: 'haus', count: 3, docIds: ['a', 'b'] },
       ]);
       expect(countOpenTodos([a, b])).toBe(2);
       const meta = tagsMetadata(countHashtags([a, b]), [a, b]);
@@ -111,8 +146,8 @@ describe('workspace listing', () => {
       const open = { ...a, blocks: [todo('a1', 'Neu #einkauf'), todo('a2', 'fertig #einkauf', true)] };
       expect(countOpenTodos([open, b])).toBe(1);
       expect(countHashtags([open, b])).toEqual([
-        { tag: 'einkauf', count: 2 },
-        { tag: 'haus', count: 2 },
+        { tag: 'einkauf', count: 2, docIds: ['a'] },
+        { tag: 'haus', count: 2, docIds: ['b'] },
       ]);
       expect(tagsMetadata(countHashtags([open, b]), [open, b]).get('einkauf')?.openTodosCount).toBe(1);
     });
@@ -262,7 +297,7 @@ describe('workspace listing', () => {
     const closed = withListedNote(before, listed, false);
     expect(closed.blocks).toEqual([]);
     expect(countOpenTodos([closed])).toBe(0);
-    expect(countHashtags([closed])).toEqual([{ tag: 'laden', count: 1 }]);
+    expect(countHashtags([closed])).toEqual([{ tag: 'laden', count: 1, docIds: ['a'] }]);
   });
 
   it('opens a note\'s folder and every folder above it', () => {

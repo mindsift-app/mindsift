@@ -1613,7 +1613,7 @@ func (p *ImportPlan) markUsedMedia(dir string, blocks []domain.DocumentBlock) {
 		p.usedMedia = map[string]bool{}
 	}
 	for _, b := range blocks {
-		if key, _ := mediaKey(b.Content, dir, p.Media); key != "" {
+		if key, _, _ := mediaKey(b.Content, dir, p.Media); key != "" {
 			p.usedMedia[key] = true
 		}
 	}
@@ -1628,7 +1628,7 @@ func (p *ImportPlan) noteOutsideMedia(note, dir string, blocks []domain.Document
 		if !strings.Contains(b.Content, "media:") {
 			continue
 		}
-		key, _ := mediaKey(b.Content, dir, p.Media)
+		key, _, _ := mediaKey(b.Content, dir, p.Media)
 		for _, m := range mediaIDRe.FindAllStringSubmatch(b.Content, -1) {
 			if key == "media:"+m[1] || seen[m[1]] || p.outsideIDs >= maxImportOutsideMedia {
 				continue
@@ -1767,21 +1767,36 @@ var (
 	mdEmbedRe   = regexp.MustCompile(`^!\[([^\]]*)\]\(<?([^)>]+?)>?(?:\s+"[^"]*")?\)$`)
 	wikiEmbedRe = regexp.MustCompile(`^!\[\[([^|\]]+)(?:\|([^\]]*))?\]\]$`)
 	sizeOnlyRe  = regexp.MustCompile(`^\d+(x\d+)?$`)
+	// Obsidian's size after the caption of a Markdown image: ![caption|320](…) or ![caption|320x200](…)
+	embedSizeRe = regexp.MustCompile(`^(.*)\|(\d{1,5}(?:x\d{1,5})?)$`)
 )
+
+// embedWidth reads the width of an Obsidian size ("320" or "320x200"); 0 for anything else.
+func embedWidth(size string) int {
+	if !sizeOnlyRe.MatchString(size) {
+		return 0
+	}
+	n, _ := strconv.Atoi(strings.SplitN(size, "x", 2)[0])
+	return min(n, maxMediaWidth)
+}
 
 // mediaKey finds the file of the archive a block shows on its own: media:<id> of an own backup, a
 // Markdown image relative to the note (dir), an Obsidian ![[file]] embed (found by name anywhere in the
-// archive). "" when the block shows none of them.
-func mediaKey(content, dir string, media map[string]*zip.File) (key, caption string) {
+// archive). "" when the block shows none of them. width: the size an image was given (MindSift's
+// ![caption|320](media:…), Obsidian's |320 or |320x200), 0 for the default size.
+func mediaKey(content, dir string, media map[string]*zip.File) (key, caption string, width int) {
 	content = strings.TrimSpace(content)
 	if ref, ok := ParseMediaContent(content); ok {
-		key, caption = "media:"+ref.ID, ref.Caption
+		key, caption, width = "media:"+ref.ID, ref.Caption, ref.Width
 	} else if m := mdEmbedRe.FindStringSubmatch(content); m != nil {
 		target := m[2]
 		if u, err := url.PathUnescape(target); err == nil {
 			target = u
 		}
 		key, caption = path.Clean(path.Join(dir, target)), m[1]
+		if s := embedSizeRe.FindStringSubmatch(caption); s != nil {
+			caption, width = s[1], embedWidth(s[2])
+		}
 	} else if m := wikiEmbedRe.FindStringSubmatch(content); m != nil {
 		name := strings.TrimSpace(m[1])
 		for k := range media {
@@ -1792,12 +1807,14 @@ func mediaKey(content, dir string, media map[string]*zip.File) (key, caption str
 		}
 		if !sizeOnlyRe.MatchString(m[2]) {
 			caption = m[2]
+		} else {
+			width = embedWidth(m[2])
 		}
 	}
 	if _, ok := media[key]; key == "" || !ok {
-		return "", ""
+		return "", "", 0
 	}
-	return key, caption
+	return key, caption, width
 }
 
 // linkImportMedia turns blocks that only show a file of the archive into image/audio blocks with new
@@ -1810,7 +1827,7 @@ func linkImportMedia(dir string, blocks []domain.DocumentBlock, media map[string
 	byKey := map[string]importMediaFile{} // one copy per note, even when shown twice
 	var files []importMediaFile
 	for i, b := range blocks {
-		key, caption := mediaKey(b.Content, dir, media)
+		key, caption, width := mediaKey(b.Content, dir, media)
 		if key == "" {
 			continue
 		}
@@ -1838,7 +1855,7 @@ func linkImportMedia(dir string, blocks []domain.DocumentBlock, media map[string
 			files = append(files, f)
 		}
 		blocks[i].Type = f.kind
-		blocks[i].Content = MediaContent(f.kind, f.id, caption)
+		blocks[i].Content = MediaContentSized(f.kind, f.id, caption, width)
 	}
 	return blocks, files
 }

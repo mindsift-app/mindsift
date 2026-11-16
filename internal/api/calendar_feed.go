@@ -191,6 +191,7 @@ func (s *Server) calendarFeed(userID string, now time.Time) (string, error) {
 	}
 	return renderCalendarFeed(tasks, calendarFeedOptions{
 		Lang:     s.userLanguage(userID),
+		Instance: s.instanceName(),
 		Loc:      clock.Location(),
 		Link:     func(id string) string { return s.mcpLink("task", id) },
 		Readable: s.store.ReadableMentions,
@@ -199,6 +200,7 @@ func (s *Server) calendarFeed(userID string, now time.Time) (string, error) {
 
 type calendarFeedOptions struct {
 	Lang     string
+	Instance string                   // the server's name as the admin set it ("" = MindSift), in the calendar's name
 	Loc      *time.Location           // the server's time zone, in which due dates are stored
 	Link     func(id string) string   // the task's address in the app ("" without BASE_URL)
 	Readable func(text string) string // mentions as "@Name"
@@ -213,7 +215,13 @@ func renderCalendarFeed(tasks []storage.CalendarTask, o calendarFeedOptions, now
 	if o.Link == nil {
 		o.Link = func(string) string { return "" }
 	}
-	name := i18n.T(o.Lang, "MindSift – Aufgaben")
+	instance := strings.TrimSpace(o.Instance)
+	if instance == "" {
+		instance = "MindSift"
+	}
+	// The name and description are what calendar apps show instead of the secret address
+	name := i18n.T(o.Lang, "{name} – Aufgaben", "name", instance)
+	desc := i18n.T(o.Lang, "Offene Aufgaben mit Fälligkeitsdatum aus {name}", "name", instance)
 	var w ical.Writer
 	w.Line("BEGIN", "VCALENDAR")
 	w.Line("VERSION", "2.0")
@@ -222,6 +230,8 @@ func renderCalendarFeed(tasks []storage.CalendarTask, o calendarFeedOptions, now
 	w.Line("METHOD", "PUBLISH")
 	w.Text("NAME", name)
 	w.Text("X-WR-CALNAME", name)
+	w.Text("DESCRIPTION", desc)
+	w.Text("X-WR-CALDESC", desc)
 	w.Text("X-WR-TIMEZONE", o.Loc.String())
 	w.Line("REFRESH-INTERVAL;VALUE=DURATION", calendarRefresh)
 	w.Line("X-PUBLISHED-TTL", calendarRefresh)

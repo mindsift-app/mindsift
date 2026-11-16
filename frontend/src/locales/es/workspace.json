@@ -374,6 +374,8 @@
     "caption": "Añadir un pie de foto…",
     "imageUnavailable": "Imagen no disponible (sin conexión o eliminada)",
     "enlarge": "Ampliar",
+    "resize": "Arrastra para cambiar el tamaño",
+    "resetSize": "Tamaño predeterminado",
     "closeEsc": "Cerrar (Esc)",
     "saving": "Guardando…",
     "uploading": "Subiendo…",
@@ -425,7 +427,12 @@
   },
   "sidebar": {
     "hashtags": "Hashtags (#)",
-    "trashTitle": "Papelera – arrastra notas aquí para eliminarlas"
+    "trashTitle": "Papelera – arrastra notas aquí para eliminarlas",
+    "tagFilterOn": "Mostrar solo notas con #{{tag}}",
+    "tagFilterOff": "Dejar de filtrar por #{{tag}}",
+    "clearFilter": "Quitar filtro de hashtags",
+    "filterActive": "Filtro activo",
+    "filterNoMatch": "Ninguna nota contiene todos los hashtags elegidos."
   },
   "outlineBar": {
     "label": "Editar punto",

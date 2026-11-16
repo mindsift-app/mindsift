@@ -156,7 +156,7 @@ const it: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image (carica, fotografa, incolla o collega un'immagine; solo in un punto vuoto). Un'immagine copiata o uno screenshot si incolla anche direttamente nella nota con Ctrl+V (Cmd+V, sul telefono tocco prolungato e Incolla), oppure sul computer trascinando file immagine (dal file manager, o un'immagine da una scheda del browser) su un punto: diventa un punto immagine a sé sotto di esso, un punto vuoto diventa l'immagine stessa; trascinate accanto ai punti o sul titolo, le immagini vanno alla fine della nota</span>
+                <span>/image (carica, fotografa, incolla o collega un'immagine; solo in un punto vuoto). Un'immagine copiata o uno screenshot si incolla anche direttamente nella nota con Ctrl+V (Cmd+V, sul telefono tocco prolungato e Incolla), oppure sul computer trascinando file immagine (dal file manager, o un'immagine da una scheda del browser) su un punto: diventa un punto immagine a sé sotto di esso, un punto vuoto diventa l'immagine stessa; trascinate accanto ai punti o sul titolo, le immagini vanno alla fine della nota. Trascina l'angolo in basso a destra di un'immagine per ingrandirla o ridurla (le proporzioni restano, al massimo larga quanto la nota); il pulsante in alto a destra la riporta alla dimensione predefinita</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
@@ -318,6 +318,9 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Vista «Tag e filtri»:</strong> la panoramica dei tag si trova nelle schede in alto nel Workspace. Mostra tutti gli hashtag in uso, consente di cercare le loro occorrenze in tutti i documenti e include anche note libere sulle pagine dei tag.
+            </li>
+            <li>
+              <strong className="text-main">Hashtag nella barra delle cartelle:</strong> un clic su un hashtag sotto le cartelle filtra l'albero: restano solo le note con quell'hashtag, le loro cartelle si aprono, tutte le altre vengono nascoste. Con più hashtag scelti si vedono le note che li contengono tutti; un secondo clic ne toglie uno, la ✕ rossa accanto a «Hashtag» toglie il filtro. Finché è attivo, la barra sopra il cestino si illumina leggermente di rosso; ricaricando la pagina sparisce.
             </li>
             <li>
               <strong className="text-main">Backlink:</strong> in fondo a ogni nota, la sezione «Collegano a questa nota» mostra quali altre note la collegano con <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[titolo]]</code>. Facendo clic su un riferimento si salta direttamente al blocco corrispondente.
@@ -653,7 +656,7 @@ const it: HelpContent = {
               <strong className="text-main">Cambio tema:</strong> nel menu del profilo (la tua foto profilo, sul desktop in basso nella barra a sinistra) oppure in <em>Impostazioni account → Aspetto e temi</em>.
             </li>
             <li>
-              <strong className="text-main">Tema personalizzato:</strong> scarica o incolla il modello, adatta colori e angoli, carica o incolla come file <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> e scegli «Salva e attiva». Il tema si applica subito ed è disponibile su tutti i tuoi dispositivi.
+              <strong className="text-main">Temi personalizzati:</strong> in <em>Temi personalizzati</em>, «+» crea un tema con i colori del modello; nome e riquadri di colore si modificano direttamente nella riga (si applica subito se il tema è attivo), e l'esportazione lo scarica come file <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> da reimportare e condividere. I temi personalizzati sono disponibili su tutti i tuoi dispositivi.
             </li>
           </ul>
         </div>

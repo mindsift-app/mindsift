@@ -116,9 +116,11 @@ The standard MindSift brand icon (`frontend/public/icon.svg`, PWA icons, and soc
 
 Under **Account Settings → Appearance & Themes**, every user can create custom themes:
 
-- Download the **template**, copy it, or paste it directly into the input field (`theme-template.css`).
-- **Upload** CSS as a `.css` file or **paste** it, assign a name, "Save & activate".
-- Custom themes appear as tiles in the gallery and in the profile dropdown, complete with **Edit** and **Delete** options.
+- Under the heading **Custom themes**, each theme is one flat row: a round button to use it, the name (editable in place, saved on Enter or leaving the field), colour tiles for `--bg-app`, `--bg-panel`, `--bg-panel-elevated`, `--text-main`, `--text-muted` and `--accent-primary` (the browser's colour picker, as for the device accent colour), **Export** and **Delete** (asks with `ConfirmPopover`, cannot be undone).
+- A colour change rewrites only that variable's value in the CSS ([`themeCss.ts`](../frontend/src/lib/themeCss.ts); comments and everything else stay as they are, a missing variable is added to the first rule). A new accent also sets `--accent-hover` and `--text-on-accent` when the theme has plain hex values for them. The change applies live while the theme is active and is saved about 0.6 s after the picker rests. A device accent colour still takes precedence over the theme's.
+- The dashed **+** below the list asks for a name and creates a theme from `theme-template.css`, which it activates right away.
+- **Export** downloads the stored CSS unchanged as `theme-<name>.css`; **Import CSS** reads such a file back (name from the file name without `theme-` and `.css`), so themes can be shared. The template stays downloadable and can be copied.
+- Custom themes also appear in the profile dropdown.
 
 Technical details:
 

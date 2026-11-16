@@ -143,7 +143,8 @@ async function capture() {
     await d.getByPlaceholder('Hashtags durchsuchen…').fill('m');
   });
   await d.getByPlaceholder('Hashtags durchsuchen…').fill('').catch(() => {});
-  await step(d, 'd10_workspace_tag_detail', () => d.getByText('#homelab').locator('visible=true').first().click());
+  // A tile of the overview (a hashtag in the sidebar filters the folder tree instead of opening its page)
+  await step(d, 'd10_workspace_tag_detail', () => d.locator('main').getByText('#homelab').locator('visible=true').first().click());
   await step(d, 'd11_workspace_journal', async () => {
     await d.getByRole('button', { name: /^Notizen/ }).locator('visible=true').first().click();
     await d.getByRole('button', { name: 'Journal', exact: true }).click();

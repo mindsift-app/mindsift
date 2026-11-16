@@ -162,7 +162,7 @@ const fr: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image (téléverser, photographier, coller ou lier une image ; uniquement dans une puce vide). Une image copiée ou une capture d’écran se colle aussi directement dans la note avec Ctrl+V (Cmd+V, sur téléphone appui long puis Coller), ou sur ordinateur des fichiers image (depuis le gestionnaire de fichiers, ou une image d’un onglet du navigateur) glissés sur une puce : elle devient une puce image à part en dessous, une puce vide devient elle-même l’image ; glissées à côté des puces ou sur le titre, les images vont à la fin de la note</span>
+                <span>/image (téléverser, photographier, coller ou lier une image ; uniquement dans une puce vide). Une image copiée ou une capture d’écran se colle aussi directement dans la note avec Ctrl+V (Cmd+V, sur téléphone appui long puis Coller), ou sur ordinateur des fichiers image (depuis le gestionnaire de fichiers, ou une image d’un onglet du navigateur) glissés sur une puce : elle devient une puce image à part en dessous, une puce vide devient elle-même l’image ; glissées à côté des puces ou sur le titre, les images vont à la fin de la note. Fais glisser le coin inférieur droit d’une image pour l’agrandir ou la réduire (les proportions sont conservées, au plus aussi large que la note) ; le bouton en haut à droite la remet à la taille par défaut</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
@@ -323,7 +323,10 @@ const fr: HelpContent = {
               <strong className="text-main">Hashtags :</strong> tape <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">#tag</code> directement dans le texte. Les hashtags regroupent automatiquement les thèmes dans la vue d'ensemble des tags.
             </li>
             <li>
-              <strong className="text-main">Vue d'ensemble des tags :</strong> clique sur un hashtag dans la barre latérale pour afficher toutes les puces et notes contenant ce tag sous forme de tuiles filtrables.
+              <strong className="text-main">Vue d'ensemble des tags :</strong> l'onglet « Hashtags » en haut de l'espace de travail, ou un clic sur un hashtag dans le texte d'une note, affiche toutes les puces et notes contenant ce tag sous forme de tuiles filtrables.
+            </li>
+            <li>
+              <strong className="text-main">Hashtags dans la barre des dossiers :</strong> un clic sur un hashtag sous les dossiers filtre l'arborescence : seules les notes avec ce hashtag restent, leurs dossiers s'ouvrent, tous les autres sont masqués. Avec plusieurs hashtags choisis, tu vois les notes qui les contiennent tous ; un second clic en retire un, la ✕ rouge à côté de « Hashtags » retire le filtre. Tant qu'il est actif, la barre au-dessus de la corbeille luit légèrement en rouge ; un rechargement le supprime.
             </li>
             <li>
               <strong className="text-main">Rétroliens (Backlinks) :</strong> en bas de chaque note, une section affiche toutes les autres notes qui font référence à la note actuelle.
@@ -651,7 +654,7 @@ const fr: HelpContent = {
               <strong className="text-main">Changer de thème :</strong> dans le menu de profil en haut à droite ou sous <em>Paramètres du compte → Apparence &amp; thèmes</em>.
             </li>
             <li>
-              <strong className="text-main">Thème personnalisé :</strong> télécharge ou colle le modèle, ajuste les couleurs et les arrondis, téléverse-le ou colle-le sous forme de fichier <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> et choisis « Enregistrer &amp; activer ». Le thème s'applique immédiatement et est disponible sur tous tes appareils.
+              <strong className="text-main">Thèmes personnalisés :</strong> sous <em>Thèmes personnalisés</em>, « + » crée un thème avec les couleurs du modèle ; son nom et ses cases de couleur se modifient directement dans la ligne (appliqué aussitôt si le thème est actif), et l'export le télécharge en fichier <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> qu'on peut réimporter et partager. Les thèmes personnalisés sont disponibles sur tous tes appareils.
             </li>
           </ul>
         </div>

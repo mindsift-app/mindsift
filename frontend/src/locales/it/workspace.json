@@ -374,6 +374,8 @@
     "caption": "Aggiungi didascalia…",
     "imageUnavailable": "Immagine non disponibile (offline o eliminata)",
     "enlarge": "Ingrandisci",
+    "resize": "Trascina per cambiare la dimensione",
+    "resetSize": "Dimensione predefinita",
     "closeEsc": "Chiudi (Esc)",
     "saving": "Salvataggio in corso…",
     "uploading": "Caricamento in corso…",
@@ -425,7 +427,12 @@
   },
   "sidebar": {
     "hashtags": "Hashtag (#)",
-    "trashTitle": "Cestino – trascina qui le note per eliminarle"
+    "trashTitle": "Cestino – trascina qui le note per eliminarle",
+    "tagFilterOn": "Mostra solo le note con #{{tag}}",
+    "tagFilterOff": "Non filtrare più per #{{tag}}",
+    "clearFilter": "Rimuovi il filtro hashtag",
+    "filterActive": "Filtro attivo",
+    "filterNoMatch": "Nessuna nota contiene tutti gli hashtag scelti."
   },
   "outlineBar": {
     "label": "Modifica punto",

@@ -6,7 +6,8 @@ var messagesIT = map[string]string{
 	"Kalender-Abo nicht gefunden":                        "Abbonamento al calendario non trovato",
 	"Kalender-Abos sind auf diesem Server ausgeschaltet": "Gli abbonamenti al calendario sono disattivati su questo server",
 	"Liste: {name}":       "Elenco: {name}",
-	"MindSift – Aufgaben": "MindSift – Attività",
+	"{name} – Aufgaben": "{name} – Attività",
+	"Offene Aufgaben mit Fälligkeitsdatum aus {name}": "Attività aperte con una scadenza da {name}",
 
 	// MCP: note structure tools
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "Il server sta elaborando altre richieste di grandi dimensioni (immagini); riprova tra qualche secondo",

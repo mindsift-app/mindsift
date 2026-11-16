@@ -6,7 +6,8 @@ var messagesES = map[string]string{
 	"Kalender-Abo nicht gefunden":                        "Suscripción de calendario no encontrada",
 	"Kalender-Abos sind auf diesem Server ausgeschaltet": "Las suscripciones de calendario están desactivadas en este servidor",
 	"Liste: {name}":       "Lista: {name}",
-	"MindSift – Aufgaben": "MindSift – Tareas",
+	"{name} – Aufgaben": "{name} – Tareas",
+	"Offene Aufgaben mit Fälligkeitsdatum aus {name}": "Tareas abiertas con fecha de vencimiento de {name}",
 
 	// MCP: note structure tools
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "El servidor está procesando otras solicitudes grandes (imágenes); vuelve a intentarlo en unos segundos",

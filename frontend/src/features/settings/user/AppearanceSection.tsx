@@ -1,12 +1,9 @@
-import React from 'react';
-import { Trans, useTranslation } from 'react-i18next';
-import { Copy, Download, Pencil, Trash, Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { UserTheme } from '../../../lib/types';
 import {
   AVAILABLE_THEMES,
   ButtonBorders,
   CornerStyle,
-  customThemeId,
   resolveTheme,
   setAccentColor,
   setButtonBorders,
@@ -14,25 +11,22 @@ import {
   setFollowSystem,
   THEME_FAMILIES,
   ThemeId,
-  ThemeOption,
 } from '../../../lib/theme';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { setLinkPreviewsEnabled, useServerLinkPreviews } from '../../../lib/linkPreview';
 import { setJournalEnabled } from '../../../lib/journal';
-import themeTemplateCss from '../../../themes/theme-template.css?raw';
 import { useAppearanceSettings } from './useAppearanceSettings';
+import { CustomThemesSection } from './CustomThemesSection';
 
 // Kontoeinstellungen → Darstellung & Themes (state in useAppearanceSettings)
 export function AppearanceSection({
   appearance,
   activeTheme,
-  themes,
   customThemes,
   onThemeChange,
 }: {
   appearance: ReturnType<typeof useAppearanceSettings>;
   activeTheme: ThemeId;
-  themes: ThemeOption[];
   customThemes: UserTheme[];
   onThemeChange: (themeId: ThemeId) => void;
 }) {
@@ -50,23 +44,6 @@ export function AppearanceSection({
     setButtonBordersState,
     accent,
     setAccent,
-    themeEditId,
-    themeName,
-    setThemeName,
-    themeCss,
-    setThemeCss,
-    themeMsg,
-    savingTheme,
-    deletingThemeId,
-    setDeletingThemeId,
-    themeFileRef,
-    resetThemeEditor,
-    handleThemeFile,
-    handleDownloadTemplate,
-    handleCopyTemplate,
-    handleSaveTheme,
-    handleEditTheme,
-    handleDeleteTheme,
   } = appearance;
   return (
     <div className="space-y-5">
@@ -305,189 +282,7 @@ export function AppearanceSection({
         </div>
       </div>
 
-      {themes.some((th) => th.isCustom) && <p className="font-semibold text-main text-sm pt-1">{t('appearance.customThemes')}</p>}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {themes.filter((th) => th.isCustom).map((th) => {
-          const isSelected = activeTheme === th.id;
-          const custom = customThemes.find((c) => customThemeId(c) === th.id);
-          return (
-            <div key={th.id} className="flex flex-col">
-            <button
-              type="button"
-              onClick={() => onThemeChange(th.id)}
-              className={`flex-1 p-4 text-left border transition-all flex flex-col justify-between gap-3 ${
-                isSelected
-                  ? 'bg-canvas border-accent shadow-xs'
-                  : 'bg-canvas border-border hover:border-strong'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-bold text-sm text-main flex items-center gap-2">
-                    <span>{th.name}</span>
-                    {isSelected && <span className="badge-accent">{t('appearance.active')}</span>}
-                  </p>
-                  <p className="text-xs text-muted mt-0.5">{th.subtitle}</p>
-                </div>
-              </div>
-
-              {/* Mini Color & Geometry Swatch */}
-              <div className="flex items-center justify-between pt-2 border-t border-border">
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="w-5 h-5 border border-strong inline-block"
-                    style={{
-                      backgroundColor: th.previewBg,
-                      borderRadius: th.isRounded ? '6px' : '0px' }}
-                    title={t('appearance.previewCanvas')}
-                  />
-                  <span
-                    className="w-5 h-5 border border-strong inline-block"
-                    style={{
-                      backgroundColor: th.previewPanel,
-                      borderRadius: th.isRounded ? '6px' : '0px' }}
-                    title={t('appearance.previewPanel')}
-                  />
-                  <span
-                    className="w-5 h-5 border border-strong inline-block"
-                    style={{
-                      backgroundColor: th.previewAccent,
-                      borderRadius: th.isRounded ? '6px' : '0px' }}
-                    title={t('appearance.accent')}
-                  />
-                  <span
-                    className="w-5 h-5 border border-strong inline-block"
-                    style={{
-                      backgroundColor: th.previewText,
-                      borderRadius: th.isRounded ? '6px' : '0px' }}
-                    title={t('appearance.previewText')}
-                  />
-                </div>
-
-                <code className="text-[10px] font-mono text-faint">{th.file}</code>
-              </div>
-            </button>
-            {custom && (
-              <div className="flex items-center justify-end gap-1.5 px-2 py-1.5 border border-t-0 border-border bg-canvas">
-                {deletingThemeId === custom.id ? (
-                  <>
-                    <span className="flex-1 text-[11px] text-muted">{t('appearance.custom.confirmDelete')}</span>
-                    <button onClick={() => handleDeleteTheme(custom)} className="btn-primary h-7 px-2.5 text-[11px]">
-                      {t('appearance.custom.delete')}
-                    </button>
-                    <button onClick={() => setDeletingThemeId(null)} className="btn-action h-7 px-2 text-[11px]">
-                      {t('common:cancel')}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => handleEditTheme(custom)} className="btn-icon" title={t('appearance.custom.editTitle')}>
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setDeletingThemeId(custom.id)}
-                      className="btn-icon btn-icon-danger"
-                      title={t('appearance.custom.deleteTitle')}
-                    >
-                      <Trash className="w-3.5 h-3.5" />
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Custom theme: upload or paste CSS, based on the template */}
-      <form onSubmit={handleSaveTheme} className="p-4 bg-canvas border border-border space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="font-semibold text-main">
-            {themeEditId ? t('appearance.custom.edit') : t('appearance.custom.add')}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            <button type="button" onClick={handleDownloadTemplate} className="btn-action h-7 px-2 text-[11px] flex items-center gap-1">
-              <Download className="w-3 h-3" />
-              <span>{t('appearance.custom.downloadTemplate')}</span>
-            </button>
-            <button type="button" onClick={handleCopyTemplate} className="btn-action h-7 px-2 text-[11px] flex items-center gap-1">
-              <Copy className="w-3 h-3" />
-              <span>{t('appearance.custom.copyTemplate')}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setThemeCss(themeTemplateCss)}
-              className="btn-action h-7 px-2 text-[11px]"
-            >
-              {t('appearance.custom.pasteTemplate')}
-            </button>
-          </div>
-        </div>
-
-        <p className="text-muted text-[11px] leading-relaxed">
-          <Trans t={t} i18nKey="appearance.custom.blocks" components={{ b: <strong /> }} />
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="text"
-            value={themeName}
-            onChange={(e) => setThemeName(e.target.value)}
-            placeholder={t('appearance.custom.namePlaceholder')}
-            maxLength={60}
-            className="flex-1 min-w-0 h-8 px-2.5 input-field"
-          />
-          <button
-            type="button"
-            onClick={() => themeFileRef.current?.click()}
-            className="btn-action h-8 px-3 text-xs flex items-center justify-center gap-1.5"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            <span>{t('appearance.custom.upload')}</span>
-          </button>
-          <input
-            ref={themeFileRef}
-            type="file"
-            accept=".css,text/css"
-            className="hidden"
-            onChange={(e) => {
-              handleThemeFile(e.target.files?.[0]);
-              e.target.value = '';
-            }}
-          />
-        </div>
-
-        <textarea
-          value={themeCss}
-          onChange={(e) => setThemeCss(e.target.value)}
-          placeholder=":root[data-theme=&quot;my-theme&quot;] { --accent-primary: #15803d; … }"
-          rows={10}
-          spellCheck={false}
-          className="w-full px-2.5 py-2 input-field font-mono text-[11px] leading-relaxed resize-y"
-        />
-
-        {themeMsg && (
-          <p className={`text-[11px] ${themeMsg.type === 'ok' ? 'text-status-ok' : 'text-status-err'}`}>
-            {themeMsg.text}
-          </p>
-        )}
-
-        <div className="flex justify-end gap-2">
-          {themeEditId && (
-            <button type="button" onClick={resetThemeEditor} className="btn-action h-8 px-3 text-xs">
-              {t('common:cancel')}
-            </button>
-          )}
-          <button
-            type="submit"
-            disabled={savingTheme || !themeName.trim() || !themeCss.trim()}
-            className="btn-primary h-8 px-4 text-xs font-semibold disabled:opacity-50"
-          >
-            {savingTheme ? t('saving') : t('appearance.custom.saveActivate')}
-          </button>
-        </div>
-      </form>
+      <CustomThemesSection appearance={appearance} activeTheme={activeTheme} customThemes={customThemes} onThemeChange={onThemeChange} />
     </div>
   );
 }

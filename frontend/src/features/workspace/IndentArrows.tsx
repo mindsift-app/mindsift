@@ -64,10 +64,18 @@ export const IndentArrows: React.FC<IndentArrowsProps> = ({
  * Class of the arrows' box over an image or a drawing, at the top left. Discreet like the code block's: no
  * box of its own, each arrow a small half-transparent outlined button that still shows on light and dark
  * pictures. Hidden until the pointer is over the block (only on devices that can hover) or the block is
- * active (tapped, caption in focus); hidden it takes no taps.
+ * active (tapped, caption in focus); hidden it takes no taps. The same box at another corner holds an
+ * image's size controls (reset at the top right, resize handle at the bottom right).
  */
-export const overlayArrowsClass = (shown: boolean, group: 'image' | 'drawing', belowBadge = false) =>
-  `absolute ${belowBadge ? 'top-9' : 'top-1.5'} left-1.5 z-10 flex items-center gap-0.5 transition-opacity ${
+export const overlayArrowsClass = (
+  shown: boolean,
+  group: 'image' | 'drawing',
+  belowBadge = false,
+  corner: 'top-left' | 'top-right' | 'bottom-right' = 'top-left'
+) =>
+  `absolute ${
+    corner === 'bottom-right' ? 'bottom-1.5 right-1.5' : `${belowBadge ? 'top-9' : 'top-1.5'} ${corner === 'top-right' ? 'right-1.5' : 'left-1.5'}`
+  } z-10 flex items-center gap-0.5 transition-opacity ${
     shown
       ? 'opacity-100'
       : `opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto ${

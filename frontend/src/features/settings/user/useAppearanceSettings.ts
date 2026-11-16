@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import i18n from '../../../i18n';
 import { UserTheme } from '../../../lib/types';
 import { api } from '../../../lib/api';
@@ -15,10 +15,12 @@ import {
 import { useLinkPreviewsEnabled } from '../../../lib/linkPreview';
 import { isJournalEnabled } from '../../../lib/journal';
 import themeTemplateCss from '../../../themes/theme-template.css?raw';
+import { downloadThemeCss, setThemeColor, ThemeColorVar, themeNameFromFile } from '../../../lib/themeCss';
 import { errorMessage } from '../../../lib/errorMessage';
+import { useLatestRef } from '../../../lib/useLatestRef';
 
 // Kontoeinstellungen → Darstellung & Themes: the device settings (corners, accent, borders, system theme,
-// link previews, journal) and the editor for own themes. Lives in the view, so an unsaved theme survives
+// link previews, journal) and the own themes. Lives in the view, so a pending colour save survives
 // switching sections.
 export function useAppearanceSettings(
   activeTheme: ThemeId,
@@ -32,37 +34,88 @@ export function useAppearanceSettings(
   const [buttonBorders, setButtonBordersState] = useState<ButtonBorders>(getButtonBorders);
   const [accent, setAccent] = useState<string | null>(getAccentColor);
 
-  // --- Custom Theme Editor State ---
-  const [themeEditId, setThemeEditId] = useState<string | null>(null); // null = new theme
-  const [themeName, setThemeName] = useState('');
-  const [themeCss, setThemeCss] = useState('');
+  // --- Own themes: one row each (name, colour tiles, export, delete), "+" adds one from the template ---
   const [themeMsg, setThemeMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
-  const [savingTheme, setSavingTheme] = useState(false);
-  const [deletingThemeId, setDeletingThemeId] = useState<string | null>(null);
+  const [addingTheme, setAddingTheme] = useState(false);
   const themeFileRef = useRef<HTMLInputElement>(null);
+  // The latest list, also between two renders (a colour picker fires many changes in a row)
+  const themesRef = useLatestRef(customThemes);
+  // Colour changes are saved once the picker rests; the timer reads the theme as it is by then
+  const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
-  const resetThemeEditor = () => {
-    setThemeEditId(null);
-    setThemeName('');
-    setThemeCss('');
+  const fail = (err: unknown, key: 'saveFailed' | 'deleteFailed') =>
+    setThemeMsg({ type: 'err', text: errorMessage(err, i18n.t(`settings:appearance.custom.${key}`)) });
+
+  const updateLocal = (theme: UserTheme) => {
+    const next = themesRef.current.map((t) => (t.id === theme.id ? theme : t));
+    themesRef.current = next;
+    onCustomThemesChange(next);
+  };
+
+  // A new theme (from the template or an imported file) is saved and used right away
+  const createTheme = async (name: string, css: string) => {
+    setThemeMsg(null);
+    try {
+      const saved = await api.saveTheme({ name: name.trim(), css });
+      const next = [...themesRef.current, saved];
+      themesRef.current = next;
+      onCustomThemesChange(next, customThemeId(saved));
+      return true;
+    } catch (err) {
+      fail(err, 'saveFailed');
+      return false;
+    }
+  };
+
+  const handleCreateTheme = async (name: string) => {
+    if (!name.trim()) {
+      setAddingTheme(false);
+      return;
+    }
+    if (await createTheme(name, themeTemplateCss)) setAddingTheme(false);
   };
 
   const handleThemeFile = async (file?: File) => {
     if (!file) return;
-    const text = await file.text();
-    setThemeCss(text);
-    if (!themeName.trim()) setThemeName(file.name.replace(/\.css$/i, '').replace(/^theme-/, ''));
-    setThemeMsg(null);
+    const css = await file.text();
+    const name = themeNameFromFile(file.name) || i18n.t('settings:appearance.custom.unnamed');
+    if (await createTheme(name, css)) setThemeMsg({ type: 'ok', text: i18n.t('settings:appearanceExtra.themeImported', { name }) });
   };
 
-  const handleDownloadTemplate = () => {
-    const url = URL.createObjectURL(new Blob([themeTemplateCss], { type: 'text/css' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'theme-template.css';
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleRenameTheme = async (theme: UserTheme, name: string) => {
+    const current = themesRef.current.find((t) => t.id === theme.id) ?? theme;
+    if (!name.trim() || name.trim() === current.name) return;
+    const renamed = { ...current, name: name.trim() };
+    updateLocal(renamed);
+    setThemeMsg(null);
+    try {
+      await api.saveTheme({ id: renamed.id, name: renamed.name, css: renamed.css });
+    } catch (err) {
+      updateLocal(current);
+      fail(err, 'saveFailed');
+    }
   };
+
+  // Applies live (App re-injects the CSS of the active theme) and saves a moment later
+  const handleThemeColor = (theme: UserTheme, name: ThemeColorVar, hex: string) => {
+    const current = themesRef.current.find((t) => t.id === theme.id) ?? theme;
+    updateLocal({ ...current, css: setThemeColor(current.css, name, hex) });
+    const timers = saveTimers.current;
+    clearTimeout(timers.get(theme.id));
+    timers.set(
+      theme.id,
+      setTimeout(() => {
+        timers.delete(theme.id);
+        const latest = themesRef.current.find((t) => t.id === theme.id);
+        if (latest) api.saveTheme({ id: latest.id, name: latest.name, css: latest.css }).catch((err) => fail(err, 'saveFailed'));
+      }, 600)
+    );
+  };
+
+  const handleExportTheme = (theme: UserTheme) => downloadThemeCss(theme.name, theme.css);
+
+  // Unchanged file name theme-template.css
+  const handleDownloadTemplate = () => downloadThemeCss('template', themeTemplateCss);
 
   const handleCopyTemplate = async () => {
     try {
@@ -73,45 +126,18 @@ export function useAppearanceSettings(
     }
   };
 
-  // Saving activates the theme right away (injected live, no reload)
-  const handleSaveTheme = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingTheme(true);
-    setThemeMsg(null);
-    try {
-      const saved = await api.saveTheme({ id: themeEditId || undefined, name: themeName.trim(), css: themeCss });
-      const next = themeEditId
-        ? customThemes.map((t) => (t.id === saved.id ? saved : t))
-        : [...customThemes, saved];
-      onCustomThemesChange(next, customThemeId(saved));
-      setThemeMsg({ type: 'ok', text: i18n.t('settings:appearanceExtra.themeSaved', { name: saved.name }) });
-      resetThemeEditor();
-    } catch (err) {
-      setThemeMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:appearance.custom.saveFailed')) });
-    } finally {
-      setSavingTheme(false);
-    }
-  };
-
-  const handleEditTheme = (t: UserTheme) => {
-    setThemeEditId(t.id);
-    setThemeName(t.name);
-    setThemeCss(t.css);
-    setThemeMsg(null);
-  };
-
+  // Asked before (ConfirmPopover in the row): a deleted theme cannot be brought back
   const handleDeleteTheme = async (t: UserTheme) => {
+    clearTimeout(saveTimers.current.get(t.id));
+    saveTimers.current.delete(t.id);
     try {
       await api.deleteTheme(t.id);
-      setDeletingThemeId(null);
-      if (themeEditId === t.id) resetThemeEditor();
+      const next = themesRef.current.filter((x) => x.id !== t.id);
+      themesRef.current = next;
       // Deleting the active theme falls back to the default one
-      onCustomThemesChange(
-        customThemes.filter((x) => x.id !== t.id),
-        activeTheme === customThemeId(t) ? 'dark' : undefined
-      );
+      onCustomThemesChange(next, activeTheme === customThemeId(t) ? 'dark' : undefined);
     } catch (err) {
-      setThemeMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:appearance.custom.deleteFailed')) });
+      fail(err, 'deleteFailed');
     }
   };
 
@@ -127,22 +153,17 @@ export function useAppearanceSettings(
     setButtonBordersState,
     accent,
     setAccent,
-    themeEditId,
-    themeName,
-    setThemeName,
-    themeCss,
-    setThemeCss,
     themeMsg,
-    savingTheme,
-    deletingThemeId,
-    setDeletingThemeId,
+    addingTheme,
+    setAddingTheme,
     themeFileRef,
-    resetThemeEditor,
+    handleCreateTheme,
     handleThemeFile,
+    handleRenameTheme,
+    handleThemeColor,
+    handleExportTheme,
     handleDownloadTemplate,
     handleCopyTemplate,
-    handleSaveTheme,
-    handleEditTheme,
     handleDeleteTheme,
   };
 }

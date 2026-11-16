@@ -25,6 +25,8 @@ interface FolderTreeProps {
   // A row clicked (pinned or top-level note) and a note picked in a folder (also resets the jump target)
   onOpenDoc: (id: string) => void;
   onSelectDoc: (id: string) => void;
+  // The sidebar's hashtag filter is on (the tree shows only matching notes)
+  filterActive?: boolean;
 }
 
 // The sidebar's notes: pinned ones, the folder tree, notes on the top level and, while dragging, the drop
@@ -45,13 +47,14 @@ export function FolderTree({
   requestDeleteDoc,
   onOpenDoc,
   onSelectDoc,
+  filterActive = false,
 }: FolderTreeProps) {
   const { t } = useTranslation('workspace');
   const { draggingDocId, draggingFolderPath, dragOverFolder, setDragOverFolder, handleDropOnFolder, handleFolderDragStart, handleDocDragStart, docDropProps, mergeHoverId, markedDocIds, handleDocRowClick } = drag;
   return (
     <>
       {pinnedDocs.length === 0 && folderTree.length === 0 && rootDocs.length === 0 ? (
-        <div className="px-2 py-2 text-xs text-muted">{t('folder.noNotes')}</div>
+        <div className="px-2 py-2 text-xs text-muted">{filterActive ? t('sidebar.filterNoMatch') : t('folder.noNotes')}</div>
       ) : (
         <div>
           {/* Pinned Notes (icon slot as in the tree: 9px + 1px border = folder row 8px + 2px border) */}
@@ -74,7 +77,7 @@ export function FolderTree({
                   onClick={(e) =>
                     handleDocRowClick(e, d.id, () => onOpenDoc(d.id))
                   }
-                  className={`${DOC_ROW_GROUP} w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+                  className={`${DOC_ROW_GROUP} w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 sm:py-0 min-h-11 sm:min-h-0 sm:h-7 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                     mergeHoverId === d.id
                       ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                       : markedDocIds.has(d.id)
@@ -138,7 +141,7 @@ export function FolderTree({
                   onClick={(e) =>
                     handleDocRowClick(e, d.id, () => onOpenDoc(d.id))
                   }
-                  className={`${DOC_ROW_GROUP} w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+                  className={`${DOC_ROW_GROUP} w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 sm:py-0 min-h-11 sm:min-h-0 sm:h-7 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                     mergeHoverId === d.id
                       ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                       : markedDocIds.has(d.id)

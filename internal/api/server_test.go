@@ -687,9 +687,13 @@ func TestWorkspaceTagsAPI(t *testing.T) {
 		{ID: "b1", Type: "bullet", Content: "Planung #Sprint12", Level: 0},
 		{ID: "b2", Type: "bullet", Content: "Subtask 1", Level: 1},
 	}
-	_, err := store.CreateDocument(user.ID, "", "Sprint Plan", "🚀", "", blocks, nil, false)
+	sprintDoc, err := store.CreateDocument(user.ID, "", "Sprint Plan", "🚀", "", blocks, nil, false)
 	if err != nil {
 		t.Fatalf("CreateDocument failed: %v", err)
+	}
+	// A hashtag with only a tag page: listed with no notes, docIds an empty array (not null)
+	if _, err := store.UpdateTagPageNote(user.ID, "nurseite", "Notiz zur Seite"); err != nil {
+		t.Fatal(err)
 	}
 
 	// 1. GET /api/v1/workspace/tags
@@ -702,8 +706,15 @@ func TestWorkspaceTagsAPI(t *testing.T) {
 	}
 	var tagList []domain.TagSummary
 	_ = json.Unmarshal(rec.Body.Bytes(), &tagList)
-	if len(tagList) != 1 || tagList[0].Tag != "sprint12" {
-		t.Fatalf("expected tag 'sprint12', got %+v", tagList)
+	if len(tagList) != 2 || tagList[0].Tag != "sprint12" || tagList[1].Tag != "nurseite" {
+		t.Fatalf("expected tags 'sprint12' and 'nurseite', got %+v", tagList)
+	}
+	// The notes carrying a hashtag, for the sidebar's filter
+	if len(tagList[0].DocIDs) != 1 || tagList[0].DocIDs[0] != sprintDoc.ID {
+		t.Fatalf("expected docIds [%s], got %+v", sprintDoc.ID, tagList[0].DocIDs)
+	}
+	if !strings.Contains(rec.Body.String(), `"tag":"nurseite","count":0,"docIds":[]`) {
+		t.Fatalf("tag page only hashtag without an empty docIds array: %s", rec.Body.String())
 	}
 
 	// 2. GET /api/v1/workspace/tags/Sprint12

@@ -187,7 +187,7 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 
 	_, _ = s.CreateFolder(user.ID, "Projekte")
 	_, _ = s.CreateFolder(user.ID, "Privat")
-	_, _ = s.CreateDocument(user.ID, "", "Diagramme von einem KI-Agenten über MCP", "🤖", "", seedBlocks([]seedBlock{
+	_, _ = s.CreateDocument(user.ID, "", "Diagramme von einem KI-Agenten über MCP", "", "", seedBlocks([]seedBlock{
 		{typ: "h2", text: "Wie die Grafiken entstanden sind"},
 		{typ: "callout", text: "Beide Grafiken auf dieser Seite hat Claude über den MCP-Server von MindSift erstellt: Claude hat sie als Mermaid-Diagramm geschickt, MindSift hat daraus Zeichnungen gemacht, die du wie deine eigenen bearbeitest – Kästen verschieben, Linien umlegen, Farben ändern."},
 		{typ: "h2", text: "MindSift auf einem kleinen Server"},
@@ -241,7 +241,7 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 		{typ: "h2", text: "Selbst ausprobieren"},
 		{level: 1, text: "Unter Kontoeinstellungen → API einen Schlüssel anlegen und den Agenten auf `/api/v1/mcp` zeigen lassen – mehr dazu in [[API & Smart Home]]"},
 	}), []string{"mcp", "homelab"}, true)
-	_, _ = s.CreateDocument(user.ID, "", "Homelab 2.0 – Umzug auf den neuen Server", "🚀", "Projekte", seedBlocks([]seedBlock{
+	_, _ = s.CreateDocument(user.ID, "", "Homelab 2.0 – Umzug auf den neuen Server", "", "Projekte", seedBlocks([]seedBlock{
 		{typ: "callout", text: "Ziel: Bis Ende des Monats laufen alle Dienste auf dem neuen Mini-PC – leiser, sparsamer und mit echtem Backup. Aufgaben dazu stehen in der Liste #homelab."},
 		{typ: "h2", text: "Warum überhaupt?"},
 		{level: 1, text: "Der alte Server zieht 65 W im Leerlauf, der neue nur 9 W"},
@@ -275,7 +275,7 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 		{level: 1, text: "Offsite-Backup: Hetzner Storage Box oder Festplatte bei den Eltern? Siehe [[Ideen-Sammlung]]"},
 	}), []string{"homelab", "projekt"}, false)
 
-	_, _ = s.CreateDocument(user.ID, "", "Urlaub Südtirol", "🏔️", "Privat", seedBlocks([]seedBlock{
+	_, _ = s.CreateDocument(user.ID, "", "Urlaub Südtirol", "", "Privat", seedBlocks([]seedBlock{
 		{typ: "h2", text: "Reiseplan Oktober"},
 		{level: 1, text: "Anreise Samstag, früh los wegen Brenner-Stau"},
 		{level: 1, text: "Hütte bei Villnöß – Bestätigung kommt per Mail"},
@@ -288,7 +288,7 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 	}), []string{"urlaub"}, false)
 
 	// Deeply nested on purpose: clicking a bullet zooms into its branch, the breadcrumb leads back out
-	_, _ = s.CreateDocument(user.ID, "", "Hausrenovierung 2027", "🏡", "Privat", seedBlocks([]seedBlock{
+	_, _ = s.CreateDocument(user.ID, "", "Hausrenovierung 2027", "", "Privat", seedBlocks([]seedBlock{
 		{typ: "callout", text: "Tipp: Klick auf einen Punkt (•) zoomt in diesen Ast, die Leiste oben führt Ebene für Ebene zurück."},
 		{text: "Erdgeschoss"},
 		{level: 1, text: "Küche"},
@@ -330,19 +330,20 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 		{level: 4, typ: "todo", text: "Angebot Fliesenleger"},
 		{level: 4, typ: "todo", text: "Rinne oder Punktablauf entscheiden"},
 		{level: 1, text: "Kinderzimmer"},
-		{level: 2, typ: "todo", text: "Wandfarbe aussuchen lassen 🎨 #familie", checked: true},
+		{level: 2, typ: "todo", text: "Wandfarbe aussuchen lassen #familie", checked: true},
 		{text: "Budget"},
 		{level: 1, text: "Gesamtrahmen 45.000 €, davon 10 % Puffer"},
 		{level: 2, text: "Küche ist der größte Posten, siehe Erdgeschoss → Küche"},
 	}), []string{"renovierung"}, false)
 
-	_, _ = s.CreateDocument(user.ID, "", "Ideen-Sammlung", "💡", "", seedBlocks([]seedBlock{
+	_, _ = s.CreateDocument(user.ID, "", "Ideen-Sammlung", "", "", seedBlocks([]seedBlock{
 		{text: "Offsite-Backup verschlüsselt mit restic #backup"},
 		{level: 1, text: "Vorteil: Snapshots, Deduplizierung, läuft auf jedem Ziel"},
 		{text: "Familien-Wiki statt WhatsApp-Gruppe für Rezepte und Termine #familie"},
 		{text: "Wochenrückblick jeden Sonntag: Inbox leeren, Aufgaben für die Woche planen #routine"},
 	}), []string{"ideen"}, false)
 
+	s.seedKnowledgeBaseDE(user)
 	s.seedLinkedTodosDE(user, homelab)
 	s.seedHelpNotesDE(user)
 	return nil

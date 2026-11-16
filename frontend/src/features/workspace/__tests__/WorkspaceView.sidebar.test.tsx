@@ -215,4 +215,87 @@ describe('WorkspaceView sidebar explorer', () => {
     await waitFor(() => expect(api.deleteDocument).toHaveBeenCalledWith('doc_own'));
     await waitFor(() => expect(screen.queryByText('Eigene Notiz')).toBeNull());
   });
+
+  describe('hashtag filter of the tree', () => {
+    const filterDocs = () => [
+      makeDoc({ id: 'doc_haus', title: 'Hausplan', tagCounts: { haus: 1 } }),
+      makeDoc({ id: 'doc_beide', title: 'Gartenhaus', folderPath: 'Privat/Garten', tagCounts: { haus: 2, garten: 1 } }),
+      makeDoc({ id: 'doc_garten', title: 'Beete', folderPath: 'Privat', tagCounts: { garten: 1 } }),
+      makeDoc({ id: 'doc_arbeit', title: 'Bericht', folderPath: 'Arbeit', tagCounts: { arbeit: 1 } }),
+      makeDoc({ id: 'doc_ohne', title: 'Ohne Hashtag' }),
+    ];
+    const tagButton = (tag: string) => screen.getByText(`#${tag}`).closest('button') as HTMLElement;
+    const trashBar = () => screen.getByTitle('Papierkorb – Notizen hierher ziehen, um sie zu löschen').parentElement as HTMLElement;
+
+    beforeEach(() => {
+      localStorage.removeItem('mindsift:workspace_expanded_folders');
+      vi.mocked(api.getDocuments).mockResolvedValue(filterDocs());
+      vi.mocked(api.getFolders).mockResolvedValue(['Privat', 'Privat/Garten', 'Arbeit']);
+    });
+
+    it('a click filters the tree by the hashtag and opens the folders with matches; a second click removes it', async () => {
+      render(<WorkspaceView onStatsChange={vi.fn()} />);
+      await waitFor(() => expect(screen.getByText('#haus')).toBeTruthy());
+      // Folders closed, no filter: no reset button, the trash bar unmarked
+      expect(screen.queryByText('Gartenhaus')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Hashtag-Filter aufheben' })).toBeNull();
+      expect(trashBar().dataset.filterActive).toBeUndefined();
+      expect(screen.queryByText('Filter aktiv')).toBeNull();
+
+      fireEvent.click(tagButton('haus'));
+      // No tag page: the click only filters
+      expect(screen.queryByText('Notizen zu #haus…')).toBeNull();
+      expect(tagButton('haus').getAttribute('aria-pressed')).toBe('true');
+      expect(tagButton('haus').className).toContain('bg-accent');
+      // Matching notes, their folders open; everything else hidden (also on the top level)
+      expect(screen.getByText('Hausplan')).toBeTruthy();
+      expect(screen.getByText('Gartenhaus')).toBeTruthy();
+      expect(screen.getByText('Privat')).toBeTruthy();
+      expect(screen.getByText('Garten')).toBeTruthy();
+      expect(screen.queryByText('Beete')).toBeNull();
+      expect(screen.queryByText('Arbeit')).toBeNull();
+      expect(screen.queryByText('Ohne Hashtag')).toBeNull();
+      // Filter on: reset button; only the line above the trash turns red, with a label on it (no tint)
+      expect(screen.getByRole('button', { name: 'Hashtag-Filter aufheben' })).toBeTruthy();
+      expect(trashBar().dataset.filterActive).toBe('true');
+      expect(trashBar().className).toContain('border-status-err');
+      expect(trashBar().className).not.toContain('bg-status-err');
+      expect(screen.getByText('Filter aktiv')).toBeTruthy();
+
+      fireEvent.click(tagButton('haus'));
+      expect(tagButton('haus').getAttribute('aria-pressed')).toBe('false');
+      expect(screen.getByText('Ohne Hashtag')).toBeTruthy();
+      expect(screen.getByText('Arbeit')).toBeTruthy();
+      // The folders are as before the filter (closed)
+      expect(screen.queryByText('Gartenhaus')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Hashtag-Filter aufheben' })).toBeNull();
+      expect(trashBar().dataset.filterActive).toBeUndefined();
+    });
+
+    it('several hashtags show only notes carrying all of them; the ✕ resets the filter', async () => {
+      render(<WorkspaceView onStatsChange={vi.fn()} />);
+      await waitFor(() => expect(screen.getByText('#garten')).toBeTruthy());
+
+      fireEvent.click(tagButton('garten'));
+      expect(screen.getByText('Beete')).toBeTruthy();
+      expect(screen.getByText('Gartenhaus')).toBeTruthy();
+      expect(screen.queryByText('Hausplan')).toBeNull();
+
+      fireEvent.click(tagButton('haus'));
+      expect(screen.getByText('Gartenhaus')).toBeTruthy();
+      expect(screen.queryByText('Beete')).toBeNull();
+      expect(screen.queryByText('Hausplan')).toBeNull();
+
+      // No note with all of them
+      fireEvent.click(tagButton('arbeit'));
+      expect(screen.getByText('Keine Notiz enthält alle gewählten Hashtags.')).toBeTruthy();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Hashtag-Filter aufheben' }));
+      expect(screen.getByText('Hausplan')).toBeTruthy();
+      expect(screen.getByText('Ohne Hashtag')).toBeTruthy();
+      expect(['haus', 'garten', 'arbeit'].map((tag) => tagButton(tag).getAttribute('aria-pressed'))).toEqual(['false', 'false', 'false']);
+      expect(screen.queryByRole('button', { name: 'Hashtag-Filter aufheben' })).toBeNull();
+      expect(screen.queryByText('Filter aktiv')).toBeNull();
+    });
+  });
 });

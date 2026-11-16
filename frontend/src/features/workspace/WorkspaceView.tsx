@@ -46,7 +46,7 @@ import { SidebarJournal, SidebarTags, SidebarTrash } from './SidebarSections';
 import { useWorkspaceData } from './useWorkspaceData';
 import { useTrashActions } from './useTrashActions';
 import { buildWorkspaceMenu } from './workspaceMenu';
-import { buildFolderTree, collectFolderPaths, folderAncestors, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata, withTodoToggled } from './workspaceListing';
+import { buildFolderTree, collectFolderPaths, docsWithAllTags, filterFolderTree, folderAncestors, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata, withTodoToggled } from './workspaceListing';
 import { FolderDialogs, type NewNoteSheet } from './FolderDialogs';
 import { WorkspaceSubView } from './workspaceTypes';
 import { Trans, useTranslation } from 'react-i18next';
@@ -104,7 +104,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [selectedDocId, setSelectedDocId] = useState<string | null>(
     navStep ? navStep.docId ?? null : initialDocId || readWorkspaceSession().docId || null
   );
-  const [targetBlockId, setTargetBlockId] = useState<string | null>(initialBlockId || null);
+  // The bullet a link or search hit pointed to, kept with its note: opening another note any other way
+  // (tree, plain link, back) must not look for it there ("bullet no longer exists")
+  const [target, setTarget] = useState<{ docId: string; blockId: string } | null>(
+    initialDocId && initialBlockId ? { docId: initialDocId, blockId: initialBlockId } : null
+  );
+  const targetBlockId = target && target.docId === selectedDocId ? target.blockId : null;
   const [newlyCreatedDocId, setNewlyCreatedDocId] = useState<string | null>(null);
   // Journal open and the last regular note survive switching to other tabs (the view remounts)
   const [subView, setSubView] = useState<WorkspaceSubView>(() =>
@@ -269,7 +274,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedDocId(initialDocId);
       // A bullet hit of the search while the workspace is already open
-      setTargetBlockId(initialBlockId || null);
+      setTarget(initialBlockId ? { docId: initialDocId, blockId: initialBlockId } : null);
       setSubView('editor');
       setMobileShowDetail(true);
     }
@@ -316,7 +321,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         });
         setDocs((prev) => (prev.some((d) => d.id === created.id) ? prev : [created, ...prev]));
         setNewlyCreatedDocId(created.id);
-        setTargetBlockId(null);
+        setTarget(null);
         setSelectedDocId(created.id);
         setSubView('editor');
         setMobileShowDetail(true);
@@ -362,7 +367,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   const handleJumpToDocBlock = useCallback((docId: string, blockId?: string) => {
     setSelectedDocId(docId);
-    setTargetBlockId(blockId || null);
+    setTarget(blockId ? { docId, blockId } : null);
     setNewlyCreatedDocId(null);
     setSubView('editor');
     setMobileShowDetail(true);
@@ -415,7 +420,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   const handleOpenTrashedDoc = (docId: string) => {
     setSelectedDocId(docId);
-    setTargetBlockId(null);
+    setTarget(null);
     setNewlyCreatedDocId(null);
     setSubView('editor');
     setMobileShowDetail(true);
@@ -504,7 +509,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     triggerHaptic(20);
     setDocs((prev) => prev.filter((d) => d.id !== result.sourceId));
     setSelectedDocId(result.targetId);
-    setTargetBlockId(null);
+    setTarget(null);
     setSubView('editor');
     setMobileShowDetail(true);
     setEditorNonce((n) => n + 1);
@@ -558,9 +563,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       if (match && link.blockId) {
         handleJumpToDocBlock(match.id, link.blockId);
       } else if (match) {
-        setSelectedDocId(match.id);
-        setSubView('editor');
-        setMobileShowDetail(true);
+        handleJumpToDocBlock(match.id);
       } else if (link.title.trim()) {
         // Deleted or never created: ask instead of creating a note right away
         const title = link.title.trim();
@@ -671,6 +674,40 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   const folderTree = useMemo(() => buildFolderTree(allFolderPaths, treeDocs, sharedFolders), [allFolderPaths, treeDocs, sharedFolders]);
 
+  // Hashtags clicked in the sidebar filter the tree: only notes carrying all of them, their folders open.
+  // Not saved (a reload shows everything again); a hashtag that no note carries any more drops out.
+  const [sidebarTagFilter, setSidebarTagFilter] = useState<string[]>([]);
+  // Folders folded up while the filter is on (all open otherwise); a changed filter opens them again
+  const [filterFolded, setFilterFolded] = useState<Record<string, boolean>>({});
+  const activeTagFilter = useMemo(
+    () => sidebarTagFilter.filter((tag) => tagsSummary.some((s) => s.tag === tag)),
+    [sidebarTagFilter, tagsSummary]
+  );
+  const toggleSidebarTag = useCallback((tag: string) => {
+    setSidebarTagFilter((prev) => (prev.includes(tag) ? prev.filter((x) => x !== tag) : [...prev, tag]));
+    setFilterFolded({});
+  }, []);
+  const clearSidebarTagFilter = useCallback(() => {
+    setSidebarTagFilter([]);
+    setFilterFolded({});
+  }, []);
+  const filterDocIds = useMemo(() => docsWithAllTags(tagsSummary, activeTagFilter), [tagsSummary, activeTagFilter]);
+  const filteredTree = useMemo(() => {
+    if (!filterDocIds) return null;
+    const paths: string[] = [];
+    const tree = filterFolderTree(folderTree, filterDocIds, paths);
+    return { tree, expanded: Object.fromEntries(paths.map((p) => [p, !filterFolded[p]])) };
+  }, [folderTree, filterDocIds, filterFolded]);
+  // Folding a folder while filtering changes only the filter's view, not the saved open folders
+  const setFilterExpanded = useCallback<React.Dispatch<React.SetStateAction<Record<string, boolean>>>>(
+    (action) => {
+      const current = filteredTree?.expanded || {};
+      const next = typeof action === 'function' ? action(current) : action;
+      setFilterFolded(Object.fromEntries(Object.keys(current).map((p) => [p, !next[p]])));
+    },
+    [filteredTree]
+  );
+
   // Demo, first visit in this browser: all folders open once (folding them up afterwards is kept)
   useEffect(() => {
     if (!demoMode || hadSavedFolders.current || allFolderPaths.length === 0) return;
@@ -690,13 +727,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   }, [selectedDocId, selectedFolder]);
 
   const pinnedDocs = useMemo(
-    () => treeDocs.filter((d) => d.isPinned),
-    [treeDocs]
+    () => treeDocs.filter((d) => d.isPinned && (!filterDocIds || filterDocIds.has(d.id))),
+    [treeDocs, filterDocIds]
   );
 
   const rootDocs = useMemo(
-    () => treeDocs.filter((d) => !d.folderPath && !d.isPinned),
-    [treeDocs]
+    () => treeDocs.filter((d) => !d.folderPath && !d.isPinned && (!filterDocIds || filterDocIds.has(d.id))),
+    [treeDocs, filterDocIds]
   );
 
   // Global To-Dos rollup collections
@@ -927,9 +964,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           <FolderTree
             pinnedDocs={pinnedDocs}
             rootDocs={rootDocs}
-            folderTree={folderTree}
-            expandedFolders={expandedFolders}
-            setExpandedFolders={setExpandedFolders}
+            folderTree={filteredTree ? filteredTree.tree : folderTree}
+            expandedFolders={filteredTree ? filteredTree.expanded : expandedFolders}
+            setExpandedFolders={filteredTree ? setFilterExpanded : setExpandedFolders}
+            filterActive={Boolean(filteredTree)}
             selectedDocId={selectedDocId}
             subView={subView}
             drag={drag}
@@ -940,12 +978,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             requestDeleteDoc={requestDeleteDoc}
             onOpenDoc={(id) => {
               setSelectedDocId(id);
+              setTarget(null);
               setSubView('editor');
               setMobileShowDetail(true);
             }}
             onSelectDoc={(id) => {
               setSelectedDocId(id);
-              setTargetBlockId(null);
+              setTarget(null);
               setNewlyCreatedDocId(null);
               setSubView('editor');
               setMobileShowDetail(true);
@@ -954,12 +993,23 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
           {/* Tags Explorer */}
           {tagsSummary.length > 0 && (
-            <SidebarTags tagsSummary={tagsSummary} subView={subView} selectedTag={selectedTag} handleSelectTag={handleSelectTag} />
+            <SidebarTags
+              tagsSummary={tagsSummary}
+              selectedTags={activeTagFilter}
+              toggleTag={toggleSidebarTag}
+              clearFilter={clearSidebarTagFilter}
+            />
           )}
         </div>
 
         {/* Trash at the bottom of the tree */}
-        <SidebarTrash drag={drag} subView={subView} trashCount={trash.length} openTrash={openTrash} />
+        <SidebarTrash
+          drag={drag}
+          subView={subView}
+          trashCount={trash.length}
+          openTrash={openTrash}
+          filterActive={activeTagFilter.length > 0}
+        />
       </aside>
 
       {/* RIGHT DETAIL AREA (STRICTLY ISOLATED BY KEY) */}

@@ -374,6 +374,8 @@
     "caption": "Ajouter une légende…",
     "imageUnavailable": "Image non disponible (hors ligne ou supprimée)",
     "enlarge": "Agrandir",
+    "resize": "Faire glisser pour changer la taille",
+    "resetSize": "Taille par défaut",
     "closeEsc": "Fermer (Échap)",
     "saving": "Enregistrement en cours…",
     "uploading": "Téléversement en cours…",
@@ -425,7 +427,12 @@
   },
   "sidebar": {
     "hashtags": "Hashtags (#)",
-    "trashTitle": "Corbeille – glisse des notes ici pour les supprimer"
+    "trashTitle": "Corbeille – glisse des notes ici pour les supprimer",
+    "tagFilterOn": "Afficher seulement les notes avec #{{tag}}",
+    "tagFilterOff": "Ne plus filtrer par #{{tag}}",
+    "clearFilter": "Retirer le filtre de hashtags",
+    "filterActive": "Filtre actif",
+    "filterNoMatch": "Aucune note ne contient tous les hashtags choisis."
   },
   "outlineBar": {
     "label": "Modifier la puce",

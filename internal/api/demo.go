@@ -73,6 +73,12 @@ func (s *Server) resetDemo() {
 	err := s.store.ResetAndSeedDemo()
 	// Uploaded images and recordings belong to the old state; their rows are gone with the tables
 	_ = os.RemoveAll(s.mediaRoot())
+	// The next deadline is set before the gate opens and before DEMO_RESET goes out: a client that asks
+	// for the status right after the event (or was held by the gate) must not get the deadline just passed,
+	// or its countdown would stay at "resetting"
+	if interval := s.demoResetInterval(); interval > 0 {
+		s.setDemoNextReset(time.Now().Add(interval))
+	}
 	s.demo.gate.Unlock()
 	if err != nil {
 		slog.Error("Demo reset failed", "error", err)
@@ -82,12 +88,15 @@ func (s *Server) resetDemo() {
 	s.wsHub.BroadcastSystem("DEMO_RESET")
 }
 
+func (s *Server) demoResetInterval() time.Duration {
+	return time.Duration(s.cfg.DemoResetMinutes) * time.Minute
+}
+
 func (s *Server) startDemoResetTicker() {
-	interval := time.Duration(s.cfg.DemoResetMinutes) * time.Minute
+	s.setDemoNextReset(time.Now().Add(s.demoResetInterval()))
 	for {
-		next := time.Now().Add(interval)
-		s.setDemoNextReset(next)
-		if !s.wait(time.Until(next)) {
+		// resetDemo sets the following deadline itself
+		if !s.wait(time.Until(s.demoNextReset())) {
 			return
 		}
 		s.resetDemo()

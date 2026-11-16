@@ -208,7 +208,7 @@ const es: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image (subir, fotografiar, pegar o enlazar una imagen; solo en un punto vacío). Una imagen copiada o una captura de pantalla también se pega directamente en la nota con Ctrl+V (Cmd+V, en el móvil mantener pulsado y Pegar), o en el ordenador arrastrando archivos de imagen (desde el gestor de archivos, o una imagen de una pestaña del navegador) sobre un punto: se convierte en un punto de imagen propio debajo, un punto vacío se convierte en la imagen; arrastradas junto a los puntos o sobre el título, las imágenes van al final de la nota</span>
+                <span>/image (subir, fotografiar, pegar o enlazar una imagen; solo en un punto vacío). Una imagen copiada o una captura de pantalla también se pega directamente en la nota con Ctrl+V (Cmd+V, en el móvil mantener pulsado y Pegar), o en el ordenador arrastrando archivos de imagen (desde el gestor de archivos, o una imagen de una pestaña del navegador) sobre un punto: se convierte en un punto de imagen propio debajo, un punto vacío se convierte en la imagen; arrastradas junto a los puntos o sobre el título, las imágenes van al final de la nota. Arrastra la esquina inferior derecha de una imagen para agrandarla o reducirla (se mantienen las proporciones, como máximo tan ancha como la nota); el botón de arriba a la derecha la devuelve al tamaño predeterminado</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
@@ -370,6 +370,9 @@ const es: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Vista «Etiquetas y filtros»:</strong> el resumen de etiquetas está en las pestañas del Workspace, arriba. Muestra todos los hashtags en uso, permite buscar sus apariciones en todos los documentos e incluso añadir notas libres en las páginas de etiquetas.
+            </li>
+            <li>
+              <strong className="text-main">Hashtags en la barra de carpetas:</strong> un clic en un hashtag debajo de las carpetas filtra el árbol: solo quedan las notas con ese hashtag, sus carpetas se abren y las demás se ocultan. Con varios hashtags elegidos se ven las notas que los contienen todos; un segundo clic quita uno, la ✕ roja junto a «Hashtags» quita el filtro. Mientras está activo, la barra sobre la papelera brilla ligeramente en rojo; al recargar desaparece.
             </li>
             <li>
               <strong className="text-main">Enlaces entrantes (backlinks):</strong> al final de cada nota, «Vinculado a esta nota» muestra qué otras notas la enlazan mediante <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[título]]</code>. Al hacer clic en un lugar, se salta directamente allí.
@@ -734,7 +737,7 @@ const es: HelpContent = {
               <strong className="text-main">Cambiar de tema:</strong> en el menú de perfil (tu foto de perfil; en el escritorio, abajo en la barra de la izquierda) o en <em>Ajustes de la cuenta → Apariencia y temas</em>.
             </li>
             <li>
-              <strong className="text-main">Tema personalizado:</strong> descarga o pega la plantilla, ajusta colores y esquinas, súbela o pégala como archivo <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> y selecciona «Guardar y activar». El tema se aplica de inmediato y estará disponible en todos tus dispositivos.
+              <strong className="text-main">Temas propios:</strong> en <em>Temas personalizados</em>, «+» crea un tema con los colores de la plantilla; el nombre y las casillas de color se cambian directamente en la fila (se aplica al instante si el tema está activo), y exportar lo descarga como archivo <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> que se puede volver a importar y compartir. Los temas propios están disponibles en todos tus dispositivos.
             </li>
           </ul>
         </div>
