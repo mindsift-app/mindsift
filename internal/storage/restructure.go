@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -89,9 +90,9 @@ func titleFrom(title, base string) bool {
 }
 
 // uniqueTitle appends " (2)", " (3)" … when the user already has a note of that name, so the wiki link
-// points to exactly one note.
+// points to exactly one note. Only the titles are read (notes without their bullets).
 func (s *Store) uniqueTitle(userID, title string) string {
-	docs, _ := s.GetDocuments(userID)
+	docs, _ := s.getDocuments(context.Background(), userID, false)
 	taken := map[string]bool{}
 	for _, d := range docs {
 		taken[strings.ToLower(d.Title)] = true
@@ -286,7 +287,8 @@ func (s *Store) InlineNote(userID, docID, blockID string) (*InlineResult, error)
 	if !ok {
 		return nil, ErrNotNoteLink
 	}
-	docs, err := s.GetDocuments(userID)
+	// Without bullets: the link is resolved by id and title, the bullets come from the log below
+	docs, err := s.getDocuments(context.Background(), userID, false)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,7 @@ var messagesIT = map[string]string{
 	// Calendar subscription
 	"Kalender-Abo nicht gefunden":                        "Abbonamento al calendario non trovato",
 	"Kalender-Abos sind auf diesem Server ausgeschaltet": "Gli abbonamenti al calendario sono disattivati su questo server",
-	"Liste: {name}":       "Elenco: {name}",
+	"Liste: {name}":     "Elenco: {name}",
 	"{name} – Aufgaben": "{name} – Attività",
 	"Offene Aufgaben mit Fälligkeitsdatum aus {name}": "Attività aperte con una scadenza da {name}",
 

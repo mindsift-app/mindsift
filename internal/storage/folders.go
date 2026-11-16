@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"path/filepath"
@@ -15,8 +16,8 @@ import (
 func (s *Store) GetFolders(userID string) ([]string, error) {
 	folderSet := make(map[string]bool)
 
-	// 1. Collect from resolved documents for this user
-	docs, err := s.GetDocuments(userID)
+	// 1. Collect from resolved documents for this user (folder paths only, without bullets)
+	docs, err := s.getDocuments(context.Background(), userID, false)
 	if err == nil {
 		for _, doc := range docs {
 			if doc.FolderPath != "" {
@@ -385,8 +386,8 @@ func (s *Store) MoveFolder(userID, sourcePath, targetParentPath string) (string,
 		}
 	}
 
-	// 2. Move all affected documents
-	docs, err := s.GetDocuments(userID)
+	// 2. Move all affected documents (folder paths, ids and titles only, without bullets)
+	docs, err := s.getDocuments(context.Background(), userID, false)
 	if err != nil {
 		return "", nil, err
 	}

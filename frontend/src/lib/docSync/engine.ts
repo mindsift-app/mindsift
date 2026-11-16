@@ -210,6 +210,7 @@ export class DocSyncEngine {
   private longPollRunning = false;
   private longPollBroken = false;
   private longPollAbort: AbortController | null = null;
+  private firstLoad: Promise<void> | null = null; // first snapshot while nothing is loaded yet
 
   private syncing = false;
   private syncAgain = false;
@@ -280,7 +281,7 @@ export class DocSyncEngine {
     }
     if (!this.ready) {
       try {
-        await this.loadSnapshot();
+        await this.loadFirstSnapshot();
       } catch (err) {
         this.handleError(err);
         this.emit();
@@ -751,6 +752,19 @@ export class DocSyncEngine {
     await this.persist(true);
   }
 
+  /**
+   * Loads the snapshot when nothing is loaded yet, once: the push channel may start a sync (and with it this
+   * load) while start() is still waiting for the same snapshot. A failed load is retried by the next caller.
+   */
+  private loadFirstSnapshot(): Promise<void> {
+    if (!this.firstLoad) {
+      this.firstLoad = this.loadSnapshot().finally(() => {
+        this.firstLoad = null;
+      });
+    }
+    return this.firstLoad;
+  }
+
   private holds(): string[] {
     const t = this.now();
     const out: string[] = [];
@@ -767,7 +781,7 @@ export class DocSyncEngine {
   }
 
   private async roundTrip(): Promise<void> {
-    if (!this.ready) await this.loadSnapshot();
+    if (!this.ready) await this.loadFirstSnapshot();
     if (!this.inflight && this.pending.length > 0 && this.canEdit) {
       this.inflight = formBatch(this.pending);
       this.pending = [];

@@ -195,9 +195,10 @@ func ReadableWikiLinks(content string, titles map[string]string) string {
 
 // WikiLinker returns a function that gives links without id the id of their note, where the user can
 // open exactly one note of that title (or the note holding the linked bullet); ambiguous and missing
-// ones stay as they are. For text coming from outside: AI agents, imports.
+// ones stay as they are. For text coming from outside: AI agents, imports. Only titles are needed: the
+// notes are listed without their bullets.
 func (s *Store) WikiLinker(userID string) func(content string) string {
-	docs, _ := s.GetDocuments(userID)
+	docs, _ := s.getDocuments(context.Background(), userID, false)
 	byTitle := map[string][]string{}
 	titles := map[string]string{}
 	for _, d := range docs {
