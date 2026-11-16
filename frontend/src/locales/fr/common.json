@@ -159,6 +159,7 @@
     "now": "Recharger maintenant",
     "countdown": "Rechargement dans {{seconds}} s.",
     "waitTyping": "Se recharge dès que tu fais une pause dans la saisie.",
+    "held": "Se recharge dès que tu as fini : des saisies ou dictées ne sont pas encore enregistrées.",
     "saving": "Enregistrement des modifications, puis rechargement …",
     "offline": "Se recharge dès que le serveur est de nouveau joignable.",
     "stuckTitle": "La nouvelle version ne se charge pas",

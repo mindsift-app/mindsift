@@ -10,6 +10,11 @@ vi.mock('../docSync/flushClosed', () => ({ flushClosedNotes: vi.fn(async () => 0
 import { useUpdateCheck, UPDATE_IDLE_MS, UPDATE_MAX_WAIT_MS, UPDATE_NOTICE_MS } from '../useUpdateCheck';
 import { reloadAttempts } from '../appReload';
 import { UpdateReloadNotice } from '../../components/UpdateReloadNotice';
+import { reloadHeld, useHoldReload } from '../reloadHold';
+import { DictationQueue } from '../../features/capture/dictationQueue';
+
+// One step of the hook's clock and a little more
+const TICK = 300;
 
 let liveBuild = 'build-alt';
 let serverAnswers = true;
@@ -62,6 +67,8 @@ describe('useUpdateCheck', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    // Every test gives back what it held
+    expect(reloadHeld()).toBe(false);
   });
 
   it('does not reload while the server runs the same build, also after a reconnect (demo reset, restart)', async () => {
@@ -123,19 +130,90 @@ describe('useUpdateCheck', () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
-  it('waits while text not yet saved stands in a field outside a note', async () => {
+  it('does not reload by itself while a field outside a note holds unsaved text, and counts down again once it is empty', async () => {
     liveBuild = 'build-neu';
     const input = document.createElement('input');
     document.body.appendChild(input);
     input.value = 'Milch kaufen';
     input.focus();
-    start();
+    const { result } = start();
     await wait(0);
-    await wait(UPDATE_NOTICE_MS + 10_000);
+    await wait(5 * 60_000);
     expect(reload).not.toHaveBeenCalled();
-    await wait(UPDATE_MAX_WAIT_MS);
-    expect(reload).toHaveBeenCalledTimes(1);
+    expect(result.current.update?.phase).toBe('held');
+    render(<UpdateReloadNotice update={result.current.update!} onReloadNow={result.current.reloadNow} />);
+    expect(screen.getByText('Lädt neu, sobald du fertig bist: Eingaben oder Diktate sind noch nicht gespeichert.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Jetzt neu laden' })).toBeTruthy();
+
+    input.value = '';
+    await wait(TICK);
+    expect(result.current.update).toMatchObject({ phase: 'countdown', secondsLeft: 5 });
+    await wait(UPDATE_NOTICE_MS - 1000);
+    expect(reload).not.toHaveBeenCalled();
+    await wait(1000);
+    expect(calls).toEqual(['flush', 'reload']);
     input.remove();
+  });
+
+  it('holds back while unsaved work is registered (open task draft, capture text), the button still reloads', async () => {
+    liveBuild = 'build-neu';
+    const draft = renderHook(({ active }) => useHoldReload(active), { initialProps: { active: true } });
+    const { result } = start();
+    await wait(UPDATE_MAX_WAIT_MS * 2);
+    expect(result.current.update?.phase).toBe('held');
+    expect(reload).not.toHaveBeenCalled();
+
+    draft.rerender({ active: false });
+    await wait(UPDATE_NOTICE_MS + TICK);
+    expect(calls).toEqual(['flush', 'reload']);
+    draft.unmount();
+
+    // With a draft open, a click on the button reloads all the same
+    calls.length = 0;
+    const again = renderHook(() => useHoldReload(true));
+    const second = start();
+    await wait(TICK);
+    act(() => second.result.current.reloadNow());
+    await wait(0);
+    expect(calls).toEqual(['flush', 'reload-bypass']);
+    again.unmount();
+  });
+
+  it('waits for a running dictation and the dictation queue', async () => {
+    liveBuild = 'build-neu';
+    let answer: (text: string) => void = () => {};
+    const saved: string[] = [];
+    const queue = new DictationQueue<void>({
+      save: (text) => {
+        saved.push(text);
+      },
+      onChange: () => {},
+      fallbackMessage: () => 'Fehler',
+    });
+    queue.add({ text: () => new Promise<string>((resolve) => (answer = resolve)) });
+    const { result } = start();
+    await wait(UPDATE_MAX_WAIT_MS * 2);
+    expect(result.current.update?.phase).toBe('held');
+    expect(reload).not.toHaveBeenCalled();
+
+    await act(async () => {
+      answer('Zahnarzt anrufen');
+    });
+    expect(saved).toEqual(['Zahnarzt anrufen']);
+    await wait(UPDATE_NOTICE_MS + TICK);
+    expect(calls).toEqual(['flush', 'reload']);
+  });
+
+  it('keeps a failed dictation from being lost by a reload until it is retried or thrown away', async () => {
+    liveBuild = 'build-neu';
+    const queue = new DictationQueue<void>({ save: () => {}, onChange: () => {}, fallbackMessage: () => 'Fehler' });
+    const id = queue.add({ text: () => Promise.reject(new Error('Server nicht erreichbar')) });
+    start();
+    await wait(UPDATE_MAX_WAIT_MS * 2);
+    expect(reload).not.toHaveBeenCalled();
+    act(() => queue.discard(id));
+    await wait(UPDATE_NOTICE_MS + TICK);
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 
   it('never reloads while offline, and does once back online', async () => {

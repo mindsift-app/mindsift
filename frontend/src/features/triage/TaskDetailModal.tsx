@@ -41,6 +41,7 @@ import { formatDate } from '../../lib/format';
 import { pushModal } from '../../lib/navHistory';
 import { useScrollLock } from '../../lib/useScrollLock';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { useHoldReload } from '../../lib/reloadHold';
 
 interface TaskDetailModalProps {
   task: Thought | null;
@@ -207,6 +208,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
 
   const notesDirty = isEditingNotes && notesDraft !== (task.notes || '');
   const titleDirty = isEditingTitle && titleDraft.trim() !== '' && titleDraft.trim() !== task.content;
+  // Unsaved title, notes or a new subtask: the app does not reload for a new version meanwhile
+  useHoldReload(notesDirty || titleDirty || newSubtaskTitle.trim() !== '');
   // "Fertig", the X, Escape and a click beside the dialog: with unsaved changes it shakes and asks first
   const [shaking, setShaking] = useState(false);
   const requestClose = useCallback(() => {

@@ -20,6 +20,7 @@ import { PriorityLevel, SharedList, TaskList, Thought } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import { readViewSession, writeViewSession } from '../../lib/viewSession';
 import { useVoiceInput } from '../../lib/useVoiceInput';
+import { useHoldReload } from '../../lib/reloadHold';
 import { VoiceWave } from '../../components/VoiceWave';
 import { DateField } from '../../components/DateField';
 import { NaturalDateChip, PhraseHighlight, applyNaturalDate, useNaturalDate } from '../../components/NaturalDateHint';
@@ -49,6 +50,8 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
   // Read-only shared lists cannot take new items; stable reference for the effect below
   const writableLists = useMemo(() => lists.filter((l) => l.isOwner || l.role !== 'viewer'), [lists]);
   const [content, setContent] = useState('');
+  // Typed but not captured yet: the app does not reload for a new version meanwhile
+  useHoldReload(content.trim() !== '');
   const [priority, setPriority] = useState<PriorityLevel>('normal');
   const [dueDate, setDueDate] = useState('');
   const [target, setTarget] = useState<CaptureTarget>(fixedTarget || 'inbox');

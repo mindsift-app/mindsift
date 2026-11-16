@@ -4,6 +4,7 @@
 // fails stays in the queue with its audio or text until it is tried again or thrown away; the ones after it
 // are saved meanwhile.
 import { errorMessage } from '../../lib/errorMessage';
+import { holdReload } from '../../lib/reloadHold';
 
 export type DictationItemState = 'transcribing' | 'saving' | 'failed';
 
@@ -156,6 +157,8 @@ export class DictationQueue<R = unknown> {
   }
 
   private changed(): void {
+    // Dictations not saved yet (failed ones too): the app does not reload for a new version meanwhile
+    holdReload(this, this.entries.length > 0);
     this.options.onChange(this.items());
   }
 }

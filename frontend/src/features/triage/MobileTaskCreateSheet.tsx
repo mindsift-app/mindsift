@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { TriangleAlert, Calendar, SquareCheckBig, Flame, X } from 'lucide-react';
 import { PriorityLevel, TaskList } from '../../lib/types';
 import { triggerHaptic } from '../../lib/api';
+import { useHoldReload } from '../../lib/reloadHold';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { DateField } from '../../components/DateField';
 import { SelectMenu } from '../../components/SelectMenu';
@@ -34,6 +35,8 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dueDate, setDueDate] = useState('');
+  // The draft (kept while the sheet is closed too): no reload for a new version meanwhile
+  useHoldReload(title.trim() !== '');
   const [priority, setPriority] = useState<PriorityLevel>('normal');
   // A date in the text ("Zahnarzt morgen 14 Uhr"), unless one was picked in the date field
   const natural = useNaturalDate(title, open && !dueDate);

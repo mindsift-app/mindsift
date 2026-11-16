@@ -157,6 +157,7 @@
     "now": "Jetzt neu laden",
     "countdown": "Lädt in {{seconds}} s neu.",
     "waitTyping": "Lädt neu, sobald du kurz mit dem Tippen pausierst.",
+    "held": "Lädt neu, sobald du fertig bist: Eingaben oder Diktate sind noch nicht gespeichert.",
     "saving": "Änderungen werden gesichert, dann lädt die App neu …",
     "offline": "Lädt neu, sobald der Server wieder erreichbar ist.",
     "stuckTitle": "Neue Version lädt nicht",

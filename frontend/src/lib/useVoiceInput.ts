@@ -5,6 +5,7 @@ import i18n from '../i18n';
 import { errorMessage } from './errorMessage';
 import { useLatestRef } from './useLatestRef';
 import { SegmentedTranscription } from './voiceTranscription';
+import { useHoldReload } from './reloadHold';
 
 export type VoiceState = 'idle' | 'listening' | 'transcribing';
 
@@ -43,6 +44,8 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   const [mode, setMode] = useState<EffectiveVoiceMode | null>(null);
   const [state, setState] = useState<VoiceState>('idle');
   const [pendingChunks, setPendingChunks] = useState(0);
+  // A recording or its transcription is under way: the app does not reload for a new version meanwhile
+  useHoldReload(state !== 'idle' || pendingChunks > 0);
   const maxSecondsRef = useRef(600);
   const recorderRef = useRef<VoiceRecorder | null>(null);
   const recognitionRef = useRef<BrowserRecognition | null>(null);

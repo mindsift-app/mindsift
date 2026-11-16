@@ -159,6 +159,7 @@
     "now": "Ricarica ora",
     "countdown": "Si ricarica tra {{seconds}} s.",
     "waitTyping": "Si ricarica appena fai una pausa nella digitazione.",
+    "held": "Si ricarica quando hai finito: alcuni testi o dettature non sono ancora salvati.",
     "saving": "Salvataggio delle modifiche, poi si ricarica …",
     "offline": "Si ricarica appena il server è di nuovo raggiungibile.",
     "stuckTitle": "La nuova versione non si carica",

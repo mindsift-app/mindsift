@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { APP_BUILD } from '../version';
 import { flushBeforeReload, noteReloadAttempt, reloadAttempts, reloadPage, settleReload } from './appReload';
+import { reloadHeld } from './reloadHold';
 
 // Short enough for a tab that stays in front behind a proxy, where a server restart can go unnoticed by
 // the realtime connection for a long time; version.json is a few bytes
 const CHECK_EVERY_MS = 5 * 60 * 1000;
 /** The notice stands this long before the page reloads */
 export const UPDATE_NOTICE_MS = 5_000;
-/** Typing goes on: the reload waits for a pause this long... */
+/** Typing in a note goes on: the reload waits for a pause this long... */
 export const UPDATE_IDLE_MS = 2_000;
 /** ...but not longer than this after the notice came up */
 export const UPDATE_MAX_WAIT_MS = 30_000;
@@ -22,10 +23,12 @@ export interface AvailableUpdate {
 
 /**
  * countdown: the notice is up, the page reloads in `secondsLeft`; waiting: the user is typing, the reload
- * waits for a pause; saving: waiting changes are sent, then the page reloads; offline: reloads once the
- * server answers again; stuck: reloading did not bring the new build, only the button is left.
+ * waits for a pause; held: unsaved work that does not save itself (lib/reloadHold.ts, a focused field with
+ * text outside a note), no automatic reload until it is gone; saving: waiting changes are sent, then the
+ * page reloads; offline: reloads once the server answers again; stuck: reloading did not bring the new
+ * build, only the button is left.
  */
-export type UpdatePhase = 'countdown' | 'waiting' | 'saving' | 'offline' | 'stuck';
+export type UpdatePhase = 'countdown' | 'waiting' | 'held' | 'saving' | 'offline' | 'stuck';
 
 export interface UpdateState extends AvailableUpdate {
   phase: UpdatePhase;
@@ -53,7 +56,8 @@ function editingUnsavedField(): boolean {
  * the app reloads itself, so nobody keeps working with an old app after a server update. Checked when the
  * tab or the installed app comes back to the foreground, every 5 minutes, when the browser is online again
  * and when the realtime connection is back after a server restart. A notice counts down UPDATE_NOTICE_MS,
- * typing delays the reload until a pause (UPDATE_IDLE_MS, at most UPDATE_MAX_WAIT_MS); before the reload
+ * typing in a note delays the reload until a pause (UPDATE_IDLE_MS, at most UPDATE_MAX_WAIT_MS), unsaved
+ * work that does not save itself holds it back until it is gone (the button still reloads); before the reload
  * everything waiting is sent or stored. Never while offline; no loops (MAX_RELOADS per build and tab).
  */
 export function useUpdateCheck(options: UpdateCheckOptions = {}) {
@@ -140,15 +144,25 @@ export function useUpdateCheck(options: UpdateCheckOptions = {}) {
         waitForServer();
         return;
       }
+      // Unsaved work that does not save itself: no automatic reload at all; once it is gone the countdown
+      // starts over
+      if (reloadHeld() || editingUnsavedField()) {
+        if (phase !== 'held') {
+          phase = 'held';
+          show();
+        }
+        return;
+      }
       const now = Date.now();
+      if (phase === 'held') shownAt = now;
       const left = UPDATE_NOTICE_MS - (now - shownAt);
       if (left > 0) {
         phase = 'countdown';
         show(Math.ceil(left / 1000));
         return;
       }
-      const busy = now - lastInput < UPDATE_IDLE_MS || editingUnsavedField();
-      if (busy && now - shownAt < UPDATE_MAX_WAIT_MS) {
+      // Typing in a note (sent before the reload anyway): wait for a pause, but not for ever
+      if (now - lastInput < UPDATE_IDLE_MS && now - shownAt < UPDATE_MAX_WAIT_MS) {
         if (phase !== 'waiting') {
           phase = 'waiting';
           show();

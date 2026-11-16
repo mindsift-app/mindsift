@@ -13,6 +13,8 @@ export const UpdateReloadNotice: React.FC<{ update: UpdateState; onReloadNow: ()
       ? t('update.countdown', { seconds: update.secondsLeft })
       : update.phase === 'waiting'
       ? t('update.waitTyping')
+      : update.phase === 'held'
+      ? t('update.held')
       : update.phase === 'saving'
       ? t('update.saving')
       : update.phase === 'offline'
