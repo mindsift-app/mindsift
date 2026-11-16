@@ -66,6 +66,7 @@ import { isNoteLinkOnly, retargetWikiLinks, unlinkWikiLinks, WikiLink, WikiLinkC
 import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
 import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
+import { isApplePlatform } from '../../lib/platform';
 import { ownClipboardText } from '../../lib/outlineMarkdown';
 import { caretAfterChange, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
@@ -1555,7 +1556,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           }`}
           title={
             canEdit
-              ? t('block.dragZoom')
+              ? t('block.dragZoom', { key: isApplePlatform() ? 'Option' : t('block.ctrlKey') })
               : t('block.clickZoom')
           }
         >
@@ -1707,6 +1708,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           <AudioBlock
             content={localContent}
             canEdit={canEdit}
+            locked={indentLocked}
+            onIndent={indentTable}
+            onOutdent={outdentTable}
+            canIndent={canIndentRow}
+            canOutdent={canOutdentRow}
             onCaptionChange={(caption) => {
               const ref = parseMediaContent(localContent);
               if (!ref) return;

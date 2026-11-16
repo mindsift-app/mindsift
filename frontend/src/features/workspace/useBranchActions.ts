@@ -4,6 +4,7 @@ import { Document } from '../../lib/types';
 import { api } from '../../lib/api';
 import i18n from '../../i18n';
 import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
+import { moveBranch } from '../../lib/outlineList';
 import type { ExtractTarget } from './ExtractPopover';
 import { ensureNonEmptyBlocks, useDocumentSync } from './useDocumentSync';
 import { errorMessage } from '../../lib/errorMessage';
@@ -108,13 +109,36 @@ export function useBranchActions({
     return () => window.removeEventListener('keydown', onKey);
   }, [embedded, actionsTarget, scrollRef, historyKeyRef]);
 
+  // Dragged with Ctrl (Mac: Option) onto another note or "new note": only the bullet leaves. Its children first
+  // move up into its place as an own edit (the server takes the bullet with what hangs below it); returns
+  // whether that took an undo step of its own
+  const detachChildren = useCallback(
+    (blockId: string): boolean => {
+      const prev = currentBlocksRef.current;
+      const i = prev.findIndex((b) => b.id === blockId);
+      const child = prev[i + 1];
+      if (i < 0 || !child || (child.level || 0) <= (prev[i].level || 0)) return false;
+      const next = moveBranch(prev, blockId, { beforeId: child.id }, prev[i].level || 0, true);
+      if (next === prev) return false;
+      applyLocalBlocks(next);
+      return true;
+    },
+    [applyLocalBlocks, currentBlocksRef]
+  );
+
   // A bullet with its children becomes a note of its own. The server only creates the note; the branch
   // is replaced here as an ordinary own edit, so it shows at once, syncs like typing and Strg+Z works.
   // withLink false (dragged onto the "new note" button): the branch just leaves, like a move.
   const handleExtractBlock = useCallback(
-    async (blockId: string, withLink = true) => {
+    async (blockId: string, withLink = true, single = false) => {
       const engine = engineRef.current;
       if (!engine || !canEdit) return;
+      const detached = single && detachChildren(blockId);
+      // Undo takes back the move and the children moving up together
+      const undo = () => {
+        handleUndo();
+        if (detached) handleUndo();
+      };
       try {
         await engine.syncNow(); // the server reads the branch as typed so far
         const { document: created, link } = await api.extractBranch(docId, blockId, engine.clientId);
@@ -138,13 +162,14 @@ export function useBranchActions({
         onDocCreated?.(created);
         showNotice(i18n.t(withLink ? 'workspace:editor.extracted' : 'workspace:editor.moved', { title: created.title }), [
           { label: i18n.t('workspace:editor.open'), run: () => onOpenDocBlock?.(created.id) },
-          { label: i18n.t('common:sync.undo'), run: () => handleUndo() },
+          { label: i18n.t('common:sync.undo'), run: undo },
         ]);
       } catch (err) {
+        if (detached) handleUndo(); // the children go back under the bullet
         showNotice(errorMessage(err, i18n.t('workspace:editor.convertFailed')));
       }
     },
-    [docId, canEdit, onOpenDocBlock, onDocCreated, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef]
+    [docId, canEdit, onOpenDocBlock, onDocCreated, showNotice, handleUndo, detachChildren, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef]
   );
 
   // A bullet with its children goes to the end of another note (dragged onto it in the sidebar, or chosen
@@ -152,9 +177,14 @@ export function useBranchActions({
   // Strg+Z brings it back (and takes it out of the target again). withLink: a link to the bullet in the
   // target note stays behind instead.
   const handleMoveBranch = useCallback(
-    async (blockId: string, target: ExtractTarget, withLink: boolean) => {
+    async (blockId: string, target: ExtractTarget, withLink: boolean, single = false) => {
       const engine = engineRef.current;
       if (!engine || !canEdit) return;
+      const detached = single && detachChildren(blockId);
+      const undo = () => {
+        handleUndo();
+        if (detached) handleUndo();
+      };
       try {
         await engine.syncNow(); // the server reads the branch as typed so far
         const result = await api.moveBranch(docId, blockId, target.id, engine.clientId);
@@ -179,13 +209,14 @@ export function useBranchActions({
         const name = result.targetTitle || target.title;
         showNotice(i18n.t(withLink ? 'workspace:editor.extractedInto' : 'workspace:editor.moved', { title: name }), [
           { label: i18n.t('workspace:editor.open'), run: () => onOpenDocBlock?.(result.targetId, result.rootId) },
-          { label: i18n.t('common:sync.undo'), run: () => handleUndo() },
+          { label: i18n.t('common:sync.undo'), run: undo },
         ]);
       } catch (err) {
+        if (detached) handleUndo(); // the children go back under the bullet
         showNotice(errorMessage(err, i18n.t('workspace:editor.moveFailed')));
       }
     },
-    [docId, canEdit, onOpenDocBlock, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef, lastMoveRef]
+    [docId, canEdit, onOpenDocBlock, showNotice, handleUndo, detachChildren, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef, lastMoveRef]
   );
 
   // A bullet dragged out of this note onto another note in the sidebar (useDocDragDrop)
@@ -193,10 +224,10 @@ export function useBranchActions({
   const handleExtractBlockRef = useLatestRef(handleExtractBlock);
   useEffect(() => {
     const onMove = (e: Event) => {
-      const { docId: from, blockId, targetId, targetTitle } = (e as CustomEvent).detail || {};
+      const { docId: from, blockId, targetId, targetTitle, single } = (e as CustomEvent).detail || {};
       if (from !== docId || embedded) return;
-      if (!targetId) void handleExtractBlockRef.current(blockId, false);
-      else void handleMoveBranchRef.current(blockId, { id: targetId, title: targetTitle }, false);
+      if (!targetId) void handleExtractBlockRef.current(blockId, false, !!single);
+      else void handleMoveBranchRef.current(blockId, { id: targetId, title: targetTitle }, false, !!single);
     };
     window.addEventListener(MOVE_BRANCH_EVENT, onMove);
     return () => window.removeEventListener(MOVE_BRANCH_EVENT, onMove);

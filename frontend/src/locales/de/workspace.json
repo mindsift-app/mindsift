@@ -138,7 +138,8 @@
   "block": {
     "expand": "Unterpunkte ausklappen (Strg+Klick: alle Ebenen)",
     "collapse": "Unterpunkte einklappen (Strg+Klick: alle Ebenen)",
-    "dragZoom": "Ziehen zum Verschieben • Klick: Ast hineinzoomen (Fokus-Modus)",
+    "dragZoom": "Ziehen zum Verschieben (mit {{key}}: ohne Unterpunkte) • Klick: Ast hineinzoomen (Fokus-Modus)",
+    "ctrlKey": "Strg",
     "clickZoom": "Klick: In diesen Ast hineinzoomen (Fokus-Modus)",
     "markOpen": "Als offen markieren",
     "markDone": "Als erledigt markieren",

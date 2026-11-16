@@ -3,6 +3,7 @@ import { Document } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import i18n from '../../i18n';
 import { announceMoveBranch, BLOCK_DRAG_TYPE } from './moveBranchEvent';
+import { singleDragKey } from '../../lib/platform';
 
 // A note a bullet can be moved into: writable and not in the trash
 export const canTakeBranch = (d: Document) => !d.isArchived && (d.isOwner || d.permission === 'owner' || d.permission === 'write');
@@ -233,7 +234,7 @@ export function useDocDragDrop({
           const target = docs.find((d) => d.id === targetId);
           if (docId && blockId && target) {
             triggerHaptic(15);
-            announceMoveBranch({ docId, blockId, targetId, targetTitle: target.title });
+            announceMoveBranch({ docId, blockId, targetId, targetTitle: target.title, single: singleDragKey(e) });
           }
         } catch {
           // not a bullet of this app
@@ -272,7 +273,7 @@ export function useDocDragDrop({
         const { docId, blockId } = JSON.parse(e.dataTransfer.getData(BLOCK_DRAG_TYPE) || '{}');
         if (docId && blockId) {
           triggerHaptic(15);
-          announceMoveBranch({ docId, blockId, targetId: '', targetTitle: '' });
+          announceMoveBranch({ docId, blockId, targetId: '', targetTitle: '', single: singleDragKey(e) });
         }
       } catch {
         // not a bullet of this app

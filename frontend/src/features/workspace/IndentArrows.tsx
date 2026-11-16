@@ -66,7 +66,7 @@ export const IndentArrows: React.FC<IndentArrowsProps> = ({
  * or the block is active (tapped, caption in focus); hidden it takes no taps.
  */
 export const overlayArrowsClass = (shown: boolean, group: 'image' | 'drawing', belowBadge = false) =>
-  `absolute ${belowBadge ? 'top-9' : 'top-1.5'} left-1.5 z-10 flex items-center gap-0.5 p-0.5 rounded-btn bg-panel/90 backdrop-blur-xs border border-border transition-opacity ${
+  `absolute ${belowBadge ? 'top-9' : 'top-1.5'} left-1.5 z-10 flex items-center p-0.5 sm:p-px rounded-btn bg-panel/90 backdrop-blur-xs border border-border transition-opacity ${
     shown
       ? 'opacity-100'
       : `opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto ${
@@ -76,6 +76,6 @@ export const overlayArrowsClass = (shown: boolean, group: 'image' | 'drawing', b
         }`
   }`;
 
-/** Buttons in that box: below 44 px on phones too (an image can be a thin banner) */
+/** Buttons in that box: below 44 px on phones too (an image can be a thin banner); from sm as small as the code block's */
 export const OVERLAY_ARROW_BUTTON =
-  'w-7 h-7 sm:w-6 sm:h-6 flex items-center justify-center rounded-btn text-muted hover:text-accent transition-colors';
+  'w-7 h-7 sm:w-5 sm:h-5 flex items-center justify-center rounded-btn text-muted hover:text-accent transition-colors';

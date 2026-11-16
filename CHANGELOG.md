@@ -21,8 +21,8 @@ Versions without a git tag were development states and were never published as a
 - **Lists suggest earlier items**; tasks filter by several hashtags.
 - **For administrators:** command line (`docker exec mindsift mindsift …`), audit log, update hint, password reset options, two-factor sign-in and passkeys, single sign-on with back-channel logout, server time zone, backups before database updates, Prometheus metrics, outgoing proxy support.
 - **AI agents (MCP):** images, moving and extracting bullets, code blocks, notes from templates.
-- **Drag a single bullet:** hold Ctrl (Option on a Mac) while dragging to move a bullet without its sub-bullets; the preview shows it before you let go.
-- Images and drawings in notes have indent arrows at the top left, shown on hover or after tapping.
+- **Drag a single bullet:** hold Ctrl (Option on a Mac) while dragging to move a bullet without its sub-bullets, also onto another note in the sidebar; the preview shows it before you let go.
+- Images, drawings and audio in notes have indent arrows, shown on hover or after tapping.
 
 ### Changed
 - **Attention:** the server runs on UTC without `TZ`; set your time zone under Administration → Server.

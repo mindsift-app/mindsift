@@ -10,6 +10,7 @@ vi.mock('../../../lib/media', async (importOriginal) => {
 import { ImageBlock } from '../ImageBlock';
 import { DrawingBlock } from '../drawing/DrawingBlock';
 import { CodeBlockEditor } from '../CodeBlockEditor';
+import { AudioBlock } from '../AudioBlock';
 import type { DocumentBlock } from '../../../lib/types';
 
 const setHover = (hover: boolean) => {
@@ -145,5 +146,28 @@ describe('Pfeile zum Ein- und Ausrücken an Bild, Zeichnung und Code', () => {
     const language = screen.getByRole('button', { name: 'Sprache auswählen' }) as HTMLButtonElement;
     expect(language.disabled).toBe(true);
     expect(language.textContent).toContain('YAML');
+  });
+
+  it('Audio: die Pfeile rücken den Punkt ein und aus, eine leere Beschriftung zeigt sich erst über dem Block', async () => {
+    const onIndent = vi.fn();
+    const onOutdent = vi.fn();
+    render(<AudioBlock content="[](media:med_a2)" canEdit onCaptionChange={() => {}} onIndent={onIndent} onOutdent={onOutdent} canIndent canOutdent />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Einrücken' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ausrücken' }));
+    expect(onIndent).toHaveBeenCalledTimes(1);
+    expect(onOutdent).toHaveBeenCalledTimes(1);
+    const empty = screen.getByRole('textbox', { name: 'Beschriftung hinzufügen…' });
+    expect(empty.className).toContain('group-hover/audio:opacity-100');
+  });
+
+  it('Audio gesperrt: Pfeile bleiben ausgegraut stehen, die Beschriftung nur lesbar', async () => {
+    render(
+      <AudioBlock content="[Sprachnotiz vom Montag](media:med_a2)" canEdit={false} locked onCaptionChange={() => {}} onIndent={() => {}} onOutdent={() => {}} canIndent canOutdent />
+    );
+    const indent = (await screen.findByRole('button', { name: 'Einrücken' })) as HTMLButtonElement;
+    expect(indent.disabled).toBe(true);
+    const caption = screen.getByRole('textbox', { name: 'Beschriftung hinzufügen…' }) as HTMLInputElement;
+    expect(caption.readOnly).toBe(true);
+    expect(caption.value).toBe('Sprachnotiz vom Montag');
   });
 });
