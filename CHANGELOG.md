@@ -23,6 +23,7 @@ Versions without a git tag were development states and were never published as a
 - **AI agents (MCP):** images, moving and extracting bullets, code blocks, notes from templates.
 - **Drag a single bullet:** hold Ctrl (Option on a Mac) while dragging to move a bullet without its sub-bullets, also onto another note in the sidebar; the preview shows it before you let go.
 - Images, drawings and audio in notes have indent arrows, shown on hover or after tapping.
+- **Custom themes in the app:** each custom theme is a row under "Custom themes": rename it in place, change its colours with the colour picker (applied live), export it as a CSS file to share, and add a new one from the template with the + below the list.
 
 ### Changed
 - **Attention:** the server runs on UTC without `TZ`; set your time zone under Administration → Server.
