@@ -23,4 +23,6 @@ interface WindowEventMap {
   'mindsift:ws': CustomEvent<import('./lib/types').WSMessage | undefined>;
   // The realtime connection opened or dropped (lib/api/realtime.ts)
   'mindsift:ws:status': CustomEvent<{ connected: boolean; transport: string } | undefined>;
+  // The page reloads for a new version: editors hand over text still waiting in a typing pause (lib/appReload.ts)
+  'mindsift:flush-edits': Event;
 }

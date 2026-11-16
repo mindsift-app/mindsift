@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { PriorityLevel, Thought } from '../lib/types';
 import { api, triggerHaptic } from '../lib/api';
+import { useHoldReload } from '../lib/reloadHold';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import i18n from '../i18n';
 import { showError } from '../components/ErrorNotice';
@@ -20,6 +21,8 @@ export function useMobileCapture(
   const [isVoiceCaptured, setIsVoiceCaptured] = useState(false);
   const [mobileVoiceError, setMobileVoiceError] = useState<string | null>(null);
   const mobileBaseVoiceRef = useRef('');
+  // Typed but not captured yet (opening the sheet again starts empty): no reload for a new version meanwhile
+  useHoldReload(showMobileCapture && mobileTriageContent.trim() !== '');
   // A date in the text ("Zahnarzt morgen 14 Uhr"), unless one was picked in the date field
   const natural = useNaturalDate(mobileTriageContent, showMobileCapture && !mobileTriageDueDate);
   // Voice input of the mobile capture sheet: own Whisper server or the browser (lib/voice.ts)

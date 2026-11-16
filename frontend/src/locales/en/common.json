@@ -155,12 +155,15 @@
     "offline": "Offline"
   },
   "update": {
-    "title": "New version available",
-    "subtitle": "The server was updated",
-    "later": "Later",
-    "now": "Update now",
-    "bodyVersion": "The server was updated to <v>{{version}}</v>. Reload the page to use it; unsaved input in open fields will be lost.",
-    "body": "The server was updated. Reload the page to use it; unsaved input in open fields will be lost."
+    "title": "MindSift was updated",
+    "now": "Reload now",
+    "countdown": "Reloading in {{seconds}} s.",
+    "waitTyping": "Reloads as soon as you pause typing.",
+    "held": "Reloads once you are done: some input or dictations are not saved yet.",
+    "saving": "Saving changes, then reloading …",
+    "offline": "Reloads once the server can be reached again.",
+    "stuckTitle": "New version does not load",
+    "stuck": "The browser keeps serving the old version. Reload the page; if that does not help, clear the browser cache."
   },
   "theme": {
     "family": "Color family",

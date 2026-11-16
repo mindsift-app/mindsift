@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 // other builds show the package version with a "-dev" suffix (Semantic Versioning, see CHANGELOG.md).
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 const appVersion = process.env.APP_VERSION || `v${pkg.version}-dev`;
-// Every build gets its own ID; open pages compare it with version.json to offer a reload (lib/useUpdateCheck)
+// Every build gets its own ID; open pages compare it with version.json and reload themselves when it differs (lib/useUpdateCheck)
 const appBuild = `${Date.now()}`;
 
 // Writes the files of the build under /assets/ into the service worker (PRECACHE in public/sw.js), which

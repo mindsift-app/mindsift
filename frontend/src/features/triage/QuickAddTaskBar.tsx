@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { api, triggerHaptic } from '../../lib/api';
 import { TaskList, Thought } from '../../lib/types';
+import { useHoldReload } from '../../lib/reloadHold';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { DateField } from '../../components/DateField';
 import { NaturalDateChip, PhraseHighlight, applyNaturalDate, useNaturalDate } from '../../components/NaturalDateHint';
@@ -23,6 +24,8 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
   const [quickTitle, setQuickTitle] = useState('');
   const [quickVoiceError, setQuickVoiceError] = useState<string | null>(null);
   const [quickDueDate, setQuickDueDate] = useState('');
+  // Typed but not added yet: no reload for a new version meanwhile
+  useHoldReload(quickTitle.trim() !== '');
   const quickInputRef = useRef<HTMLInputElement | null>(null);
   // "Zahnarzt morgen 14 Uhr": a date in the text, unless one was picked in the date field
   const natural = useNaturalDate(quickTitle, !quickDueDate);
