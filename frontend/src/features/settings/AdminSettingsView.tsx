@@ -41,7 +41,9 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   const { statusMsg, setStatusMsg, demoMode } = admin;
 
   return (
-    <div className="w-full space-y-4">
+    // Wide screens: a narrow column of sections and the content at about the width of a note's text, left
+    // aligned; nothing grows beyond that
+    <div className="w-full md:max-w-[64rem] space-y-4">
       {/* Top Page Header */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center gap-3">
@@ -91,7 +93,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
       )}
 
       {/* Main 2-Column Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[15rem_minmax(0,1fr)] gap-4 items-start">
         {/* Left Navigation Sidebar */}
         <aside className="panel-surface divide-y divide-border overflow-hidden">
           <button
@@ -176,7 +178,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         </aside>
 
         {/* Right Content Area */}
-        <div className="md:col-span-3 panel-surface p-5 text-xs">
+        <div className="min-w-0 panel-surface p-5 text-xs">
           {demoMode && (
             <div className="flex items-center gap-2 alert-err mb-4">
               <CircleAlert className="w-4 h-4 text-status-err shrink-0" />

@@ -278,6 +278,7 @@ var mcpWriteTools = []mcpTool{
 		Description: "Add a bullet to a note: after a bullet (same level), as the last child of a bullet, or at the end. " +
 			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, table, code, divider, drawing. " +
 			"[[Note title]] links another note (with |text for an own link text); it keeps working when that note is renamed. " +
+			"Use the outline: put details as children (parentId) of the bullet they belong to rather than \"**Term:** text\" in one line, and h2/h3 for sections below an h1. " +
 			"All bullets have the same line spacing, so a heading right after text looks cramped: before adding a heading (h1–h3) below other bullets, add an empty text bullet above it to set the section apart. A recommendation, not a rule: leave it out where it does not fit. " +
 			"type table: text is a Markdown table (header row, separator row | --- |, rows; a | inside a cell written \\|; | :---: | centers a column, | ---: | aligns it right). " + mcpCodeHelp + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
