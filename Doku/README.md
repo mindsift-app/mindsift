@@ -20,6 +20,7 @@ Reference for developers and administrators. It describes the current developmen
 | [operations.md](operations.md) | Running MindSift: install script, first admin, backups, updates, rolling back and restoring, monitoring, image tags |
 | [oidc.md](oidc.md) | Single sign-on through an OpenID Connect provider: settings, accounts, provider examples |
 | [security.md](security.md) | What protects the data, security scan of the image |
+| [security-report.md](security-report.md) | Security review of November 2026: code reviews, penetration tests, findings and fixes |
 | [performance.md](performance.md) | Load test on 1 CPU core and 1 GB RAM |
 | [reverse-proxy.md](reverse-proxy.md) | Nginx, Traefik, Caddy, Cloudflare |
 | [theming.md](theming.md) | Themes and design variables |

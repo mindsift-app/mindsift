@@ -249,7 +249,7 @@ MindSift is written with a lot of AI help (see the note at the top). One person 
 * **Tests:** more than 1,000 frontend tests and more than 750 backend tests run locally before every push (`ci/local-checks.sh`) and again in the build of GitHub `main`; if one fails there, no `:latest` image is published, and a release is tagged only on a `main` commit whose build is green. Other builds (`:dev`) only build the image; pull requests run the tests of the image build plus gofmt and golangci-lint.
 * **Browser tests:** more than a dozen runs with over 500 checks cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, tables, copy & paste as Markdown in Chromium and Firefox, live drawing, two-factor sign-in, passkeys, sign-in through an OpenID Connect provider (against Dex) and connections behind proxies that block WebSockets ([e2e/](e2e/README.md)). They run locally before every release and every change to these areas, not in the pipelines.
 * **Static checks:** TypeScript, ESLint, gofmt, `go vet` and [golangci-lint](https://golangci-lint.run) with its standard linters (staticcheck among them) ([.golangci.yml](.golangci.yml)), in the same local run as the tests; the build of `main` repeats TypeScript, ESLint and `go vet`.
-* **Security:** a review of the whole code base in November 2026 (v0.94.0), findings fixed ([Security](#security)); OIDC, two-factor sign-in and passkeys came later and have their own browser tests; every tagged release is scanned with Trivy ([Security scan](#security-scan)).
+* **Security:** code reviews and four penetration tests with fuzzing in November 2026, every finding fixed or documented as an accepted trade-off ([report](Doku/security-report.md)); every tagged release is scanned with Trivy ([Security scan](#security-scan)).
 
 History starts at v0.70.0, when the project moved from a private repository; the [changelog](CHANGELOG.md) and its [archive](CHANGELOG-archive.md) go back to 0.1.
 
@@ -300,7 +300,7 @@ At 1,200 people at once the core is full and everything slows down, but hardly a
 
 ## Security
 
-MindSift is meant to be reachable from the internet behind a reverse proxy. The whole code base was reviewed for security in November 2026 (v0.94.0) and the findings are fixed; OIDC, two-factor sign-in and passkeys came later and have their own browser tests. In brief (details in [Doku/security.md](Doku/security.md)):
+MindSift is meant to be reachable from the internet behind a reverse proxy. Before v0.96.0 it went through code reviews and four penetration tests with fuzzing (November 2026); every rated finding is fixed, the [security report](Doku/security-report.md) lists them with their fixes and what was not tested. In brief (details in [Doku/security.md](Doku/security.md)):
 
 * **Sign-in:** bcrypt passwords, optional or required two-factor sign-in (authenticator app, passkeys, recovery codes) and server-side sessions you can end one by one. Failed sign-ins lock the account and the address for 15 minutes.
 * **Secrets never in plain text:** API keys, tokens and links are stored only as SHA-256 hashes. Hidden values in notes and the SMTP password of the administration are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`).
