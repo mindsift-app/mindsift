@@ -236,13 +236,18 @@ async function capture() {
   });
   // Every section of the administration, in a tall window
   await d.setViewportSize({ width: 1440, height: 2600 });
-  for (const [key, label] of [
-    ['users', 'Benutzer & Einladungen'],
-    ['orgs', 'Organisationen'],
-    ['server', 'Server & Teilen'],
-    ['smtp', 'E-Mail / SMTP-Server'],
+  // (by the section's id: names like "Server" or "Teilen" also occur in other entries)
+  for (const [key, id] of [
+    ['users', 'users'],
+    ['signin', 'signin'],
+    ['orgs', 'organizations'],
+    ['sharing', 'sharing'],
+    ['server', 'server'],
+    ['data', 'data'],
+    ['ai', 'ai'],
+    ['smtp', 'smtp'],
   ]) {
-    await step(d, `d15_as_${key}`, () => d.locator('aside button', { hasText: label }).first().click());
+    await step(d, `d15_as_${key}`, () => d.locator(`[data-admin-nav="${id}"]`).first().click());
   }
   await d.setViewportSize({ width: 1440, height: 900 });
   await step(d, 'd16_help', () => d.locator('[data-tour="help-entry"]').locator('visible=true').first().click());

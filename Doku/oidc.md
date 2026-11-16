@@ -44,7 +44,7 @@ The provider asks for its own. MindSift does not ask again, and "require two-fac
 
 ## Provider down or misconfigured
 
-MindSift starts anyway; the button says the provider cannot be reached, and administrators sign in at `/?login=password`. Half a configuration (an issuer without a client, a secret file that cannot be read, `OIDC_PASSWORD_LOGIN=false` without a provider) stops the start with a message in the log. The administration shows the setup and whether the provider answers under Server & Sharing. Off in the demo.
+MindSift starts anyway; the button says the provider cannot be reached, and administrators sign in at `/?login=password`. Half a configuration (an issuer without a client, a secret file that cannot be read, `OIDC_PASSWORD_LOGIN=false` without a provider) stops the start with a message in the log. The administration shows the setup and whether the provider answers under Sign-in & registration. Off in the demo.
 
 ## Provider examples
 

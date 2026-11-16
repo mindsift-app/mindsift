@@ -75,13 +75,28 @@
     "nav": {
       "users": "Usuarios e invitaciones",
       "usersHint": "Cuentas, roles y códigos de invitación",
+      "signin": "Inicio de sesión y registro",
+      "signinHint": "Registro, dos pasos e inicio de sesión único",
       "orgsHint": "Quién puede compartir con quién",
-      "server": "Servidor y compartir",
-      "serverHint": "Compartir y registro",
+      "sharing": "Compartir",
+      "sharingHint": "Modo, búsqueda de personas, enlaces y calendario",
+      "server": "Servidor",
+      "serverHint": "Nombre, zona horaria, versión y red",
+      "data": "Datos",
+      "dataHint": "Copias de seguridad, retención e imágenes",
+      "ai": "Entrada de voz e IA",
+      "aiHint": "Whisper y agentes de IA (MCP)",
       "smtp": "Correo / Servidor SMTP",
       "smtpHint": "Envío de correos para avisos",
       "audit": "Registro",
       "auditHint": "Quién cambió qué y cuándo"
+    },
+    "pages": {
+      "signinIntro": "Quién puede registrarse sin invitación, quién necesita un segundo factor y el inicio de sesión a través de un proveedor (inicio de sesión único).",
+      "sharingIntro": "Quién puede compartir con quién, si se sugieren nombres al escribir, los enlaces públicos a notas y las suscripciones de calendario.",
+      "serverIntro": "Nombre, idioma predeterminado y zona horaria de esta instancia, la versión instalada y a qué puede acceder el servidor en la red.",
+      "dataIntro": "Copias de seguridad diarias, si lo completado y lo eliminado puede conservarse para siempre y cuánto se comprimen las imágenes.",
+      "aiIntro": "El reconocimiento de voz de este servidor y si los agentes de IA pueden conectarse por MCP."
     },
     "demo": "Desactivado en la demo: los ajustes del servidor, el correo y las cuentas solo se pueden consultar aquí.",
     "userCreated": "Se ha creado el usuario «{{name}}».",
@@ -718,8 +733,6 @@
     "noneChosen": "ninguna"
   },
   "server": {
-    "title": "Ajustes básicos del servidor y compartir",
-    "intro": "Como administrador del servidor decides quién puede compartir con quién, si se sugieren nombres al escribir y si las notas se pueden compartir mediante enlace público.",
     "instanceName": "Nombre de esta instancia de MindSift",
     "sharing": "Quién puede compartir con quién",
     "switchAnyway": "Cambiar de todos modos",

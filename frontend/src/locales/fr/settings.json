@@ -616,8 +616,6 @@
     }
   },
   "server": {
-    "title": "Réglages de base du serveur et partage",
-    "intro": "En tant qu’administrateur du serveur, tu décides qui peut partager avec qui, si des noms sont suggérés pendant la saisie et si des notes peuvent être partagées par lien public.",
     "instanceName": "Nom de cette instance MindSift",
     "sharing": "Qui peut partager avec qui",
     "switchAnyway": "Changer quand même",
@@ -704,13 +702,28 @@
     "nav": {
       "users": "Utilisateurs & invitations",
       "usersHint": "Comptes, rôles & codes d'invitation",
+      "signin": "Connexion & inscription",
+      "signinHint": "Inscription, deux étapes & authentification unique",
       "orgsHint": "Qui peut partager avec qui",
-      "server": "Serveur & partage",
-      "serverHint": "Partage et inscription",
+      "sharing": "Partage",
+      "sharingHint": "Mode, recherche de personnes, liens & calendrier",
+      "server": "Serveur",
+      "serverHint": "Nom, fuseau horaire, version & réseau",
+      "data": "Données",
+      "dataHint": "Sauvegardes, rétention & images",
+      "ai": "Saisie vocale & IA",
+      "aiHint": "Whisper & agents IA (MCP)",
       "smtp": "E-mail / Serveur SMTP",
       "smtpHint": "Envoi d'e-mails pour les alarmes",
       "audit": "Journal",
       "auditHint": "Qui a modifié quoi, et quand"
+    },
+    "pages": {
+      "signinIntro": "Qui peut s’inscrire sans invitation, qui a besoin d’un second facteur, et la connexion via un fournisseur (authentification unique).",
+      "sharingIntro": "Qui peut partager avec qui, si des noms sont suggérés pendant la saisie, les liens publics vers les notes et les abonnements de calendrier.",
+      "serverIntro": "Le nom, la langue par défaut et le fuseau horaire de cette instance, la version installée et ce que le serveur peut joindre sur le réseau.",
+      "dataIntro": "Les sauvegardes quotidiennes, si les éléments terminés et supprimés peuvent être gardés pour toujours, et la compression des images.",
+      "aiIntro": "La reconnaissance vocale de ce serveur et si des agents IA peuvent se connecter via MCP."
     },
     "demo": "Désactivé dans la démo : les paramètres du serveur, les e-mails et les comptes ne peuvent être consultés qu'ici.",
     "userCreated": "L’utilisateur « {{name}} » a été créé.",

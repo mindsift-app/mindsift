@@ -73,7 +73,7 @@ Others see a person's name, username and profile picture, never the e-mail addre
 
 The owner of a note can share it read only with anyone who has the link (`/p/<token>`), without an account. Meant for quick sharing (a guide, a problem description); whoever needs it longer gets an account.
 
-- **Switches:** `PUBLIC_LINKS=false` forbids them outright (the admin switch is locked), otherwise the admin switch in Server & Sharing (default on); off in demo mode. Independent of the sharing mode.
+- **Switches:** `PUBLIC_LINKS=false` forbids them outright (the admin switch is locked), otherwise the admin switch in Administration → Sharing (default on); off in demo mode. Independent of the sharing mode.
 - **Always expiring:** 1 hour, 1 day, 3 days (default), 7 or 14 days; at most `PUBLIC_LINKS_MAX_DAYS` or the admin's limit (1–14 days). There is no link for good. Expired links are removed hourly.
 - **One link per note:** a new link replaces the old one (its address stops working); "Revoke" ends it at once. The token (256 bits) is found by its SHA-256 hash; it is stored encrypted with `SECRETS_KEY` only so the owner can copy the link again (`public_links`).
 - **Password (optional):** stored as bcrypt hash; the visitor gets a signed key valid 12 hours (at most until the link expires), voided by a new password or link; 10 tries per link and address, then a pause, and 50 wrong passwords for the link from all addresses together (in 15 minutes) pause its password check for 15 minutes for everyone: the right password is refused then too, so the answer tells nothing. Visitors with a key keep reading; a new link (new address, new password) is not paused.

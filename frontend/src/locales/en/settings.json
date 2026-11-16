@@ -616,8 +616,6 @@
     }
   },
   "server": {
-    "title": "Server basics & sharing",
-    "intro": "As server admin you decide who may share with whom, whether names are suggested while typing and whether notes can be shared by public link.",
     "instanceName": "Name of this MindSift instance",
     "sharing": "Who may share with whom",
     "switchAnyway": "Switch anyway",
@@ -704,13 +702,28 @@
     "nav": {
       "users": "Users & invitations",
       "usersHint": "Accounts, roles & invite codes",
+      "signin": "Sign-in & registration",
+      "signinHint": "Registration, two-factor & single sign-on",
       "orgsHint": "Who may share with whom",
-      "server": "Server & sharing",
-      "serverHint": "Sharing & registration",
+      "sharing": "Sharing",
+      "sharingHint": "Mode, people search, links & calendar",
+      "server": "Server",
+      "serverHint": "Name, time zone, version & network",
+      "data": "Data",
+      "dataHint": "Backups, retention & images",
+      "ai": "Voice input & AI",
+      "aiHint": "Whisper & AI agents (MCP)",
       "smtp": "Email / SMTP server",
       "smtpHint": "Mail delivery for alarms",
       "audit": "Audit log",
       "auditHint": "Who changed what, and when"
+    },
+    "pages": {
+      "signinIntro": "Who may register without an invitation, who needs a second factor, and signing in through a provider (single sign-on).",
+      "sharingIntro": "Who may share with whom, whether names are suggested while typing, public links to notes and calendar subscriptions.",
+      "serverIntro": "This instance's name, default language and time zone, the installed version and what the server may reach on the network.",
+      "dataIntro": "Daily backups, whether done and deleted things may be kept for good, and how strongly images are compressed.",
+      "aiIntro": "This server's speech recognition and whether AI agents may connect over MCP."
     },
     "demo": "Disabled in the demo: server settings, email and accounts can only be viewed here.",
     "userCreated": "User “{{name}}” was created.",

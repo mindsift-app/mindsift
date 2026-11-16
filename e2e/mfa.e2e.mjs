@@ -201,7 +201,7 @@ async function run(engine, admin) {
   await browser.close();
 }
 
-// Required by the administration (Administration → Server): an account without a second factor sees only its
+// Required by the administration (Administration → Sign-in & registration): an account without a second factor sees only its
 // setup after signing in; then a new password asks for the code in a sheet, and an administrator resets the
 // second factor in the user list. A second admin with the app switches the requirement on and off and resets,
 // as the first admin (without one) would be locked into the setup too.

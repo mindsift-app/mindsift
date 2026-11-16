@@ -616,8 +616,6 @@
     }
   },
   "server": {
-    "title": "Impostazioni di base del server e condivisione",
-    "intro": "Come amministratore del server decidi chi può condividere con chi, se i nomi vengono suggeriti durante la digitazione e se le note si possono condividere tramite link pubblico.",
     "instanceName": "Nome di questa istanza MindSift",
     "sharing": "Chi può condividere con chi",
     "switchAnyway": "Cambia comunque",
@@ -704,13 +702,28 @@
     "nav": {
       "users": "Utenti e inviti",
       "usersHint": "Account, ruoli e codici invito",
+      "signin": "Accesso e registrazione",
+      "signinHint": "Registrazione, due passaggi e single sign-on",
       "orgsHint": "Chi può condividere con chi",
-      "server": "Server e condivisione",
-      "serverHint": "Condivisione e registrazione",
+      "sharing": "Condivisione",
+      "sharingHint": "Modalità, ricerca persone, link e calendario",
+      "server": "Server",
+      "serverHint": "Nome, fuso orario, versione e rete",
+      "data": "Dati",
+      "dataHint": "Backup, conservazione e immagini",
+      "ai": "Inserimento vocale e IA",
+      "aiHint": "Whisper e agenti IA (MCP)",
       "smtp": "Server email / SMTP",
       "smtpHint": "Invio email per le notifiche",
       "audit": "Registro",
       "auditHint": "Chi ha cambiato cosa e quando"
+    },
+    "pages": {
+      "signinIntro": "Chi può registrarsi senza invito, chi ha bisogno di un secondo fattore e l’accesso tramite un provider (single sign-on).",
+      "sharingIntro": "Chi può condividere con chi, se i nomi vengono suggeriti durante la digitazione, i link pubblici alle note e gli abbonamenti al calendario.",
+      "serverIntro": "Nome, lingua predefinita e fuso orario di questa istanza, la versione installata e cosa il server può raggiungere in rete.",
+      "dataIntro": "I backup giornalieri, se elementi completati ed eliminati possono restare per sempre e quanto vengono compresse le immagini.",
+      "aiIntro": "Il riconoscimento vocale di questo server e se gli agenti IA possono collegarsi tramite MCP."
     },
     "demo": "Disattivato nella demo: le impostazioni del server, le email e gli account possono essere solo visualizzati qui.",
     "userCreated": "L’utente «{{name}}» è stato creato.",
