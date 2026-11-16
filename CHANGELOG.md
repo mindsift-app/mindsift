@@ -40,6 +40,7 @@ Versions without a git tag were development states and were never published as a
 - On phones, code blocks have no indent arrows; the bar above the keyboard indents them.
 - Tables: Enter goes on into an empty row below instead of adding another one, so typing a new table and leaving it with Enter flows; the ⋯ menu sits above the + for a column.
 - Administration → Server: no button to take the browser's time zone any more; setup suggests it.
+- Demo: about 35 more sample notes (work, projects, recipes, reading, travel, journal) linked with [[wiki links]] and sharing hashtags; only the help notes keep emoji icons.
 - Clicking a hashtag below the folder tree filters the tree to the notes carrying it (several hashtags: notes with all of them); a red ✕ beside "Hashtags" clears the filter, and the bar above the trash glows red while it is on. The hashtag page stays reachable through the "Hashtags" tab and hashtags in a note.
 - AI agents (MCP) are encouraged to use colour in diagrams and to set headings apart with an empty bullet.
 
