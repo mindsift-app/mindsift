@@ -11,6 +11,7 @@ import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
 import { startBranchDragGhost, type BranchDragGhost } from './branchDragImage';
 import { singleDragKey } from '../../lib/platform';
+import { BLOCK_EFFECT_ALLOWED, blockDropEffect, setBlockDragSingle } from './moveBranchEvent';
 import type { ConflictChoice } from '../../lib/docSync/engine';
 import { templateBlocks } from '../../lib/noteTemplate';
 import { TemplateChoice, TemplatePicker } from './NoteTemplates';
@@ -870,6 +871,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const setSingle = useCallback((single: boolean) => {
     dragGhostRef.current?.setSingle(single);
     dragSingleRef.current = single;
+    setBlockDragSingle(single);
   }, []);
 
   const clearDrag = useCallback(() => {
@@ -879,14 +881,16 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     dragStartXRef.current = null;
     dragGhostRef.current = null;
     dragSingleRef.current = false;
+    setBlockDragSingle(false);
   }, []);
 
   const handleDragStartBlock = useCallback((index: number, e: React.DragEvent) => {
     setDraggedIndex(index);
-    // Only ever a move: Ctrl (Alt on a Mac) would otherwise turn the drop into a copy
-    e.dataTransfer.effectAllowed = 'move';
+    // Copy too, or the system refuses the drop with Ctrl (Mac: Alt) held; the drop moves either way
+    e.dataTransfer.effectAllowed = BLOCK_EFFECT_ALLOWED;
     const single = singleDragKey(e);
     dragSingleRef.current = single;
+    setBlockDragSingle(single);
     dragStartXRef.current = Number.isFinite(e.clientX) ? e.clientX : null;
     dragGhostRef.current = startBranchDragGhost(e, blocks.slice(index, branchEnd(blocks, index)), single) || null;
   }, [blocks]);
@@ -929,7 +933,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     (e: React.DragEvent, index: number) => {
       e.preventDefault();
       if (draggedIndex === null) return;
-      e.dataTransfer.dropEffect = 'move';
+      e.dataTransfer.dropEffect = blockDropEffect(e);
       const single = singleDragKey(e);
       setSingle(single);
       const level = dropLevelAt(e, index, single);

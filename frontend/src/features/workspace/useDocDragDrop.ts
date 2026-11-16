@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Document } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import i18n from '../../i18n';
-import { announceMoveBranch, BLOCK_DRAG_TYPE } from './moveBranchEvent';
-import { singleDragKey } from '../../lib/platform';
+import { announceMoveBranch, BLOCK_DRAG_TYPE, blockDropEffect, isSingleBlockDrop } from './moveBranchEvent';
 
 // A note a bullet can be moved into: writable and not in the trash
 export const canTakeBranch = (d: Document) => !d.isArchived && (d.isOwner || d.permission === 'owner' || d.permission === 'write');
@@ -213,7 +212,7 @@ export function useDocDragDrop({
       if (isBranchDrag(e, targetId)) {
         e.preventDefault();
         e.stopPropagation();
-        e.dataTransfer.dropEffect = 'move';
+        e.dataTransfer.dropEffect = blockDropEffect(e);
         if (mergeHoverId !== targetId) setMergeHoverId(targetId);
         return;
       }
@@ -234,7 +233,7 @@ export function useDocDragDrop({
           const target = docs.find((d) => d.id === targetId);
           if (docId && blockId && target) {
             triggerHaptic(15);
-            announceMoveBranch({ docId, blockId, targetId, targetTitle: target.title, single: singleDragKey(e) });
+            announceMoveBranch({ docId, blockId, targetId, targetTitle: target.title, single: isSingleBlockDrop(e) });
           }
         } catch {
           // not a bullet of this app
@@ -258,7 +257,7 @@ export function useDocDragDrop({
     onDragOver: (e) => {
       if (!e.dataTransfer.types.includes(BLOCK_DRAG_TYPE)) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
+      e.dataTransfer.dropEffect = blockDropEffect(e);
       if (!newNoteHover) setNewNoteHover(true);
     },
     // Moving onto the icon inside the button is no leaving (it flickered)
@@ -273,7 +272,7 @@ export function useDocDragDrop({
         const { docId, blockId } = JSON.parse(e.dataTransfer.getData(BLOCK_DRAG_TYPE) || '{}');
         if (docId && blockId) {
           triggerHaptic(15);
-          announceMoveBranch({ docId, blockId, targetId: '', targetTitle: '', single: singleDragKey(e) });
+          announceMoveBranch({ docId, blockId, targetId: '', targetTitle: '', single: isSingleBlockDrop(e) });
         }
       } catch {
         // not a bullet of this app
