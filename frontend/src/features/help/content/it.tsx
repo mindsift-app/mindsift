@@ -204,7 +204,7 @@ const it: HelpContent = {
       title: 'Disegni (/canvas)',
       subtitle: 'Schizzi, diagrammi di flusso e mappe mentali direttamente nella nota',
       icon: Shapes,
-      keywords: ['disegno', 'canvas', 'schizzo', 'diagramma', 'diagramma di flusso', 'mappa mentale', 'freccia', 'forme', 'mano libera', 'griglia', 'mermaid', 'dal vivo', 'disegnare insieme'],
+      keywords: ['disegno', 'canvas', 'schizzo', 'diagramma', 'diagramma di flusso', 'mappa mentale', 'diagramma di sequenza', 'diagramma di stato', 'freccia', 'forme', 'mano libera', 'griglia', 'mermaid', 'dal vivo', 'disegnare insieme'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -230,7 +230,7 @@ const it: HelpContent = {
               <strong className="text-main">Offline e bozze:</strong> Ciò che disegni offline viene salvato appena torna la connessione; una bozza non salvata viene proposta per il ripristino alla prossima apertura. Se tutti escono da un disegno dal vivo senza «Fatto», il server ne conserva lo stato per circa 10 minuti; chi sceglie di nuovo «Disegna insieme» in quel tempo continua da lì.
             </li>
             <li>
-              <strong className="text-main">Ovunque:</strong> La ricerca trova le parole nei disegni, copia e incolla mantiene il disegno e l’esportazione Markdown lo contiene come immagine SVG (l’importazione lo trasforma di nuovo in disegno). Gli agenti IA (MCP) leggono una descrizione del disegno e possono creare disegni da diagrammi di flusso e mappe mentali Mermaid.
+              <strong className="text-main">Ovunque:</strong> La ricerca trova le parole nei disegni, copia e incolla mantiene il disegno e l’esportazione Markdown lo contiene come immagine SVG (l’importazione lo trasforma di nuovo in disegno). Gli agenti IA (MCP) leggono una descrizione del disegno e possono creare disegni da Mermaid: diagrammi di flusso, mappe mentali, diagrammi di sequenza e di stato e grafici Git.
             </li>
           </ul>
         </div>

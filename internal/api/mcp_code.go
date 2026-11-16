@@ -58,12 +58,8 @@ func mcpCodeLanguage(name string) (string, error) {
 	return name, nil
 }
 
-// mcpCodeHelp: how code and dividers are written, for the tool descriptions
-const mcpCodeHelp = "type code: text is the code as it is (several lines, no Markdown fence; [[…]] stays plain text), " +
-	"language its language for highlighting: yaml, json, toml, ini, properties, docker, nginx, apacheconf, hcl, xml, csv, graphql, protobuf, dns-zone-file, iptables, nftables, " +
-	"bash, powershell, makefile, systemd, vim, diff, git, ignore, log, " +
-	"javascript, typescript, jsx, tsx, markup, html, css, scss, python, php, ruby, lua, perl, go, rust, sql, c, cpp, csharp, java, kotlin, swift, dart, zig, elixir, scala, haskell, markdown, latex, regex, text " +
-	"(short names like js, ts, py, sh, yml, c++ work too). Any other name (1-40 letters, digits or + - _ . #, e.g. pf or ufw) is kept as written: " +
-	"the block shows it as its language, without highlighting; a missing one shows plain code. " +
-	"A code block keeps no hidden value: a {{secret:…}} written into it becomes a placeholder. " +
-	"type divider: a horizontal line; it has no text (text is ignored). "
+// mcpCodeHelp: how code and dividers are written, for the tool descriptions. The languages named are
+// examples (a test checks they are the editor's ids); any other name works as well.
+const mcpCodeHelp = "type code: text is the code as it is (no Markdown fence), language e.g. go, python, typescript, bash, sql, json, yaml " +
+	"(short names like js, py, sh work too; any other name is kept as written, without highlighting). {{secret:…}} in code becomes a placeholder. " +
+	"type divider: a line without text. "

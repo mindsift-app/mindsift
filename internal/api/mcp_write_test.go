@@ -272,8 +272,15 @@ func TestMCPCreatesDrawings(t *testing.T) {
 	if _, isErr, _ := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_t1","type":"drawing"}`); !isErr {
 		t.Fatal("type drawing without a drawing must fail")
 	}
-	if _, isErr, _ := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","type":"drawing","text":"sequenceDiagram\nA->>B: Hi"}`); !isErr {
-		t.Fatal("unsupported Mermaid must fail")
+	if _, isErr, msg := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","type":"drawing","text":"pie\n\"A\": 1"}`); !isErr || !strings.Contains(msg, "sequenceDiagram") {
+		t.Fatalf("unsupported Mermaid must fail and name the kinds: %s", msg)
+	}
+	// Sequence, state and git diagrams are drawn as well
+	for _, src := range []string{`sequenceDiagram\nAnna->>Bernd: Hallo\nBernd-->>Anna: Hallo zurück`, `stateDiagram-v2\n[*] --> Offen\nOffen --> Erledigt : fertig`,
+		`gitGraph\ncommit id: \"Start\"\nbranch neu\ncommit id: \"Idee\"`} {
+		if _, isErr, msg := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","type":"drawing","text":"`+src+`"}`); isErr {
+			t.Fatalf("%s: %s", src, msg)
+		}
 	}
 	got, _, _ := call(key, "get_note", `{"id":"`+doc.ID+`"}`)
 	if s := strings.Join(bulletTexts(got), "|"); !strings.Contains(s, "„Ziel“ — „Weg A“") {
@@ -410,5 +417,44 @@ func TestMCPNoteTables(t *testing.T) {
 	got, _, _ = call(creator.RawKey, "get_note", `{"id":"`+fmt.Sprint(created["id"])+`"}`)
 	if s := strings.Join(bulletTexts(got), "|"); s != "0:Intro|0:| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 ||0:Ende" {
 		t.Fatalf("create_note bullets: %q", s)
+	}
+}
+
+// drawing_help explains drawings to whoever may write one; its examples are drawings the tools accept. The
+// bullet tools only point to it, so their descriptions stay short enough for every client.
+func TestMCPDrawingHelp(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	call := mcpCaller(t, srv)
+	for scope, want := range map[string]bool{"notes:write": true, "notes:create": true, "notes:read": false, "tasks:write": false} {
+		key, _ := store.CreateAPIKey(claims.UserID, "Agent "+scope, []string{scope})
+		res, isErr, msg := call(key.RawKey, "drawing_help", `{}`)
+		if isErr == want {
+			t.Fatalf("%s: drawing_help allowed %v: %s", scope, !isErr, msg)
+		}
+		if !want {
+			continue
+		}
+		mermaid, _ := res["mermaid"].(map[string]any)
+		for _, kind := range []string{"flowchart", "mindmap", "sequenceDiagram", "stateDiagram", "gitGraph"} {
+			if s, _ := mermaid[kind].(string); len(s) < 100 {
+				t.Errorf("guide for %s: %q", kind, s)
+			}
+		}
+		if m, _ := res["model"].(string); !strings.Contains(m, `"t":"arrow"`) {
+			t.Errorf("model: %q", m)
+		}
+	}
+	ex := mcpDrawingHelpText.Examples
+	for _, src := range []string{ex.Flowchart, ex.Sequence, ex.State, ex.GitGraph, ex.Model} {
+		if _, err := mcpDrawingContent(src); err != nil {
+			t.Errorf("example not accepted: %v\n%s", err, src)
+		}
+	}
+	for _, name := range []string{"add_note_bullet", "update_note_bullet", "create_note"} {
+		tool, _ := mcpToolByName(name)
+		if !strings.Contains(tool.Description, "drawing_help") || len(tool.Description) > 1600 {
+			t.Errorf("%s: %d characters, should be short and point to drawing_help", name, len(tool.Description))
+		}
 	}
 }

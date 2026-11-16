@@ -431,8 +431,8 @@ func TestMCPNotes(t *testing.T) {
 	}
 
 	writer, _ := store.CreateAPIKey(claims.UserID, "Schreiber", []string{"notes:create"})
-	if n := names(writer.RawKey); n != ",create_note," {
-		t.Fatalf("notes:create should only offer create_note, got %s", n)
+	if n := names(writer.RawKey); n != ",create_note,drawing_help," {
+		t.Fatalf("notes:create should only offer create_note and drawing_help, got %s", n)
 	}
 	note, isErr := call(writer.RawKey, "create_note", `{"title":"Ideen","folderPath":"/Projekte/KI/","content":"- Erster Punkt\n\t- Unterpunkt\n- [ ] Offen"}`)
 	if isErr || note["folderPath"] != "Projekte/KI" || note["permission"] != "owner" {

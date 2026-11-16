@@ -204,7 +204,7 @@ const en: HelpContent = {
       title: 'Drawings (/canvas)',
       subtitle: 'Sketches, flowcharts and mind maps right in the note',
       icon: Shapes,
-      keywords: ['drawing', 'canvas', 'sketch', 'diagram', 'flowchart', 'mind map', 'arrow', 'shapes', 'freehand', 'grid', 'mermaid', 'live', 'draw along', 'draw together'],
+      keywords: ['drawing', 'canvas', 'sketch', 'diagram', 'flowchart', 'mind map', 'sequence diagram', 'state diagram', 'arrow', 'shapes', 'freehand', 'grid', 'mermaid', 'live', 'draw along', 'draw together'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -230,7 +230,7 @@ const en: HelpContent = {
               <strong className="text-main">Offline and drafts:</strong> What you draw offline is saved once the connection is back; an unsaved draft is offered for restoring the next time you open the drawing. If everyone leaves a live drawing without “Done”, the server keeps its state for about 10 minutes; whoever chooses “Draw together” again within that time carries on.
             </li>
             <li>
-              <strong className="text-main">Everywhere:</strong> Search finds the words in drawings, copy and paste keeps the drawing, and the Markdown export contains it as an SVG picture (importing turns it back into a drawing). AI agents (MCP) read a description of the drawing and can create drawings themselves from Mermaid flowcharts and mind maps.
+              <strong className="text-main">Everywhere:</strong> Search finds the words in drawings, copy and paste keeps the drawing, and the Markdown export contains it as an SVG picture (importing turns it back into a drawing). AI agents (MCP) read a description of the drawing and can create drawings themselves from Mermaid: flowcharts, mind maps, sequence and state diagrams, and Git graphs.
             </li>
           </ul>
         </div>

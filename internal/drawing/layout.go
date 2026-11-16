@@ -46,6 +46,10 @@ type sizedNode struct {
 	w, h  float64
 	shape string // rect, ellipse, diamond
 	round bool
+	// sw: line width (0 = 2); a thick line on a small circle draws a filled dot
+	sw float64
+	// endMark: a ring with a dot inside (end state); bar: a fork or join bar, upright in LR/RL
+	endMark, bar bool
 }
 
 // nodeSize makes room for the text inside the shape (the editor wraps it to a share of the width)
@@ -57,6 +61,14 @@ func nodeSize(text, shape string) sizedNode {
 	}
 	th := float64(len(lines)) * layoutFont * 1.3
 	switch shape {
+	case "start":
+		return sizedNode{w: 10, h: 10, shape: "ellipse", sw: 10}
+	case "end":
+		return sizedNode{w: 28, h: 28, shape: "ellipse", endMark: true}
+	case "bar":
+		return sizedNode{w: 110, h: 4, shape: "rect", bar: true, sw: 6}
+	case "choice":
+		return sizedNode{w: 44, h: 44, shape: "diamond"}
 	case "ellipse":
 		return sizedNode{w: math.Max(110, tw/0.7+28), h: math.Max(56, (th+24)*1.4), shape: "ellipse"}
 	case "diamond":
@@ -75,7 +87,11 @@ func shapeEl(id string, x, y float64, s sizedNode, text, stroke, fill string) ou
 	if fill == "" {
 		fill = "none"
 	}
-	e := outEl{"id": id, "ver": 1, "t": s.shape, "x": r1(x), "y": r1(y), "w": r1(s.w), "h": r1(s.h), "s": stroke, "f": fill, "sw": 2}
+	sw := s.sw
+	if sw == 0 {
+		sw = 2
+	}
+	e := outEl{"id": id, "ver": 1, "t": s.shape, "x": r1(x), "y": r1(y), "w": r1(s.w), "h": r1(s.h), "s": stroke, "f": fill, "sw": sw}
 	if text != "" {
 		e["txt"] = text
 	}
@@ -215,6 +231,9 @@ func layoutFlowchart(g *graph) layoutResult {
 	layers := make([][]*lnode, maxLayer+1)
 	for i, nd := range g.nodes {
 		s := nodeSize(nd.text, nd.shape)
+		if s.bar && horizontal {
+			s.w, s.h = s.h, s.w
+		}
 		ln := &lnode{idx: i, layer: layer[i], size: s}
 		if horizontal {
 			ln.along, ln.across = s.w, s.h
@@ -410,7 +429,13 @@ func layoutFlowchart(g *graph) layoutResult {
 	}
 	for li := range layers {
 		nets := []*net{}
-		bySource := map[*lnode]int{}
+		// A line back against the arrows (a broken cycle) is a net of its own, so it does not share the track of
+		// the lines its upper end sends forward
+		type source struct {
+			p        *lnode
+			reversed bool
+		}
+		bySource := map[source]int{}
 		type ref struct{ k, i int }
 		members := map[int][]ref{}
 		for k, chain := range chains {
@@ -423,10 +448,11 @@ func layoutFlowchart(g *graph) layoutResult {
 				if math.Abs(p.pos-q.pos) < 0.5 {
 					continue
 				}
-				ni, ok := bySource[p]
+				key := source{p, edges[k].reversed}
+				ni, ok := bySource[key]
 				if !ok {
 					ni = len(nets)
-					bySource[p] = ni
+					bySource[key] = ni
 					nets = append(nets, &net{lo: p.pos, hi: p.pos, tops: []float64{p.pos}})
 				}
 				nt := nets[ni]
@@ -559,7 +585,16 @@ func layoutFlowchart(g *graph) layoutResult {
 		c := toXY(center(v), v.pos)
 		centers[i] = c
 		ids[i] = fmt.Sprintf("n%d", i+1)
-		res.els = append(res.els, shapeEl(ids[i], c[0]-v.size.w/2, c[1]-v.size.h/2, v.size, nd.text, nd.stroke, nd.fill))
+		text := nd.text
+		if nd.shape == "start" || nd.shape == "end" || nd.shape == "bar" || nd.shape == "choice" {
+			text = ""
+		}
+		res.els = append(res.els, shapeEl(ids[i], c[0]-v.size.w/2, c[1]-v.size.h/2, v.size, text, nd.stroke, nd.fill))
+		if v.size.endMark {
+			// The dot inside an end state: a small circle drawn filled by its thick line
+			dot := sizedNode{w: 8, h: 8, shape: "ellipse", sw: 8}
+			res.els = append(res.els, shapeEl(ids[i]+"d", c[0]-4, c[1]-4, dot, "", nd.stroke, nd.stroke))
+		}
 	}
 
 	// 6b. Lines running into the same side of a shape end side by side along its edge instead of on one point,
@@ -591,23 +626,64 @@ func layoutFlowchart(g *graph) layoutResult {
 		}
 	}
 
+	// 6c. Lines between the same two shapes (A → B and B → A, or the same link twice) run side by side: both
+	// of their ends move apart by the same amount, so they never lie on top of each other
+	pairShift := make([]float64, len(edges))
+	pairs := map[[2]int][]int{}
+	for k, e := range edges {
+		key := [2]int{min(e.u, e.v), max(e.u, e.v)}
+		pairs[key] = append(pairs[key], k)
+	}
+	for _, list := range pairs {
+		if len(list) < 2 {
+			continue
+		}
+		span := math.Min(nodes[edges[list[0]].u].across, nodes[edges[list[0]].v].across) * 0.6
+		step := math.Min(entryGap, span/float64(len(list)-1))
+		for i, k := range list {
+			pairShift[k] = (float64(i) - float64(len(list)-1)/2) * step
+		}
+	}
+
 	// 7. Lines: right angles on their track in the gap after each layer, along the helper points
 	for k, e := range edges {
 		chain := chains[k]
+		// The end with the head takes its place among the lines entering that side; the other end, and a head
+		// alone on its side, keeps apart from a line between the same shapes
+		headShift := entryShift[k]
+		if headShift == 0 {
+			headShift = pairShift[k]
+		}
 		var via [][2]float64
 		for i := 0; i+1 < len(chain); i++ {
 			p, q := chain[i], chain[i+1]
 			gm := trackAt(p.layer, segTrack[k][i])
 			pp, qp := p.pos, q.pos
-			if !e.reversed && i == len(chain)-2 {
-				qp += entryShift[k]
+			if i == len(chain)-2 {
+				if e.reversed {
+					qp += pairShift[k]
+				} else {
+					qp += headShift
+				}
 			}
-			if e.reversed && i == 0 {
-				pp += entryShift[k]
+			if i == 0 {
+				if e.reversed {
+					pp += headShift
+				} else {
+					pp += pairShift[k]
+				}
 			}
 			via = append(via, toXY(gm, pp), toXY(gm, qp))
 		}
 		via = simplifyCorners(via)
+		if len(via) == 0 && pairShift[k] != 0 {
+			// Straight across, beside the other line: two points at the ends of the gap keep it off the centre
+			first, last := chain[0], chain[len(chain)-1]
+			via = [][2]float64{
+				toXY(bandStart[first.layer]+thick[first.layer], first.pos+pairShift[k]),
+				toXY(bandStart[last.layer], last.pos+pairShift[k]),
+			}
+		}
 		if e.reversed {
 			for i, j := 0, len(via)-1; i < j; i, j = i+1, j-1 {
 				via[i], via[j] = via[j], via[i]
@@ -615,6 +691,9 @@ func layoutFlowchart(g *graph) layoutResult {
 		}
 		u, v := e.u, e.v
 		el := outEl{"id": fmt.Sprintf("e%d", k+1), "ver": 1, "t": "arrow", "from": ids[u], "to": ids[v], "route": "elbow", "head": e.e.head, "s": "main", "sw": 2}
+		if e.e.thin {
+			el["sw"] = 1.5
+		}
 		if e.e.stroke != "" {
 			el["s"] = e.e.stroke
 		}

@@ -20,7 +20,7 @@ import (
 // triage; discarded ones can be restored from the triage trash.
 
 func init() {
-	mcpTools = append(append(mcpTools, mcpWriteTools...), mcpStructureTools...)
+	mcpTools = append(append(append(mcpTools, mcpWriteTools...), mcpStructureTools...), mcpDrawingTools...)
 }
 
 // noteBullet: a bullet with its id, so an agent can change exactly this one
@@ -50,7 +50,7 @@ var errMCPLanguage = errors.New("'language' gibt es nur für Code (type code)")
 var errMCPDividerText = errors.New("Ein Trennstrich hat keinen Text (mit type einen anderen Typ wählen)")
 
 // errMCPDrawing: the text of a drawing bullet was neither Mermaid nor a drawing model
-var errMCPDrawing = errors.New("Für eine Zeichnung erwartet text Mermaid (flowchart/graph oder mindmap) oder ein MindSift-Zeichnungsmodell (JSON)")
+var errMCPDrawing = errors.New("Für eine Zeichnung erwartet text Mermaid (flowchart/graph, mindmap, sequenceDiagram, stateDiagram oder gitGraph) oder ein MindSift-Zeichnungsmodell (JSON)")
 
 // mcpDrawingContent reads what an agent sends for a drawing: Mermaid, laid out by the server, or the
 // drawing model itself (as get_note's bullets never show it, mostly written by the agent from the docs)
@@ -64,15 +64,6 @@ func mcpDrawingContent(text string) (string, error) {
 	}
 	return "", errMCPDrawing
 }
-
-// mcpDrawingHelp: how drawings are written, for the tool descriptions
-const mcpDrawingHelp = "type drawing: text is either a Mermaid diagram, laid out automatically — flowchart/graph TD|LR|BT|RL with " +
-	"A[box], B(rounded), C{decision}, D((circle)), arrows -->, --- (no head), -.-> (dashed), ==> (bold), <-->, labels -->|yes|, chains A --> B --> C, " +
-	"colours via style A fill:#9f9 or classDef ok fill:green + class A ok; or a mindmap (one node per line, children indented, first line the root) — " +
-	"or a MindSift drawing model as JSON {\"v\":1,\"els\":[…]}: shapes {\"id\",\"t\":\"rect|ellipse|diamond\",\"x\",\"y\",\"w\",\"h\",\"txt\",\"s\":stroke,\"f\":fill or \"none\",\"sw\":2,\"r\":true for round corners}, " +
-	"text {\"id\",\"t\":\"text\",\"x\",\"y\",\"txt\",\"s\"}, arrows {\"id\",\"t\":\"arrow\",\"from\":shapeId,\"to\":shapeId,\"a\":[x,y],\"b\":[x,y],\"route\":\"straight|curve|elbow\",\"head\":0 none|1 start|2 end|3 both,\"txt\":label,\"s\",\"sw\":2}; " +
-	"colours are main, muted, accent, red, orange, green, blue, purple (they follow the user's theme). Prefer Mermaid. " +
-	"Use colour: give start and end, decisions, warnings and groups of related boxes their own fill (style or classDef), it makes a diagram much easier to scan than all boxes alike."
 
 // noteDoc loads the live block tree of a note
 func (s *Server) noteDoc(docID string) (*collab.Doc, error) {
@@ -277,10 +268,9 @@ var mcpWriteTools = []mcpTool{
 		Name: "add_note_bullet",
 		Description: "Add a bullet to a note: after a bullet (same level), as the last child of a bullet, or at the end. " +
 			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, table, code, divider, drawing. " +
-			"[[Note title]] links another note (with |text for an own link text); it keeps working when that note is renamed. " +
-			"Use the outline: put details as children (parentId) of the bullet they belong to rather than \"**Term:** text\" in one line, and h2/h3 for sections below an h1. " +
-			"All bullets have the same line spacing, so a heading right after text looks cramped: before adding a heading (h1–h3) below other bullets, add an empty text bullet above it to set the section apart. A recommendation, not a rule: leave it out where it does not fit. " +
-			"type table: text is a Markdown table (header row, separator row | --- |, rows; a | inside a cell written \\|; | :---: | centers a column, | ---: | aligns it right). " + mcpCodeHelp + mcpDrawingHelp,
+			"[[Note title]] links another note (|text for an own link text). " +
+			"Outline: details as children (parentId) rather than \"**Term:** text\"; h2/h3 for sections, with an empty text bullet above a heading that follows other bullets. " +
+			"type table: text is a Markdown table (| :---: | centers a column, | ---: | aligns it right, \\| is a | inside a cell). " + mcpCodeHelp + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId"}, map[string]any{
 			"noteId":   prop("string", "Note id"),
@@ -377,7 +367,7 @@ var mcpWriteTools = []mcpTool{
 	{
 		Name: "update_note_bullet",
 		Description: "Change one bullet of a note: its text, tick or untick a to-do, or its type. Bullet ids come from get_note. " +
-			"A drawing is replaced as a whole: text is the new drawing (Mermaid or the model, see add_note_bullet); type drawing turns a bullet into one. " +
+			"A drawing is replaced as a whole: text is the new drawing (Mermaid or the JSON model, see drawing_help); type drawing turns a bullet into one. " +
 			"type code turns a bullet into a code block (its text becomes the code; language sets or changes the language), type divider into a line (its text goes). " +
 			"Code and dividers are written as in add_note_bullet.",
 		Scope: storage.ScopeNotesWrite,

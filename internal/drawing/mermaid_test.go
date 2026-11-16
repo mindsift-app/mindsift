@@ -113,7 +113,8 @@ func mermaidLinesAfterHeader(t *testing.T, src string) []string {
 
 func TestColoursToRoles(t *testing.T) {
 	cases := map[string]string{"#f00": "red", "#ff0000": "red", "#0f0": "green", "#00f": "blue", "#f9f": "purple",
-		"#ffa500": "orange", "#333": "main", "#999": "muted", "#fff": "", "white": "", "accent": "accent", "teal": "green", "rgb(1,2,3)": ""}
+		"#ffa500": "orange", "#333": "main", "#999": "muted", "#fff": "", "white": "", "accent": "accent", "teal": "green", "rgb(1,2,3)": "main",
+		"rgb(191, 223, 255)": "blue", "rgba(0, 200, 0, 0.2)": "green", "rgb(300)": ""}
 	for in, want := range cases {
 		if got := roleOf(in, true); got != want {
 			t.Errorf("roleOf(%q) = %q, want %q", in, got, want)
@@ -246,8 +247,8 @@ func TestMindmap(t *testing.T) {
 }
 
 func TestMermaidRejects(t *testing.T) {
-	if _, err := FromMermaid("sequenceDiagram\nA->>B: Hallo"); !errors.Is(err, ErrMermaidKind) {
-		t.Errorf("sequence diagram: %v", err)
+	if _, err := FromMermaid("classDiagram\nA <|-- B"); !errors.Is(err, ErrMermaidKind) {
+		t.Errorf("class diagram: %v", err)
 	}
 	if _, err := FromMermaid("graph TD\n%% nur ein Kommentar"); !errors.Is(err, ErrMermaidEmpty) {
 		t.Errorf("empty: %v", err)
