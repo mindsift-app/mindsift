@@ -47,9 +47,10 @@ const (
 	// session of someone else is always possible
 	MaxUserSessions = 8
 	// MaxSessions and DefaultMaxTotalBytes: all sessions of the server together (the total can be set,
-	// DRAW_LIVE_MAX_MB; a full session takes about 1.4 times its bytes in memory)
+	// DRAW_LIVE_MAX_MB, by default derived from the server's memory in config; the server needs about 3 times
+	// the bytes held, more for a moment while full sessions end)
 	MaxSessions          = 256
-	DefaultMaxTotalBytes = 128 << 20
+	DefaultMaxTotalBytes = 64 << 20
 	// Joining and watching per person: each start loads the note to check the block
 	joinsPerSecond = 2
 	joinsBurst     = 20

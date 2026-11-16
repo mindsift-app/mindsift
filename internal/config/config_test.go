@@ -240,13 +240,25 @@ func TestCustomLinkValidation(t *testing.T) {
 }
 
 // STT_ALLOW_BROWSER=false: without a Whisper server (or in the demo) there is no voice input at all
-// DRAW_LIVE_MAX_MB sets the memory of all live drawings together; unset or out of range keeps 128.
+// DRAW_LIVE_MAX_MB sets the memory of all live drawings together; unset or out of range keeps the default
+// derived from the server's memory.
 func TestDrawLiveMaxMB(t *testing.T) {
 	t.Setenv("DATA_DIR", t.TempDir())
-	for v, want := range map[string]int{"": 128, "256": 256, "1": 1, "0": 128, "-5": 128, "99999": 128, "viel": 128} {
+	def := drawLiveDefaultMB(memoryLimit())
+	for v, want := range map[string]int{"": def, "256": 256, "1": 1, "0": def, "-5": def, "99999": def, "viel": def} {
 		t.Setenv("DRAW_LIVE_MAX_MB", v)
 		if got := Load().DrawLiveMaxMB; got != want {
 			t.Errorf("DRAW_LIVE_MAX_MB=%q: %d, want %d", v, got, want)
+		}
+	}
+}
+
+// Without DRAW_LIVE_MAX_MB the limit is a twelfth of the server's memory, between 16 and 128 MB.
+func TestDrawLiveDefaultMB(t *testing.T) {
+	const mib = 1 << 20
+	for limit, want := range map[int64]int{0: 64, 128 * mib: 16, 512 * mib: 42, 600 * mib: 50, 967 * mib: 80, 8192 * mib: 128} {
+		if got := drawLiveDefaultMB(limit); got != want {
+			t.Errorf("drawLiveDefaultMB(%d MiB) = %d, want %d", limit/mib, got, want)
 		}
 	}
 }

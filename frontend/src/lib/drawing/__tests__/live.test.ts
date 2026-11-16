@@ -117,6 +117,29 @@ describe('Live drawing: merging by version', () => {
     ]);
   });
 
+  it('keeps an own grid and order the server has not confirmed, and takes the session\'s once it has', () => {
+    const start = drawing(rect('a'), rect('b'));
+    const m = new LiveMerge(start);
+    // Grid on and b to the back: sent, but refused (no DRAW_ACK)
+    const local = { ...start, grid: true, els: [start.els[1], start.els[0]] };
+    const out = m.collect(local);
+    expect(out.grid).toBe(true);
+    expect(out.order).toEqual(['b', 'a']);
+    const state = { els: [wire(rect('a'), 0), wire(rect('b'), 0)], order: ['a', 'b'], grid: false };
+    const { doc } = m.reconcile(local, state);
+    expect(doc.grid).toBe(true);
+    expect(doc.els.map((e) => e.id)).toEqual(['b', 'a']);
+    const again = m.collect(doc);
+    expect(again.grid).toBe(true);
+    expect(again.order).toEqual(['b', 'a']);
+
+    // Confirmed: the next full state of the session counts again (someone else turned the grid off)
+    m.acked();
+    const later = m.reconcile(doc, { ...state, order: ['b', 'a'], grid: false }).doc;
+    expect(later.grid).toBeUndefined();
+    expect(m.collect(later).grid).toBeUndefined();
+  });
+
   it('patches undo steps and orders like the server', () => {
     const step = drawing(rect('a'), rect('b'));
     const patched = patchDrawing(step, [

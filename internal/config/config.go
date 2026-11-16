@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"slices"
 	"strconv"
 	"strings"
@@ -110,7 +112,8 @@ type Config struct {
 	NotifyDigestMinutes int
 
 	// DrawLiveMaxMB: DRAW_LIVE_MAX_MB, what all live drawing sessions may hold in memory together (each
-	// up to 1 MB; a full session takes about 1.4 MB of memory)
+	// up to 1 MB). Unset: derived from the memory the server may use (drawLiveDefaultMB), since the
+	// server's memory grows by about 3 MB per MB held, more for a moment while full sessions end.
 	DrawLiveMaxMB int
 
 	// Web push (VAPID_*): keys are generated and stored in the database when not set
@@ -608,7 +611,7 @@ func Load() *Config {
 			VADFilter:      strings.ToLower(getEnv("STT_VAD_FILTER", "true")) != "false",
 		},
 		NotifyDigestMinutes: envInt("NOTIFY_DIGEST_MINUTES", 5, 1, 1440),
-		DrawLiveMaxMB:       envInt("DRAW_LIVE_MAX_MB", 128, 1, 4096),
+		DrawLiveMaxMB:       envInt("DRAW_LIVE_MAX_MB", drawLiveDefaultMB(memoryLimit()), 1, 4096),
 		VAPIDPublicKey:      strings.TrimSpace(os.Getenv("VAPID_PUBLIC_KEY")),
 		VAPIDPrivateKey:     strings.TrimSpace(os.Getenv("VAPID_PRIVATE_KEY")),
 		VAPIDSubject:        strings.TrimSpace(os.Getenv("VAPID_SUBJECT")),
@@ -698,6 +701,35 @@ func envInt(key string, def, min, max int) int {
 		return def
 	}
 	return n
+}
+
+// drawLiveDefaultMB: a twelfth of the memory the server may use, so full live drawings take at most about
+// a quarter of it (measured: ~3 MB of memory per MB held), between 16 and 128 MB; 64 when nothing is known.
+func drawLiveDefaultMB(limit int64) int {
+	if limit <= 0 {
+		return 64
+	}
+	return min(max(int(limit/12>>20), 16), 128)
+}
+
+// memoryLimit: what the server may use, in bytes: GOMEMLIMIT (the entrypoint sets it from a container
+// limit), else the machine's memory (/proc/meminfo, Linux only); 0 when neither is known.
+func memoryLimit() int64 {
+	if l := debug.SetMemoryLimit(-1); l > 0 && l < math.MaxInt64 {
+		return l
+	}
+	data, err := os.ReadFile("/proc/meminfo")
+	if err != nil {
+		return 0
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if f := strings.Fields(line); len(f) >= 2 && f[0] == "MemTotal:" {
+			if kb, err := strconv.ParseInt(f[1], 10, 64); err == nil {
+				return kb << 10
+			}
+		}
+	}
+	return 0
 }
 
 func demoResetMinutes() int {

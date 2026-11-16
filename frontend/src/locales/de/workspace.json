@@ -626,6 +626,7 @@
         "forbidden": "Du hast keinen Zugriff zum Mitzeichnen.",
         "locked": "Jemand anderes bearbeitet die Zeichnung gerade – gemeinsam zeichnen geht erst, wenn sie frei ist.",
         "limit": "Die Zeichnung ist zu groß für die Live-Sitzung. Bitte etwas entfernen, vor allem Freihand-Striche.",
+        "limit_live": "Die Zeichnung ist zu groß für die Live-Sitzung. Deine letzten Änderungen bleiben hier erhalten; entferne etwas, vor allem Freihand-Striche, dann werden sie gesendet.",
         "too_many": "Du zeichnest schon in zu vielen Zeichnungen live. Schließ eine davon und öffne diese dann noch einmal.",
         "busy": "Gerade laufen zu viele Live-Zeichnungen auf dem Server. Bitte später noch einmal öffnen.",
         "busy_live": "Der Server nimmt gerade keine weiteren Änderungen an Live-Zeichnungen an. Deine Änderungen bleiben hier erhalten und werden gesendet, sobald wieder Platz ist.",

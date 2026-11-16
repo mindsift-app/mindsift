@@ -630,6 +630,7 @@
         "forbidden": "No tienes acceso para dibujar.",
         "locked": "Otra persona está editando el dibujo ahora mismo – podréis dibujar juntos cuando quede libre.",
         "limit": "El dibujo es demasiado grande para la sesión en vivo. Quita algo, sobre todo trazos a mano alzada.",
+        "limit_live": "El dibujo es demasiado grande para la sesión en vivo. Tus últimos cambios se quedan aquí; quita algo, sobre todo trazos a mano alzada, y se enviarán.",
         "too_many": "Ya estás dibujando en vivo en demasiados dibujos. Cierra uno y vuelve a abrir este.",
         "busy": "Ahora mismo hay demasiados dibujos en vivo en el servidor. Vuelve a abrirlo más tarde.",
         "busy_live": "Ahora mismo el servidor no acepta más cambios en dibujos en vivo. Tus cambios se quedan aquí y se enviarán en cuanto vuelva a haber espacio.",

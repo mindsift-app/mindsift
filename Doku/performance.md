@@ -16,3 +16,17 @@ Load-tested on 14 November 2026 with the code of the next release on the public 
 - **Many people in one note:** changes to one note are applied one after another so that no edit gets lost, so hundreds typing in one note wait for each other. Opening the note stays fast. Why edits to one note are serialized: [modules/collaboration.md](modules/collaboration.md).
 - **It recovers by itself:** right after 1,200 people at once, the server answers in under 0.3 s again, without a restart.
 - **Compared with the test of v0.95.0:** that test used small workspaces, so the note list and search hardly cost anything. With realistic workspaces, the note list of that version used several hundred MB under load and search requests timed out from 800 people on; the next release sends the note list without bullets (about a hundredth of the size) and searches only what the person can see.
+
+## Live drawing
+
+Measured on 16 November 2026 on the same demo server, through Cloudflare and the reverse proxy. Simulated people draw in a live drawing together: each moves the pointer 15 times a second without pause and changes a shape once a second.
+
+| Live drawing | Change seen by the others (median) | Slowest 5 % | Errors |
+|---|---|---|---|
+| 20 people in one drawing | ~30 ms | ~50 ms | 0 |
+| 50 people in one drawing | ~65 ms | ~90 ms | 0 |
+| 60 drawings with 3 people each (5 pointer moves a second) | ~25 ms | ~35 ms | 0 |
+
+- **Pointers are bundled:** the server sends each person the pointers of everyone else at most 20 times a second in one message, so the load grows with the number of people instead of its square. 50 people moving their mouse all the time used about a fifth of the core for MindSift.
+- **Limits:** 8 live drawings per person, 256 per server, and together at most `DRAW_LIVE_MAX_MB` of drawing data (by default a twelfth of the server's memory, at most 128 MB; the server needs about three times what the drawings hold); when that is full, drawings keep their changes and send them again once there is room.
+
