@@ -255,10 +255,11 @@ describe('WorkspaceView sidebar explorer', () => {
       expect(screen.queryByText('Beete')).toBeNull();
       expect(screen.queryByText('Arbeit')).toBeNull();
       expect(screen.queryByText('Ohne Hashtag')).toBeNull();
-      // Filter on: reset button and the trash bar glows red
+      // Filter on: reset button; only the line above the trash turns red, with a label on it (no tint)
       expect(screen.getByRole('button', { name: 'Hashtag-Filter aufheben' })).toBeTruthy();
       expect(trashBar().dataset.filterActive).toBe('true');
-      expect(trashBar().className).toContain('bg-status-err/10');
+      expect(trashBar().className).toContain('border-status-err');
+      expect(trashBar().className).not.toContain('bg-status-err');
       expect(screen.getByText('Filter aktiv')).toBeTruthy();
 
       fireEvent.click(tagButton('haus'));
