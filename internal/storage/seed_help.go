@@ -28,7 +28,7 @@ func (s *Store) seedLinkedTodosDE(user *domain.User, homelab *domain.TaskList) {
 // seedLinkedTodos creates the note, turns its first checkbox (blocks[1]) into a task of the list and
 // deepens the uptime monitoring task into a note.
 func (s *Store) seedLinkedTodos(user *domain.User, listID, title, folder, tag string, blocks []domain.DocumentBlock) {
-	doc, err := s.CreateDocument(user.ID, "", title, "💾", folder, blocks, []string{tag}, false)
+	doc, err := s.CreateDocument(user.ID, "", title, "", folder, blocks, []string{tag}, false)
 	if err != nil || doc == nil {
 		return
 	}
@@ -55,7 +55,7 @@ func (s *Store) seedHelpNotesDE(user *domain.User) {
 	help := func(title, icon string, spec []seedBlock) {
 		_, _ = s.CreateDocument(user.ID, "", title, icon, "MindSift-Hilfe", seedBlocks(spec), []string{"hilfe"}, false)
 	}
-	help("Erste Schritte", "👋", []seedBlock{
+	help("Erste Schritte", "", []seedBlock{
 		{typ: "callout", text: "Willkommen! Diese Notizen erklären MindSift. Alles hier ist Beispielinhalt – ändern, verschieben und löschen ist ausdrücklich erlaubt. #hilfe"},
 		{typ: "h2", text: "Die Idee in drei Schritten"},
 		{typ: "numbered", text: "**Erfassen:** Alles, was dir einfällt, sofort in die Leiste oben (Quick Dump) – Taste `C` oder `/`, am Handy das +."},
@@ -71,7 +71,7 @@ func (s *Store) seedHelpNotesDE(user *domain.User) {
 		{level: 1, text: "[[Teilen & gemeinsam bearbeiten]]"},
 		{level: 1, text: "[[API & Smart Home]] – Home Assistant und KI-Agenten anbinden"},
 	})
-	help("Notizen & Outliner", "📝", []seedBlock{
+	help("Notizen & Outliner", "", []seedBlock{
 		{typ: "h2", text: "Punkte und Ebenen"},
 		{level: 1, text: "`Enter` legt einen neuen Punkt an, `Tab` rückt ein, `Shift+Tab` rückt aus"},
 		{level: 1, text: "Punkte mit Unterpunkten lassen sich auf- und zuklappen (Pfeil links beim Drüberfahren)"},

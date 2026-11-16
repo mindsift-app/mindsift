@@ -78,7 +78,7 @@ func (s *Store) seedStarterEN(user *domain.User) error {
 
 	_, _ = s.CreateFolder(user.ID, "Projects")
 	_, _ = s.CreateFolder(user.ID, "Personal")
-	_, _ = s.CreateDocument(user.ID, "", "Diagrams drawn by an AI agent over MCP", "🤖", "", seedBlocks([]seedBlock{
+	_, _ = s.CreateDocument(user.ID, "", "Diagrams drawn by an AI agent over MCP", "", "", seedBlocks([]seedBlock{
 		{typ: "h2", text: "How these were made"},
 		{typ: "callout", text: "Claude created both diagrams on this page through MindSift's MCP server: it sent each one as a Mermaid diagram, and MindSift turned them into drawings you edit like your own – move boxes, reroute lines, change colors."},
 		{typ: "h2", text: "MindSift on a small server"},
@@ -132,7 +132,7 @@ func (s *Store) seedStarterEN(user *domain.User) error {
 		{typ: "h2", text: "Try it yourself"},
 		{level: 1, text: "Create a key under Account settings → API and point your agent at `/api/v1/mcp` – more in [[API & smart home]]"},
 	}), []string{"mcp", "homelab"}, true)
-	_, _ = s.CreateDocument(user.ID, "", "Homelab 2.0 – moving to the new server", "🚀", "Projects", seedBlocks([]seedBlock{
+	_, _ = s.CreateDocument(user.ID, "", "Homelab 2.0 – moving to the new server", "", "Projects", seedBlocks([]seedBlock{
 		{typ: "callout", text: "Goal: by the end of the month all services run on the new mini PC – quieter, more efficient and with a real backup. The tasks for it are in the #homelab list."},
 		{typ: "h2", text: "Why bother?"},
 		{level: 1, text: "The old server draws 65 W at idle, the new one only 9 W"},
@@ -166,7 +166,7 @@ func (s *Store) seedStarterEN(user *domain.User) error {
 		{level: 1, text: "Offsite backup: Hetzner Storage Box or a hard drive at my parents'? See [[Idea collection]]"},
 	}), []string{"homelab", "project"}, false)
 
-	_, _ = s.CreateDocument(user.ID, "", "Holiday in South Tyrol", "🏔️", "Personal", seedBlocks([]seedBlock{
+	_, _ = s.CreateDocument(user.ID, "", "Holiday in South Tyrol", "", "Personal", seedBlocks([]seedBlock{
 		{typ: "h2", text: "October travel plan"},
 		{level: 1, text: "Arrive Saturday, leave early because of the Brenner traffic"},
 		{level: 1, text: "Hut near Villnöß – confirmation comes by email"},
@@ -179,7 +179,7 @@ func (s *Store) seedStarterEN(user *domain.User) error {
 	}), []string{"holiday"}, false)
 
 	// Deeply nested on purpose: clicking a bullet zooms into its branch, the breadcrumb leads back out
-	_, _ = s.CreateDocument(user.ID, "", "House renovation 2027", "🏡", "Personal", seedBlocks([]seedBlock{
+	_, _ = s.CreateDocument(user.ID, "", "House renovation 2027", "", "Personal", seedBlocks([]seedBlock{
 		{typ: "callout", text: "Tip: click a bullet (•) to zoom into its branch; the bar at the top leads back level by level."},
 		{text: "Ground floor"},
 		{level: 1, text: "Kitchen"},
@@ -221,19 +221,20 @@ func (s *Store) seedStarterEN(user *domain.User) error {
 		{level: 4, typ: "todo", text: "Quote from the tiler"},
 		{level: 4, typ: "todo", text: "Decide: channel drain or point drain"},
 		{level: 1, text: "Kids' room"},
-		{level: 2, typ: "todo", text: "Let the kids pick the wall colour 🎨 #family", checked: true},
+		{level: 2, typ: "todo", text: "Let the kids pick the wall colour #family", checked: true},
 		{text: "Budget"},
 		{level: 1, text: "Total €45,000, 10 % of it as a buffer"},
 		{level: 2, text: "The kitchen is the biggest item, see Ground floor → Kitchen"},
 	}), []string{"renovation"}, false)
 
-	_, _ = s.CreateDocument(user.ID, "", "Idea collection", "💡", "", seedBlocks([]seedBlock{
+	_, _ = s.CreateDocument(user.ID, "", "Idea collection", "", "", seedBlocks([]seedBlock{
 		{text: "Encrypted offsite backup with restic #backup"},
 		{level: 1, text: "Upside: snapshots, deduplication, works with any target"},
 		{text: "A family wiki instead of the group chat for recipes and dates #family"},
 		{text: "Weekly review every Sunday: empty the inbox, plan the tasks for the week #routine"},
 	}), []string{"ideas"}, false)
 
+	s.seedKnowledgeBaseEN(user)
 	listID := ""
 	if homelab != nil {
 		listID = homelab.ID
@@ -263,7 +264,7 @@ func (s *Store) seedHelpNotesEN(user *domain.User) {
 	help := func(title, icon string, spec []seedBlock) {
 		_, _ = s.CreateDocument(user.ID, "", title, icon, folder, seedBlocks(spec), []string{"help"}, false)
 	}
-	help("Getting started", "👋", []seedBlock{
+	help("Getting started", "", []seedBlock{
 		{typ: "callout", text: "Welcome! These notes explain MindSift. Everything here is sample content – changing, moving and deleting it is very much allowed. #help"},
 		{typ: "h2", text: "The idea in three steps"},
 		{typ: "numbered", text: "**Capture:** whatever comes to mind goes straight into the bar at the top (quick dump) – key `C` or `/`, the + on your phone."},
@@ -279,7 +280,7 @@ func (s *Store) seedHelpNotesEN(user *domain.User) {
 		{level: 1, text: "[[Sharing & editing together]]"},
 		{level: 1, text: "[[API & smart home]] – connect Home Assistant and AI agents"},
 	})
-	help("Notes & outliner", "📝", []seedBlock{
+	help("Notes & outliner", "", []seedBlock{
 		{typ: "h2", text: "Bullets and levels"},
 		{level: 1, text: "`Enter` adds a new bullet, `Tab` indents, `Shift+Tab` outdents"},
 		{level: 1, text: "Bullets with children can be expanded and collapsed (arrow on the left when hovering)"},
