@@ -10,6 +10,7 @@ import { useLatestRef } from '../lib/useLatestRef';
 import { setServerLinkPreviews } from '../lib/linkPreview';
 import { setServerImageQuality } from '../lib/media';
 import { OWN_ECHO_WINDOW_MS, createStatsScheduler, eventChangesDeck, eventChangesStats } from './realtimeCounters';
+import { createDemoResetWatch } from './demoResetWatch';
 
 type AccountLoad = [
   PromiseSettledResult<Awaited<ReturnType<typeof api.getMe>>>,
@@ -36,6 +37,11 @@ export function prefetchAuthStatus(): void {
   earlyAccount = getToken() && !oidcReturnPending() && outboxCount() === 0 ? loadAccount() : null;
 }
 
+// When the next demo reset happens, in this browser's clock (null: no periodic reset). Counted from the
+// seconds the server names, so a wrong clock on either side does not matter.
+const demoDeadlineFrom = (demoMode: boolean | undefined, resetInSeconds: number | undefined): number | null =>
+  demoMode && typeof resetInSeconds === 'number' ? Date.now() + resetInSeconds * 1000 : null;
+
 // The session of the app: server status (setup, registration, demo), the signed-in user with counters,
 // triage deck and lists, the boot check, offline changes retried when online, the realtime connection,
 // counters kept current by realtime events and the demo reset with its countdown. onSignedOut runs when
@@ -59,6 +65,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   const [dataEpoch, setDataEpoch] = useState(0);
   const [demoNotice, setDemoNotice] = useState<string | null>(null);
   const lastDemoResetRef = useRef(0);
+  const demoDeadlineRef = useRef<number | null>(null);
+  const demoWatchRef = useRef<ReturnType<typeof createDemoResetWatch> | null>(null);
   const onSignedOutRef = useLatestRef(onSignedOut);
   const [stats, setStats] = useState<DashboardStats>({
     inboxCount: 0,
@@ -72,6 +80,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   });
   const [deck, setDeck] = useState<Thought[]>([]);
   const [lists, setLists] = useState<SharedList[]>([]);
+  const demoModeRef = useLatestRef(Boolean(authStatus.demoMode));
 
   // A rejected account (token expired or invalid) changes nothing: api.ts dispatches mindsift:unauthorized
   const applyAccount = useCallback(([meRes, deckRes, listsRes]: AccountLoad) => {
@@ -197,12 +206,10 @@ export function useSessionBootstrap(onSignedOut: () => void) {
 
   useEffect(() => {
     // The deadline counts from when the status arrived (Date.now() is not for render)
+    const deadline = demoDeadlineFrom(authStatus.demoMode, authStatus.demoResetInSeconds);
+    demoDeadlineRef.current = deadline;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDemoDeadline(
-      authStatus.demoMode && typeof authStatus.demoResetInSeconds === 'number'
-        ? Date.now() + authStatus.demoResetInSeconds * 1000
-        : null
-    );
+    setDemoDeadline(deadline);
   }, [authStatus.demoMode, authStatus.demoResetInSeconds]);
 
   // Link previews switched off for the whole server: no cards in notes, no switch in the settings
@@ -216,31 +223,47 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   }, [authStatus.imageQuality]);
 
   // The demo database was reset: drop cached answers of the old data, remount the views (they load
-  // fresh data), refresh counters and the countdown. Sessions stay valid (fixed demo account IDs).
-  const handleDemoReset = useCallback(() => {
+  // fresh data), refresh counters and the countdown (unless the reset was noticed through the new deadline,
+  // see below). Sessions stay valid (fixed demo account IDs).
+  const handleDemoReset = useCallback((nextDeadlineKnown = false) => {
     if (Date.now() - lastDemoResetRef.current < 30000) return; // event and countdown may both report it
     lastDemoResetRef.current = Date.now();
     void clearOfflineData();
     setDataEpoch((n) => n + 1);
     refreshAll();
-    api.getAuthStatus().then(setAuthStatus).catch(() => {});
+    if (!nextDeadlineKnown) demoWatchRef.current?.refresh();
     setDemoNotice(i18n.t('app:demoReset'));
     window.setTimeout(() => setDemoNotice(null), 4000);
   }, [refreshAll]);
   const handleDemoResetRef = useLatestRef(handleDemoReset);
 
-  // Countdown reached zero but no DEMO_RESET arrived (e.g. long polling): ask the server shortly after
-  const handleDemoCountdownElapsed = useCallback(() => {
-    window.setTimeout(() => {
-      api
-        .getAuthStatus()
-        .then((st) => {
-          if ((st.demoResetInSeconds ?? 0) > 60) handleDemoResetRef.current();
-          else setAuthStatus(st);
-        })
-        .catch(() => {});
-    }, 5000);
+  // The next demo reset as the server names it. The deadline is set here as well, not only through the
+  // effect above: an answer with the same number of seconds as before would not restart the countdown.
+  // If the old deadline had passed and the server names a new one, the reset happened, whether or not
+  // DEMO_RESET arrived (handleDemoReset ignores a second report).
+  useEffect(() => {
+    const watch = createDemoResetWatch(
+      () => api.getAuthStatus(),
+      (st) => {
+        const before = demoDeadlineRef.current;
+        const deadline = demoDeadlineFrom(st.demoMode, st.demoResetInSeconds);
+        demoDeadlineRef.current = deadline;
+        setAuthStatus(st);
+        setDemoDeadline(deadline);
+        const now = Date.now();
+        if (before !== null && before <= now && deadline !== null && deadline > now) handleDemoResetRef.current(true);
+      }
+    );
+    demoWatchRef.current = watch;
+    return () => {
+      watch.cancel();
+      demoWatchRef.current = null;
+    };
   }, [handleDemoResetRef]);
+
+  // Countdown reached zero: ask the server (with growing pauses) until it names the next reset, also when
+  // DEMO_RESET does not arrive (long polling, connection just dropped)
+  const handleDemoCountdownElapsed = useCallback(() => demoWatchRef.current?.elapsed(), []);
 
   // Counters and deck follow realtime events, but only as far as an event can change them: the deck for
   // events about inbox thoughts (a thought sorted on another device leaves this deck too), the counters
@@ -257,7 +280,10 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     };
     // Events missed while the tab slept (desktop in the background, connection dropped)
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && getToken()) refreshAll();
+      if (document.visibilityState !== 'visible') return;
+      if (getToken()) refreshAll();
+      // Timers sleep in a hidden tab and DEMO_RESET may have been missed: ask for the next reset anew
+      if (demoModeRef.current) demoWatchRef.current?.refresh();
     };
     const handleWs = (e: CustomEvent<WSMessage | undefined>) => {
       const msg = e.detail;
@@ -285,6 +311,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
           scheduler.soon();
           reloadDeck();
         }
+        if (demoModeRef.current) demoWatchRef.current?.refresh();
       }
     };
     window.addEventListener('mindsift:ws', handleWs);
@@ -297,7 +324,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
       window.removeEventListener('mindsift:ws:status', onStatus);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [refreshAll, statsScheduler, handleDemoResetRef]);
+  }, [refreshAll, statsScheduler, handleDemoResetRef, demoModeRef]);
 
   return {
     bootLoading,

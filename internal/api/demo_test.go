@@ -165,3 +165,61 @@ func TestDemoResetIsQuietForBackgroundJobs(t *testing.T) {
 		}
 	}
 }
+
+// A client that asks for the status during or right after a reset (held by the gate, or woken by
+// DEMO_RESET) gets the following deadline, not the one just passed; otherwise its countdown stays at
+// "resetting" until the page is reloaded.
+func TestDemoResetAnnouncesNextDeadlineBeforeGateOpens(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "demo_deadline.db")
+	store, err := storage.NewStore(dbPath, storage.WithDemoMode())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	if err := store.ResetAndSeedDemo(); err != nil {
+		t.Fatal(err)
+	}
+	srv := NewServer(&config.Config{DatabasePath: dbPath, JWTSecret: "demo-secret", DemoMode: true, DemoResetMinutes: 20}, store, ws.NewHub(), nil)
+	t.Cleanup(srv.Close)
+	router := srv.Router()
+	status := func() int {
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, httptest.NewRequest("GET", "/api/v1/auth/status", nil))
+		var st struct {
+			DemoResetInSeconds int `json:"demoResetInSeconds"`
+		}
+		_ = json.Unmarshal(rec.Body.Bytes(), &st)
+		return st.DemoResetInSeconds
+	}
+
+	// The deadline has just passed and the reset is due
+	srv.setDemoNextReset(time.Now().Add(-time.Second))
+	if got := status(); got != 0 {
+		t.Errorf("a passed deadline should read as 0 seconds, got %d", got)
+	}
+
+	// A pass holds the reset back; a status request arriving meanwhile waits behind the reset
+	done := srv.demoPass()
+	reset := make(chan struct{})
+	go func() {
+		srv.resetDemo()
+		close(reset)
+	}()
+	time.Sleep(100 * time.Millisecond)
+	answer := make(chan int, 1)
+	go func() { answer <- status() }()
+	time.Sleep(100 * time.Millisecond)
+	done()
+	<-reset
+	select {
+	case got := <-answer:
+		if got < 19*60 || got > 20*60 {
+			t.Errorf("status during the reset should announce the next deadline in 20 minutes, got %d s", got)
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatal("status request did not finish")
+	}
+	if got := status(); got < 19*60 {
+		t.Errorf("status after the reset should announce the next deadline, got %d s", got)
+	}
+}
