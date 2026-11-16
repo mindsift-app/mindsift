@@ -55,15 +55,15 @@
   "sending": "Enviando…",
   "sharing": {
     "private": {
-      "title": "1. Privado",
+      "title": "Privado",
       "text": "Nadie comparte con otros: sin compartir con personas, sin grupos."
     },
     "organizations": {
-      "title": "2. Dentro de las organizaciones (recomendado)",
+      "title": "Dentro de las organizaciones (recomendado)",
       "text": "Solo se comparte con personas con las que se tiene al menos una organización en común. Quien no pertenece a ninguna no puede compartir con nadie."
     },
     "open": {
-      "title": "3. Abierto",
+      "title": "Abierto",
       "text": "Todos en este servidor pueden compartir entre sí."
     }
   },

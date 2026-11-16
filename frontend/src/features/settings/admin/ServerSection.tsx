@@ -15,9 +15,6 @@ import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
 import { SelectMenu } from '../../../components/SelectMenu';
 
-// The modes' titles are numbered ("1. Privat"); the menu and the warning drop the number
-const modeTitle = (title: string) => title.replace(/^\d\.\s*/, '');
-
 // Administration → Server & Isolation (state in useAdminSettings)
 export function ServerSection({
   admin,
@@ -110,7 +107,7 @@ export function ServerSection({
                 ariaLabel={t('server.sharing')}
                 value={settings.sharingMode}
                 onChange={(mode) => handleSelectSharingMode(mode)}
-                options={SHARING_MODES.map((m) => ({ value: m.id, label: modeTitle(m.title), hint: m.text }))}
+                options={SHARING_MODES.map((m) => ({ value: m.id, label: m.title, hint: m.text }))}
               />
             </div>
 
@@ -119,7 +116,7 @@ export function ServerSection({
                 <CircleAlert className="w-4 h-4 text-status-warn shrink-0" />
                 <span className="flex-1 min-w-0 text-main">
                   {t('server.switchWarning', {
-                    mode: modeTitle(SHARING_MODES.find((m) => m.id === pendingMode.mode)?.title || ''),
+                    mode: SHARING_MODES.find((m) => m.id === pendingMode.mode)?.title || '',
                     count: pendingMode.affected,
                   })}
                 </span>
@@ -234,7 +231,7 @@ export function ServerSection({
 
           {/* Who must sign in with a second factor; without one the next request leads to its setup */}
           <div className="p-4 bg-canvas border border-border rounded-card flex flex-wrap items-center justify-between gap-4" data-admin-mfa-required>
-            <div className="pr-4 min-w-0 flex-1">
+            <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
               <p className="font-bold text-main">{t('server.mfaRequired')}</p>
               <p className="text-[11px] text-muted mt-0.5">{t('server.mfaRequiredHint')}</p>
             </div>

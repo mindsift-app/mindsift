@@ -596,15 +596,15 @@
   },
   "sharing": {
     "private": {
-      "title": "1. Privato",
+      "title": "Privato",
       "text": "Nessuno condivide con altri: niente condivisione con persone, niente gruppi."
     },
     "organizations": {
-      "title": "2. All’interno delle organizzazioni (consigliato)",
+      "title": "All’interno delle organizzazioni (consigliato)",
       "text": "Si condivide solo con persone con cui si ha almeno un’organizzazione in comune. Chi non ne fa parte non può condividere con nessuno."
     },
     "open": {
-      "title": "3. Aperto",
+      "title": "Aperto",
       "text": "Tutti su questo server possono condividere tra loro."
     }
   },

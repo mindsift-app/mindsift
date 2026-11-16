@@ -17,7 +17,7 @@ export function ImageQualitySetting({
   const locked = Boolean(settings.imageQualityConfiguredViaEnv);
   return (
     <div className="p-4 bg-canvas border border-border rounded-card flex flex-wrap items-center justify-between gap-4" data-admin-image-quality>
-      <div className="pr-4 min-w-0 flex-1">
+      <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
         <p className="font-bold text-main">{t('server.imageQuality')}</p>
         <p className="text-[11px] text-muted mt-0.5">
           {t('server.imageQualityHint')}
