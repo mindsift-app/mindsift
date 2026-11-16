@@ -312,9 +312,18 @@ export const workspaceApi = {
     });
   },
 
-  /** The way back from extractBranch: the linked note's blocks for the bullet; the note goes to the trash. */
-  async inlineNote(docId: string, blockId: string): Promise<{ sourceId: string; content: string; head?: DocumentBlock; blocks: DocumentBlock[] }> {
-    return request(`/api/v1/documents/${docId}/inline`, { method: 'POST', body: JSON.stringify({ blockId }) });
+  /** The way back from extractBranch: the linked note's blocks for the bullet; the note goes to the trash.
+   *  Links by id from other people's notes refuse it (ApiError code foreign_links, data.count) unless
+   *  confirmForeignLinks is set. */
+  async inlineNote(
+    docId: string,
+    blockId: string,
+    confirmForeignLinks = false
+  ): Promise<{ sourceId: string; content: string; head?: DocumentBlock; blocks: DocumentBlock[] }> {
+    return request(`/api/v1/documents/${docId}/inline`, {
+      method: 'POST',
+      body: JSON.stringify(confirmForeignLinks ? { blockId, confirmForeignLinks } : { blockId }),
+    });
   },
 
   /** Copies a bullet with its children to the end of another note; the editor then removes it here itself. */

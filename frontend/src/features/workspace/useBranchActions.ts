@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { buildBlockLink } from '../../lib/wikiLink';
 import { Document } from '../../lib/types';
-import { api } from '../../lib/api';
+import { api, ApiError } from '../../lib/api';
+import { askConfirm } from '../../components/askConfirm';
 import i18n from '../../i18n';
 import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
 import { moveBranch } from '../../lib/outlineList';
@@ -251,7 +252,22 @@ export function useBranchActions({
       if (!engine || !canEdit) return;
       try {
         await engine.syncNow();
-        const res = await api.inlineNote(docId, blockId);
+        let res;
+        try {
+          res = await api.inlineNote(docId, blockId);
+        } catch (err) {
+          // Other people link the note by id: their links would point to nothing, ask first (only the
+          // number is known, not whose notes)
+          if (!(err instanceof ApiError) || err.code !== 'foreign_links') throw err;
+          const count = Number(err.data?.count) || 0;
+          const ok = await askConfirm({
+            message: i18n.t('workspace:editor.pullBackForeignLinks', { count }),
+            confirmLabel: i18n.t('workspace:editor.pullBackAnyway'),
+            danger: true,
+          });
+          if (!ok) return;
+          res = await api.inlineNote(docId, blockId, true);
+        }
         (document.activeElement as HTMLElement | null)?.blur?.();
         const prev = currentBlocksRef.current;
         const i = prev.findIndex((b) => b.id === blockId);

@@ -319,6 +319,7 @@ var messagesIT = map[string]string{
 	"der Mailserver meldet einen internen Fehler bei der Anmeldung, bitte dessen SASL/Dovecot-Logs prüfen": "il server di posta segnala un errore interno durante l’accesso, controlla i suoi log SASL/Dovecot",
 	"Änderung abgelehnt": "Modifica rifiutata",
 	"Im geteilten Ordner „{folder}“ darfst du nur lesen":                                                                           "Nella cartella condivisa «{folder}» puoi solo leggere",
+	"{count} Link(s) anderer Personen würden danach ins Leere zeigen.":                                                             "{count} link di altre persone porterebbero poi nel vuoto.",
 	"„{title}“ ist noch in {count} weiteren Notiz(en) verlinkt; diese Links würden ins Leere zeigen. Bitte dort zuerst entfernen.": "«{title}» è ancora collegata in {count} altra/e nota/e; quei link porterebbero nel vuoto. Rimuovili prima lì.",
 	"Änderung an deinem MindSift-Konto":                                                                                            "Una modifica al tuo account MindSift",
 	"Aufgabe fällig":                                                                                                               "Attività in scadenza",

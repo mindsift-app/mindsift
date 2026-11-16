@@ -251,6 +251,18 @@ func (e *StillLinkedError) Localize(lang string) string {
 	return i18n.T(lang, "„{title}“ ist noch in {count} weiteren Notiz(en) verlinkt; diese Links würden ins Leere zeigen. Bitte dort zuerst entfernen.", "title", e.Title, "count", strconv.Itoa(e.Count))
 }
 
+// ForeignLinksError: people who can open the note link to it by its id from notes the owner cannot
+// see; those links would point to nothing. Only the number is told, never which notes or whose.
+type ForeignLinksError struct {
+	Count int
+}
+
+func (e *ForeignLinksError) Error() string { return e.Localize(i18n.Fallback) }
+
+func (e *ForeignLinksError) Localize(lang string) string {
+	return i18n.T(lang, "{count} Link(s) anderer Personen würden danach ins Leere zeigen.", "count", strconv.Itoa(e.Count))
+}
+
 // InlineResult: what the editor puts back in place of the link bullet
 type InlineResult struct {
 	SourceID string `json:"sourceId"`
@@ -266,8 +278,19 @@ type InlineResult struct {
 // InlineNote is the way back from ExtractBranch: for a bullet that is only a link to an own note, it
 // returns that note's blocks and puts the note into the trash. Like ExtractBranch it does not change
 // the note with the bullet; the editor inserts the blocks itself as an own edit (undo works). Refused
-// while other notes link to the note as well, since those links would point to nothing.
+// while other notes link to the note as well, since those links would point to nothing: the user's own
+// (StillLinkedError) or, by id, those of other people who can open the note (ForeignLinksError).
 func (s *Store) InlineNote(userID, docID, blockID string) (*InlineResult, error) {
+	return s.inlineNote(userID, docID, blockID, false)
+}
+
+// InlineNoteConfirmed is InlineNote after the user agreed that other people's links to the note will
+// point to nothing: only their own links still refuse it.
+func (s *Store) InlineNoteConfirmed(userID, docID, blockID string) (*InlineResult, error) {
+	return s.inlineNote(userID, docID, blockID, true)
+}
+
+func (s *Store) inlineNote(userID, docID, blockID string, confirmed bool) (*InlineResult, error) {
 	state, err := s.readCollabDoc(docID)
 	if err != nil {
 		return nil, err
@@ -312,6 +335,15 @@ func (s *Store) InlineNote(userID, docID, blockID string) (*InlineResult, error)
 	if others > 0 {
 		return nil, &StillLinkedError{Title: linked.Title, Count: others}
 	}
+	if !confirmed {
+		n, err := s.foreignIDLinks(userID, linked.ID, docs)
+		if err != nil {
+			return nil, err
+		}
+		if n > 0 {
+			return nil, &ForeignLinksError{Count: n}
+		}
+	}
 	source, err := s.readCollabDoc(linked.ID)
 	if err != nil {
 		return nil, err
@@ -342,6 +374,61 @@ func (s *Store) InlineNote(userID, docID, blockID string) (*InlineResult, error)
 		return nil, err
 	}
 	return res, nil
+}
+
+// foreignIDLinks counts the links by id ([[Title#doc_id]], also to one of its bullets) to the note in
+// notes the owner cannot see (ownerDocs) but another person who can open the note can (trashed notes
+// are in nobody's list). Links by title alone do not count: they resolve by title for each reader.
+func (s *Store) foreignIDLinks(ownerID, noteID string, ownerDocs []domain.Document) (int, error) {
+	users, err := s.GetAuthorizedDocUsers(noteID)
+	if err != nil {
+		return 0, err
+	}
+	seen := make(map[string]bool, len(ownerDocs)+1)
+	for _, d := range ownerDocs {
+		seen[d.ID] = true
+	}
+	seen[noteID] = true
+	var foreign []domain.Document
+	for _, uid := range users {
+		if uid == ownerID {
+			continue
+		}
+		docs, err := s.getDocuments(context.Background(), uid, false)
+		if err != nil {
+			return 0, err
+		}
+		for _, d := range docs {
+			if !seen[d.ID] {
+				seen[d.ID] = true
+				foreign = append(foreign, d)
+			}
+		}
+	}
+	if len(foreign) == 0 {
+		return 0, nil
+	}
+	rows, err := s.db.Query(`SELECT content FROM blocks
+		WHERE document_id IN (SELECT value FROM json_each(?1)) AND deleted = 0 AND instr(content, ?2) > 0`,
+		docIDsJSON(foreign), noteID)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	count := 0
+	for rows.Next() {
+		var content string
+		if dbFailed(rows.Scan(&content)) {
+			continue
+		}
+		links, _ := wikiLinks(content)
+		for _, l := range links {
+			if l.DocID == noteID {
+				count++
+			}
+		}
+	}
+	return count, rows.Err()
 }
 
 // copyShares gives the new note the direct and team shares of the source; when someone else owns the
