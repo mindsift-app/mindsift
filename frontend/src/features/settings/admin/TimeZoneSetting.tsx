@@ -9,6 +9,7 @@ import { browserTimeZone, serverWallClock, timeZoneLabel, timeZoneList } from '.
 const TICK_MS = 15_000;
 
 // Administration → the server's time zone: one for the whole installation, in effect as soon as it is saved.
+// A row of the instance group in ServerSection; choosing "not set" in the menu takes the setting back.
 // Shows the zone in effect, its source (this setting, TZ, or UTC by default) and the server's time now.
 export function TimeZoneSetting({
   settings,
@@ -46,45 +47,38 @@ export function TimeZoneSetting({
 
   const browser = browserTimeZone();
   return (
-    <div data-admin-time-zone>
-      <p className="block text-muted font-semibold mb-1">{t('timeZone.title')}</p>
-      <div className="w-full max-w-md">
-        <SelectMenu
-          ariaLabel={t('timeZone.title')}
-          value={setting}
-          onChange={(timeZone) => onSave({ timeZone })}
-          options={options}
-        />
+    <div className="p-4 flex flex-wrap items-center justify-between gap-4" data-admin-time-zone>
+      <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
+        <p className="font-bold text-main">{t('timeZone.title')}</p>
+        <p className="text-[11px] text-muted mt-0.5">{t('timeZone.hint')}</p>
+        {st && wall && (
+          <p className="text-[11px] text-main mt-1.5" data-server-time>
+            {t('timeZone.now', {
+              time: formatDateTime(wall.wall, { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' }),
+              // "Europe/Berlin, UTC+01:00", for UTC itself only "UTC"
+              zone: wall.offset === st.zone ? st.zone : `${timeZoneLabel(st.zone)}, ${wall.offset}`,
+            })}
+          </p>
+        )}
+        {st && (
+          <p className={`text-[11px] mt-0.5 ${st.source === 'default' ? 'text-status-warn' : 'text-muted'}`}>
+            {t(`timeZone.source.${st.source}`)}
+          </p>
+        )}
+        {browser && browser !== st?.zone && (
+          <button type="button" onClick={() => onSave({ timeZone: browser })} className="btn-action h-11 sm:h-8 px-3 text-xs mt-2">
+            {t('timeZone.useBrowser', { zone: timeZoneLabel(browser) })}
+          </button>
+        )}
       </div>
-      {st && wall && (
-        <p className="text-xs text-main mt-1.5 max-w-md" data-server-time>
-          {t('timeZone.now', {
-            time: formatDateTime(wall.wall, { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' }),
-            // "Europe/Berlin, UTC+01:00", for UTC itself only "UTC"
-            zone: wall.offset === st.zone ? st.zone : `${timeZoneLabel(st.zone)}, ${wall.offset}`,
-          })}
-        </p>
-      )}
-      {st && (
-        <p className={`text-[11px] mt-0.5 max-w-md ${st.source === 'default' ? 'text-status-warn' : 'text-muted'}`}>
-          {t(`timeZone.source.${st.source}`)}
-        </p>
-      )}
-      <p className="text-[11px] text-muted mt-1 max-w-md">{t('timeZone.hint')}</p>
-      {(setting || (browser && browser !== st?.zone)) && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {browser && browser !== st?.zone && (
-            <button type="button" onClick={() => onSave({ timeZone: browser })} className="btn-action h-11 sm:h-8 px-3 text-xs">
-              {t('timeZone.useBrowser', { zone: timeZoneLabel(browser) })}
-            </button>
-          )}
-          {setting && (
-            <button type="button" onClick={() => onSave({ timeZone: '' })} className="btn-action h-11 sm:h-8 px-3 text-xs">
-              {t('timeZone.reset')}
-            </button>
-          )}
-        </div>
-      )}
+      {/* "Not set" is the first option: the server then follows TZ, or UTC */}
+      <SelectMenu
+        size="sm"
+        ariaLabel={t('timeZone.title')}
+        value={setting}
+        onChange={(timeZone) => onSave({ timeZone })}
+        options={options}
+      />
     </div>
   );
 }
