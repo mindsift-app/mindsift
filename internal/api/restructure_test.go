@@ -417,3 +417,56 @@ func TestInlineRejectsLinkToSingleBullet(t *testing.T) {
 		t.Fatalf("a link to one bullet must not bring back the whole note: %d %s", rec.Code, rec.Body.String())
 	}
 }
+
+// Another person who can open the note links it by id from a note of their own: the pull-back answers
+// 409 "foreign_links" with only the number, and goes through when confirmed; undo restores the note.
+func TestInlineAsksAboutForeignLinks(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	uid := claims.UserID
+	openSharing(t, store)
+	note, _ := store.CreateDocument(uid, "", "Konzept: Garten", "", "", []domain.DocumentBlock{
+		{ID: "blk_b", Type: "bullet", Content: "Beete", Level: 0, Position: 1},
+	}, nil, false)
+	src, _ := store.CreateDocument(uid, "", "Projekt", "", "", []domain.DocumentBlock{
+		{ID: "blk_l", Type: "bullet", Content: "[[Konzept: Garten#" + note.ID + "]]", Level: 0, Position: 1},
+	}, nil, false)
+	ben, _ := newTestUser(t, store, "ben-inline@example.com")
+	if _, err := store.CreateDocShare(uid, note.ID, ben.ID, "read"); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = store.CreateDocument(ben.ID, "", "Geheimer Plan", "", "", []domain.DocumentBlock{
+		{ID: "blk_g", Type: "bullet", Content: "siehe [[Konzept: Garten#" + note.ID + "]]", Level: 0, Position: 1},
+	}, nil, false)
+
+	rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/inline", token, `{"blockId":"blk_l"}`, "")
+	var conflict struct {
+		Error string `json:"error"`
+		Code  string `json:"code"`
+		Count int    `json:"count"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &conflict)
+	if rec.Code != http.StatusConflict || conflict.Code != "foreign_links" || conflict.Count != 1 {
+		t.Fatalf("want 409 foreign_links with 1, got %d %s", rec.Code, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "Geheimer Plan") || strings.Contains(rec.Body.String(), ben.ID) {
+		t.Fatalf("the answer must not name other people's notes: %s", rec.Body.String())
+	}
+	if d, _ := store.GetDocumentByID(uid, note.ID); d.IsArchived {
+		t.Fatal("refused pull-back must not trash the note")
+	}
+
+	rec = sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/inline", token, `{"blockId":"blk_l","confirmForeignLinks":true}`, "")
+	var res storage.InlineResult
+	_ = json.Unmarshal(rec.Body.Bytes(), &res)
+	if rec.Code != http.StatusOK || res.SourceID != note.ID {
+		t.Fatalf("confirmed pull-back: %d %s", rec.Code, rec.Body.String())
+	}
+	if d, _ := store.GetDocumentByID(uid, note.ID); d == nil || !d.IsArchived {
+		t.Fatal("confirmed pull-back must trash the note")
+	}
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+note.ID+"/restore", token, "", ""); rec.Code != http.StatusOK {
+		t.Fatalf("undo (restore): %d %s", rec.Code, rec.Body.String())
+	}
+}

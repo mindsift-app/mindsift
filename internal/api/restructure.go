@@ -149,6 +149,8 @@ func (s *Server) handleUndoExtract(w http.ResponseWriter, r *http.Request) {
 
 // handleInlineNote: POST /documents/{id}/inline {blockId} – the way back from extracting: returns the
 // linked note's blocks for the bullet and puts that note into the trash (undo: POST /documents/{note}/restore).
+// Links by id from other people's notes answer 409 with code "foreign_links" and their number;
+// {confirmForeignLinks: true} pulls the note back anyway.
 func (s *Server) handleInlineNote(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
@@ -157,13 +159,24 @@ func (s *Server) handleInlineNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		BlockID string `json:"blockId"`
+		BlockID             string `json:"blockId"`
+		ConfirmForeignLinks bool   `json:"confirmForeignLinks"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.BlockID == "" {
 		writeError(w, http.StatusBadRequest, "blockId fehlt")
 		return
 	}
-	res, err := s.store.InlineNote(userID, docID, req.BlockID)
+	inline := s.store.InlineNote
+	if req.ConfirmForeignLinks {
+		inline = s.store.InlineNoteConfirmed
+	}
+	res, err := inline(userID, docID, req.BlockID)
+	// Other people's links: only their number, never which notes (the user cannot see those)
+	var foreign *storage.ForeignLinksError
+	if errors.As(err, &foreign) {
+		writeJSON(w, http.StatusConflict, map[string]any{"error": trErr(w, err), "code": "foreign_links", "count": foreign.Count})
+		return
+	}
 	if err != nil {
 		writeError(w, restructureStatus(err), trErr(w, err))
 		return

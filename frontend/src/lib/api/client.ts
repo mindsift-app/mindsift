@@ -38,12 +38,14 @@ export function authHeaders(): Record<string, string> {
   return { 'Accept-Language': i18n.language || 'de', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 }
 
-// An error answer of the server; code is a stable name for errors the app reacts to (e.g. email_unverified)
+// An error answer of the server; code is a stable name for errors the app reacts to (e.g. email_unverified),
+// data the whole answer for errors that carry more (e.g. count with foreign_links)
 export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
     readonly code?: string,
+    readonly data?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -149,8 +151,10 @@ export async function request<T>(path: string, { timeout = 'normal', ...options 
   if (!res.ok) {
     let errMsg = `HTTP ${res.status}`;
     let code: string | undefined;
+    let data: Record<string, unknown> | undefined;
     try {
       const errData = await res.json();
+      if (errData && typeof errData === 'object') data = errData;
       if (errData.error) errMsg = errData.error;
       if (typeof errData.code === 'string') code = errData.code;
     } catch {
@@ -160,7 +164,7 @@ export async function request<T>(path: string, { timeout = 'normal', ...options 
     if (code === 'mfa_setup_required') window.dispatchEvent(new CustomEvent('mindsift:mfa-setup-required'));
     // A reset by the administration asked for a new own password first: the app asks for it
     if (code === 'password_change_required') window.dispatchEvent(new CustomEvent('mindsift:password-change-required'));
-    throw new ApiError(errMsg, res.status, code);
+    throw new ApiError(errMsg, res.status, code, data);
   }
 
   const data = await res.json();
