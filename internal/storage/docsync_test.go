@@ -488,7 +488,8 @@ func TestAnchorTagMigrationKeepsRealTags(t *testing.T) {
 	}
 }
 
-// German accounts get the sample data in German, every other language in English.
+// German accounts get the sample data in German, every other language in English (the help notes included;
+// the setup alone offers them in all five languages, see TestHilfeNotizenAllerSprachen).
 func TestStarterContentLanguage(t *testing.T) {
 	s, _ := newSyncTestStore(t)
 	de, _ := s.CreateUser("de@example.com", "hash", "De", "member")

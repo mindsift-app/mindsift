@@ -168,7 +168,7 @@ func TestMessageTextsTranslated(t *testing.T) {
 }
 
 // The setup wizard's language becomes the server's default and the first admin's language; the
-// sample data follows it.
+// help notes follow it.
 func TestSetupLanguage(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "setup_lang.db")
 	store, err := storage.NewStore(dbPath)
@@ -199,10 +199,10 @@ func TestSetupLanguage(t *testing.T) {
 	docs, _ := store.GetDocuments(admin.ID)
 	found := false
 	for _, d := range docs {
-		found = found || d.Title == "Getting started"
+		found = found || d.Title == "Premiers pas"
 	}
 	if !found {
-		t.Fatal("French admin should get the English sample data")
+		t.Fatal("French admin should get the French help notes")
 	}
 }
 

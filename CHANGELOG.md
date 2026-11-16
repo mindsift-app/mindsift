@@ -44,6 +44,7 @@ Versions without a git tag were development states and were never published as a
 - On phones, code blocks have no indent arrows; the bar above the keyboard indents them.
 - Tables: Enter goes on into an empty row below instead of adding another one, so typing a new table and leaving it with Enter flows; the ⋯ menu sits above the + for a column.
 - Administration → Server: no button to take the browser's time zone any more; setup suggests it.
+- The setup option "Create sample data" is now "Add the MindSift help as notes": it creates only the help notes, no sample tasks, lists, inbox thoughts or other notes; the full sample data stays in the online demo. The help notes also come in Spanish, French and Italian.
 - Opening a note loads it from the server once instead of twice; linking titles from agents and imports, extracting and pulling back branches, and listing or moving folders no longer read every bullet of every note (about ten times faster with many notes).
 - After a server update the app reloads itself to the new version instead of offering a dismissable notice: a short notice counts down and first sends or safely stores all unsent changes; it waits while you type in a note, does not reload by itself while unsaved input, a recording or unsaved dictations exist, and never reloads while offline.
 - Administration: the long "Server & sharing" page is split into Sign-in & registration, Sharing, Server, Data and Voice input & AI, each a short page of its own.

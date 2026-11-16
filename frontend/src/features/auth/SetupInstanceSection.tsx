@@ -15,7 +15,7 @@ import {
 import { browserTimeZone, timeZoneLabel, timeZoneList } from '../../lib/timeZones';
 
 // The setup wizard's questions about the instance, beside the admin account: name, default language,
-// time zone, sharing mode, registration, daily backups and sample data. The first-boot wizard asks them together with
+// time zone, sharing mode, registration, daily backups and the help notes. The first-boot wizard asks them together with
 // the account; after an admin from ADMIN_USER they come on their own (FinishSetupView). Further questions
 // of the setup go here, so both ways ask them (mail server and summary: SetupMailSection, SetupSummary).
 
@@ -227,8 +227,8 @@ export const SetupInstanceSection: React.FC<{ state: SetupChoicesState; heading:
 
         <div className="flex items-center justify-between gap-3 select-none pt-1">
           <div>
-            <span className="font-medium text-main block">{t('setup.sampleData')}</span>
-            <span className="text-[11px] text-muted">{t('setup.sampleDataHint')}</span>
+            <span className="font-medium text-main block">{t('setup.helpNotes')}</span>
+            <span className="text-[11px] text-muted">{t('setup.helpNotesHint')}</span>
           </div>
           <ToggleSwitch checked={state.createSampleData} onChange={state.setCreateSampleData} />
         </div>

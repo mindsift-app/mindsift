@@ -225,8 +225,9 @@ type setupChoices struct {
 	InstanceName      string `json:"instanceName"`
 	AllowRegistration bool   `json:"allowRegistration"`
 	SharingMode       string `json:"sharingMode"`
-	CreateSampleData  bool   `json:"createSampleData"`
-	DefaultLanguage   string `json:"defaultLanguage"`
+	// CreateSampleData: add the MindSift help as notes (the field keeps its old name for API clients)
+	CreateSampleData bool   `json:"createSampleData"`
+	DefaultLanguage  string `json:"defaultLanguage"`
 	// Daily backups: left out, the stored settings stay (off on a new server)
 	BackupEnabled       *bool  `json:"backupEnabled"`
 	BackupTime          string `json:"backupTime"`
@@ -322,7 +323,7 @@ func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupCh
 	}
 
 	if c.CreateSampleData {
-		logFailed("Creating the sample data", s.store.SeedStarterContent(user), "user_id", user.ID)
+		logFailed("Creating the help notes", s.store.SeedHelpNotes(user), "user_id", user.ID)
 	}
 	return nil
 }
