@@ -224,15 +224,57 @@ export function canDropBefore<T extends Outlined>(blocks: T[], from: number, at:
   return single && at < childEnd;
 }
 
+// The bullets that stay when the bullet at `from` is picked up: with its children (rest without the branch),
+// or alone (single), its children moved up one level into its place
+function liftOut<T extends Outlined>(blocks: T[], from: number, single: boolean) {
+  const { childEnd, end } = dragParts(blocks, from);
+  const moving = single ? [blocks[from], ...blocks.slice(childEnd, end)] : blocks.slice(from, end);
+  const staying = single ? blocks.slice(from + 1, childEnd).map((b) => ({ ...b, level: lvlOf(b) - 1 })) : [];
+  const rest = [...blocks.slice(0, from), ...staying, ...blocks.slice(end)];
+  return { moving, staying, rest, childEnd, end };
+}
+
+/** The levels a dragged bullet may take at a drop: from `min` (the default) to `max`. */
+export type DropLevels = { min: number; max: number };
+
 /**
- * The level a bullet dropped in front of the bullet at `at` takes: the level of that bullet, so it becomes its
- * sibling and nothing around it changes parents. Dragged alone (single) in front of one of its own children,
- * that child's level once the children moved up.
+ * The levels the bullet at `from` may take when dropped in front of the bullet at `at` (at = blocks.length:
+ * below the last bullet, at the end), or null when it cannot go there. The bullets around it keep their
+ * parents: not shallower than the bullet it lands in front of (that one would become its child; at the end,
+ * the top level shown, levelOffset), and at most one deeper than the bullet shown above it, which then gets
+ * it as its last child; a folded bullet above (or one inside a folded branch) does not take it as a child,
+ * where it would disappear.
  */
-export function dropLevelBefore<T extends Outlined>(blocks: T[], from: number, at: number, single = false): number {
-  const level = lvlOf(blocks[at]);
-  if (!single || at <= from) return level;
-  return at < dragParts(blocks, from).childEnd ? level - 1 : level;
+export function dropLevelRange<T extends Outlined & Pick<DocumentBlock, 'collapsed'>>(
+  blocks: T[],
+  from: number,
+  at: number,
+  single = false,
+  levelOffset = 0
+): DropLevels | null {
+  if (from < 0 || from >= blocks.length) return null;
+  if (at < blocks.length && !canDropBefore(blocks, from, at, single)) return null;
+  const { rest, staying, end } = liftOut(blocks, from, single);
+  // The same place among the bullets that stay
+  let restAt: number;
+  if (at >= blocks.length) restAt = rest.length;
+  else if (at < from) restAt = at;
+  else if (at >= end) restAt = at - (end - from) + staying.length;
+  else restAt = at - 1; // single, in front of one of its own children
+  const min = restAt < rest.length ? lvlOf(rest[restAt]) : levelOffset;
+  if (restAt === 0) return { min, max: min };
+
+  // The bullet shown above: the highest folded bullet the row above lies in, else that row itself
+  let above = restAt - 1;
+  let level = lvlOf(rest[above]);
+  for (let j = above - 1; j >= 0 && level > 0; j--) {
+    const l = lvlOf(rest[j]);
+    if (l >= level) continue;
+    level = l;
+    if (rest[j].collapsed) above = j;
+  }
+  const max = lvlOf(rest[above]) + (rest[above].collapsed ? 0 : 1);
+  return { min: Math.max(levelOffset, Math.min(min, max)), max: Math.max(levelOffset, max) };
 }
 
 /**
@@ -245,11 +287,8 @@ export function moveBranch<T extends Outlined>(blocks: T[], blockId: string, dro
   const from = blocks.findIndex((b) => b.id === blockId);
   if (from === -1) return blocks;
   const own = lvlOf(blocks[from]);
-  const { childEnd, end } = dragParts(blocks, from);
-  const moving = single ? [blocks[from], ...blocks.slice(childEnd, end)] : blocks.slice(from, end);
-  const staying = single ? blocks.slice(from + 1, childEnd).map((b) => ({ ...b, level: lvlOf(b) - 1 })) : [];
+  const { moving, staying, rest } = liftOut(blocks, from, single);
   const movingIds = new Set(moving.map((b) => b.id));
-  const rest = [...blocks.slice(0, from), ...staying, ...blocks.slice(end)];
 
   let at: number;
   if ('beforeId' in drop) {

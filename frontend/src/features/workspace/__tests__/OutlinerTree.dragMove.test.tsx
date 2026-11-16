@@ -64,12 +64,13 @@ function transfer(): DataTransfer {
   } as unknown as DataTransfer;
 }
 
-type Mods = { ctrlKey?: boolean; altKey?: boolean };
+type Mods = { ctrlKey?: boolean; altKey?: boolean; clientX?: number };
 // A drag event with the modifier keys held (jsdom has no DragEvent, its plain Event carries no keys)
 async function fire(type: 'dragStart' | 'dragOver' | 'drop', el: Element, data: DataTransfer, mods: Mods = {}) {
   const ev = createEvent[type](el, { dataTransfer: data });
   Object.defineProperty(ev, 'ctrlKey', { value: !!mods.ctrlKey });
   Object.defineProperty(ev, 'altKey', { value: !!mods.altKey });
+  if (mods.clientX !== undefined) Object.defineProperty(ev, 'clientX', { value: mods.clientX });
   await act(async () => {
     fireEvent(el, ev);
   });
@@ -168,6 +169,56 @@ describe('dragging a bullet in the outliner', () => {
     expect(lastGhost()).toBe(true);
     await drop('u', data);
     expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
+  });
+
+  // jsdom: the tree starts at x = 0, one level is 22px (DEFAULT_INDENT), a row's text 40px right of its indent
+  it('goes deeper as the pointer moves right, up to a child of the bullet above, and shows the level', async () => {
+    renderTree();
+    const data = transfer();
+    await start('u', data);
+    // In front of Einkaufen (level 0) below Folien (level 1): levels 0 to 2
+    await over('e', data, { clientX: 10 });
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
+    await over('e', data, { clientX: 62 });
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('1');
+    await over('e', data, { clientX: 84 });
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('2');
+    await over('e', data, { clientX: 400 });
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('2');
+    // Back to the left: the level of Einkaufen again
+    await over('e', data, { clientX: 20 });
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
+    // The last child of Arbeit, after Folien
+    await over('e', data, { clientX: 70 });
+    await drop('e', data);
+    expect(moves).toEqual([['u', { beforeId: 'e' }, 1, false]]);
+  });
+
+  it('never goes shallower than the bullet it lands in front of', async () => {
+    renderTree();
+    const data = transfer();
+    await start('u', data);
+    // In front of Folien (level 1) below Bericht (level 1): levels 1 and 2, measured from Folien's text
+    await over('f', data, { clientX: 0 });
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('1');
+    await over('f', data, { clientX: 84 });
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('2');
+    await drop('f', data);
+    expect(moves).toEqual([['u', { beforeId: 'f' }, 2, false]]);
+  });
+
+  it('below the last bullet: on the top level, or under the last bullet when moved right', async () => {
+    renderTree();
+    const data = transfer();
+    await start('b', data);
+    const tail = rowOf('u').nextElementSibling as HTMLElement;
+    await fire('dragOver', tail, data, { clientX: 10 });
+    expect(tail.querySelector('[data-drop-line]')?.getAttribute('data-drop-line')).toBe('0');
+    await fire('dragOver', tail, data, { clientX: 70 });
+    expect(tail.querySelector('[data-drop-line]')?.getAttribute('data-drop-line')).toBe('1');
+    await fire('drop', tail, data);
+    expect(moves).toEqual([['b', { afterId: 'u' }, 1, false]]);
+    expect(dropLine()).toBeNull();
   });
 
   it('puts a bullet dropped below the last one at the end, on the top level', async () => {

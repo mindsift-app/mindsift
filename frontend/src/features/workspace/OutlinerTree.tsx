@@ -5,7 +5,7 @@ import { OutlinerBlock, BlockLock, PastingImagesNotice } from './OutlinerBlock';
 import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToClipboard, putOnClipboard, rememberCopied, type OutlineClipboard } from '../../lib/outlineMarkdown';
-import { branchEnd, canDropBefore, dropLevelBefore, OutlineRow, outlineRows, sameOutlineShape, type BranchDrop } from '../../lib/outlineList';
+import { branchEnd, dropLevelRange, OutlineRow, outlineRows, sameOutlineShape, type BranchDrop } from '../../lib/outlineList';
 import { useLatestCallback } from '../../lib/useLatestCallback';
 import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
@@ -37,6 +37,11 @@ export interface TemplateSource {
 
 // Bullets a template copy replaces when the slash command was typed into an empty one of these
 const REPLACEABLE_EMPTY = ['text', 'bullet', 'todo', 'numbered', 'h1', 'h2', 'h3', 'callout', 'warning', 'error'];
+// Pointer moves that choose the level of a dragged bullet (dropLevelAt): the indent per level when the CSS
+// variable cannot be read, and where a row's text starts right of its indent (row padding 4px, fold toggle
+// 14px, gaps and the 16px bullet; the bullet's dot sits at 28px, see .bullet-guide in index.css)
+const DEFAULT_INDENT = 22;
+const ROW_TEXT_START = 40;
 // Where dragged image files go when not onto a bullet: the end of the note (fileDropAt)
 const FILE_DROP_END = '\u0000end';
 // Bullets with a text field the cursor can go to
@@ -182,8 +187,10 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   );
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // The level the dragged bullet would take at dragOverIndex (chosen with the pointer, dropLevelAt)
+  const [dragOverLevel, setDragOverLevel] = useState(0);
+  const dragOverRef = useRef<{ index: number; level: number } | null>(null);
   // Ctrl (Apple: Alt) held while dragging a bullet: it goes without its children (singleDragKey)
-  const [dragSingle, setDragSingle] = useState(false);
   const dragSingleRef = useRef(false);
   const dragGhostRef = useRef<BranchDragGhost | null>(null);
 
@@ -855,24 +862,23 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     [focusBlockInput, visibleEntries]
   );
 
-  // Dragging a bullet by its handle (desktop): it lands in front of the row it is dropped on, on that row's
-  // level, so it becomes its sibling and no bullet around it changes parents; its children keep their depth
-  // below it. Holding Ctrl (Apple: Alt) moves it alone: its children move up into its old place. The key may
-  // be pressed or released during the drag: dragover reports it about every 50 ms, also without moving,
-  // while keyboard events often do not arrive during a drag.
+  // Dragging a bullet by its handle (desktop): it lands in front of the row it is dropped on, by default on
+  // that row's level, so it becomes its sibling; moved further right it goes deeper, up to a child of the
+  // bullet above (dropLevelRange: no bullet around it changes parents). Its children keep their depth below
+  // it. Holding Ctrl (Apple: Alt) moves it alone: its children move up into its old place. The key may be
+  // pressed or released during the drag: dragover reports it about every 50 ms, also without moving, while
+  // keyboard events often do not arrive during a drag.
   const setSingle = useCallback((single: boolean) => {
     dragGhostRef.current?.setSingle(single);
-    if (dragSingleRef.current === single) return;
     dragSingleRef.current = single;
-    setDragSingle(single);
   }, []);
 
   const clearDrag = useCallback(() => {
     setDraggedIndex(null);
     setDragOverIndex(null);
+    dragOverRef.current = null;
     dragGhostRef.current = null;
     dragSingleRef.current = false;
-    setDragSingle(false);
   }, []);
 
   const handleDragStartBlock = useCallback((index: number, e: React.DragEvent) => {
@@ -881,7 +887,6 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     e.dataTransfer.effectAllowed = 'move';
     const single = singleDragKey(e);
     dragSingleRef.current = single;
-    setDragSingle(single);
     dragGhostRef.current = startBranchDragGhost(e, blocks.slice(index, branchEnd(blocks, index)), single) || null;
   }, [blocks]);
 
@@ -899,6 +904,24 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     };
   }, [draggedIndex, setSingle]);
 
+  // The level for a drop in front of the row at index (blocks.length: below the last one) at the pointer's
+  // position: the lowest allowed level while the pointer is left of where that level's text starts, one
+  // deeper for each indent step further right, up to the deepest allowed
+  const dropLevelAt = useCallback(
+    (e: React.DragEvent, index: number, single: boolean): number | null => {
+      if (draggedIndex === null) return null;
+      const range = dropLevelRange(blocks, draggedIndex, index, single, levelOffset || 0);
+      if (!range) return null;
+      const root = treeRootRef.current;
+      const left = root?.getBoundingClientRect().left ?? 0;
+      const indent = (root && parseFloat(getComputedStyle(root).getPropertyValue('--outline-indent'))) || DEFAULT_INDENT;
+      const textStart = left + indent * (range.min - (levelOffset || 0)) + ROW_TEXT_START;
+      const steps = Number.isFinite(e.clientX) ? Math.floor((e.clientX - textStart) / indent) : 0;
+      return Math.min(range.max, range.min + Math.max(0, steps));
+    },
+    [blocks, draggedIndex, levelOffset]
+  );
+
   const handleDragOverBlock = useCallback(
     (e: React.DragEvent, index: number) => {
       e.preventDefault();
@@ -906,29 +929,29 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       e.dataTransfer.dropEffect = 'move';
       const single = singleDragKey(e);
       setSingle(single);
-      setDragOverIndex(canDropBefore(blocks, draggedIndex, index, single) ? index : null);
+      const level = dropLevelAt(e, index, single);
+      dragOverRef.current = level === null ? null : { index, level };
+      setDragOverIndex(level === null ? null : index);
+      if (level !== null) setDragOverLevel(level);
     },
-    [blocks, draggedIndex, setSingle]
+    [draggedIndex, dropLevelAt, setSingle]
   );
 
   const handleDropBlock = useCallback(
     (targetIndex: number) => {
       const from = draggedIndex;
       const single = dragSingleRef.current;
+      const over = dragOverRef.current;
       clearDrag();
       const movingBlock = from === null ? undefined : blocks[from];
       if (from === null || !movingBlock) return;
-      let drop: BranchDrop;
-      let level: number;
-      if (targetIndex >= blocks.length) {
-        // Below the last bullet: at the end, on the top level of what is shown
-        drop = { afterId: blocks[blocks.length - 1].id };
-        level = levelOffset || 0;
-      } else {
-        if (!canDropBefore(blocks, from, targetIndex, single)) return;
-        drop = { beforeId: blocks[targetIndex].id };
-        level = dropLevelBefore(blocks, from, targetIndex, single);
-      }
+      const range = dropLevelRange(blocks, from, targetIndex, single, levelOffset || 0);
+      if (!range) return;
+      // The level shown while dragging over it; without one (no dragover first), the lowest allowed
+      const level = over?.index === targetIndex ? Math.max(range.min, Math.min(range.max, over.level)) : range.min;
+      // Below the last bullet: at the end (by default on the top level of what is shown)
+      const drop: BranchDrop =
+        targetIndex >= blocks.length ? { afterId: blocks[blocks.length - 1].id } : { beforeId: blocks[targetIndex].id };
       // Moved alone, its children get a new parent too: someone typing in one of them holds it
       let holder = lockHolder(movingBlock.id);
       const own = Math.max(0, movingBlock.level || 0);
@@ -1527,7 +1550,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     // The line in front of the row a dragged bullet would land at, indented to the level it would take
     const dropIndent =
       dragOverIndex === index && draggedIndex !== null && draggedIndex !== index
-        ? Math.max(0, dropLevelBefore(blocks, draggedIndex, index, dragSingle) - (levelOffset || 0))
+        ? Math.max(0, dragOverLevel - (levelOffset || 0))
         : null;
     const isTargeted = highlightedBlockId === block.id;
     const inRangeSelection = rangeRowIds?.has(block.id) || wholeRowIds?.has(block.id);
@@ -1617,8 +1640,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
 
       {canEdit && trailingArea && (
         <div
-          className={`${compact ? 'min-h-10' : 'min-h-56'} mt-0.5 first:mt-0 pt-2 pl-2 transition-colors cursor-text ${
-            dragOverIndex === blocks.length || fileDropAt === FILE_DROP_END ? 'border-t-2 border-accent bg-accent/10 rounded-sm' : ''
+          className={`${compact ? 'min-h-10' : 'min-h-56'} relative mt-0.5 first:mt-0 pt-2 pl-2 transition-colors cursor-text ${
+            fileDropAt === FILE_DROP_END ? 'border-t-2 border-accent bg-accent/10 rounded-sm' : dragOverIndex === blocks.length ? 'bg-accent/10 rounded-sm' : ''
           }`}
           onClick={(e) => {
             if (e.target !== e.currentTarget && (e.target as HTMLElement).closest('button, a, input, textarea, select')) {
@@ -1647,14 +1670,24 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           }}
           onDragOver={(e) => {
             e.preventDefault();
-            if (draggedIndex !== null) {
-              e.dataTransfer.dropEffect = 'move';
-              setSingle(singleDragKey(e));
-              setDragOverIndex(blocks.length);
-            }
+            if (draggedIndex !== null) handleDragOverBlock(e, blocks.length);
           }}
           onDrop={() => handleDropBlock(blocks.length)}
-        />
+        >
+          {/* Where a bullet dragged below the last one lands, indented to the level it would take (like the
+              line in a row, OutlinerBlock) */}
+          {dragOverIndex === blocks.length && draggedIndex !== null && (
+            <span
+              aria-hidden="true"
+              data-drop-line={Math.max(0, dragOverLevel - (levelOffset || 0))}
+              className="absolute top-0 right-1 h-1.5 pointer-events-none"
+              style={{ left: `calc(var(--outline-indent) * ${Math.max(0, dragOverLevel - (levelOffset || 0))} + 25px)` }}
+            >
+              <span className="absolute left-0 top-0 w-1.5 h-1.5 rounded-full bg-accent" />
+              <span className="absolute left-1 right-0 top-0.5 h-0.5 rounded-full bg-accent" />
+            </span>
+          )}
+        </div>
       )}
       {templatePick && templateSource && (
         <TemplatePicker
