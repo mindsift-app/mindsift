@@ -74,7 +74,7 @@ export function FolderTree({
                   onClick={(e) =>
                     handleDocRowClick(e, d.id, () => onOpenDoc(d.id))
                   }
-                  className={`${DOC_ROW_GROUP} w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+                  className={`${DOC_ROW_GROUP} w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 sm:py-0 min-h-11 sm:min-h-0 sm:h-7 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                     mergeHoverId === d.id
                       ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                       : markedDocIds.has(d.id)
@@ -138,7 +138,7 @@ export function FolderTree({
                   onClick={(e) =>
                     handleDocRowClick(e, d.id, () => onOpenDoc(d.id))
                   }
-                  className={`${DOC_ROW_GROUP} w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+                  className={`${DOC_ROW_GROUP} w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 sm:py-0 min-h-11 sm:min-h-0 sm:h-7 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                     mergeHoverId === d.id
                       ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                       : markedDocIds.has(d.id)

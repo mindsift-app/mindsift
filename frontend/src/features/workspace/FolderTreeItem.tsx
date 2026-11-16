@@ -271,7 +271,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               onMouseDown={(e) => e.shiftKey && e.preventDefault()}
               onClick={(e) => onDocRowClick(e, d.id, () => onSelectDoc(d.id))}
               style={{ paddingLeft: `${(depth + 1) * 12 + 9}px` }}
-              className={`${DOC_ROW_GROUP} relative w-full flex items-center gap-1.5 pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+              className={`${DOC_ROW_GROUP} relative w-full flex items-center gap-1.5 pr-2 py-1.5 sm:py-0 min-h-11 sm:min-h-0 sm:h-7 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                 mergeHoverId === d.id
                   ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                   : markedDocIds.has(d.id)
