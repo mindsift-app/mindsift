@@ -1171,6 +1171,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     if (debounceTimerRef.current !== null) flushDebounce(localContentRef.current);
     onIndentBlockRef.current(block.id, -1);
   });
+  // Arrows of blocks without a Tab key of their own (code, image, drawing, table)
+  const canIndentRow = Math.max(0, block.level || 0) < maxAllowedLevel;
+  const canOutdentRow = Math.max(0, block.level || 0) > (levelOffset || 0);
+  // Held by someone else while the note itself may be edited: those arrows stay, greyed out, so nothing moves
+  const indentLocked = !canEdit && !!heldBy && !!canAppendBelow;
   const tableWikiLinkClick = useLatestCallback((link: WikiLink) => onWikiLinkClick?.(link, linkActions(link)));
   const renderTableSecret = useCallback(
     (secretId: string, key: string) => <SecretChip key={key} docId={docId} secretId={secretId} canEdit={canEdit} />,
@@ -1707,6 +1712,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             // drawing: whoever may edit the note may join (the row itself counts as locked)
             canEdit={liveDrawing ? !!canAppendBelow : canEdit && !lockedBy}
             onLocked={lockedBy && canAppendBelow && onLockedDrawing ? () => onLockedDrawing(lockedBy) : undefined}
+            onIndent={canEdit || indentLocked ? indentTable : undefined}
+            onOutdent={canEdit || indentLocked ? outdentTable : undefined}
+            canIndent={canIndentRow}
+            canOutdent={canOutdentRow}
+            indentLocked={indentLocked}
             autoOpen={drawingAutoOpen}
             actionsTarget={drawingActionsEl}
             // Clicked into or open in the editor counts as the cursor in this bullet (action bubble, lease)
@@ -1734,6 +1744,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           <ImageBlock
             content={localContent}
             canEdit={canEdit}
+            locked={indentLocked}
+            onIndent={indentTable}
+            onOutdent={outdentTable}
+            canIndent={canIndentRow}
+            canOutdent={canOutdentRow}
             onCaptionChange={(caption) => {
               const ref = parseMediaContent(localContent);
               if (!ref) return;
@@ -1808,8 +1823,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
               flushDebounce(localContent);
               onIndentBlockRef.current(block.id, -1);
             }}
-            canIndent={Math.max(0, block.level || 0) < maxAllowedLevel}
-            canOutdent={Math.max(0, block.level || 0) > (levelOffset || 0)}
+            canIndent={canIndentRow}
+            canOutdent={canOutdentRow}
+            locked={indentLocked}
             onExitBelow={(content) => {
               setLocalContent(content);
               localContentRef.current = content;
