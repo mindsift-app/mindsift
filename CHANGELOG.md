@@ -46,7 +46,7 @@ Versions without a git tag were development states and were never published as a
 - Search finds your own notes even when others have many matches.
 - Imports and restores no longer lose data when they fail.
 - Enter at the very start of a bullet adds an empty line above it instead of splitting it; headings, to-dos and their sub-bullets stay as they are.
-- Indent arrows in a block someone else is editing stay in place, greyed out, so the layout no longer jumps.
+- Controls in a block someone else is editing (indent arrows, code language, table + and ⋯, audio caption) stay in place, greyed out, so the layout no longer jumps.
 - Dragging a bullet inside a zoomed-in branch put it in the wrong place.
 - Many smaller fixes in live drawing, linked to-dos, sharing, reconnecting and translations.
 

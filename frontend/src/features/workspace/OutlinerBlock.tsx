@@ -1877,6 +1877,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             onOutdent={outdentTable}
             canIndent={Math.max(0, block.level || 0) < maxAllowedLevel}
             canOutdent={Math.max(0, block.level || 0) > (levelOffset || 0)}
+            locked={indentLocked}
           />
         ) : (
           // Callouts, warnings and errors: normal text (bold, links, hashtags) in a tinted box with a coloured edge

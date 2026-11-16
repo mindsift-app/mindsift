@@ -29,12 +29,15 @@ export function ActionMenu({
   buttonClassName = 'btn-icon',
   keepFocus = false,
   onOpenChange,
+  disabled = false,
 }: {
   items: ActionMenuItem[];
   label: string;
   buttonClassName?: string;
   keepFocus?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Greyed out and not opening (e.g. someone else holds the block); the button keeps its place */
+  disabled?: boolean;
 }) {
   const holdFocus = keepFocus ? (e: React.MouseEvent) => e.preventDefault() : undefined;
   const [open, setOpen] = useState(false);
@@ -66,11 +69,12 @@ export function ActionMenu({
         type="button"
         onMouseDown={holdFocus}
         onClick={() => setOpen((v) => !v)}
+        disabled={disabled}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={label}
         title={label}
-        className={buttonClassName}
+        className={`${buttonClassName} disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent`}
       >
         <Ellipsis className="w-3.5 h-3.5" />
       </button>

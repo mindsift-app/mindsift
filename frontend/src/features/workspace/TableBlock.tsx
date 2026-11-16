@@ -73,6 +73,8 @@ export interface TableBlockProps {
   onOutdent?: () => void;
   canIndent?: boolean;
   canOutdent?: boolean;
+  /** Someone else holds the table: the + and ⋯ stay in place, greyed out, so the table keeps its width */
+  locked?: boolean;
 }
 
 type Cell = { r: number; c: number };
@@ -107,6 +109,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
   onOutdent,
   canIndent = false,
   canOutdent = false,
+  locked = false,
 }) => {
   const { t } = useTranslation('workspace');
 
@@ -618,7 +621,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
           )}
         </table>
       </div>
-      {canEdit && (
+      {(canEdit || locked) && (
         // Phones: always there and big enough to tap; desktop: shows on hover, with the cursor in the table and
         // while the menu is open. The menu hangs below the ⋯ over the next bullet: on the way there the mouse
         // leaves the table, and a fading box (opacity below 1 makes it its own layer) would put the menu
@@ -634,14 +637,16 @@ const TableBlockView: React.FC<TableBlockProps> = ({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={addColumn}
+            disabled={!canEdit}
             title={t('table.addColumn')}
             aria-label={t('table.addColumn')}
-            className="flex-1 min-h-11 w-11 sm:min-h-6 sm:w-6 flex items-center justify-center rounded-btn text-faint hover:text-accent hover:bg-panel-elevated transition-colors cursor-pointer"
+            className="flex-1 min-h-11 w-11 sm:min-h-6 sm:w-6 flex items-center justify-center rounded-btn text-faint hover:text-accent hover:bg-panel-elevated transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-faint"
           >
             <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
           </button>
           <ActionMenu
             keepFocus
+            disabled={!canEdit}
             onOpenChange={setMenuOpen}
             label={t('table.menu')}
             // Built at each render; opening the menu renders again, so it shows the cell of the cursor
