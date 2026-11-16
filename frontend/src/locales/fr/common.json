@@ -155,12 +155,14 @@
     "offline": "Hors ligne"
   },
   "update": {
-    "title": "Nouvelle version disponible",
-    "subtitle": "Le serveur a été mis à jour",
-    "later": "Plus tard",
-    "now": "Mettre à jour maintenant",
-    "bodyVersion": "Le serveur a été mis à jour vers <v>{{version}}</v>. Recharge la page pour l'utiliser ; les saisies non enregistrées dans les champs ouverts seront perdues.",
-    "body": "Le serveur a été mis à jour. Recharge la page pour l'utiliser ; les saisies non enregistrées dans les champs ouverts seront perdues."
+    "title": "MindSift a été mis à jour",
+    "now": "Recharger maintenant",
+    "countdown": "Rechargement dans {{seconds}} s.",
+    "waitTyping": "Se recharge dès que tu fais une pause dans la saisie.",
+    "saving": "Enregistrement des modifications, puis rechargement …",
+    "offline": "Se recharge dès que le serveur est de nouveau joignable.",
+    "stuckTitle": "La nouvelle version ne se charge pas",
+    "stuck": "Le navigateur continue de servir l'ancienne version. Recharge la page ; si cela ne suffit pas, vide le cache du navigateur."
   },
   "theme": {
     "family": "Famille de couleurs",

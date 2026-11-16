@@ -491,7 +491,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
   // Handle window blur / focus to instantly flush debounced input and clear zombie focus
   useEffect(() => {
-    const handleWindowBlur = () => {
+    const flushTyped = () => {
       if (debounceTimerRef.current !== null) {
         window.clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
@@ -499,6 +499,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       } else if (editedRef.current && localContentRef.current !== latestBlockRef.current.content) {
         flushDebounce(localContentRef.current);
       }
+    };
+    const handleWindowBlur = () => {
+      flushTyped();
       isFocusedRef.current = false;
     };
 
@@ -513,9 +516,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
     window.addEventListener('blur', handleWindowBlur);
     window.addEventListener('focus', handleWindowFocus);
+    // The page is about to reload for a new version (lib/appReload.ts): typed text goes to the engine now
+    window.addEventListener('mindsift:flush-edits', flushTyped);
     return () => {
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('mindsift:flush-edits', flushTyped);
     };
   }, [flushDebounce, latestBlockRef, localContentRef]);
 

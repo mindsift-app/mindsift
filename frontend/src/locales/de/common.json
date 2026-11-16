@@ -153,12 +153,14 @@
     "offline": "Offline"
   },
   "update": {
-    "title": "Neue Version verfügbar",
-    "subtitle": "Der Server wurde aktualisiert",
-    "later": "Später",
-    "now": "Jetzt aktualisieren",
-    "bodyVersion": "Der Server wurde aktualisiert auf <v>{{version}}</v>. Lade die Seite neu, um sie zu nutzen; ungespeicherte Eingaben in offenen Feldern gehen dabei verloren.",
-    "body": "Der Server wurde aktualisiert. Lade die Seite neu, um sie zu nutzen; ungespeicherte Eingaben in offenen Feldern gehen dabei verloren."
+    "title": "MindSift wurde aktualisiert",
+    "now": "Jetzt neu laden",
+    "countdown": "Lädt in {{seconds}} s neu.",
+    "waitTyping": "Lädt neu, sobald du kurz mit dem Tippen pausierst.",
+    "saving": "Änderungen werden gesichert, dann lädt die App neu …",
+    "offline": "Lädt neu, sobald der Server wieder erreichbar ist.",
+    "stuckTitle": "Neue Version lädt nicht",
+    "stuck": "Der Browser liefert weiter die alte Version. Lade die Seite neu; hilft das nicht, leere den Browser-Cache."
   },
   "theme": {
     "family": "Farbfamilie",

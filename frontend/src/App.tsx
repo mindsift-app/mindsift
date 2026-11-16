@@ -42,7 +42,7 @@ import { outboxCount } from './lib/offline';
 import { unsentNoteCount } from './lib/docSync/persist';
 import { flushClosedNotes } from './lib/docSync/flushClosed';
 import { ErrorNoticeHost } from './components/ErrorNotice';
-import { UpdateAvailableModal } from './components/UpdateAvailableModal';
+import { UpdateReloadNotice } from './components/UpdateReloadNotice';
 import { useUpdateCheck } from './lib/useUpdateCheck';
 import { consumePendingShares, formatSharedThought } from './lib/shareTarget';
 import { readViewSession, writeViewSession } from './lib/viewSession';
@@ -213,7 +213,7 @@ export const App: React.FC = () => {
   const scrollAreaRef = useScrollPositions(activeTab, user?.id);
   const [showAbout, setShowAbout] = useState(false);
   const [showTriageTrash, setShowTriageTrash] = useState(false);
-  const { update: availableUpdate, dismiss: dismissUpdate } = useUpdateCheck();
+  const { update: availableUpdate, reloadNow: reloadForUpdate } = useUpdateCheck();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Mobile Navigation & Quick-Action State
@@ -634,6 +634,7 @@ export const App: React.FC = () => {
     return (
       <>
       <EmailConfirmToast />
+      {availableUpdate && <UpdateReloadNotice update={availableUpdate} onReloadNow={reloadForUpdate} />}
       <SetupAndAuthView
         authStatus={authStatus}
         onAuthenticated={handleAuthenticated}
@@ -1005,7 +1006,7 @@ export const App: React.FC = () => {
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       {showTriageTrash && <views.TriageTrash onClose={() => setShowTriageTrash(false)} onChanged={refreshAll} />}
-      {availableUpdate && <UpdateAvailableModal update={availableUpdate} onLater={dismissUpdate} />}
+      {availableUpdate && <UpdateReloadNotice update={availableUpdate} onReloadNow={reloadForUpdate} />}
       <ConfirmHost />
       <views.SecondFactorHost />
       <ErrorNoticeHost />

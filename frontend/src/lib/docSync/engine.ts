@@ -69,6 +69,19 @@ const openNotes = new Map<string, number>();
 
 export const isNoteOpen = (docId: string) => (openNotes.get(docId) || 0) > 0;
 
+// The engines of those notes, and how many writes to IndexedDB are running (lib/appReload.ts waits for
+// both before the page reloads for a new version)
+const liveEngines = new Set<DocSyncEngine>();
+let storing = 0;
+
+/** Sends what is waiting in every note open in an editor now, instead of after the typing pause. */
+export function syncOpenNotes(): Promise<void> {
+  return Promise.all(Array.from(liveEngines, (e) => e.syncNow())).then(() => undefined);
+}
+
+/** Whether a note is being written to IndexedDB right now. */
+export const notesStoring = () => storing > 0;
+
 const LEASE_GRACE_MS = 7_000; // keep a left block for this long (back in at once, e.g. after a tap on the phone bar)
 const IDLE_RELEASE_MS = 60_000; // release even the focused block after this long without input
 const SYNC_DEBOUNCE_MS = 300;
@@ -229,7 +242,10 @@ export class DocSyncEngine {
 
   /** Loads the stored state (instant, works offline), then syncs with the server. */
   async start(): Promise<void> {
-    if (!this.manual) openNotes.set(this.docId, (openNotes.get(this.docId) || 0) + 1);
+    if (!this.manual) {
+      openNotes.set(this.docId, (openNotes.get(this.docId) || 0) + 1);
+      liveEngines.add(this);
+    }
     try {
       const stored = await this.storage.load(this.docId);
       // A state stored for another account (signed out without clearing) is never shown or sent
@@ -283,6 +299,7 @@ export class DocSyncEngine {
     this.stopped = true;
     if (!this.manual) {
       keepUndoHistory(this.userId, this.docId, { undo: this.undoStack, redo: this.redoStack, extra: this.undoExtra });
+      liveEngines.delete(this);
       const n = (openNotes.get(this.docId) || 0) - 1;
       if (n > 0) openNotes.set(this.docId, n);
       else openNotes.delete(this.docId);
@@ -679,6 +696,7 @@ export class DocSyncEngine {
     markUnsent(this.docId, waiting);
     if (waiting && this.status === 'offline') requestPersistentStorage();
     const savedAt = this.now();
+    storing++;
     try {
       if (full || this.role !== this.storedRole || this.tail.length > FULL_SAVE_ENTRIES) {
         const seq = this.lastSeq;
@@ -707,6 +725,8 @@ export class DocSyncEngine {
       }
     } catch {
       // Storage full or unavailable: changes stay in memory and are still sent
+    } finally {
+      storing--;
     }
     if (this.tail.length > 0) this.scheduleFullSave();
   }
