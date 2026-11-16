@@ -49,7 +49,7 @@ Versions without a git tag were development states and were never published as a
 - Administration: the long "Server & sharing" page is split into Sign-in & registration, Sharing, Server, Data and Voice input & AI, each a short page of its own.
 - The calendar subscription carries the instance name and a description ("<instance> – Tasks" in your language).
 - The version and imprint line at the bottom left of the app is gone; the imprint and "About MindSift" sit at the bottom of the help page, like in the settings.
-- Demo: about 35 more sample notes (work, projects, recipes, reading, travel, journal) linked with [[wiki links]] and sharing hashtags; only the help notes keep emoji icons.
+- Demo: about 35 more sample notes (work, projects, recipes, reading, travel) linked with [[wiki links]] and sharing hashtags, and a journal with entries for most of the last three weeks; only the help notes keep emoji icons.
 - Clicking a hashtag below the folder tree filters the tree to the notes carrying it (several hashtags: notes with all of them); a red ✕ beside "Hashtags" clears the filter, and the bar above the trash glows red while it is on. The hashtag page stays reachable through the "Hashtags" tab and hashtags in a note.
 - AI agents (MCP) are encouraged to use colour in diagrams and to structure notes with sub-headings and indented details; the MCP descriptions are much shorter, so clients that cut long descriptions off see them whole.
 
