@@ -22,7 +22,7 @@ export function useTagPage({
   blocks: DocumentBlock[];
   engineRef: React.RefObject<DocSyncEngine | null>;
   currentBlocksRef: React.RefObject<DocumentBlock[]>;
-  handleCreateBlock: (newBlock: DocumentBlock, afterBlockId?: string) => void;
+  handleCreateBlock: (newBlock: DocumentBlock, afterBlockId?: string, placement?: 'after' | 'before') => void;
   handleInsertBlocks: (afterBlockId: string, updatedCurrentBlock: DocumentBlock, newBlocks: DocumentBlock[]) => void;
   handleMoveBlock: (blockId: string, targetIndex: number, newLevel?: number) => void;
 }) {
@@ -93,9 +93,9 @@ export function useTagPage({
   }, [inTagPage, tagFilter, blocks, tagFocusId, tagFreshIds]);
   /* eslint-enable react-hooks/refs */
   const handleTagCreateBlock = useCallback(
-    (newBlock: DocumentBlock, afterBlockId?: string) => {
+    (newBlock: DocumentBlock, afterBlockId?: string, placement?: 'after' | 'before') => {
       setTagFreshIds((prev) => new Set(prev).add(newBlock.id));
-      handleCreateBlock(newBlock, afterBlockId);
+      handleCreateBlock(newBlock, afterBlockId, placement);
     },
     [handleCreateBlock]
   );

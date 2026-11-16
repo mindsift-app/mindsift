@@ -100,12 +100,17 @@ export function useBlockEditing({
   );
 
   const handleCreateBlock = useCallback(
-    (newBlock: DocumentBlock, afterBlockId?: string) => {
+    (newBlock: DocumentBlock, afterBlockId?: string, placement: 'after' | 'before' = 'after') => {
       if (!canEdit) return;
       applyLocalBlocks((prev) => {
         const next = [...prev];
         if (afterBlockId) {
           const idx = next.findIndex((b) => b.id === afterBlockId);
+          if (idx >= 0 && placement === 'before') {
+            // Above the bullet, and above its original when it is a conflict copy (they stick together)
+            next.splice(unitStart(next, idx), 0, newBlock);
+            return ensureNonEmptyBlocks(docId, next);
+          }
           if (idx >= 0) {
             // A new bullet on the same level comes below the conflict copies of this one (they stick to it)
             const at = (newBlock.level || 0) <= Math.max(0, next[idx].level || 0) ? insertBelow(next, idx) : idx + 1;

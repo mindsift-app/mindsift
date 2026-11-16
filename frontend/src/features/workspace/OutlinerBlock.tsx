@@ -173,6 +173,8 @@ export interface OutlinerBlockProps {
   onTemplateCommand?: (blockId: string, anchor: HTMLElement | null) => void;
   onUpdateBlock: (updated: DocumentBlock, immediate?: boolean) => void;
   onCreateBlockBelow: (afterBlockId: string, newContent?: string) => void;
+  /** Enter at the start of a bullet with text: a new empty bullet directly above it */
+  onCreateBlockAbove?: (beforeBlockId: string) => void;
   onDeleteBlock: (blockId: string, deleteSubtree?: boolean) => void;
   onMergeWithPrevious?: (blockId: string, content: string) => boolean;
   onIndentBlock: (blockId: string, delta: 1 | -1) => void;
@@ -234,6 +236,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   onTemplateCommand,
   onUpdateBlock,
   onCreateBlockBelow,
+  onCreateBlockAbove,
   onDeleteBlock,
   onMergeWithPrevious,
   onIndentBlock,
@@ -382,6 +385,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   // Callback refs to avoid stale closures in setTimeout, debounce flush, and event listeners
   const onUpdateBlockRef = useLatestRef(onUpdateBlock);
   const onCreateBlockBelowRef = useLatestRef(onCreateBlockBelow);
+  const onCreateBlockAboveRef = useLatestRef(onCreateBlockAbove);
   const onPasteMultiLinesRef = useLatestRef(onPasteMultiLines);
   const onPasteImagesRef = useLatestRef(onPasteImages);
   // Pasted images still uploading (shown below the bullet until they are image bullets)
@@ -1319,6 +1323,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
       const start = e.currentTarget.selectionStart ?? localContent.length;
       const end = e.currentTarget.selectionEnd ?? start;
+      // At the very start of a bullet with text, Enter pushes the bullet down a line: a new empty bullet goes
+      // above it and this one keeps its text, type, children and the cursor
+      if (start === 0 && end === 0 && localContent !== '' && onCreateBlockAboveRef.current) {
+        flushDebounce(localContent);
+        onCreateBlockAboveRef.current(block.id);
+        return;
+      }
       let beforeText = localContent.slice(0, start);
       let afterText = localContent.slice(end);
 

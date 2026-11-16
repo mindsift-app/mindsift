@@ -54,7 +54,8 @@ export interface OutlinerTreeProps {
   onInlineBlock?: (blockId: string) => void;
   onUpdateBlock: (updated: DocumentBlock, immediate?: boolean) => void;
   onUpdateBlocks?: (updated: DocumentBlock[]) => void;
-  onCreateBlock: (newBlock: DocumentBlock, afterBlockId?: string) => void;
+  /** before: the new bullet goes directly above the given one (Enter at the start of a bullet) */
+  onCreateBlock: (newBlock: DocumentBlock, afterBlockId?: string, placement?: 'after' | 'before') => void;
   onInsertBlocks?: (afterBlockId: string, updatedCurrent: DocumentBlock, newBlocks: DocumentBlock[]) => void;
   onDeleteBlock: (blockId: string) => void;
   /** Deleting several bullets at once (a bullet with its children): one change, undone in one step */
@@ -386,6 +387,32 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       pendingFocusRef.current = { blockId: newBlock.id, cursor: 'start' };
       setFocusedBlockId(newBlock.id);
       onCreateBlock(newBlock, afterBlockId);
+    },
+    [blocks, canEdit, docId, onCreateBlock]
+  );
+
+  // Enter at the very start of a bullet with text: a new empty bullet on the same level goes directly above
+  // it. The bullet keeps its text, type, children and the cursor, it just moves down one line (splitting it
+  // would leave its type on the empty part and put the text into a new bullet, under its children's level).
+  const handleCreateBlockAbove = useCallback(
+    (beforeBlockId: string) => {
+      if (!canEdit) return;
+      const idx = blocks.findIndex((b) => b.id === beforeBlockId);
+      if (idx < 0) return;
+      const currentBlock = blocks[idx];
+      // Numbered lists and to-dos get one more item in front, as with Enter at the end
+      const type: BlockType = currentBlock.type === 'numbered' || currentBlock.type === 'todo' ? currentBlock.type : 'text';
+      const newBlock: DocumentBlock = {
+        id: `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+        documentId: docId,
+        type,
+        content: '',
+        level: Math.max(0, currentBlock.level || 0),
+        checked: false,
+        collapsed: false,
+        position: (idx + 1) * 1000,
+      };
+      onCreateBlock(newBlock, beforeBlockId, 'before');
     },
     [blocks, canEdit, docId, onCreateBlock]
   );
@@ -1324,6 +1351,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const stableInlineBlock = useLatestCallback(onInlineBlock ?? noop);
   const stableUpdateBlock = useLatestCallback(onUpdateBlock);
   const stableCreateBlockBelow = useLatestCallback(handleCreateBlockBelow);
+  const stableCreateBlockAbove = useLatestCallback(handleCreateBlockAbove);
   const stablePasteMultiLines = useLatestCallback(handlePasteMultiLines);
   const stablePasteImages = useLatestCallback(handlePasteImages);
   const offersTemplates = Boolean(canEdit && templateSource);
@@ -1502,6 +1530,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onTemplateCommand={offersTemplates ? handleTemplateCommand : undefined}
           onUpdateBlock={stableUpdateBlock}
           onCreateBlockBelow={stableCreateBlockBelow}
+          onCreateBlockAbove={stableCreateBlockAbove}
           onPasteMultiLines={stablePasteMultiLines}
           onPasteImages={stablePasteImages}
           listMarker={listMarker}
