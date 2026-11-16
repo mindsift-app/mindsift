@@ -47,9 +47,41 @@ export function setVoiceLanguage(next: string | undefined): void {
   spokenLanguage = next || '';
 }
 
-/** Language for the browser's recognition: the chosen one, else the app's (it cannot detect languages). */
-export function browserVoiceLanguage(appLocale: string): string {
-  return spokenLanguage && spokenLanguage !== 'auto' && spokenLanguage !== 'app' ? voiceLanguageTag(spokenLanguage) : appLocale;
+/** Language for the browser's recognition: the chosen one, else the app's (it cannot detect languages),
+ *  as a full tag (see speechRecognitionTag). appLanguage is the app's language code ("de"). */
+export function browserVoiceLanguage(appLanguage: string, browserTags?: readonly string[]): string {
+  const chosen = spokenLanguage && spokenLanguage !== 'auto' && spokenLanguage !== 'app' ? spokenLanguage : appLanguage;
+  return speechRecognitionTag(chosen, browserTags);
+}
+
+// The usual region of the app's own languages; others take the one the browser's locale data suggests
+const SPEECH_REGIONS: Record<string, string> = { de: 'DE', en: 'US', es: 'ES', fr: 'FR', it: 'IT' };
+
+function browserLanguageTags(): readonly string[] {
+  if (typeof navigator === 'undefined') return [];
+  return navigator.languages?.length ? navigator.languages : navigator.language ? [navigator.language] : [];
+}
+
+/**
+ * A language code ("de", or Whisper's "jw") as the full BCP 47 tag the browser's recognition wants: with a
+ * bare "de" Chrome may listen for English. The browser's own locale of that language comes first ("de-AT"
+ * for someone whose browser is set to Austrian German), else the language's usual region ("de-DE").
+ */
+export function speechRecognitionTag(code: string, browserTags: readonly string[] = browserLanguageTags()): string {
+  const tag = voiceLanguageTag(code.trim());
+  if (!tag) return tag;
+  if (tag.includes('-')) return tag;
+  const lang = tag.toLowerCase();
+  const own = browserTags.find((t) => t.includes('-') && t.split('-')[0].toLowerCase() === lang);
+  if (own) return own;
+  if (SPEECH_REGIONS[lang]) return `${lang}-${SPEECH_REGIONS[lang]}`;
+  try {
+    const region = new Intl.Locale(lang).maximize().region;
+    if (region) return `${lang}-${region}`;
+  } catch {
+    // unknown to the browser: the code itself
+  }
+  return tag;
 }
 
 /** Whether the account may choose between the Whisper server and the browser. */

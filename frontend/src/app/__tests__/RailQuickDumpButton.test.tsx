@@ -231,6 +231,96 @@ describe('RailQuickDumpButton', () => {
     expect(screen.getByRole('status').textContent).toContain('Nichts erkannt');
   });
 
+  // The own Whisper server: a released recording is handed on (onRecorded) and transcribed in the background
+  const handOver = (text: () => Promise<string>, retry?: () => Promise<string>) => {
+    act(() => {
+      voice.options!.onRecorded!({ result: text, retry: retry ?? text, discard: vi.fn() } as never);
+    });
+  };
+  const deferred = () => {
+    let resolve!: (t: string) => void;
+    let reject!: (e: Error) => void;
+    const promise = new Promise<string>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+
+  it('can be held again while the last dictation is still transcribed, and saves both in order', async () => {
+    voice.mode = 'server';
+    const { btn, onDictated, onQuickDump } = setup();
+    const first = deferred();
+    const second = deferred();
+
+    hold(btn);
+    voice.stop.mockImplementationOnce(() => handOver(() => first.promise));
+    releaseAt(20, 110);
+    fireEvent.click(btn);
+    expect(btn.getAttribute('data-dictation')).toBe('saving');
+    expect(screen.getByLabelText('1')).toBeTruthy();
+
+    // Held again right away: a second recording starts
+    hold(btn);
+    expect(voice.start).toHaveBeenCalledTimes(2);
+    expect(btn.getAttribute('data-dictation')).toBe('recording');
+    voice.stop.mockImplementationOnce(() => handOver(() => second.promise));
+    releaseAt(20, 110);
+    fireEvent.click(btn);
+    expect(screen.getByLabelText('2')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('2 Diktate werden gespeichert');
+
+    await act(async () => {
+      second.resolve('Zweites Diktat');
+    });
+    expect(onDictated).not.toHaveBeenCalled();
+    await act(async () => {
+      first.resolve('Erstes Diktat');
+    });
+    expect(onDictated.mock.calls.map((c) => c[0])).toEqual(['Erstes Diktat', 'Zweites Diktat']);
+    expect(btn.getAttribute('data-dictation')).toBe('done');
+    expect(screen.queryByLabelText('1')).toBeNull();
+    expect(onQuickDump).not.toHaveBeenCalled();
+  });
+
+  it('opens the window on a click while dictations are still waiting', () => {
+    voice.mode = 'server';
+    const { btn, onQuickDump } = setup();
+    hold(btn);
+    voice.stop.mockImplementationOnce(() => handOver(() => new Promise<string>(() => {})));
+    releaseAt(20, 110);
+    fireEvent.click(btn);
+    expect(onQuickDump).not.toHaveBeenCalled();
+    fireEvent.click(btn, { detail: 0 });
+    expect(onQuickDump).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a failed dictation, saves the next one and saves the failed one on "Erneut versuchen"', async () => {
+    voice.mode = 'server';
+    const { btn, onDictated } = setup();
+    const retry = vi.fn(() => Promise.resolve('Zahnarzt anrufen'));
+
+    hold(btn);
+    voice.stop.mockImplementationOnce(() => handOver(() => Promise.reject(new Error('Spracherkennung hat zu lange gedauert')), retry));
+    releaseAt(20, 110);
+    hold(btn);
+    voice.stop.mockImplementationOnce(() => handOver(() => Promise.resolve('Milch kaufen')));
+    releaseAt(20, 110);
+    await act(async () => {});
+
+    expect(showError).toHaveBeenCalledWith('Spracherkennung hat zu lange gedauert');
+    expect(onDictated.mock.calls.map((c) => c[0])).toEqual(['Milch kaufen']);
+    expect(screen.getByRole('status').textContent).toContain('Diktat nicht gespeichert: Spracherkennung hat zu lange gedauert');
+    expect(screen.getByLabelText('1')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    });
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(onDictated.mock.calls.map((c) => c[0])).toEqual(['Milch kaufen', 'Zahnarzt anrufen']);
+    expect(screen.queryByLabelText('1')).toBeNull();
+  });
+
   it('ignores touch presses (they only click)', () => {
     const { btn, onQuickDump } = setup();
     fireEvent.pointerDown(btn, { button: 0, pointerType: 'touch', clientX: 20, clientY: 110 });

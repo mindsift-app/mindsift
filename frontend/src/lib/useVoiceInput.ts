@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import { BrowserRecognition, BrowserRecognitionClass, browserRecognition, browserVoiceLanguage, currentVoiceConfig, EffectiveVoiceMode, joinSpeechResults, loadVoiceConfig, VOICE_CONFIG_EVENT, VoiceRecorder } from './voice';
-import i18n, { currentLocale } from '../i18n';
+import i18n from '../i18n';
 import { errorMessage } from './errorMessage';
 import { useLatestRef } from './useLatestRef';
+import { SegmentedTranscription } from './voiceTranscription';
 
 export type VoiceState = 'idle' | 'listening' | 'transcribing';
 
@@ -18,6 +19,10 @@ export interface VoiceInputOptions {
   /** Server mode only: send the recording in chunks like live mode (every ~8 s or at a short pause), so the
    *  text arrives while speaking and a long dictation is not transcribed all at once at the end. Default on. */
   chunked?: boolean;
+  /** Server mode only: stop() hands the recording on while it is still being transcribed, and the
+   *  microphone is free for the next one at once (the dictation queue on the rail's +). onText then
+   *  only previews the current recording (final=false); the text comes from transcription.result(). */
+  onRecorded?: (transcription: SegmentedTranscription) => void;
 }
 
 const LIVE_CHUNK_MS = 8000;
@@ -33,7 +38,7 @@ const BROWSER_SILENCE_STOP_MS = 5000;
  * is made depends on the server setting, see lib/voice.ts. mode is null until known, "off" or
  * "unsupported" means: do not show a microphone.
  */
-export function useVoiceInput({ onText, onError, continuous = false, live = false, chunked = true }: VoiceInputOptions) {
+export function useVoiceInput({ onText, onError, continuous = false, live = false, chunked = true, onRecorded }: VoiceInputOptions) {
   const chunkServer = live || chunked;
   const [mode, setMode] = useState<EffectiveVoiceMode | null>(null);
   const [state, setState] = useState<VoiceState>('idle');
@@ -56,6 +61,9 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   const mountedRef = useRef(true);
   const onTextRef = useLatestRef(onText);
   const onErrorRef = useLatestRef(onError);
+  const onRecordedRef = useLatestRef(onRecorded);
+  // The recording in progress when it is handed on at its end (onRecorded)
+  const handOverRef = useRef<SegmentedTranscription | null>(null);
 
   const clearAllTimers = () => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -163,6 +171,15 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
       return;
     }
     const rec = recorderRef.current;
+    const handOver = handOverRef.current;
+    if (rec && handOver) {
+      recorderRef.current = null;
+      handOverRef.current = null;
+      handOver.add(rec.stop());
+      setStateSafe('idle');
+      onRecordedRef.current?.(handOver);
+      return;
+    }
     if (!rec) {
       if (chunkServer && state === 'listening') {
         setStateSafe('idle');
@@ -199,6 +216,12 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   const startServer = async () => {
     const rec = new VoiceRecorder();
     recorderRef.current = rec;
+    const handOver: SegmentedTranscription | null = onRecordedRef.current && chunkServer
+      ? new SegmentedTranscription((text) => {
+          if (handOverRef.current === handOver) onTextRef.current(text, false);
+        })
+      : null;
+    handOverRef.current = handOver;
     chunkIndexRef.current = 0;
     chunkResultsRef.current = new Map();
     inFlightChunksRef.current = 0;
@@ -208,6 +231,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
       await rec.start();
     } catch {
       recorderRef.current = null;
+      handOverRef.current = null;
       fail(i18n.t('common:voice.noMic'));
       return;
     }
@@ -236,8 +260,8 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
           segmentMs = 0;
           silentMs = 0;
           hadSpeech = false;
-          const idx = chunkIndexRef.current++;
-          processSegmentPromise(idx, rec.cutSegment());
+          if (handOver) handOver.add(rec.cutSegment());
+          else processSegmentPromise(chunkIndexRef.current++, rec.cutSegment());
         }
       }, LIVE_TICK_MS);
     }
@@ -245,7 +269,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
 
   const spawnBrowserRecognition = (Recognition: BrowserRecognitionClass, isRestart: boolean) => {
     const recognition = new Recognition();
-    recognition.lang = browserVoiceLanguage(currentLocale());
+    recognition.lang = browserVoiceLanguage(i18n.language);
     recognition.interimResults = true;
     // A tap (neither hold nor dictation) listens through short pauses and ends after 5 s of silence
     const stopOnSilence = !continuous && !live;
@@ -360,6 +384,9 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
     clearAllTimers();
     recorderRef.current?.cancel();
     recorderRef.current = null;
+    // Only the recording in progress; ones already handed on keep going
+    handOverRef.current?.discard();
+    handOverRef.current = null;
     try {
       recognitionRef.current?.abort?.();
     } catch {
