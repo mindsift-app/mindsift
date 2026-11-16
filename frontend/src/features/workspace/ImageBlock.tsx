@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ImageOff, LoaderCircle, X } from 'lucide-react';
-import { mediaObjectURL, parseMediaContent } from '../../lib/media';
+import { ImageOff, LoaderCircle, MoveDiagonal2, RotateCcw, X } from 'lucide-react';
+import { MIN_IMAGE_WIDTH, mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { useTranslation } from 'react-i18next';
 import { IndentArrows, OVERLAY_ARROW_BUTTON, overlayArrowsClass } from './IndentArrows';
 
@@ -9,6 +9,8 @@ interface ImageBlockProps {
   content: string;
   canEdit: boolean;
   onCaptionChange: (caption: string) => void;
+  /** New displayed width in px after dragging the corner; null = back to the default size */
+  onWidthChange?: (width: number | null) => void;
   /** Moves the bullet (no text field here to press Tab in) */
   onIndent?: () => void;
   onOutdent?: () => void;
@@ -27,6 +29,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
   content,
   canEdit,
   onCaptionChange,
+  onWidthChange,
   onIndent,
   onOutdent,
   canIndent = false,
@@ -35,6 +38,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
 }) => {
   const { t } = useTranslation('workspace');
   const figureRef = useRef<HTMLElement | null>(null);
+  const boxRef = useRef<HTMLDivElement | null>(null);
   // Tapped on a touch screen: controls shown until a tap elsewhere
   const [active, setActive] = useState(false);
   const ref = parseMediaContent(content);
@@ -42,6 +46,8 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
   const [failed, setFailed] = useState(false);
   const [zoomed, setZoomed] = useState(false);
   const [caption, setCaption] = useState(ref?.caption || '');
+  // Width while the corner is dragged (saved on release)
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
 
   useEffect(() => {
     // The caption field follows the stored caption (also from other devices)
@@ -89,6 +95,38 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
   };
 
   const editable = canEdit || locked;
+  const sized = !!ref.width;
+  const width = dragWidth ?? (ref.width ? Math.max(MIN_IMAGE_WIDTH, ref.width) : null);
+  const resizable = canEdit && !!onWidthChange && !!src && !failed;
+
+  // Dragging the bottom right corner changes the width; the height follows, so the picture keeps its
+  // aspect ratio. Larger than the file is fine, up to the width of the note column.
+  const onResizeDown = (e: React.PointerEvent) => {
+    const box = boxRef.current;
+    if (!box || !figureRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startW = box.getBoundingClientRect().width;
+    const maxW = Math.max(MIN_IMAGE_WIDTH, figureRef.current.clientWidth || startW);
+    const target = e.currentTarget as Element;
+    target.setPointerCapture?.(e.pointerId);
+    let w = startW;
+    const move = (ev: PointerEvent) => {
+      w = Math.min(maxW, Math.max(MIN_IMAGE_WIDTH, startW + ev.clientX - startX));
+      setDragWidth(w);
+    };
+    const up = () => {
+      target.removeEventListener('pointermove', move as EventListener);
+      target.removeEventListener('pointerup', up);
+      target.removeEventListener('pointercancel', up);
+      setDragWidth(null);
+      if (Math.abs(w - startW) > 1) onWidthChange?.(Math.round(w));
+    };
+    target.addEventListener('pointermove', move as EventListener);
+    target.addEventListener('pointerup', up);
+    target.addEventListener('pointercancel', up);
+  };
   const openImage = () => {
     if (editable && !active && !canHover()) {
       setActive(true);
@@ -103,7 +141,9 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
   return (
     <figure ref={figureRef} className="group/image my-1 space-y-1">
       <div
-        className="relative"
+        ref={boxRef}
+        className="relative w-fit max-w-full"
+        style={width && src && !failed ? { width } : undefined}
         // A tap on a missing or loading image shows the controls as well
         onClick={() => {
           if (editable && !canHover()) setActive(true);
@@ -118,9 +158,14 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
           type="button"
           onClick={openImage}
           title={t('media.enlarge')}
-          className="block max-w-full rounded-card overflow-hidden border border-border bg-panel cursor-zoom-in"
+          className={`block ${width ? 'w-full' : 'max-w-full'} rounded-card overflow-hidden border border-border bg-panel cursor-zoom-in`}
         >
-          <img src={src} alt={ref.caption} className="block max-w-full max-h-112 object-contain" />
+          <img
+            src={src}
+            alt={ref.caption}
+            draggable={false}
+            className={width ? 'block w-full h-auto' : 'block max-w-full max-h-112 object-contain'}
+          />
         </button>
       ) : (
         <div className="flex items-center justify-center w-48 h-32 rounded-card border border-border bg-panel">
@@ -137,6 +182,43 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
             locked={locked}
             buttonClassName={OVERLAY_ARROW_BUTTON}
           />
+        </div>
+      )}
+      {editable && sized && src && !failed && (
+        <div className={overlayArrowsClass(active, 'image', false, 'top-right')}>
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!locked) onWidthChange?.(null);
+            }}
+            disabled={locked || !onWidthChange}
+            title={t('media.resetSize')}
+            aria-label={t('media.resetSize')}
+            className={`${OVERLAY_ARROW_BUTTON} cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:text-faint disabled:hover:border-transparent`}
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+      {resizable && (
+        <div className={overlayArrowsClass(active || dragWidth !== null, 'image', false, 'bottom-right')}>
+          <div
+            role="presentation"
+            title={t('media.resize')}
+            style={{ touchAction: 'none' }}
+            onPointerDown={onResizeDown}
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            className={`${OVERLAY_ARROW_BUTTON} cursor-nwse-resize`}
+          >
+            <MoveDiagonal2 className="w-3.5 h-3.5" />
+          </div>
         </div>
       )}
       </div>

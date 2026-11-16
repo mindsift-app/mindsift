@@ -209,7 +209,7 @@ const de: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image oder /bild (Bild hochladen, fotografieren, einfügen oder per Link; nur im leeren Punkt). Ein kopiertes Bild oder einen Screenshot einfach mit Strg+V (Cmd+V, am Handy lange tippen und Einfügen) in die Notiz einfügen oder am Computer Bilddateien (aus dem Dateimanager oder ein Bild aus einem Browser-Tab) auf einen Punkt ziehen: Es wird ein eigener Bild-Punkt darunter, ein leerer Punkt wird selbst zum Bild; neben die Punkte oder auf den Titel gezogen, kommen die Bilder ans Ende der Notiz</span>
+                <span>/image oder /bild (Bild hochladen, fotografieren, einfügen oder per Link; nur im leeren Punkt). Ein kopiertes Bild oder einen Screenshot einfach mit Strg+V (Cmd+V, am Handy lange tippen und Einfügen) in die Notiz einfügen oder am Computer Bilddateien (aus dem Dateimanager oder ein Bild aus einem Browser-Tab) auf einen Punkt ziehen: Es wird ein eigener Bild-Punkt darunter, ein leerer Punkt wird selbst zum Bild; neben die Punkte oder auf den Titel gezogen, kommen die Bilder ans Ende der Notiz. Ein Bild ziehst du an der Ecke unten rechts größer oder kleiner (das Seitenverhältnis bleibt, höchstens so breit wie die Notiz); der Knopf oben rechts bringt es auf die Standardgröße zurück</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />

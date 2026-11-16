@@ -1,28 +1,54 @@
 // Images and audio in notes. A block points to its file through its content:
 //   image  ![Beschriftung](media:med_…)
 //   audio  [Beschriftung](media:med_…)
-// so the reference travels with the normal note sync. Files are loaded with the login (fetch) and
-// shown as blob: URLs; on a public note page through its link (lib/publicNote.ts).
+// An image whose size was changed by hand carries its displayed width in CSS pixels after an unescaped
+// "|" at the end of the caption, as Obsidian does: ![Beschriftung|320](media:med_…). A "|" in the
+// caption itself is escaped ("\|"), so older content stays valid and older versions show the width as
+// part of the caption at worst. Recordings have no width.
+// So the reference travels with the normal note sync. Files are loaded with the login (fetch) and shown
+// as blob: URLs; on a public note page through its link (lib/publicNote.ts).
 import { authHeaders } from './api';
 import i18n from '../i18n';
 import { publicMediaRequest } from './publicNote';
 
 const MEDIA_RE = /^!?\[((?:[^\]\\]|\\.)*)\]\(media:(med_[0-9a-f]+)\)$/;
 
+// The width at the end of the (still escaped) caption: everything before it is plain characters or
+// escaped pairs, so the "|" found is not an escaped one
+const WIDTH_RE = /^((?:[^\\]|\\.)*?)\|(\d{1,5})$/;
+
+/** Smallest width an image can be dragged to (px) */
+export const MIN_IMAGE_WIDTH = 48;
+/** Largest width stored; the note column limits what is shown anyway */
+export const MAX_IMAGE_WIDTH = 10000;
+
 export interface MediaRef {
   id: string;
   caption: string;
+  /** Displayed width in CSS pixels, when it was changed by hand (images only) */
+  width?: number;
 }
 
 export function parseMediaContent(content: string): MediaRef | null {
-  const m = MEDIA_RE.exec((content || '').trim());
+  const trimmed = (content || '').trim();
+  const m = MEDIA_RE.exec(trimmed);
   if (!m) return null;
-  return { id: m[2], caption: m[1].replace(/\\(.)/g, '$1') };
+  let raw = m[1];
+  let width: number | undefined;
+  const w = trimmed.startsWith('!') ? WIDTH_RE.exec(raw) : null;
+  if (w && Number(w[2]) > 0) {
+    raw = w[1];
+    width = Math.min(MAX_IMAGE_WIDTH, Number(w[2]));
+  }
+  const ref: MediaRef = { id: m[2], caption: raw.replace(/\\(.)/g, '$1') };
+  if (width) ref.width = width;
+  return ref;
 }
 
-export function mediaContent(kind: 'image' | 'audio', id: string, caption = ''): string {
-  const safe = caption.replace(/[\r\n]+/g, ' ').replace(/([\\\]])/g, '\\$1');
-  return `${kind === 'image' ? '!' : ''}[${safe}](media:${id})`;
+export function mediaContent(kind: 'image' | 'audio', id: string, caption = '', width?: number): string {
+  const safe = caption.replace(/[\r\n]+/g, ' ').replace(/([\\\]|])/g, '\\$1');
+  const w = kind === 'image' && width && width > 0 ? `|${Math.round(Math.min(MAX_IMAGE_WIDTH, width))}` : '';
+  return `${kind === 'image' ? '!' : ''}[${safe}${w}](media:${id})`;
 }
 
 // Loaded files, once per page. The Blob is kept as well: the CSP does not allow fetch() on blob: URLs.

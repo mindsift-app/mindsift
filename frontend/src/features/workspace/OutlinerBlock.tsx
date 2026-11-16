@@ -1772,7 +1772,16 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             onCaptionChange={(caption) => {
               const ref = parseMediaContent(localContent);
               if (!ref) return;
-              const content = mediaContent('image', ref.id, caption);
+              const content = mediaContent('image', ref.id, caption, ref.width);
+              setLocalContent(content);
+              localContentRef.current = content;
+              flushDebounce(content);
+            }}
+            onWidthChange={(width) => {
+              const ref = parseMediaContent(localContent);
+              if (!ref) return;
+              const content = mediaContent('image', ref.id, ref.caption, width ?? undefined);
+              if (content === localContent) return;
               setLocalContent(content);
               localContentRef.current = content;
               flushDebounce(content);

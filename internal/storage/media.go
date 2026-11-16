@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -242,26 +243,65 @@ func (s *Store) queryMedia(q string, args ...any) ([]Media, error) {
 }
 
 // MediaRef is a block's pointer to a file: ![caption](media:id) for images, [caption](media:id) for audio.
-type MediaRef struct{ ID, Caption string }
+// An image whose size was set by hand carries its displayed width in CSS pixels after an unescaped "|"
+// at the end of the caption, as Obsidian does: ![caption|320](media:id). A "|" in the caption itself is
+// escaped (`\|`). Width is 0 for the default size (and always for audio).
+type MediaRef struct {
+	ID, Caption string
+	Width       int
+}
 
 var mediaRefRe = regexp.MustCompile(`^!?\[((?:[^\]\\]|\\.)*)\]\(media:(med_[0-9a-f]+)\)$`)
 var mediaRefEsc = regexp.MustCompile(`\\(.)`)
 
+// mediaWidthRe: the width at the end of the still escaped caption. Everything before it is plain
+// characters or escaped pairs, so the "|" found is not an escaped one.
+var mediaWidthRe = regexp.MustCompile(`^((?:[^\\]|\\.)*?)\|(\d{1,5})$`)
+
+// maxMediaWidth caps a stored width (the note column limits what the app shows anyway).
+const maxMediaWidth = 10000
+
 func ParseMediaContent(content string) (MediaRef, bool) {
-	m := mediaRefRe.FindStringSubmatch(strings.TrimSpace(content))
+	content = strings.TrimSpace(content)
+	m := mediaRefRe.FindStringSubmatch(content)
 	if m == nil {
 		return MediaRef{}, false
 	}
-	return MediaRef{ID: m[2], Caption: mediaRefEsc.ReplaceAllString(m[1], "$1")}, true
+	caption, width := m[1], 0
+	if strings.HasPrefix(content, "!") {
+		caption, width = splitMediaWidth(caption)
+	}
+	return MediaRef{ID: m[2], Caption: mediaRefEsc.ReplaceAllString(caption, "$1"), Width: width}, true
+}
+
+// splitMediaWidth separates the width from an image's (escaped) caption; 0 when there is none.
+func splitMediaWidth(raw string) (string, int) {
+	w := mediaWidthRe.FindStringSubmatch(raw)
+	if w == nil {
+		return raw, 0
+	}
+	n, err := strconv.Atoi(w[2])
+	if err != nil || n <= 0 {
+		return raw, 0
+	}
+	return w[1], min(n, maxMediaWidth)
 }
 
 // MediaContent builds a block's content for a file (same format as the browser, lib/media.ts).
 func MediaContent(kind, id, caption string) string {
+	return MediaContentSized(kind, id, caption, 0)
+}
+
+// MediaContentSized is MediaContent with an image's width set by hand (0: default size).
+func MediaContentSized(kind, id, caption string, width int) string {
 	caption = strings.Join(strings.Fields(strings.ReplaceAll(caption, "\n", " ")), " ")
-	caption = strings.NewReplacer(`\`, `\\`, `]`, `\]`).Replace(caption)
+	caption = strings.NewReplacer(`\`, `\\`, `]`, `\]`, `|`, `\|`).Replace(caption)
 	prefix := ""
 	if kind == "image" {
 		prefix = "!"
+		if width > 0 {
+			caption += "|" + strconv.Itoa(min(width, maxMediaWidth))
+		}
 	}
 	return prefix + "[" + caption + "](media:" + id + ")"
 }
@@ -401,7 +441,11 @@ func (g *mediaGate) clean(content string) (out string, changed bool) {
 		if ok[m[2]] {
 			return link
 		}
-		if caption := strings.TrimSpace(mediaRefEsc.ReplaceAllString(m[1], "$1")); caption != "" {
+		raw := m[1]
+		if strings.HasPrefix(link, "!") {
+			raw, _ = splitMediaWidth(raw)
+		}
+		if caption := strings.TrimSpace(mediaRefEsc.ReplaceAllString(raw, "$1")); caption != "" {
 			return caption
 		}
 		return g.placeholderFor(link)

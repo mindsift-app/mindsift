@@ -374,6 +374,8 @@
     "caption": "Add a caption…",
     "imageUnavailable": "Image not available (offline or deleted)",
     "enlarge": "Enlarge",
+    "resize": "Drag to change the size",
+    "resetSize": "Default size",
     "closeEsc": "Close (Esc)",
     "saving": "Saving…",
     "uploading": "Uploading…",

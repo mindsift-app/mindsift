@@ -7,6 +7,7 @@ import (
 	"io"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -276,7 +277,12 @@ func blocksToVaultMarkdown(blocks []domain.DocumentBlock, attachment func(id str
 		if (b.Type == "image" || b.Type == "audio") && attachment != nil {
 			if ref, ok := ParseMediaContent(content); ok {
 				if p := attachment(ref.ID); p != "" {
-					content = "![" + ref.Caption + "](" + strings.ReplaceAll(p, " ", "%20") + ")"
+					// A size set by hand the way Obsidian reads it (and the import takes back)
+					size := ""
+					if ref.Width > 0 {
+						size = "|" + strconv.Itoa(ref.Width)
+					}
+					content = "![" + ref.Caption + size + "](" + strings.ReplaceAll(p, " ", "%20") + ")"
 				}
 			}
 		}

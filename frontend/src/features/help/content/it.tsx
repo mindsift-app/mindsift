@@ -156,7 +156,7 @@ const it: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
-                <span>/image (carica, fotografa, incolla o collega un'immagine; solo in un punto vuoto). Un'immagine copiata o uno screenshot si incolla anche direttamente nella nota con Ctrl+V (Cmd+V, sul telefono tocco prolungato e Incolla), oppure sul computer trascinando file immagine (dal file manager, o un'immagine da una scheda del browser) su un punto: diventa un punto immagine a sé sotto di esso, un punto vuoto diventa l'immagine stessa; trascinate accanto ai punti o sul titolo, le immagini vanno alla fine della nota</span>
+                <span>/image (carica, fotografa, incolla o collega un'immagine; solo in un punto vuoto). Un'immagine copiata o uno screenshot si incolla anche direttamente nella nota con Ctrl+V (Cmd+V, sul telefono tocco prolungato e Incolla), oppure sul computer trascinando file immagine (dal file manager, o un'immagine da una scheda del browser) su un punto: diventa un punto immagine a sé sotto di esso, un punto vuoto diventa l'immagine stessa; trascinate accanto ai punti o sul titolo, le immagini vanno alla fine della nota. Trascina l'angolo in basso a destra di un'immagine per ingrandirla o ridurla (le proporzioni restano, al massimo larga quanto la nota); il pulsante in alto a destra la riporta alla dimensione predefinita</span>
               </div>
               <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
