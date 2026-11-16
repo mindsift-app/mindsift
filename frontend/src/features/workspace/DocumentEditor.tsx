@@ -447,15 +447,13 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     void engineRef.current?.syncNow();
   };
 
-  const { tagGroups, handleTagFocusChange, handleTagCreateBlock, handleTagInsertBlocks, tagMoveBlock } = useTagPage({
+  const { tagGroups, handleTagFocusChange, handleTagCreateBlock, handleTagInsertBlocks } = useTagPage({
     inTagPage,
     tagFilter,
     blocks,
     engineRef,
-    currentBlocksRef,
     handleCreateBlock,
     handleInsertBlocks,
-    handleMoveBlock,
   });
 
   const handleTogglePin = async () => {
@@ -1181,7 +1179,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     onDeleteBlock={handleDeleteBlock}
                     onDeleteBlocks={handleDeleteBlocks}
                     onReplaceRange={handleReplaceRange}
-                    onMoveBlock={tagMoveBlock(group)}
+                    onMoveBlock={handleMoveBlock}
                     onMoveSibling={handleMoveSibling}
                     onOpenTask={onOpenTask}
                     onTagClick={onSelectTag}

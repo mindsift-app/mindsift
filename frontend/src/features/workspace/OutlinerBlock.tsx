@@ -196,7 +196,8 @@ export interface OutlinerBlockProps {
   onDragStartBlock?: (blockId: string, e: React.DragEvent) => void;
   onDragOverBlock?: (e: React.DragEvent, blockId: string) => void;
   onDropBlock?: (blockId: string) => void;
-  isDragTarget?: boolean;
+  /** A dragged bullet would land in front of this row, on this level (counted like the row's own indent) */
+  dropIndent?: number | null;
   isTargeted?: boolean;
   registerTextareaRef: (blockId: string, el: HTMLTextAreaElement | null) => void;
   /** Returns the bullet the cursor ends up in (the last pasted line) */
@@ -253,7 +254,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   onDragStartBlock,
   onDragOverBlock,
   onDropBlock,
-  isDragTarget,
+  dropIndent,
   isTargeted,
   registerTextareaRef,
   onPasteMultiLines,
@@ -1449,7 +1450,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       } ${
         // Round corners only on a tinted row: on the others they are invisible, but the row's content-visibility
         // would clip with them, and rounded clips in every bullet made Chrome leave the note's corners unpainted
-        inRangeSelection || isDragTarget || isTargeted || block.conflictOf || lockColor ? 'rounded-card' : ''
+        inRangeSelection || dropIndent != null || isTargeted || block.conflictOf || lockColor ? 'rounded-card' : ''
       } ${
         // Spacing between the rows (OutlinerTree); headings keep their extra margin only as the first bullet
         block.type === 'h1'
@@ -1458,8 +1459,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           ? 'mt-0.5 first:mt-1.5 sm:first:mt-2'
           : 'mt-0.5 first:mt-0'
       } ${
-        isDragTarget
-          ? 'border-t-2 border-accent bg-accent/10'
+        dropIndent != null
+          ? 'bg-accent/10'
           : isTargeted
           ? 'bg-panel-elevated'
           : ''
@@ -1493,6 +1494,19 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       {Array.from({ length: visualLevel }, (_, k) => (
         <span key={k} aria-hidden="true" className="bullet-guide" style={{ left: `calc(var(--outline-indent) * ${k} + 28px)` }} />
       ))}
+      {/* Where a dragged bullet lands: a line with a dot under the place its bullet would take (the dot of a
+          row sits 28px right of its indent, see .bullet-guide), so the level shows before letting go */}
+      {dropIndent != null && (
+        <span
+          aria-hidden="true"
+          data-drop-line={dropIndent}
+          className="absolute top-0 right-1 h-1.5 pointer-events-none"
+          style={{ left: `calc(var(--outline-indent) * ${dropIndent} + 25px)` }}
+        >
+          <span className="absolute left-0 top-0 w-1.5 h-1.5 rounded-full bg-accent" />
+          <span className="absolute left-1 right-0 top-0.5 h-0.5 rounded-full bg-accent" />
+        </span>
+      )}
       {/* Bullet Controls: Collapse Toggle & Bullet (Drag-Handle & Zoom) / Checkbox */}
       <div className="flex items-center gap-0.5 pt-1 select-none shrink-0">
         {hasChildren ? (

@@ -395,7 +395,7 @@ const es: HelpContent = {
               <strong className="text-main">Enfoque (zoom hoisting):</strong> haz clic directamente en el punto (<code className="text-accent">•</code>) de un bloque para hacer zoom únicamente en esa rama. La navegación de migas de pan en la parte superior te permite retroceder paso a paso en cualquier momento; en el móvil, el icono de la casa te lleva al principio de la nota y el botón atrás sube un nivel.
             </li>
             <li>
-              <strong className="text-main">Mover bloques:</strong> mantén pulsado el botón del ratón sobre un punto para arrastrarlo con todos sus subpuntos a una nueva ubicación.
+              <strong className="text-main">Mover bloques:</strong> mantén pulsado el botón del ratón sobre un punto para arrastrarlo con todos sus subpuntos a una nueva ubicación. Toma el nivel del punto delante del que lo sueltas y pasa a ser su hermano; la línea con el punto muestra ese nivel antes de soltar. Arrastrado debajo del último punto, va al final en el nivel superior. Mantén pulsado <strong className="text-main">Ctrl</strong> al arrastrar (<strong className="text-main">Opción ⌥</strong> en Mac) para mover solo ese punto: sus subpuntos se quedan donde están y suben a su lugar. Puedes pulsar o soltar la tecla en mitad del arrastre; Ctrl+Z deshace el movimiento en un solo paso.
             </li>
             <li>
               <strong className="text-main">A otra nota:</strong> arrastra el punto sobre una nota de la barra lateral y toda la rama pasa al final de esa nota. Si lo sueltas sobre el botón + de nota nueva, arriba en la barra lateral, se convierte en una nota nueva propia. El aviso posterior ofrece «Abrir» y «Deshacer», Ctrl+Z también funciona; las tareas vinculadas van con ella.
@@ -846,6 +846,7 @@ const es: HelpContent = {
     { key: 'Ctrl + Mayús + ↓', scope: 'Outliner del Workspace', desc: 'Desplegar todas las viñetas plegadas de la nota' },
     { key: 'Ctrl + Mayús + ↑', scope: 'Outliner del Workspace', desc: 'Plegar todas las viñetas de la nota (en el modo de enfoque, solo en la rama)' },
     { key: 'Ctrl + clic en ▸ / ▾', scope: 'Outliner del Workspace', desc: 'Desplegar o plegar una viñeta junto con todas sus subviñetas' },
+    { key: 'Ctrl al arrastrar (Mac: Opción ⌥)', scope: 'Outliner del Workspace', desc: 'Mover solo la viñeta arrastrada; sus subviñetas se quedan y suben a su lugar' },
     { key: 'Ctrl + Z / Cmd + Z', scope: 'Outliner del Workspace', desc: 'Deshacer la última acción en notas' },
     { key: 'Ctrl + Y / Ctrl + Shift + Z', scope: 'Outliner del Workspace', desc: 'Rehacer una acción deshecha' },
     { key: 'Arrastrar el ratón sobre varios puntos', scope: 'Outliner del Workspace', desc: 'Seleccionar texto a través de varios puntos; Supr/Retroceso lo elimina, escribir lo reemplaza, Ctrl + C lo copia como Markdown (sangrías, tareas, encabezados)' },

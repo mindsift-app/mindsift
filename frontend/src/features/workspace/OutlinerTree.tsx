@@ -5,11 +5,12 @@ import { OutlinerBlock, BlockLock, PastingImagesNotice } from './OutlinerBlock';
 import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToClipboard, putOnClipboard, rememberCopied, type OutlineClipboard } from '../../lib/outlineMarkdown';
-import { branchEnd, OutlineRow, outlineRows, sameOutlineShape } from '../../lib/outlineList';
+import { branchEnd, canDropBefore, dropLevelBefore, OutlineRow, outlineRows, sameOutlineShape, type BranchDrop } from '../../lib/outlineList';
 import { useLatestCallback } from '../../lib/useLatestCallback';
 import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
-import { startBranchDragGhost } from './branchDragImage';
+import { startBranchDragGhost, type BranchDragGhost } from './branchDragImage';
+import { singleDragKey } from '../../lib/platform';
 import type { ConflictChoice } from '../../lib/docSync/engine';
 import { templateBlocks } from '../../lib/noteTemplate';
 import { TemplateChoice, TemplatePicker } from './NoteTemplates';
@@ -62,7 +63,8 @@ export interface OutlinerTreeProps {
   onDeleteBlocks?: (blockIds: string[]) => void;
   /** The last bullet of the note was deleted (it stays as an empty bullet); the journal removes the day then */
   onDeleteLastBlock?: () => void;
-  onMoveBlock: (blockId: string, newIndex: number, level?: number) => void;
+  /** A bullet dragged to `drop` on `level`: with its children, or alone (single, its children move up) */
+  onMoveBlock: (blockId: string, drop: BranchDrop, level: number, single?: boolean) => void;
   /** Swap a bullet (with children) with its previous / next sibling (phone bar ↑ ↓) */
   onMoveSibling?: (blockId: string, direction: -1 | 1) => void;
   onOpenTask?: (taskId: string) => void;
@@ -180,6 +182,10 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   );
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // Ctrl (Apple: Alt) held while dragging a bullet: it goes without its children (singleDragKey)
+  const [dragSingle, setDragSingle] = useState(false);
+  const dragSingleRef = useRef(false);
+  const dragGhostRef = useRef<BranchDragGhost | null>(null);
 
   // Leaving a block (click into empty space) must drop its focus highlight; a focus move to
   // another block has already set the new id, so only clear if it's still this one
@@ -849,70 +855,93 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     [focusBlockInput, visibleEntries]
   );
 
+  // Dragging a bullet by its handle (desktop): it lands in front of the row it is dropped on, on that row's
+  // level, so it becomes its sibling and no bullet around it changes parents; its children keep their depth
+  // below it. Holding Ctrl (Apple: Alt) moves it alone: its children move up into its old place. The key may
+  // be pressed or released during the drag: dragover reports it about every 50 ms, also without moving,
+  // while keyboard events often do not arrive during a drag.
+  const setSingle = useCallback((single: boolean) => {
+    dragGhostRef.current?.setSingle(single);
+    if (dragSingleRef.current === single) return;
+    dragSingleRef.current = single;
+    setDragSingle(single);
+  }, []);
+
+  const clearDrag = useCallback(() => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    dragGhostRef.current = null;
+    dragSingleRef.current = false;
+    setDragSingle(false);
+  }, []);
+
   const handleDragStartBlock = useCallback((index: number, e: React.DragEvent) => {
     setDraggedIndex(index);
-    const level = Math.max(0, blocks[index]?.level || 0);
-    let end = index + 1;
-    while (end < blocks.length && Math.max(0, blocks[end].level || 0) > level) end++;
-    startBranchDragGhost(e, blocks.slice(index, end));
+    // Only ever a move: Ctrl (Alt on a Mac) would otherwise turn the drop into a copy
+    e.dataTransfer.effectAllowed = 'move';
+    const single = singleDragKey(e);
+    dragSingleRef.current = single;
+    setDragSingle(single);
+    dragGhostRef.current = startBranchDragGhost(e, blocks.slice(index, branchEnd(blocks, index)), single) || null;
   }, [blocks]);
+
+  useEffect(() => {
+    if (draggedIndex === null) return;
+    const onDragOver = (e: DragEvent) => setSingle(singleDragKey(e));
+    const onKey = (e: KeyboardEvent) => setSingle(singleDragKey(e));
+    document.addEventListener('dragover', onDragOver, true);
+    window.addEventListener('keydown', onKey, true);
+    window.addEventListener('keyup', onKey, true);
+    return () => {
+      document.removeEventListener('dragover', onDragOver, true);
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('keyup', onKey, true);
+    };
+  }, [draggedIndex, setSingle]);
 
   const handleDragOverBlock = useCallback(
     (e: React.DragEvent, index: number) => {
       e.preventDefault();
-      if (draggedIndex !== null) {
-        const parentLevel = Math.max(0, blocks[draggedIndex]?.level || 0);
-        let count = 1;
-        for (let i = draggedIndex + 1; i < blocks.length; i++) {
-          if (Math.max(0, blocks[i].level || 0) > parentLevel) {
-            count++;
-          } else {
-            break;
-          }
-        }
-        // Do not allow dropping inside its own subtree (self or descendants)
-        if (index >= draggedIndex && index < draggedIndex + count) {
-          setDragOverIndex(null);
-          return;
-        }
-        setDragOverIndex(index);
-      }
+      if (draggedIndex === null) return;
+      e.dataTransfer.dropEffect = 'move';
+      const single = singleDragKey(e);
+      setSingle(single);
+      setDragOverIndex(canDropBefore(blocks, draggedIndex, index, single) ? index : null);
     },
-    [blocks, draggedIndex]
+    [blocks, draggedIndex, setSingle]
   );
 
   const handleDropBlock = useCallback(
     (targetIndex: number) => {
-      if (draggedIndex === null || draggedIndex === targetIndex) {
-        setDraggedIndex(null);
-        setDragOverIndex(null);
-        return;
+      const from = draggedIndex;
+      const single = dragSingleRef.current;
+      clearDrag();
+      const movingBlock = from === null ? undefined : blocks[from];
+      if (from === null || !movingBlock) return;
+      let drop: BranchDrop;
+      let level: number;
+      if (targetIndex >= blocks.length) {
+        // Below the last bullet: at the end, on the top level of what is shown
+        drop = { afterId: blocks[blocks.length - 1].id };
+        level = levelOffset || 0;
+      } else {
+        if (!canDropBefore(blocks, from, targetIndex, single)) return;
+        drop = { beforeId: blocks[targetIndex].id };
+        level = dropLevelBefore(blocks, from, targetIndex, single);
       }
-      const parentLevel = Math.max(0, blocks[draggedIndex]?.level || 0);
-      let count = 1;
-      for (let i = draggedIndex + 1; i < blocks.length; i++) {
-        if (Math.max(0, blocks[i].level || 0) > parentLevel) {
-          count++;
-        } else {
-          break;
-        }
+      // Moved alone, its children get a new parent too: someone typing in one of them holds it
+      let holder = lockHolder(movingBlock.id);
+      const own = Math.max(0, movingBlock.level || 0);
+      for (let i = from + 1; single && !holder && i < blocks.length && Math.max(0, blocks[i].level || 0) > own; i++) {
+        if (Math.max(0, blocks[i].level || 0) === own + 1) holder = lockHolder(blocks[i].id);
       }
-      if (targetIndex >= draggedIndex && targetIndex < draggedIndex + count) {
-        setDraggedIndex(null);
-        setDragOverIndex(null);
-        return;
-      }
-      const movingBlock = blocks[draggedIndex];
-      const holder = movingBlock ? lockHolder(movingBlock.id) : undefined;
       if (holder) {
         onLockedAction?.(holder);
-      } else if (movingBlock) {
-        onMoveBlock(movingBlock.id, targetIndex, movingBlock.level);
+        return;
       }
-      setDraggedIndex(null);
-      setDragOverIndex(null);
+      onMoveBlock(movingBlock.id, drop, level, single);
     },
-    [blocks, draggedIndex, onMoveBlock, lockHolder, onLockedAction]
+    [blocks, draggedIndex, levelOffset, clearDrag, onMoveBlock, lockHolder, onLockedAction]
   );
 
   // Phone bar: runs the action at once and puts the focus back into the same bullet within the same tap
@@ -952,13 +981,9 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const showMobileBar = isTouchOnly && canEdit && !!focusedBlockId && blocks.some((b) => b.id === focusedBlockId);
 
   useEffect(() => {
-    const clearDrag = () => {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-    };
     window.addEventListener('dragend', clearDrag);
     return () => window.removeEventListener('dragend', clearDrag);
-  }, []);
+  }, [clearDrag]);
 
   // --- Selection over several bullets ---
   // Each bullet is a text field of its own, so the browser cannot select across them. Dragging from one
@@ -1499,10 +1524,14 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     const rowCanEdit = canEdit && !lockedBlocks?.has(block.id);
     const lockedBy = lockedBlocks?.get(block.id);
     const originalLockedBy = block.conflictOf && block.conflictOf !== 'title' ? lockedBlocks?.get(block.conflictOf) : undefined;
-    const isDragTarget = dragOverIndex === index && draggedIndex !== index;
+    // The line in front of the row a dragged bullet would land at, indented to the level it would take
+    const dropIndent =
+      dragOverIndex === index && draggedIndex !== null && draggedIndex !== index
+        ? Math.max(0, dropLevelBefore(blocks, draggedIndex, index, dragSingle) - (levelOffset || 0))
+        : null;
     const isTargeted = highlightedBlockId === block.id;
     const inRangeSelection = rangeRowIds?.has(block.id) || wholeRowIds?.has(block.id);
-    const values = [block, isLast, siblingFollows, maxAllowedLevel, hasChildren, isFocused, rowCanEdit, lockedBy, originalLockedBy, listMarker, isDragTarget, isTargeted, inRangeSelection];
+    const values = [block, isLast, siblingFollows, maxAllowedLevel, hasChildren, isFocused, rowCanEdit, lockedBy, originalLockedBy, listMarker, dropIndent, isTargeted, inRangeSelection];
     const cached = prevRows?.get(block.id);
     const element =
       cached && sameValues(cached.values, values) ? cached.element : (
@@ -1550,7 +1579,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onDragStartBlock={stableDragStartBlock}
           onDragOverBlock={stableDragOverBlock}
           onDropBlock={stableDropBlock}
-          isDragTarget={isDragTarget}
+          dropIndent={dropIndent}
           isTargeted={isTargeted}
           registerTextareaRef={registerTextareaRef}
           inRangeSelection={inRangeSelection}
@@ -1619,6 +1648,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onDragOver={(e) => {
             e.preventDefault();
             if (draggedIndex !== null) {
+              e.dataTransfer.dropEffect = 'move';
+              setSingle(singleDragKey(e));
               setDragOverIndex(blocks.length);
             }
           }}

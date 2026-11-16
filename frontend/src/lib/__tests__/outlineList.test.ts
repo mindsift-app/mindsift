@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { branchEnd, insertBelow, listLabel, moveSibling, numberedLabels, outlineRows, sameOutlineShape, unitStart } from '../outlineList';
+import { branchEnd, canDropBefore, dropLevelBefore, insertBelow, listLabel, moveBranch, moveSibling, numberedLabels, outlineRows, sameOutlineShape, unitStart } from '../outlineList';
 import type { DocumentBlock } from '../types';
 
 const blk = (id: string, level: number, type: DocumentBlock['type'] = 'numbered'): DocumentBlock => ({
@@ -89,6 +89,106 @@ describe('conflict copies stick to their original', () => {
     expect(ids(moveSibling(tree, 'Zwei', 1))).toBe('Eins Drei Zwei z1 Kopie k1');
     expect(ids(moveSibling(tree, 'Drei', -1))).toBe('Eins Drei Zwei z1 Kopie k1');
     expect(ids(moveSibling(tree, 'Eins', 1))).toBe('Zwei z1 Kopie k1 Eins Drei');
+  });
+
+  it('take the copy along when the original is dragged, also without its children', () => {
+    expect(ids(moveBranch(tree, 'Zwei', { beforeId: 'Eins' }, 0))).toBe('Zwei z1 Kopie k1 Eins Drei');
+    // Dropped in front of the copy, the bullet goes behind it
+    expect(ids(moveBranch(tree, 'Eins', { beforeId: 'Kopie' }, 0))).toBe('Zwei z1 Kopie k1 Eins Drei');
+    const alone = moveBranch(tree, 'Zwei', { beforeId: 'Drei' }, 0, true);
+    expect(alone.map((b) => `${b.id}:${b.level}`).join(' ')).toBe('Eins:0 z1:0 Zwei:0 Kopie:0 k1:1 Drei:0');
+  });
+});
+
+describe('dragging a bullet (moveBranch)', () => {
+  // Einkaufen
+  //   Milch
+  //   Brot
+  //     Vollkorn
+  // Arbeit
+  //   Bericht
+  //   Folien
+  // Urlaub
+  const tree = [
+    blk('Einkaufen', 0, 'bullet'), blk('Milch', 1, 'bullet'), blk('Brot', 1, 'bullet'), blk('Vollkorn', 2, 'bullet'),
+    blk('Arbeit', 0, 'bullet'), blk('Bericht', 1, 'bullet'), blk('Folien', 1, 'bullet'), blk('Urlaub', 0, 'bullet'),
+  ];
+  const at = (id: string) => tree.findIndex((b) => b.id === id);
+  const shape = (list: DocumentBlock[]) => list.map((b) => `${b.id}:${b.level}`).join(' ');
+  // Like the outliner: in front of a row, on that row's level
+  const dropBefore = (id: string, target: string, single = false) =>
+    moveBranch(tree, id, { beforeId: target }, dropLevelBefore(tree, at(id), at(target), single), single);
+
+  it('takes the level of the bullet it is dropped in front of and keeps the children below it', () => {
+    expect(shape(dropBefore('Arbeit', 'Brot'))).toBe(
+      'Einkaufen:0 Milch:1 Arbeit:1 Bericht:2 Folien:2 Brot:1 Vollkorn:2 Urlaub:0'
+    );
+    expect(shape(dropBefore('Brot', 'Urlaub'))).toBe(
+      'Einkaufen:0 Milch:1 Arbeit:0 Bericht:1 Folien:1 Brot:0 Vollkorn:1 Urlaub:0'
+    );
+    expect(shape(dropBefore('Vollkorn', 'Bericht'))).toBe(
+      'Einkaufen:0 Milch:1 Brot:1 Arbeit:0 Vollkorn:1 Bericht:1 Folien:1 Urlaub:0'
+    );
+  });
+
+  it('leaves the bullets around the drop where they were (no new parent)', () => {
+    // Before, the moved bullet kept its own level here and Bericht and Folien became its children
+    const moved = dropBefore('Urlaub', 'Bericht');
+    expect(shape(moved)).toBe('Einkaufen:0 Milch:1 Brot:1 Vollkorn:2 Arbeit:0 Urlaub:1 Bericht:1 Folien:1');
+  });
+
+  it('cannot go into its own branch, but alone in front of one of its children', () => {
+    expect(canDropBefore(tree, at('Arbeit'), at('Bericht'))).toBe(false);
+    expect(canDropBefore(tree, at('Arbeit'), at('Arbeit'))).toBe(false);
+    expect(canDropBefore(tree, at('Arbeit'), at('Urlaub'))).toBe(true);
+    expect(canDropBefore(tree, at('Arbeit'), at('Milch'))).toBe(true);
+    expect(canDropBefore(tree, at('Arbeit'), at('Folien'), true)).toBe(true);
+    expect(moveBranch(tree, 'Arbeit', { beforeId: 'Folien' }, 1)).toBe(tree);
+  });
+
+  it('moves a bullet alone: its children move up into its old place, in their order', () => {
+    expect(shape(dropBefore('Brot', 'Urlaub', true))).toBe(
+      'Einkaufen:0 Milch:1 Vollkorn:1 Arbeit:0 Bericht:1 Folien:1 Brot:0 Urlaub:0'
+    );
+    expect(shape(dropBefore('Arbeit', 'Einkaufen', true))).toBe(
+      'Arbeit:0 Einkaufen:0 Milch:1 Brot:1 Vollkorn:2 Bericht:0 Folien:0 Urlaub:0'
+    );
+    // Without children it moves like with them
+    expect(shape(dropBefore('Milch', 'Urlaub', true))).toBe(shape(dropBefore('Milch', 'Urlaub')));
+  });
+
+  it('dropped alone in front of its own child, it takes the level that child has once the children moved up', () => {
+    expect(dropLevelBefore(tree, at('Arbeit'), at('Folien'), true)).toBe(0);
+    expect(dropLevelBefore(tree, at('Arbeit'), at('Folien'))).toBe(1);
+    expect(shape(dropBefore('Arbeit', 'Folien', true))).toBe(
+      'Einkaufen:0 Milch:1 Brot:1 Vollkorn:2 Bericht:0 Arbeit:0 Folien:0 Urlaub:0'
+    );
+    // In front of its first child: it stays where it is and only lets go of its children
+    expect(shape(dropBefore('Brot', 'Vollkorn', true))).toBe('Einkaufen:0 Milch:1 Brot:1 Vollkorn:1 Arbeit:0 Bericht:1 Folien:1 Urlaub:0');
+  });
+
+  it('goes to the end below the last bullet, on the level asked for', () => {
+    expect(shape(moveBranch(tree, 'Brot', { afterId: 'Urlaub' }, 0))).toBe(
+      'Einkaufen:0 Milch:1 Arbeit:0 Bericht:1 Folien:1 Urlaub:0 Brot:0 Vollkorn:1'
+    );
+    // Already the last one: in its place (here unchanged)
+    expect(moveBranch(tree, 'Urlaub', { afterId: 'Urlaub' }, 0)).toBe(tree);
+  });
+
+  it('never gets deeper than one below the bullet above it and changes nothing for a drop in place', () => {
+    expect(shape(moveBranch(tree, 'Urlaub', { beforeId: 'Milch' }, 5))).toBe(
+      'Einkaufen:0 Urlaub:1 Milch:1 Brot:1 Vollkorn:2 Arbeit:0 Bericht:1 Folien:1'
+    );
+    expect(moveBranch(tree, 'Milch', { beforeId: 'Brot' }, 1)).toBe(tree);
+    expect(moveBranch(tree, 'Fehlt', { beforeId: 'Brot' }, 1)).toBe(tree);
+    expect(moveBranch(tree, 'Milch', { beforeId: 'Fehlt' }, 1)).toBe(tree);
+  });
+
+  it('works in a slice of the note (zoomed branch, tag page) by ids', () => {
+    // The zoomed view shows only Arbeit's children; the drop below the last one lands inside Arbeit
+    expect(shape(moveBranch(tree, 'Bericht', { afterId: 'Folien' }, 1))).toBe(
+      'Einkaufen:0 Milch:1 Brot:1 Vollkorn:2 Arbeit:0 Folien:1 Bericht:1 Urlaub:0'
+    );
   });
 });
 
