@@ -616,8 +616,6 @@
     }
   },
   "server": {
-    "title": "Server-Grundeinstellungen & Teilen",
-    "intro": "Als Server-Admin legst du fest, wer mit wem teilen darf, ob Namen beim Tippen vorgeschlagen werden und ob Notizen per öffentlichem Link geteilt werden können.",
     "instanceName": "Name der MindSift-Instanz",
     "sharing": "Wer mit wem teilen darf",
     "switchAnyway": "Trotzdem wechseln",
@@ -704,13 +702,28 @@
     "nav": {
       "users": "Benutzer & Einladungen",
       "usersHint": "Konten, Rollen & Invite-Codes",
+      "signin": "Anmeldung & Registrierung",
+      "signinHint": "Registrierung, Zwei-Faktor & Single Sign-on",
       "orgsHint": "Wer mit wem teilen darf",
-      "server": "Server & Teilen",
-      "serverHint": "Teilen & Registrierung",
+      "sharing": "Teilen",
+      "sharingHint": "Modus, Personensuche, Links & Kalender",
+      "server": "Server",
+      "serverHint": "Name, Zeitzone, Version & Netzwerk",
+      "data": "Daten",
+      "dataHint": "Backups, Aufbewahrung & Bilder",
+      "ai": "Spracheingabe & KI",
+      "aiHint": "Whisper & KI-Agenten (MCP)",
       "smtp": "E-Mail / SMTP-Server",
       "smtpHint": "Mailversand für Alarme",
       "audit": "Protokoll",
       "auditHint": "Wer was wann geändert hat"
+    },
+    "pages": {
+      "signinIntro": "Wer sich ohne Einladung registrieren darf, wer einen zweiten Faktor braucht und die Anmeldung über einen Anbieter (Single Sign-on).",
+      "sharingIntro": "Wer mit wem teilen darf, ob Namen beim Tippen vorgeschlagen werden, öffentliche Links zu Notizen und Kalender-Abos.",
+      "serverIntro": "Name, Standardsprache und Zeitzone dieser Instanz, die installierte Version und was der Server im Netz erreichen darf.",
+      "dataIntro": "Tägliche Backups, ob Erledigtes und Gelöschtes für immer bleiben darf, und wie stark Bilder komprimiert werden.",
+      "aiIntro": "Die Spracherkennung dieses Servers und ob KI-Agenten über MCP zugreifen dürfen."
     },
     "demo": "In der Demo deaktiviert: Server-Einstellungen, E-Mail und Konten lassen sich hier nur ansehen.",
     "userCreated": "Benutzer „{{name}}“ wurde angelegt.",

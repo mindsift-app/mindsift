@@ -10,6 +10,11 @@ import {
   CircleAlert,
   BuildingComplex,
   ScrollText,
+  KeyRound,
+  Share2,
+  Database,
+  Mic,
+  LucideIcon,
 } from 'lucide-react';
 import {
   User,
@@ -18,6 +23,10 @@ import { useAdminSettings } from './admin/useAdminSettings';
 import { UsersSection } from './admin/UsersSection';
 import { OrganizationsSection } from './admin/OrganizationsSection';
 import { ServerSection } from './admin/ServerSection';
+import { SignInSection } from './admin/SignInSection';
+import { SharingSection } from './admin/SharingSection';
+import { DataSettingsSection } from './admin/DataSettingsSection';
+import { AiSection } from './admin/AiSection';
 import { SmtpSection } from './admin/SmtpSection';
 import { AuditSection } from './admin/AuditSection';
 
@@ -26,7 +35,16 @@ interface AdminSettingsViewProps {
   onBack: () => void;
 }
 
-type AdminSection = 'users' | 'organizations' | 'server' | 'smtp' | 'audit';
+type AdminSection =
+  | 'users'
+  | 'signin'
+  | 'organizations'
+  | 'sharing'
+  | 'server'
+  | 'data'
+  | 'ai'
+  | 'smtp'
+  | 'audit';
 
 export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   currentUser,
@@ -39,6 +57,20 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   // Users, invites, organizations, server and mail settings (admin/useAdminSettings.ts)
   const admin = useAdminSettings(currentUser, isServerAdmin);
   const { statusMsg, setStatusMsg, demoMode } = admin;
+
+  // The left column, top to bottom. User managers look after people only; the server's settings, mail
+  // and the audit log are for server admins.
+  const navItems: { id: AdminSection; icon: LucideIcon; label: string; hint: string; serverAdminOnly?: boolean }[] = [
+    { id: 'users', icon: Users, label: t('admin.nav.users'), hint: t('admin.nav.usersHint') },
+    { id: 'signin', icon: KeyRound, label: t('admin.nav.signin'), hint: t('admin.nav.signinHint'), serverAdminOnly: true },
+    { id: 'organizations', icon: BuildingComplex, label: t('orgs.title'), hint: t('admin.nav.orgsHint') },
+    { id: 'sharing', icon: Share2, label: t('admin.nav.sharing'), hint: t('admin.nav.sharingHint'), serverAdminOnly: true },
+    { id: 'server', icon: Server, label: t('admin.nav.server'), hint: t('admin.nav.serverHint'), serverAdminOnly: true },
+    { id: 'data', icon: Database, label: t('admin.nav.data'), hint: t('admin.nav.dataHint'), serverAdminOnly: true },
+    { id: 'ai', icon: Mic, label: t('admin.nav.ai'), hint: t('admin.nav.aiHint'), serverAdminOnly: true },
+    { id: 'smtp', icon: Mail, label: t('admin.nav.smtp'), hint: t('admin.nav.smtpHint'), serverAdminOnly: true },
+    { id: 'audit', icon: ScrollText, label: t('admin.nav.audit'), hint: t('admin.nav.auditHint'), serverAdminOnly: true },
+  ];
 
   return (
     // Wide screens: a narrow column of sections and the content at about the width of a note's text, left
@@ -96,85 +128,26 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-[15rem_minmax(0,1fr)] gap-4 items-start">
         {/* Left Navigation Sidebar */}
         <aside className="panel-surface divide-y divide-border overflow-hidden">
-          <button
-            onClick={() => setSection('users')}
-            className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
-              section === 'users'
-                ? 'bg-panel-elevated text-main border-l-2 border-l-accent'
-                : 'text-muted hover:text-main hover:bg-canvas/50'
-            }`}
-          >
-            <Users className="w-4 h-4 text-accent shrink-0" />
-            <div>
-              <p className="font-semibold">{t('admin.nav.users')}</p>
-              <p className="text-[10px] text-faint">{t('admin.nav.usersHint')}</p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => setSection('organizations')}
-                className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
-                  section === 'organizations'
-                    ? 'bg-panel-elevated text-main border-l-2 border-l-accent'
-                    : 'text-muted hover:text-main hover:bg-canvas/50'
-                }`}
-              >
-                <BuildingComplex className="w-4 h-4 text-accent shrink-0" />
-                <div>
-                  <p className="font-semibold">{t('orgs.title')}</p>
-                  <p className="text-[10px] text-faint">{t('admin.nav.orgsHint')}</p>
-                </div>
-              </button>
-
-          {/* Server settings and mail only for server admins (user managers look after people) */}
-          {isServerAdmin && (
-            <>
+          {navItems
+            .filter((item) => !item.serverAdminOnly || isServerAdmin)
+            .map(({ id, icon: Icon, label, hint }) => (
               <button
-                onClick={() => setSection('server')}
+                key={id}
+                onClick={() => setSection(id)}
+                data-admin-nav={id}
                 className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
-                  section === 'server'
+                  section === id
                     ? 'bg-panel-elevated text-main border-l-2 border-l-accent'
                     : 'text-muted hover:text-main hover:bg-canvas/50'
                 }`}
               >
-                <Server className="w-4 h-4 text-accent shrink-0" />
+                <Icon className="w-4 h-4 text-accent shrink-0" />
                 <div>
-                  <p className="font-semibold">{t('admin.nav.server')}</p>
-                  <p className="text-[10px] text-faint">{t('admin.nav.serverHint')}</p>
+                  <p className="font-semibold">{label}</p>
+                  <p className="text-[10px] text-faint">{hint}</p>
                 </div>
               </button>
-
-              <button
-                onClick={() => setSection('smtp')}
-                className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
-                  section === 'smtp'
-                    ? 'bg-panel-elevated text-main border-l-2 border-l-accent'
-                    : 'text-muted hover:text-main hover:bg-canvas/50'
-                }`}
-              >
-                <Mail className="w-4 h-4 text-accent shrink-0" />
-                <div>
-                  <p className="font-semibold">{t('admin.nav.smtp')}</p>
-                  <p className="text-[10px] text-faint">{t('admin.nav.smtpHint')}</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setSection('audit')}
-                className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
-                  section === 'audit'
-                    ? 'bg-panel-elevated text-main border-l-2 border-l-accent'
-                    : 'text-muted hover:text-main hover:bg-canvas/50'
-                }`}
-              >
-                <ScrollText className="w-4 h-4 text-accent shrink-0" />
-                <div>
-                  <p className="font-semibold">{t('admin.nav.audit')}</p>
-                  <p className="text-[10px] text-faint">{t('admin.nav.auditHint')}</p>
-                </div>
-              </button>
-            </>
-          )}
+            ))}
         </aside>
 
         {/* Right Content Area */}
@@ -187,30 +160,20 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               </span>
             </div>
           )}
-          {/* ================================================================= */}
-          {/* SECTION 1: BENUTZER, ROLLEN & EINLADUNGEN */}
-          {/* ================================================================= */}
           {section === 'users' && <UsersSection admin={admin} currentUser={currentUser} isServerAdmin={isServerAdmin} />}
-
-          {/* ================================================================= */}
-          {/* SECTION 2: ORGANISATIONEN (SERVER ADMINS AND USER MANAGERS) */}
-          {/* ================================================================= */}
           {section === 'organizations' && <OrganizationsSection admin={admin} />}
-
-          {/* ================================================================= */}
-          {/* SECTION 3: SERVER & SHARING-ISOLATION (SERVER-ADMIN ONLY) */}
-          {/* ================================================================= */}
-          {section === 'server' && isServerAdmin && <ServerSection admin={admin} />}
-
-          {/* ================================================================= */}
-          {/* SECTION 4: E-MAIL / SMTP-SERVER (SERVER-ADMIN ONLY) */}
-          {/* ================================================================= */}
-          {section === 'smtp' && isServerAdmin && <SmtpSection admin={admin} />}
-
-          {/* ================================================================= */}
-          {/* SECTION 5: PROTOKOLL – WHO CHANGED WHAT (SERVER-ADMIN ONLY) */}
-          {/* ================================================================= */}
-          {section === 'audit' && isServerAdmin && <AuditSection users={admin.users} />}
+          {/* Everything else only for server admins */}
+          {isServerAdmin && (
+            <>
+              {section === 'signin' && <SignInSection admin={admin} />}
+              {section === 'sharing' && <SharingSection admin={admin} />}
+              {section === 'server' && <ServerSection admin={admin} />}
+              {section === 'data' && <DataSettingsSection admin={admin} />}
+              {section === 'ai' && <AiSection admin={admin} />}
+              {section === 'smtp' && <SmtpSection admin={admin} />}
+              {section === 'audit' && <AuditSection users={admin.users} />}
+            </>
+          )}
         </div>
       </div>
     </div>
