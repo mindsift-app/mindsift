@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
 import { DocumentBlock } from '../../lib/types';
-import { insertBelow, moveBranch, moveSibling, type BranchDrop } from '../../lib/outlineList';
+import { insertBelow, moveBranch, moveSibling, unitStart, type BranchDrop } from '../../lib/outlineList';
 import type { OutlinerTreeHandle } from './OutlinerTree';
 import { getZoomedSubtree } from './zoom';
 import { ensureNonEmptyBlocks } from './useDocumentSync';
