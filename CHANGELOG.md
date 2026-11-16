@@ -42,6 +42,7 @@ Versions without a git tag were development states and were never published as a
 - On phones, code blocks have no indent arrows; the bar above the keyboard indents them.
 - Tables: Enter goes on into an empty row below instead of adding another one, so typing a new table and leaving it with Enter flows; the ⋯ menu sits above the + for a column.
 - Administration → Server: no button to take the browser's time zone any more; setup suggests it.
+- Administration: the long "Server & sharing" page is split into Sign-in & registration, Sharing, Server, Data and Voice input & AI, each a short page of its own.
 - The calendar subscription carries the instance name and a description ("<instance> – Tasks" in your language).
 - The version and imprint line at the bottom left of the app is gone; the imprint and "About MindSift" sit at the bottom of the help page, like in the settings.
 - Demo: about 35 more sample notes (work, projects, recipes, reading, travel, journal) linked with [[wiki links]] and sharing hashtags; only the help notes keep emoji icons.
