@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Folder, Link2 } from 'lucide-react';
 import { Backlink } from '../../lib/types';
 import { api } from '../../lib/api';
@@ -46,14 +46,18 @@ export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title
     }
   });
 
+  // At once for a newly opened note; after a title change only once typing pauses
+  const loadedForRef = useRef<string | null>(null);
   useEffect(() => {
     let cancelled = false;
+    const delay = loadedForRef.current === docId ? 400 : 0;
+    loadedForRef.current = docId;
     const timer = setTimeout(() => {
       api
         .getBacklinks(docId)
         .then((res) => !cancelled && setLinks(res))
         .catch(() => !cancelled && setLinks([]));
-    }, 400);
+    }, delay);
     return () => {
       cancelled = true;
       clearTimeout(timer);
