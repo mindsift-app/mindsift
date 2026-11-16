@@ -1049,6 +1049,7 @@ var mcpTools = []mcpTool{
 		Description: "Create a new note. content is Markdown: a nested list (tab or 2+ spaces per level) becomes nested bullets, - [ ] a to-do, # a heading with the following bullets below it, plain lines and paragraphs become bullets. " +
 			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". A fenced ```mermaid block (flowchart/graph or mindmap) becomes a drawing, laid out automatically. " +
 			"template starts the note with the bullets of one of the user's note templates (its id or exact title; list_notes with templates=true lists them, isTemplate marks them), as the app's \"new note from template\" does: to-dos open, {{datum}}/{{date}} become today's date, {{titel}}/{{title}} the new title; content, if given, follows below. Using a template reads it, so it needs notes:read as well. " +
+			"All bullets have the same line spacing, so headings right after text look cramped: put an empty bullet (a line with just -) before each heading except the first to set the sections apart. A recommendation, not a rule: leave it out where it does not fit. " +
 			"Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
 		Scope: storage.ScopeNotesCreate,
 		Schema: schema([]string{"title"}, map[string]any{

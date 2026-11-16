@@ -22,8 +22,7 @@
       "env": "Source: environment variable TZ",
       "default": "Source: default UTC – no time zone is set here or through TZ"
     },
-    "hint": "One time zone for the whole server: due dates, alarms, the daily summary, backups and dates in emails follow it. A change applies at once.",
-    "useBrowser": "Use this browser's time zone ({{zone}})"
+    "hint": "One time zone for the whole server: due dates, alarms, the daily summary, backups and dates in emails follow it. A change applies at once."
   },
   "user": {
     "backTitle": "Back to the overview",

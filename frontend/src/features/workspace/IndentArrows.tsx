@@ -61,12 +61,13 @@ export const IndentArrows: React.FC<IndentArrowsProps> = ({
 };
 
 /**
- * Class of the small box the arrows sit in over an image or a drawing: its own background so they show on
- * light and dark pictures alike. Hidden until the pointer is over the block (only on devices that can hover)
- * or the block is active (tapped, caption in focus); hidden it takes no taps.
+ * Class of the arrows' box over an image or a drawing, at the top left. Discreet like the code block's: no
+ * box of its own, each arrow a small half-transparent outlined button that still shows on light and dark
+ * pictures. Hidden until the pointer is over the block (only on devices that can hover) or the block is
+ * active (tapped, caption in focus); hidden it takes no taps.
  */
 export const overlayArrowsClass = (shown: boolean, group: 'image' | 'drawing', belowBadge = false) =>
-  `absolute ${belowBadge ? 'top-9' : 'top-1.5'} left-1.5 z-10 flex items-center p-0.5 sm:p-px rounded-btn bg-panel/90 backdrop-blur-xs border border-border transition-opacity ${
+  `absolute ${belowBadge ? 'top-9' : 'top-1.5'} left-1.5 z-10 flex items-center gap-0.5 transition-opacity ${
     shown
       ? 'opacity-100'
       : `opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto ${
@@ -78,4 +79,4 @@ export const overlayArrowsClass = (shown: boolean, group: 'image' | 'drawing', b
 
 /** Buttons in that box: below 44 px on phones too (an image can be a thin banner); from sm as small as the code block's */
 export const OVERLAY_ARROW_BUTTON =
-  'w-7 h-7 sm:w-5 sm:h-5 flex items-center justify-center rounded-btn text-muted hover:text-accent transition-colors';
+  'w-7 h-7 sm:w-5 sm:h-5 flex items-center justify-center rounded-btn border border-border/70 bg-panel/40 backdrop-blur-xs text-muted opacity-70 hover:opacity-100 hover:text-main hover:bg-panel/80 transition';

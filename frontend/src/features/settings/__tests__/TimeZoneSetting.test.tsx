@@ -61,8 +61,8 @@ describe('TimeZoneSetting (server time zone in the administration)', () => {
     expect(screen.getByRole('button', { name: 'Zeitzone' }).textContent).toContain('Europe/Berlin');
     expect(document.querySelector('[data-server-time]')?.textContent).toContain('(Europe/Berlin, UTC+01:00)');
     expect(screen.getByText('Quelle: diese Einstellung')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Zeitzone dieses Browsers übernehmen (America/Los Angeles)' }));
-    expect(onSave).toHaveBeenLastCalledWith({ timeZone: 'America/Los_Angeles' });
+    // The zone was set at setup (with the browser's one suggested there): no button to take the browser's
+    expect(screen.queryByRole('button', { name: /dieses Browsers/ })).toBeNull();
     // No button of its own takes the setting back: the empty choice of the menu does
     expect(screen.queryByRole('button', { name: 'Nicht mehr festlegen' })).toBeNull();
     // Without the setting the server would use TZ: the empty choice says so

@@ -357,3 +357,16 @@ func TestDrawingFenceBecomesADrawing(t *testing.T) {
 		t.Fatalf("export without files: %q", out)
 	}
 }
+
+// The MCP tools recommend an empty bullet (a line with just -) before a heading to set sections apart
+func TestMarkdownEmptyBulletBeforeHeading(t *testing.T) {
+	blocks := MarkdownToBlocks("# Einkauf\n- Milch\n-\n# Urlaub\n- Koffer")
+	var got []string
+	for _, b := range blocks {
+		got = append(got, b.Type+":"+b.Content)
+	}
+	want := []string{"h1:Einkauf", "bullet:Milch", "bullet:", "h1:Urlaub", "bullet:Koffer"}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+}

@@ -22,8 +22,7 @@
       "env": "Quelle: Umgebungsvariable TZ",
       "default": "Quelle: Standard UTC – weder hier noch über TZ ist eine Zeitzone festgelegt"
     },
-    "hint": "Eine Zeitzone für den ganzen Server: Danach richten sich Fälligkeiten, Alarme, die Tageszusammenfassung, Backups und Datumsangaben in E-Mails. Eine Änderung gilt sofort.",
-    "useBrowser": "Zeitzone dieses Browsers übernehmen ({{zone}})"
+    "hint": "Eine Zeitzone für den ganzen Server: Danach richten sich Fälligkeiten, Alarme, die Tageszusammenfassung, Backups und Datumsangaben in E-Mails. Eine Änderung gilt sofort."
   },
   "user": {
     "backTitle": "Zurück zur Übersicht",

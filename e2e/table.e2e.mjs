@@ -85,7 +85,7 @@ const main = async () => {
     await page.keyboard.press('Enter');
     await page.waitForTimeout(150);
     s = await cellState(page);
-    check(s.values.length === 6 && s.focus === 2 && s.values[2] === '', tag('Enter fügt unter der Zeile eine neue ein, Cursor in deren erster Zelle'), s);
+    check(s.values.length === 4 && s.focus === 2 && s.values[2] === '', tag('Enter springt in die noch leere erste Zeile, ohne eine neue anzulegen'), s);
     await page.keyboard.type('Brot');
     await page.keyboard.press('Tab');
     await page.keyboard.type('2 | Stück');

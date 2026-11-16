@@ -38,6 +38,9 @@ Versions without a git tag were development states and were never published as a
 - A dragged bullet takes the level of the bullet it is dropped in front of; move the mouse to the right while dragging to drop it deeper, down to the last sub-bullet of the bullet above. The drop line shows the level, the bullets around it keep their place.
 - An image's empty caption only shows on hover or after tapping; on touch screens the first tap shows the controls, the second opens the image.
 - On phones, code blocks have no indent arrows; the bar above the keyboard indents them.
+- Tables: Enter goes on into an empty row below instead of adding another one, so typing a new table and leaving it with Enter flows; the ⋯ menu sits above the + for a column.
+- Administration → Server: no button to take the browser's time zone any more; setup suggests it.
+- AI agents (MCP) are encouraged to use colour in diagrams and to set headings apart with an empty bullet.
 
 ### Fixed
 - **Attention:** usernames are unique; existing duplicates are renamed (`anna` → `anna1`).

@@ -354,14 +354,20 @@ const TableBlockView: React.FC<TableBlockProps> = ({
       return;
     }
 
-    // Cells hold no line breaks: Enter (also with Shift) adds a row below this one. In an empty last row
-    // (not the header) it leaves the table instead, like a second Enter at the end of a code block
+    // Cells hold no line breaks: Enter (also with Shift) goes on to the row below when that one is still empty
+    // (a new table's first row), otherwise it adds a row below this one. In an empty last row (not the
+    // header) it leaves the table instead, like a second Enter at the end of a code block
     if (key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       e.stopPropagation();
       if (onExitBelow && r > 0 && r === rows.length - 1 && rows[r].every((cell) => cell.trim() === '')) {
         commit(deleteTableRow(data, r), true);
         onExitBelow();
+        return;
+      }
+      if (r + 1 < rows.length && rows[r + 1].every((cell) => cell.trim() === '')) {
+        // Nothing changes, so nothing renders: straight into the cell
+        focusCell({ r: r + 1, c: 0, caret: 'start' });
         return;
       }
       addRowBelow(r);
@@ -623,7 +629,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
       </div>
       {(canEdit || locked) && (
         // Phones: always there and big enough to tap; desktop: shows on hover, with the cursor in the table and
-        // while the menu is open. The menu hangs below the ⋯ over the next bullet: on the way there the mouse
+        // while the menu is open. The menu hangs below the ⋯ and can reach over the next bullet: on the way there the mouse
         // leaves the table, and a fading box (opacity below 1 makes it its own layer) would put the menu
         // behind the next bullet, out of reach
         // While the menu is open the row must not clip it (content-visibility in index.css): data-outline-live
@@ -633,6 +639,17 @@ const TableBlockView: React.FC<TableBlockProps> = ({
             menuOpen ? '' : 'sm:opacity-0 sm:group-hover/table:opacity-100 sm:group-focus-within/table:opacity-100'
           }`}
         >
+          {/* The ⋯ at the top where a menu is expected, the long + for a column below it */}
+          <ActionMenu
+            keepFocus
+            disabled={!canEdit}
+            onOpenChange={setMenuOpen}
+            label={t('table.menu')}
+            // Built at each render; opening the menu renders again, so it shows the cell of the cursor
+            // eslint-disable-next-line react-hooks/refs
+            items={menuItems()}
+            buttonClassName="h-11 w-11 sm:h-6 sm:w-6 flex items-center justify-center rounded-btn text-faint hover:text-main hover:bg-panel-elevated transition-colors cursor-pointer"
+          />
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
@@ -644,16 +661,6 @@ const TableBlockView: React.FC<TableBlockProps> = ({
           >
             <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
           </button>
-          <ActionMenu
-            keepFocus
-            disabled={!canEdit}
-            onOpenChange={setMenuOpen}
-            label={t('table.menu')}
-            // Built at each render; opening the menu renders again, so it shows the cell of the cursor
-            // eslint-disable-next-line react-hooks/refs
-            items={menuItems()}
-            buttonClassName="h-11 w-11 sm:h-6 sm:w-6 flex items-center justify-center rounded-btn text-faint hover:text-main hover:bg-panel-elevated transition-colors cursor-pointer"
-          />
         </div>
       )}
     </div>
