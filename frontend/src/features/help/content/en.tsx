@@ -76,7 +76,7 @@ const en: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className={kbd}>Enter</kbd> : creates a new bullet on the same level right away. If the bullet is empty and indented, it moves one level to the left. After a to-do the new bullet is a to-do too (unticked, without a task of its own); Enter in an empty to-do turns it into a plain bullet.
+              <kbd className={kbd}>Enter</kbd> : creates a new bullet on the same level right away. At the very start of a bullet, Enter adds an empty line above it; the bullet moves down with its type and children. If the bullet is empty and indented, it moves one level to the left. After a to-do the new bullet is a to-do too (unticked, without a task of its own); Enter in an empty to-do turns it into a plain bullet.
             </li>
             <li>
               <kbd className={kbd}>Tab</kbd> : indents the current bullet to the right and places it under the previous one.

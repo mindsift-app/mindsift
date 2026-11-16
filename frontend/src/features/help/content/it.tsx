@@ -76,7 +76,7 @@ const it: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className={kbd}>Enter</kbd> : crea subito un nuovo punto sullo stesso livello. Se il punto è vuoto e indentato, si sposta di un livello a sinistra. Dopo una casella ne arriva un'altra (non spuntata, senza attività propria); Invio in una casella vuota la trasforma in un punto normale.
+              <kbd className={kbd}>Enter</kbd> : crea subito un nuovo punto sullo stesso livello. All'inizio di un punto, Invio aggiunge una riga vuota sopra; il punto scende con il suo tipo e i suoi figli. Se il punto è vuoto e indentato, si sposta di un livello a sinistra. Dopo una casella ne arriva un'altra (non spuntata, senza attività propria); Invio in una casella vuota la trasforma in un punto normale.
             </li>
             <li>
               <kbd className={kbd}>Tab</kbd> : aumenta il rientro del punto corrente verso destra e lo posiziona sotto il punto precedente.

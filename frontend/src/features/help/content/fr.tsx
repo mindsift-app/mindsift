@@ -76,7 +76,7 @@ const fr: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className={kbd}>Entrée</kbd> : crée immédiatement une nouvelle puce au même niveau. Si la puce est vide et indentée, elle recule d'un niveau vers la gauche. Après une case à cocher vient une nouvelle case (non cochée, sans tâche propre) ; Entrée dans une case vide la transforme en puce normale.
+              <kbd className={kbd}>Entrée</kbd> : crée immédiatement une nouvelle puce au même niveau. Tout au début d'une puce, Entrée ajoute une ligne vide au-dessus ; la puce descend avec son type et ses enfants. Si la puce est vide et indentée, elle recule d'un niveau vers la gauche. Après une case à cocher vient une nouvelle case (non cochée, sans tâche propre) ; Entrée dans une case vide la transforme en puce normale.
             </li>
             <li>
               <kbd className={kbd}>Tab</kbd> : indente la puce actuelle vers la droite et la subordonne à la puce précédente.

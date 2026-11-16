@@ -105,7 +105,7 @@ const es: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className={kbd}>Enter</kbd> : crea inmediatamente un nuevo punto en el mismo nivel. Si el punto está vacío y sangrado, se desplaza un nivel a la izquierda. Después de una casilla viene otra (sin marcar y sin tarea propia); Enter en una casilla vacía la convierte en un punto normal.
+              <kbd className={kbd}>Enter</kbd> : crea inmediatamente un nuevo punto en el mismo nivel. Al principio de un punto, Enter añade una línea vacía encima; el punto baja con su tipo y sus hijos. Si el punto está vacío y sangrado, se desplaza un nivel a la izquierda. Después de una casilla viene otra (sin marcar y sin tarea propia); Enter en una casilla vacía la convierte en un punto normal.
             </li>
             <li>
               <kbd className={kbd}>Tab</kbd> : sangra el punto actual hacia la derecha y lo anida bajo el anterior.
