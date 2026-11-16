@@ -158,10 +158,15 @@ export function SidebarTrash({
   return (
     <div
       data-filter-active={filterActive || undefined}
-      className={`p-2 border-t shrink-0 transition-colors ${
-        filterActive ? 'border-status-err/50 bg-status-err/10' : 'border-border'
-      }`}
+      className={`relative p-2 border-t shrink-0 transition-colors ${filterActive ? 'border-status-err/70' : 'border-border'}`}
     >
+      {/* An active hashtag filter: only the line above the trash turns red, with a small label sitting on it
+          (out of the flow, so nothing moves) */}
+      {filterActive && (
+        <span className="pointer-events-none absolute right-3 top-0 -translate-y-1/2 px-1.5 rounded-full bg-panel border border-status-err/50 text-[10px] leading-4 font-semibold text-status-err/90">
+          {t('sidebar.filterActive')}
+        </span>
+      )}
       <button
         type="button"
         onClick={openTrash}
@@ -184,7 +189,6 @@ export function SidebarTrash({
       >
         <Trash className="w-3.5 h-3.5" />
         <span className="flex-1 text-left">{t('trash.title')}</span>
-        {filterActive && <span className="text-[10px] font-semibold text-status-err/80">{t('sidebar.filterActive')}</span>}
         <CountBadge count={trashCount} />
       </button>
     </div>
