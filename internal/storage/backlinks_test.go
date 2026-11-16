@@ -45,4 +45,17 @@ func TestBacklinks(t *testing.T) {
 	if _, err := store.GetBacklinks(ben.ID, target.ID); err == nil {
 		t.Errorf("Ben cannot open Homelab, so no backlinks for him")
 	}
+
+	// Older links by title in another case, also beyond ASCII (SQLite's lower() only folds ASCII), and
+	// links by id whatever title they carry
+	over, _ := store.CreateDocument(anna.ID, "", "Übersicht", "", "", block("u1", "Start"), nil, false)
+	_, _ = store.CreateDocument(anna.ID, "", "Plan", "", "", []domain.DocumentBlock{
+		{ID: "p1", Type: "bullet", Content: "siehe [[ÜBERSICHT]]"},
+		{ID: "p2", Type: "bullet", Content: "[[Alter Name#" + over.ID + "]]"},
+		{ID: "p3", Type: "bullet", Content: "[[Übersichten]]"},
+	}, nil, false)
+	links, _ = store.GetBacklinks(anna.ID, over.ID)
+	if len(links) != 1 || len(links[0].Blocks) != 2 || links[0].Blocks[0].ID != "p1" || links[0].Blocks[1].ID != "p2" {
+		t.Errorf("expected p1 (title, other case) and p2 (id), not p3: %+v", links)
+	}
 }
