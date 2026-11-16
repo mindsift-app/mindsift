@@ -5,7 +5,7 @@ var messagesEN = map[string]string{
 	// Calendar subscription
 	"Kalender-Abo nicht gefunden":                        "Calendar subscription not found",
 	"Kalender-Abos sind auf diesem Server ausgeschaltet": "Calendar subscriptions are switched off on this server",
-	"Liste: {name}":       "List: {name}",
+	"Liste: {name}":     "List: {name}",
 	"{name} – Aufgaben": "{name} – Tasks",
 	"Offene Aufgaben mit Fälligkeitsdatum aus {name}": "Open tasks with a due date from {name}",
 

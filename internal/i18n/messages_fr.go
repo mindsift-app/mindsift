@@ -5,7 +5,7 @@ var messagesFR = map[string]string{
 	// Calendar subscription
 	"Kalender-Abo nicht gefunden":                        "Abonnement au calendrier introuvable",
 	"Kalender-Abos sind auf diesem Server ausgeschaltet": "Les abonnements au calendrier sont désactivés sur ce serveur",
-	"Liste: {name}":       "Liste : {name}",
+	"Liste: {name}":     "Liste : {name}",
 	"{name} – Aufgaben": "{name} – Tâches",
 	"Offene Aufgaben mit Fälligkeitsdatum aus {name}": "Tâches ouvertes avec une échéance de {name}",
 
