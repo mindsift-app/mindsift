@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { DictationQueue, type DictationItem } from '../dictationQueue';
 
+// Which queue holds the update reload back, and whether it still does
+const holdReload = vi.hoisted(() => vi.fn());
+vi.mock('../../../lib/reloadHold', () => ({ holdReload }));
+const holds = (holder: object) => holdReload.mock.calls.filter((c) => c[0] === holder).pop()?.[1] ?? false;
+
 // A transcription the test answers by hand
 function deferred() {
   let resolve!: (text: string) => void;
@@ -103,15 +108,28 @@ describe('DictationQueue', () => {
     expect(save.mock.calls.map((c) => c[0])).toEqual(['Blumen gießen']);
   });
 
-  it('throws a failed recording away only when asked', async () => {
-    const { queue, save } = setup();
-    const discard = vi.fn();
-    queue.add({ text: () => Promise.reject(new Error()), discard });
+  it('holds the update reload only while items are transcribed or saved, not for failed ones', async () => {
+    const { queue } = setup();
+    const first = deferred();
+    expect(holds(queue)).toBe(false);
+    queue.add({ text: () => first.promise });
+    expect(holds(queue)).toBe(true);
+    first.reject(new Error('Zeitüberschreitung'));
     await flush();
-    expect(queue.items()).toEqual([{ id: 1, state: 'failed', error: 'Spracherkennung fehlgeschlagen' }]);
-    queue.discardFailed();
-    expect(discard).toHaveBeenCalledTimes(1);
-    expect(queue.items()).toEqual([]);
-    expect(save).not.toHaveBeenCalled();
+    expect(queue.items()).toEqual([{ id: 1, state: 'failed', error: 'Zeitüberschreitung' }]);
+    // Failed: waits for "Erneut versuchen", a reload may lose it
+    expect(holds(queue)).toBe(false);
+    const second = deferred();
+    queue.add({ text: () => second.promise });
+    expect(holds(queue)).toBe(true);
+    second.resolve('Milch kaufen');
+    await flush();
+    expect(holds(queue)).toBe(false);
+  });
+
+  it('offers no way to throw a failed item away', () => {
+    const { queue } = setup();
+    expect('discard' in queue).toBe(false);
+    expect('discardFailed' in queue).toBe(false);
   });
 });

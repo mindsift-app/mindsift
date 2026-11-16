@@ -107,15 +107,10 @@
     "pillNote": "Direkt-Notiz"
   },
   "fab": {
-    "nothing": "Nichts erkannt",
-    "saved": "Im Quick Dump gespeichert",
-    "savedDue": "Im Quick Dump gespeichert · Fällig: {{due}}",
-    "undoTitle": "Text wie diktiert behalten, ohne Fälligkeit",
     "saveFailed": "Fehler beim Speichern",
-    "unsupported": "Spracheingabe wird von diesem Browser nicht unterstützt",
-    "releaseCancel": "🗑️ Zum Abbrechen loslassen",
     "listening": "Ich höre zu… (loslassen speichert)",
-    "dragCancel": "Nach oben ziehen zum Abbrechen",
+    "slideLock": "Nach oben ziehen zum Feststellen",
+    "locked": "Aufnahme läuft – tippen beendet",
     "title": "Schnell erfassen (+)",
     "label": "Schnell erfassen – tippen zum Schreiben, gedrückt halten zum Sprechen"
   },

@@ -175,6 +175,7 @@
   },
   "voice": {
     "stop": "Detener grabación",
+    "cancelRecording": "Descartar grabación",
     "transcribing": "Transcribiendo…",
     "input": "Entrada de voz",
     "failed": "Error en el reconocimiento de voz",

@@ -31,6 +31,10 @@ vi.mock('../../lib/useVoiceInput', () => ({
 const showError = vi.hoisted(() => vi.fn());
 vi.mock('../../components/ErrorNotice', () => ({ showError }));
 
+// The real reload hold, watched: who holds the update reload back and whether it still does
+const holdReload = vi.hoisted(() => vi.fn());
+vi.mock('../../lib/reloadHold', () => ({ holdReload, useHoldReload: () => {}, reloadHeld: () => false }));
+
 import { RailQuickDumpButton } from '../RailQuickDumpButton';
 
 const BUTTON_RECT = { left: 10, top: 100, right: 46, bottom: 136, width: 36, height: 36, x: 10, y: 100 };
@@ -168,17 +172,118 @@ describe('RailQuickDumpButton', () => {
     expect(undo).not.toHaveBeenCalled();
   });
 
-  it('throws the recording away when released beside the button', () => {
+  it('stops and saves when released beside the button without moving far enough to lock', async () => {
+    const { btn, onDictated } = setup();
+    hold(btn);
+    fireEvent.pointerMove(window, { clientX: 50, clientY: 110 });
+    expect(btn.getAttribute('data-locked')).toBeNull();
+    releaseAt(50, 110);
+    expect(voice.stop).toHaveBeenCalledTimes(1);
+    expect(voice.cancel).not.toHaveBeenCalled();
+    await act(async () => {
+      voice.options!.onText('Brot kaufen', true);
+    });
+    expect(onDictated).toHaveBeenCalledWith('Brot kaufen');
+  });
+
+  it('shows a red stop button and a lock hint while held, and locks when moved away', () => {
+    const { btn, onQuickDump } = setup();
+    hold(btn);
+    expect(screen.getByTestId('dictation-lock-hint')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('wegziehen hält fest');
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 110 });
+    expect(btn.getAttribute('data-locked')).toBe('true');
+    expect(screen.getByRole('status').textContent).toContain('Klick beendet, Esc bricht ab');
+
+    // Released: the recording goes on without holding
+    releaseAt(100, 110);
+    expect(voice.stop).not.toHaveBeenCalled();
+    expect(voice.cancel).not.toHaveBeenCalled();
+    expect(btn.getAttribute('data-dictation')).toBe('recording');
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(btn.getAttribute('data-dictation')).toBe('recording');
+    expect(onQuickDump).not.toHaveBeenCalled();
+  });
+
+  it('stops a locked recording with a click on the + and saves it', async () => {
     const { btn, onQuickDump, onDictated } = setup();
     hold(btn);
-    fireEvent.pointerMove(window, { clientX: 300, clientY: 110 });
-    expect(screen.getByRole('status').textContent).toContain('Loslassen bricht ab');
-    releaseAt(300, 110);
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 110 });
+    releaseAt(100, 110);
+
+    press(btn);
+    releaseAt(20, 110);
+    fireEvent.click(btn);
+    expect(voice.stop).toHaveBeenCalledTimes(1);
+    expect(onQuickDump).not.toHaveBeenCalled();
+    expect(btn.getAttribute('data-dictation')).toBe('saving');
+    await act(async () => {
+      voice.options!.onText('Steuererklärung abgeben', true);
+    });
+    expect(onDictated).toHaveBeenCalledWith('Steuererklärung abgeben');
+  });
+
+  it('ignores the click of the release that locked it on the button', () => {
+    const { btn } = setup();
+    hold(btn);
+    fireEvent.pointerMove(window, { clientX: 20, clientY: 40 });
+    fireEvent.pointerMove(window, { clientX: 20, clientY: 110 });
+    releaseAt(20, 110);
+    fireEvent.click(btn);
+    expect(voice.stop).not.toHaveBeenCalled();
+    expect(btn.getAttribute('data-locked')).toBe('true');
+  });
+
+  it('throws a locked recording away with the small × without asking, nothing is saved', async () => {
+    const { btn, onQuickDump, onDictated } = setup();
+    hold(btn);
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 110 });
+    releaseAt(100, 110);
+    fireEvent.click(screen.getByRole('button', { name: 'Aufnahme verwerfen' }));
     expect(voice.cancel).toHaveBeenCalled();
     expect(voice.stop).not.toHaveBeenCalled();
-    expect(onDictated).not.toHaveBeenCalled();
-    expect(onQuickDump).not.toHaveBeenCalled();
     expect(btn.getAttribute('data-dictation')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Aufnahme verwerfen' })).toBeNull();
+    // A late answer of the thrown-away recognition saves nothing
+    await act(async () => {});
+    expect(onDictated).not.toHaveBeenCalled();
+    fireEvent.click(btn, { detail: 0 });
+    expect(onQuickDump).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws a held recording away with the ×', () => {
+    const { btn, onDictated } = setup();
+    hold(btn);
+    fireEvent.click(screen.getByRole('button', { name: 'Aufnahme verwerfen' }));
+    expect(voice.cancel).toHaveBeenCalled();
+    releaseAt(20, 110);
+    fireEvent.click(btn);
+    expect(voice.stop).not.toHaveBeenCalled();
+    expect(onDictated).not.toHaveBeenCalled();
+  });
+
+  it('cancels a locked recording with Escape', () => {
+    const { btn } = setup();
+    hold(btn);
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 110 });
+    releaseAt(100, 110);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(voice.cancel).toHaveBeenCalled();
+    expect(btn.getAttribute('data-dictation')).toBeNull();
+  });
+
+  it('does not start recording when moved away before the hold begins', () => {
+    const { btn, onQuickDump } = setup();
+    press(btn);
+    fireEvent.pointerMove(window, { clientX: 200, clientY: 110 });
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(voice.start).not.toHaveBeenCalled();
+    releaseAt(200, 110);
+    expect(onQuickDump).not.toHaveBeenCalled();
   });
 
   it('cancels with Escape while holding, and the release click opens nothing', () => {
@@ -312,6 +417,11 @@ describe('RailQuickDumpButton', () => {
     expect(onDictated.mock.calls.map((c) => c[0])).toEqual(['Milch kaufen']);
     expect(screen.getByRole('status').textContent).toContain('Diktat nicht gespeichert: Spracherkennung hat zu lange gedauert');
     expect(screen.getByLabelText('1')).toBeTruthy();
+    // Only "Erneut versuchen": a failed dictation cannot be thrown away, and it does not hold the update reload
+    expect(screen.queryByRole('button', { name: /verwerfen/i })).toBeNull();
+    const [queueHolder, held] = holdReload.mock.calls[holdReload.mock.calls.length - 1];
+    expect(held).toBe(false);
+    expect(holdReload.mock.calls.some(([h, active]) => h === queueHolder && active)).toBe(true);
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }));

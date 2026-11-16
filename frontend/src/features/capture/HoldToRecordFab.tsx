@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import i18n from '../../i18n';
-import { Mic, Plus } from 'lucide-react';
-import { triggerHaptic } from '../../lib/api';
-import { useVoiceInput } from '../../lib/useVoiceInput';
+import { ChevronUp, Lock, Plus, Square, X } from 'lucide-react';
 import { VoiceWave } from '../../components/VoiceWave';
+import { CountBadge } from '../../components/CountBadge';
 import { formatDue } from '../../lib/due';
+import { useHoldToDictate } from './useHoldToDictate';
 import type { DictationOutcome } from './captureDictation';
 
 export interface HoldToRecordFabProps {
@@ -14,356 +13,133 @@ export interface HoldToRecordFabProps {
   onTranscript: (text: string) => Promise<DictationOutcome | void> | DictationOutcome | void;
 }
 
-const HOLD_DELAY_MS = 350;
-const CANCEL_DRAG_PX = 60;
-const STOP_TIMEOUT_MS = 1500;
-const TOAST_DURATION_MS = 2500;
-// A saved date stays on screen this long with "Rückgängig"
-const UNDO_TOAST_MS = 7000;
+const HINT_CLASS =
+  'fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 w-max max-w-[calc(100vw-1.5rem)] bg-panel-elevated border shadow-panel text-center';
 
+// The phone's floating + in the bottom bar (app/MobileNav.tsx): a tap opens the capture sheet, holding it
+// dictates straight into the inbox, as the desktop rail's + does (features/capture/useHoldToDictate.ts).
+// Sliding the finger up (or away) while holding locks the recording, a tap on the red button then stops it,
+// and the small × on its corner throws it away. The + is free again right after the release: earlier
+// dictations are transcribed and saved in a queue, a counter on it says how many wait, and one that failed
+// offers "Erneut versuchen" in the hint above.
 export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTranscript }) => {
   const { t } = useTranslation('triage');
-  const [isRecording, setIsRecording] = useState(false);
-  const [isCancelZone, setIsCancelZone] = useState(false);
-  const [liveTranscript, setLiveTranscript] = useState('');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  // Undo of the date recognised in the last dictation, while its toast shows
-  const [toastUndo, setToastUndo] = useState<(() => Promise<void>) | null>(null);
+  const { phase, pending, failed, failedError, retryFailed, locked, lockProgress, notice, saved, transcript, mode, level, buttonRef, cancelRef, onPointerDown, clickTaken, cancel, undoSaved } =
+    useHoldToDictate({ onSave: onTranscript, touch: true, fallback: onTap });
+  const recording = phase === 'recording';
+  const displayedTranscript = transcript.length > 180 ? `…${transcript.slice(-180)}` : transcript;
 
-  const isPressedRef = useRef(false);
-  // A press that turned into a hold must not also count as a tap when the browser sends its click
-  const suppressClickRef = useRef(false);
-  const didEnterHoldRef = useRef(false);
-  const fallbackHandledRef = useRef(false);
-  const isCancelZoneRef = useRef(false);
-  const finalizedRef = useRef(false);
-  const startYRef = useRef(0);
-  const transcriptRef = useRef('');
-
-  const holdTimerRef = useRef<number | null>(null);
-  const stopTimerRef = useRef<number | null>(null);
-  const toastTimerRef = useRef<number | null>(null);
-
-  const clearHoldTimer = () => {
-    if (holdTimerRef.current !== null) {
-      window.clearTimeout(holdTimerRef.current);
-      holdTimerRef.current = null;
-    }
-  };
-
-  const clearStopTimer = () => {
-    if (stopTimerRef.current !== null) {
-      window.clearTimeout(stopTimerRef.current);
-      stopTimerRef.current = null;
-    }
-  };
-
-  const showToast = (msg: string, sticky = false, undo?: () => Promise<void>) => {
-    if (toastTimerRef.current !== null) {
-      window.clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
-    }
-    setToastMessage(msg);
-    // A function in state is read as an updater: wrap it
-    setToastUndo(undo ? () => undo : null);
-    if (sticky) return;
-    toastTimerRef.current = window.setTimeout(() => {
-      setToastMessage(null);
-      setToastUndo(null);
-      toastTimerRef.current = null;
-    }, undo ? UNDO_TOAST_MS : TOAST_DURATION_MS);
-  };
-
-  const hideToast = () => {
-    if (toastTimerRef.current !== null) {
-      window.clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
-    }
-    setToastMessage(null);
-    setToastUndo(null);
-  };
-
-  const finalizeRecording = async (text: string) => {
-    if (finalizedRef.current) return;
-    finalizedRef.current = true;
-    clearStopTimer();
-    setLiveTranscript('');
-    const trimmed = text.trim();
-    if (!trimmed) {
-      showToast(i18n.t('triage:fab.nothing'));
-      return;
-    }
-    try {
-      const outcome = await onTranscript(trimmed);
-      triggerHaptic(25);
-      if (outcome && outcome.due) showToast(i18n.t('triage:fab.savedDue', { due: formatDue(outcome.due) }), false, outcome.undo);
-      else showToast(i18n.t('triage:fab.saved'));
-    } catch {
-      showToast(i18n.t('triage:fab.saveFailed'));
-    }
-  };
-
-  // Own Whisper server (text in chunks while speaking) or the browser's recognition (text while speaking)
-  const voice = useVoiceInput({
-    continuous: true,
-    onText: (text, final) => {
-      transcriptRef.current = text;
-      if (!final) {
-        setLiveTranscript(text);
-        return;
-      }
-      void finalizeRecording(text);
-    },
-    onError: (message) => {
-      clearStopTimer();
-      setIsRecording(false);
-      setIsCancelZone(false);
-      setLiveTranscript('');
-      if (didEnterHoldRef.current && isPressedRef.current && !fallbackHandledRef.current) {
-        // Recording could not start: open the normal capture sheet instead
-        fallbackHandledRef.current = true;
-        showToast(message);
-        onTap();
-        return;
-      }
-      finalizedRef.current = true;
-      showToast(message);
-    },
-  });
-
-  useEffect(() => {
-    return () => {
-      clearHoldTimer();
-      clearStopTimer();
-      if (toastTimerRef.current !== null) {
-        window.clearTimeout(toastTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    // The hint shows while the recording is transcribed
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (voice.state === 'transcribing') showToast(i18n.t('app:capture.transcribing'), true);
-  }, [voice.state]);
-
-  const startVoiceRecording = () => {
-    if (voice.mode === 'off' || voice.mode === 'unsupported') {
-      fallbackHandledRef.current = true;
-      if (voice.mode === 'unsupported') showToast(i18n.t('triage:fab.unsupported'));
-      onTap();
-      return;
-    }
-    transcriptRef.current = '';
-    finalizedRef.current = false;
-    isCancelZoneRef.current = false;
-    setLiveTranscript('');
-    setIsCancelZone(false);
-    setIsRecording(true);
-    triggerHaptic([15, 60, 25]);
-    void voice.start();
-  };
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-
-    try {
-      e.currentTarget.setPointerCapture?.(e.pointerId);
-    } catch {
-      // ignore if unsupported in environment
-    }
-
-    clearHoldTimer();
-    clearStopTimer();
-
-    isPressedRef.current = true;
-    suppressClickRef.current = false;
-    didEnterHoldRef.current = false;
-    fallbackHandledRef.current = false;
-    isCancelZoneRef.current = false;
-    startYRef.current = e.clientY;
-
-    holdTimerRef.current = window.setTimeout(() => {
-      holdTimerRef.current = null;
-      if (!isPressedRef.current) return;
-      didEnterHoldRef.current = true;
-      suppressClickRef.current = true;
-      startVoiceRecording();
-    }, HOLD_DELAY_MS);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!isPressedRef.current || !didEnterHoldRef.current || fallbackHandledRef.current) return;
-    const deltaUp = startYRef.current - e.clientY;
-    const inCancel = deltaUp > CANCEL_DRAG_PX;
-    if (inCancel !== isCancelZoneRef.current) {
-      isCancelZoneRef.current = inCancel;
-      setIsCancelZone(inCancel);
-      triggerHaptic(10);
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    try {
-      e.currentTarget.releasePointerCapture?.(e.pointerId);
-    } catch {
-      // ignore
-    }
-
-    if (!isPressedRef.current) return;
-    isPressedRef.current = false;
-    clearHoldTimer();
-
-    if (!didEnterHoldRef.current) {
-      // A short tap opens on the click that follows. Opening here already would let that click land
-      // on the freshly opened sheet's backdrop and close it again at once.
-      return;
-    }
-
-    if (fallbackHandledRef.current) {
-      return;
-    }
-
-    setIsRecording(false);
-    setIsCancelZone(false);
-
-    if (isCancelZoneRef.current) {
-      finalizedRef.current = true;
-      clearStopTimer();
-      setLiveTranscript('');
-      triggerHaptic(15);
-      voice.cancel();
-      return;
-    }
-
-    // The browser's recognition sometimes never reports its end: save what was heard after a moment.
-    // The own server answers when it is done (with its own time limit).
-    if (voice.mode !== 'server') {
-      stopTimerRef.current = window.setTimeout(() => {
-        voice.cancel();
-        void finalizeRecording(transcriptRef.current);
-      }, STOP_TIMEOUT_MS);
-    }
-    void voice.stop();
-  };
-
-  const handlePointerCancel = (e: React.PointerEvent<HTMLButtonElement>) => {
-    try {
-      e.currentTarget.releasePointerCapture?.(e.pointerId);
-    } catch {
-      // ignore
-    }
-
-    if (!isPressedRef.current) return;
-    isPressedRef.current = false;
-    clearHoldTimer();
-    clearStopTimer();
-
-    if (didEnterHoldRef.current && !fallbackHandledRef.current) {
-      finalizedRef.current = true;
-      setIsRecording(false);
-      setIsCancelZone(false);
-      setLiveTranscript('');
-      voice.cancel();
-    }
-  };
-
-  const displayedTranscript =
-    liveTranscript.length > 180 ? `…${liveTranscript.slice(-180)}` : liveTranscript;
+  let status: string | null = notice;
+  const showFailed = !recording && failed > 0;
+  if (showFailed) status = t('app:rail.dictateFailed', { count: failed, error: failedError ?? '' });
+  else if (phase === 'saving') status = t('app:rail.dictateSaving', { count: Math.max(pending, 1) });
+  else if (phase === 'done') status = saved ? t('app:rail.dictateSavedDue', { due: formatDue(saved.due) }) : t('app:rail.dictateSaved');
+  const showUndo = !showFailed && !!saved && phase === 'done';
+  const cancelLabel = t('common:voice.cancelRecording');
 
   return (
     <>
-      {isRecording && (
-        <div
-          className={
-            isCancelZone
-              ? 'fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 w-max max-w-[calc(100vw-1.5rem)] px-4 py-2.5 rounded-card bg-panel-elevated border border-status-err text-status-err shadow-panel pointer-events-none text-center'
-              : 'fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 w-max max-w-[calc(100vw-1.5rem)] px-4 py-2.5 rounded-card bg-panel-elevated border border-border text-main shadow-panel pointer-events-none text-center'
-          }
-        >
-          {isCancelZone ? (
-            <div className="text-xs font-semibold">{t('fab.releaseCancel')}</div>
-          ) : (
-            <div className="space-y-1">
-              <div className="text-xs font-semibold text-main flex items-center justify-center gap-2">
-                {voice.mode === 'server' && <VoiceWave getLevel={voice.level} bars={7} className="h-4 text-accent" />}
-                {t('fab.listening')}
-              </div>
-              {displayedTranscript ? (
-                <div className="text-xs text-muted wrap-break-word max-w-[calc(100vw-3rem)]">
-                  {displayedTranscript}
-                </div>
+      {recording && (
+        <div className={`${HINT_CLASS} rounded-card px-4 py-2.5 border-border text-main pointer-events-none`}>
+          <div className="space-y-1">
+            <div className="text-xs font-semibold text-main flex items-center justify-center gap-2">
+              {locked ? (
+                <Lock aria-hidden className="w-3.5 h-3.5 text-status-err" />
               ) : (
-                <div className="text-[11px] text-faint">{t('fab.dragCancel')}</div>
+                mode === 'server' && <VoiceWave getLevel={level} bars={7} className="h-4 text-accent" />
               )}
+              {locked ? t('fab.locked') : t('fab.listening')}
             </div>
+            {displayedTranscript && <div className="text-xs text-muted wrap-break-word max-w-[calc(100vw-3rem)]">{displayedTranscript}</div>}
+            {/* Slide up to lock: the lock comes up with the finger */}
+            {!locked && (
+              <div data-testid="dictation-lock-hint" className="text-[11px] text-faint flex items-center justify-center gap-1">
+                <span
+                  aria-hidden
+                  className="inline-flex flex-col items-center"
+                  style={{ transform: `translateY(${-lockProgress * 6}px)`, opacity: 0.5 + lockProgress * 0.5 }}
+                >
+                  <ChevronUp className="w-3 h-3 -mb-1" />
+                  <Lock className="w-3.5 h-3.5" />
+                </span>
+                {t('fab.slideLock')}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!recording && status && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`${HINT_CLASS} text-xs text-main border-border ${
+            showFailed || showUndo ? 'rounded-card pl-3 pr-2 flex items-center gap-3' : 'px-4 py-2 rounded-pill font-medium pointer-events-none'
+          }`}
+        >
+          <span className={showFailed || showUndo ? 'py-2' : undefined}>{status}</span>
+          {showFailed && (
+            <button type="button" onClick={retryFailed} className="font-semibold text-accent hover:underline min-h-[44px] px-1 shrink-0 cursor-pointer">
+              {t('app:rail.dictateRetry')}
+            </button>
+          )}
+          {/* Saved with a recognised date: the hint names it and can take it back (same look as the tasks' undo) */}
+          {showUndo && (
+            <button
+              type="button"
+              onClick={() => void undoSaved()}
+              className="font-semibold text-accent hover:underline min-h-[44px] px-1 shrink-0 cursor-pointer"
+              title={t('app:rail.dictateUndoTitle')}
+            >
+              {t('undo')}
+            </button>
           )}
         </div>
       )}
 
-      {!isRecording && toastMessage && !toastUndo && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 w-max max-w-[calc(100vw-1.5rem)] px-4 py-2 rounded-pill bg-panel-elevated border border-border text-main text-xs font-medium shadow-panel pointer-events-none text-center"
-        >
-          {toastMessage}
-        </div>
-      )}
-
-      {/* Saved with a recognised date: the hint names it and can take it back (same look as the tasks' undo) */}
-      {!isRecording && toastMessage && toastUndo && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 w-max max-w-[calc(100vw-1.5rem)] pl-3 pr-2 rounded-card text-xs text-main bg-panel-elevated border border-border shadow-panel flex items-center gap-3"
-        >
-          <span>{toastMessage}</span>
-          <button
-            type="button"
-            onClick={() => {
-              const undo = toastUndo;
-              hideToast();
-              undo().catch(() => showToast(i18n.t('triage:fab.saveFailed')));
-            }}
-            className="font-semibold text-accent hover:underline min-h-[44px] px-1 shrink-0 cursor-pointer"
-            title={t('fab.undoTitle')}
-          >
-            {t('undo')}
-          </button>
-        </div>
-      )}
-
-      <button
-        type="button"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onContextMenu={(e) => e.preventDefault()}
-        // Taps, keyboard, screen readers and switch control all end in a click; after a hold it is ignored
-        onClick={() => {
-          if (suppressClickRef.current) {
-            suppressClickRef.current = false;
-            return;
+      <span className="relative -mt-6 inline-flex">
+        <button
+          ref={buttonRef}
+          type="button"
+          onPointerDown={onPointerDown}
+          onContextMenu={(e) => e.preventDefault()}
+          // Taps, keyboard, screen readers and switch control all end in a click; after a hold it is ignored,
+          // a locked recording it stops
+          onClick={() => {
+            if (clickTaken()) return;
+            onTap();
+          }}
+          className={
+            recording
+              ? 'w-14 h-14 rounded-full bg-status-err text-on-accent shadow-lg flex items-center justify-center transition-transform border-4 border-panel cursor-pointer touch-none select-none animate-pulse motion-reduce:animate-none'
+              : 'w-14 h-14 rounded-full bg-accent text-on-accent shadow-lg flex items-center justify-center active:scale-90 transition-transform border-4 border-panel cursor-pointer touch-none select-none'
           }
-          onTap();
-        }}
-        className={
-          isRecording
-            ? 'w-14 h-14 -mt-6 rounded-full bg-status-err text-on-accent shadow-lg flex items-center justify-center transition-transform border-4 border-panel cursor-pointer touch-none select-none animate-pulse'
-            : 'w-14 h-14 -mt-6 rounded-full bg-accent text-on-accent shadow-lg flex items-center justify-center active:scale-90 transition-transform border-4 border-panel cursor-pointer touch-none select-none'
-        }
-        title={t('fab.title')}
-        aria-label={t('fab.label')}
-        data-tour="capture"
-      >
-        {isRecording ? (
-          <Mic className="w-7 h-7 stroke-[2.5]" />
-        ) : (
-          <Plus className="w-7 h-7 stroke-[2.5]" />
+          title={locked ? t('common:voice.stop') : t('fab.title')}
+          aria-label={locked ? t('common:voice.stop') : t('fab.label')}
+          data-tour="capture"
+          data-dictation={phase === 'idle' ? undefined : phase}
+          data-locked={locked || undefined}
+        >
+          {recording ? <Square className="w-6 h-6 fill-current" /> : <Plus className="w-7 h-7 stroke-[2.5]" />}
+        </button>
+        {/* Dictations handed in and not saved yet (failed ones in the accent colour) */}
+        {!recording && <CountBadge count={pending + failed} variant={failed > 0 ? 'accent' : 'muted'} position="corner" />}
+        {/* Throws the current recording away, held or locked: a dot on the corner, 44 px to tap */}
+        {recording && (
+          <button
+            ref={cancelRef}
+            type="button"
+            onClick={cancel}
+            title={cancelLabel}
+            aria-label={cancelLabel}
+            className="absolute -top-4 left-7 w-11 h-11 flex items-center justify-center cursor-pointer touch-none select-none"
+          >
+            <span className="w-6 h-6 rounded-full bg-status-err text-on-accent border-2 border-panel shadow-xs flex items-center justify-center">
+              <X className="w-3.5 h-3.5 stroke-[3]" />
+            </span>
+          </button>
         )}
-      </button>
+      </span>
     </>
   );
 };

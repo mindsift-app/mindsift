@@ -204,15 +204,13 @@ describe('useUpdateCheck', () => {
     expect(calls).toEqual(['flush', 'reload']);
   });
 
-  it('keeps a failed dictation from being lost by a reload until it is retried or thrown away', async () => {
+  it('does not wait for a failed dictation (a reload may lose it)', async () => {
     liveBuild = 'build-neu';
     const queue = new DictationQueue<void>({ save: () => {}, onChange: () => {}, fallbackMessage: () => 'Fehler' });
-    const id = queue.add({ text: () => Promise.reject(new Error('Server nicht erreichbar')) });
+    queue.add({ text: () => Promise.reject(new Error('Server nicht erreichbar')) });
     start();
-    await wait(UPDATE_MAX_WAIT_MS * 2);
-    expect(reload).not.toHaveBeenCalled();
-    act(() => queue.discard(id));
-    await wait(UPDATE_NOTICE_MS + TICK);
+    await wait(UPDATE_MAX_WAIT_MS + UPDATE_NOTICE_MS + TICK);
+    expect(queue.items()[0].state).toBe('failed');
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
