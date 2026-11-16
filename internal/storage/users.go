@@ -11,6 +11,7 @@ import (
 	"unicode"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
@@ -289,6 +290,8 @@ func (s *Store) EnsureDemoAccounts() error {
 			logDBErr(s.AddOrganizationMember(org.ID, normalUser.ID))
 		}
 		logDBErr(s.SeedStarterContent(adminUser))
+		// Before the shares, so the journal notes reach the demo user like the rest (who gets the same days)
+		s.seedDemoJournal(adminUser, lang, clock.Now(), normalUser)
 		s.seedDemoShares(adminUser, normalUser)
 		s.seedDemoListHistory(adminUser, lang)
 	}
