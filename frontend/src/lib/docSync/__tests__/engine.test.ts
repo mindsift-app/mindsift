@@ -93,10 +93,12 @@ class FakeNet implements Transport {
   mode: 'ok' | 'down' | 'lose-response' = 'ok';
   longPollDown = false;
   changesCalls = 0;
+  snapshotCalls = 0;
   duringRequest: (() => void) | null = null; // runs while the request is "on the wire"
 
   constructor(private server: FakeServer, private role = 'owner') {}
   async snapshot() {
+    this.snapshotCalls++;
     if (this.mode === 'down') throw new TransportError('offline', 0);
     return { ...this.server.snapshot(), role: this.role };
   }
@@ -815,6 +817,44 @@ describe('how changes of others arrive', () => {
       await vi.advanceTimersByTimeAsync(100);
       expect(contents(engine)).toEqual(['Von anderen']);
       expect(net.changesCalls).toBe(0);
+      engine.stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('opening a note loads its snapshot once, also when the push channel starts a sync right away', async () => {
+    vi.useFakeTimers();
+    try {
+      const server = new FakeServer();
+      const net = new FakeNet(server);
+      const push = new FakePush();
+      push.kind = 'ws'; // already connected: subscribing starts a sync while start() loads the snapshot
+      const engine = await live(push, net);
+      expect(net.snapshotCalls).toBe(1);
+      expect(contents(engine)).toEqual(['Start']);
+      expect(engine.getState().status).toBe('saved');
+      engine.stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('loads the snapshot again after the first load failed', async () => {
+    vi.useFakeTimers();
+    try {
+      const server = new FakeServer();
+      const net = new FakeNet(server);
+      net.mode = 'down';
+      const push = new FakePush();
+      push.kind = 'ws';
+      const engine = await live(push, net);
+      expect(net.snapshotCalls).toBe(1);
+      expect(engine.getState().status).toBe('offline');
+      net.mode = 'ok';
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(contents(engine)).toEqual(['Start']);
+      expect(engine.getState().status).toBe('saved');
       engine.stop();
     } finally {
       vi.useRealTimers();
