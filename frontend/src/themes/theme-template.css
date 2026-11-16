@@ -17,25 +17,27 @@
   --bg-app: #121316;              /* Page background (canvas) */
   --bg-panel: #1a1c20;            /* Karten, Header, Sidebar, Dropdowns */
   --bg-panel-elevated: #22252a;   /* Highlighted elements & active rows */
-  --bg-panel-hover: #2a2e35;      /* Hover effect on surfaces */
-  --bg-input: #121316;            /* Textfelder, Selects, Textareas */
+  /* The following follow the colours above; set fixed values only if you want different ones */
+  --bg-panel-hover: color-mix(in srgb, var(--bg-panel-elevated) 88%, var(--text-main)); /* Hover effect on surfaces */
+  --bg-input: var(--bg-app);      /* Text fields, selects, textareas */
   --bg-overlay: rgba(0, 0, 0, 0.72); /* Background behind modals/dialogs */
-  --bg-code: #0d0e11;             /* Code blocks & terminal boxes */
+  --bg-code: color-mix(in srgb, var(--bg-app) 70%, #000000); /* Code blocks & terminal boxes */
   /* Optional: --bg-editor (note editor, default --bg-app) and --bg-sidebar (folder bar, default --bg-panel) */
 
   /* --- 3. TEXT & CONTRAST --- */
   --text-main: #f4f4f5;           /* Main text & headings */
   --text-muted: #a1a1aa;          /* Secondary text & descriptions */
-  --text-faint: #71717a;          /* Platzhalter & dezente Hinweise */
+  --text-faint: color-mix(in srgb, var(--text-muted) 70%, var(--bg-app)); /* Placeholders & subtle hints (follows the secondary text) */
   /* Optional: --text-code (plain text in code blocks, default --text-main) */
 
   /* --- 4. BORDERS, LINES & SHADOWS --- */
-  --border-color: rgba(255, 255, 255, 0.09);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-strong: rgba(255, 255, 255, 0.22);
+  /* Lines follow the text colour, so they work on light and dark backgrounds alike */
+  --border-color: color-mix(in srgb, var(--text-main) 12%, transparent);
+  --border-subtle: color-mix(in srgb, var(--border-color) 55%, transparent);
+  --border-strong: color-mix(in srgb, var(--border-color) 82%, var(--text-main));
   --shadow-panel: 0 10px 30px rgba(0, 0, 0, 0.45);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.14);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.26);
+  --scrollbar-thumb: color-mix(in srgb, var(--text-main) 16%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--text-main) 30%, transparent);
 
   /* --- 5. STATUS & SIGNAL COLOURS --- */
   --color-success: #22c55e;

@@ -343,6 +343,8 @@
       "export": "Esporta come file CSS",
       "deleteQuestion": "Eliminare il tema «{{name}}»? L'operazione non si può annullare.",
       "colorOf": "{{color}} di {{name}}",
+      "moreColors": "Altri colori",
+      "moreColorsHint": "Senza un colore proprio seguono i colori qui sopra.",
       "unnamed": "Tema personalizzato",
       "hint": "Un tema è un file CSS. «+» ne crea uno con i colori del modello; un clic su un riquadro di colore lo cambia subito. I file esportati si possono reimportare qui e condividere con altri. I temi personalizzati sono salvati sul server e disponibili su tutti i tuoi dispositivi; un colore in risalto personalizzato (più sopra) ha la precedenza su quello del tema.",
       "colors": {
@@ -351,7 +353,12 @@
         "bg-panel-elevated": "Superficie in rilievo",
         "text-main": "Testo",
         "text-muted": "Testo secondario",
-        "accent-primary": "Risalto"
+        "accent-primary": "Risalto",
+        "text-faint": "Testo tenue",
+        "bg-panel-hover": "Superficie al passaggio",
+        "bg-input": "Campo di inserimento",
+        "border-color": "Bordi",
+        "bg-code": "Blocco di codice"
       },
       "import": "Importa CSS"
     },

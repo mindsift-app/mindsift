@@ -129,7 +129,7 @@
 }
 
 /* Defaults of Tailwind 3's preflight that Tailwind 4 changed: border colour (now currentColor), placeholder
-   colour (now the text colour at half opacity) and the pointer on buttons */
+   colour (now the text colour at half opacity; here the theme's faint text) and the pointer on buttons */
 @layer base {
   *,
   ::after,
@@ -141,7 +141,7 @@
   input::placeholder,
   textarea::placeholder {
     opacity: 1;
-    color: #9ca3af;
+    color: var(--text-faint);
   }
   button:not(:disabled),
   [role='button']:not(:disabled) {

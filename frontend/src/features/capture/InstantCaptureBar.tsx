@@ -327,7 +327,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                 ? t('capture.placeholderNote')
                 : t('capture.placeholder')
             }
-            className={`flex-1 min-w-0 w-full bg-transparent text-main placeholder-faint text-xs sm:text-sm focus:outline-hidden resize-none leading-5 py-0.5 ${
+            className={`flex-1 min-w-0 w-full bg-transparent text-main placeholder:text-faint text-xs sm:text-sm focus:outline-hidden resize-none leading-5 py-0.5 ${
               isOverMaxHeight ? 'overflow-y-auto' : 'overflow-hidden'
             }`}
             style={{ minHeight: '22px', maxHeight: '140px' }}

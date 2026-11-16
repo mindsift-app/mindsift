@@ -240,7 +240,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
             }
           }}
           placeholder={locked ? '' : t('media.caption')}
-          className={`w-full bg-transparent border-0 p-0 text-xs text-muted placeholder-faint focus:outline-hidden focus:ring-0 transition-opacity ${
+          className={`w-full bg-transparent border-0 p-0 text-xs text-muted placeholder:text-faint focus:outline-hidden focus:ring-0 transition-opacity ${
             hideEmptyCaption
               ? 'opacity-0 focus:opacity-100 [@media(hover:hover)]:group-hover/image:opacity-100'
               : ''

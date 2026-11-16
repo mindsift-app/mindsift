@@ -337,7 +337,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             onChange={(e) => setQuery(e.target.value)}
             {...NO_AUTOFILL}
             placeholder={t('palette.placeholder')}
-            className="flex-1 bg-transparent border-0 outline-hidden text-main placeholder-muted text-base sm:text-sm focus:ring-0 p-0"
+            className="flex-1 bg-transparent border-0 outline-hidden text-main placeholder:text-muted text-base sm:text-sm focus:ring-0 p-0"
           />
           {/* One fixed slot for the spinner or the clear button, so the field keeps its width while typing */}
           <span className="w-6 h-6 shrink-0 flex items-center justify-center">

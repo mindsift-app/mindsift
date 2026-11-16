@@ -1,5 +1,6 @@
 import type { UserTheme } from './types';
 import i18n from '../i18n';
+import { customThemePageCss } from './themeCss';
 
 // Built-in themes are compiled CSS files (src/themes/); custom themes are user CSS from the server,
 // injected at runtime and addressed as "custom:<id>"
@@ -388,7 +389,8 @@ function injectCustomCss(css: string | null): void {
     el = document.createElement('style');
     el.id = CUSTOM_STYLE_ID;
   }
-  el.textContent = css;
+  // Colours the theme leaves out (or still has as the old template's greys) follow its own colours
+  el.textContent = customThemePageCss(css);
   // Last in <head>, so it wins over the compiled themes
   document.head.appendChild(el);
 }
