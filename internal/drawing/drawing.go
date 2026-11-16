@@ -157,7 +157,12 @@ func Describe(content string) string {
 			}
 		case el.T == "arrow":
 			if el.From == "" || el.To == "" {
-				loose++
+				// A free arrow with a label says something (the messages of a sequence diagram)
+				if t := oneLine(el.Txt); t != "" {
+					parts = append(parts, "Pfeil „"+t+"“")
+				} else {
+					loose++
+				}
 				continue
 			}
 			sign := "→"

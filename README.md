@@ -50,7 +50,7 @@ Every thought is a bullet: indent, collapse, zoom in, drag whole branches or (wi
 
 Templates: mark any note you can read as one of your templates, then `/template` (`/vorlage`) inserts its bullets at the cursor and "New note" can start from it, with `{{date}}` and `{{title}}` filled in.
 
-Drawings in a note (`/canvas`): shapes, arrows that dock to them, text and freehand; several people can draw in one drawing at once and see each other's pointers, others watch live; AI agents can draw flowcharts and mind maps from Mermaid. Focus mode hides everything but the note.
+Drawings in a note (`/canvas`): shapes, arrows that dock to them, text and freehand; several people can draw in one drawing at once and see each other's pointers, others watch live; AI agents can draw flowcharts, mind maps, sequence and state diagrams and Git graphs from Mermaid. Focus mode hides everything but the note.
 
 <p align="center">
   <img src="screenshots/Focus_desktop.webp" alt="MindSift focus mode with pinned bar and sidebar, a note with a network plan drawing" width="90%" />

@@ -9,12 +9,14 @@ import (
 	"unicode"
 )
 
-// Mermaid input (for agents): a subset of flowchart/graph and mindmap. The server lays it out itself
-// (layout.go), so a diagram written as text becomes an ordinary drawing the editor can change.
+// Mermaid input (for agents): a subset of flowchart/graph, mindmap, sequenceDiagram, stateDiagram and
+// gitGraph. The server lays it out itself (layout.go, mermaid_sequence.go, mermaid_state.go,
+// mermaid_git.go), so a diagram written as text becomes an ordinary drawing the editor can change. Lines it
+// cannot read are skipped.
 
 var (
-	// ErrMermaidKind: the text is no flowchart, graph or mindmap
-	ErrMermaidKind = errors.New("Mermaid: nur flowchart/graph und mindmap werden unterstützt")
+	// ErrMermaidKind: the text is none of the diagram kinds read here
+	ErrMermaidKind = errors.New("Mermaid: nur flowchart/graph, mindmap, sequenceDiagram, stateDiagram und gitGraph werden unterstützt")
 	// ErrMermaidEmpty: no node could be read
 	ErrMermaidEmpty = errors.New("Mermaid: keine Knoten gefunden")
 )
@@ -29,10 +31,10 @@ type graphNode struct {
 }
 
 type graphEdge struct {
-	from, to, label string
-	dashed, thick   bool
-	head            int // 0 none, 1 start, 2 end, 3 both
-	stroke          string
+	from, to, label     string
+	dashed, thick, thin bool
+	head                int // 0 none, 1 start, 2 end, 3 both
+	stroke              string
 }
 
 type graph struct {
@@ -76,7 +78,8 @@ func mermaidLines(text string) []string {
 	return lines
 }
 
-// mermaidHeader finds the diagram kind ("flowchart" or "mindmap") and the lines after it
+// mermaidHeader finds the diagram kind ("flowchart", "mindmap", "sequence", "state" or "git") and the lines
+// after it; a direction in the header comes first as "%%dir …"
 func mermaidHeader(text string) (string, []string) {
 	lines := mermaidLines(text)
 	for i, l := range lines {
@@ -99,6 +102,16 @@ func mermaidHeader(text string) (string, []string) {
 			return "flowchart", rest
 		case "mindmap":
 			return "mindmap", lines[i+1:]
+		case "sequencediagram":
+			return "sequence", lines[i+1:]
+		case "statediagram", "statediagram-v2":
+			return "state", lines[i+1:]
+		case "gitgraph", "gitgraph:":
+			dir := "LR"
+			if len(f) > 1 {
+				dir = strings.ToUpper(strings.TrimSuffix(f[1], ":"))
+			}
+			return "git", append([]string{"%%dir " + dir}, lines[i+1:]...)
 		}
 		return "", nil
 	}
@@ -112,7 +125,8 @@ func stripComment(l string) string {
 	return l
 }
 
-// FromMermaid turns a Mermaid flowchart/graph or mindmap into drawing content, laid out
+// FromMermaid turns a Mermaid diagram (flowchart/graph, mindmap, sequenceDiagram, stateDiagram or gitGraph)
+// into drawing content, laid out
 func FromMermaid(text string) (string, error) {
 	kind, lines := mermaidHeader(text)
 	switch kind {
@@ -128,6 +142,24 @@ func FromMermaid(text string) (string, error) {
 			return "", ErrMermaidEmpty
 		}
 		return encode(layoutMindmap(root)), nil
+	case "sequence":
+		sd := parseSequence(lines)
+		if len(sd.parts) == 0 {
+			return "", ErrMermaidEmpty
+		}
+		return encode(layoutSequence(sd)), nil
+	case "state":
+		g := parseState(lines)
+		if len(g.nodes) == 0 {
+			return "", ErrMermaidEmpty
+		}
+		return encode(layoutFlowchart(g)), nil
+	case "git":
+		gg := parseGitGraph(lines)
+		if len(gg.commits) == 0 {
+			return "", ErrMermaidEmpty
+		}
+		return encode(layoutGitGraph(gg)), nil
 	}
 	return "", ErrMermaidKind
 }
@@ -478,7 +510,18 @@ func roleOf(v string, isFill bool) string {
 	}
 }
 
+var rgbRe = regexp.MustCompile(`^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*[\d.]+%?\s*)?\)$`)
+
 func hexRGB(v string) (float64, float64, float64, bool) {
+	// rgb(…) and rgba(…), as sequence diagrams write them (the alpha is left out)
+	if m := rgbRe.FindStringSubmatch(v); m != nil {
+		var c [3]float64
+		for i := range c {
+			n, _ := strconv.Atoi(m[i+1])
+			c[i] = math.Min(255, float64(n)) / 255
+		}
+		return c[0], c[1], c[2], true
+	}
 	if !strings.HasPrefix(v, "#") {
 		return 0, 0, 0, false
 	}

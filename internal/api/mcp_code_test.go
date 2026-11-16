@@ -14,7 +14,7 @@ import (
 const codeLanguagesFile = "../../frontend/src/features/workspace/codeLanguages.json"
 
 // The languages MCP accepts for code bullets are the editor's: the same ids, the same short names, and the
-// tool description names every id.
+// examples in the tool description are ids of the editor.
 func TestMCPCodeLanguagesMatchEditor(t *testing.T) {
 	raw, err := os.ReadFile(codeLanguagesFile)
 	if err != nil {
@@ -44,9 +44,15 @@ func TestMCPCodeLanguagesMatchEditor(t *testing.T) {
 	if !maps.Equal(editor.Aliases, mcpCodeAliases) {
 		t.Errorf("short names differ from %s:\neditor %v\nmcp    %v", codeLanguagesFile, editor.Aliases, mcpCodeAliases)
 	}
-	_, list, _ := strings.Cut(mcpCodeHelp, "for highlighting: ")
+	_, list, _ := strings.Cut(mcpCodeHelp, "language e.g. ")
 	list, _, _ = strings.Cut(list, " (")
-	if named := slices.Sorted(slices.Values(strings.Split(list, ", "))); !slices.Equal(ids, named) {
-		t.Errorf("the languages in mcpCodeHelp differ from %s:\neditor %v\nhelp   %v", codeLanguagesFile, ids, named)
+	named := strings.Split(list, ", ")
+	if len(named) < 3 {
+		t.Fatalf("no example languages in mcpCodeHelp: %q", list)
+	}
+	for _, name := range named {
+		if !slices.Contains(ids, name) {
+			t.Errorf("mcpCodeHelp names %q, which is no language id of %s", name, codeLanguagesFile)
+		}
 	}
 }

@@ -257,7 +257,7 @@ const de: HelpContent = {
       title: 'Zeichnungen (/canvas)',
       subtitle: 'Skizzen, Flussdiagramme und Mindmaps direkt in der Notiz',
       icon: Shapes,
-      keywords: ['zeichnung', 'canvas', 'skizze', 'diagramm', 'flussdiagramm', 'mindmap', 'pfeil', 'formen', 'freihand', 'gitter', 'mermaid', 'live', 'mitzeichnen', 'gemeinsam zeichnen'],
+      keywords: ['zeichnung', 'canvas', 'skizze', 'diagramm', 'flussdiagramm', 'mindmap', 'sequenzdiagramm', 'zustandsdiagramm', 'pfeil', 'formen', 'freihand', 'gitter', 'mermaid', 'live', 'mitzeichnen', 'gemeinsam zeichnen'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -283,7 +283,7 @@ const de: HelpContent = {
               <strong className="text-main">Offline und Entwürfe:</strong> Offline Gezeichnetes wird gespeichert, sobald die Verbindung zurück ist; einen ungespeicherten Entwurf bietet MindSift beim nächsten Öffnen zum Wiederherstellen an. Verlassen alle eine Live-Zeichnung ohne „Fertig“, hält der Server den Stand noch etwa 10 Minuten; wer in der Zeit wieder „Gemeinsam zeichnen“ wählt, macht dort weiter.
             </li>
             <li>
-              <strong className="text-main">Überall dabei:</strong> Die Suche findet die Wörter in Zeichnungen, Kopieren und Einfügen behält die Zeichnung, der Markdown-Export enthält sie als SVG-Bild (der Import macht wieder eine Zeichnung daraus). KI-Agenten (MCP) lesen eine Beschreibung der Zeichnung und können aus Mermaid-Flussdiagrammen und Mindmaps selbst Zeichnungen anlegen.
+              <strong className="text-main">Überall dabei:</strong> Die Suche findet die Wörter in Zeichnungen, Kopieren und Einfügen behält die Zeichnung, der Markdown-Export enthält sie als SVG-Bild (der Import macht wieder eine Zeichnung daraus). KI-Agenten (MCP) lesen eine Beschreibung der Zeichnung und können aus Mermaid selbst Zeichnungen anlegen: Flussdiagramme, Mindmaps, Sequenz- und Zustandsdiagramme sowie Git-Verläufe.
             </li>
           </ul>
         </div>

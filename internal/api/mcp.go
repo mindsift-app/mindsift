@@ -172,7 +172,9 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 				"new one. IDs come from the list tools; never guess them. Tasks and list items you create or " +
 				"change show the user a badge with the name of your API key. Notes, tasks and lists come with a url " +
 				"that opens them in the app: when you tell the user about one, summarize it and add its url so " +
-				"they can look for themselves.",
+				"they can look for themselves. Notes are outlines: one thought per bullet, details as indented child bullets, " +
+				"## / ### headings with an empty bullet before each heading that follows text. Diagrams are written as Mermaid " +
+				"(flowchart, mindmap, sequenceDiagram, stateDiagram, gitGraph) and become editable drawings; drawing_help explains them.",
 		}, nil)
 	case "ping":
 		writeRPC(w, req.ID, map[string]any{}, nil)
@@ -1047,10 +1049,10 @@ var mcpTools = []mcpTool{
 	{
 		Name: "create_note",
 		Description: "Create a new note. content is Markdown: a nested list (tab or 2+ spaces per level) becomes nested bullets, - [ ] a to-do, # a heading with the following bullets below it, plain lines and paragraphs become bullets. " +
-			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". A fenced ```mermaid block (flowchart/graph or mindmap) becomes a drawing, laid out automatically. " +
+			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". A fenced ```mermaid block (flowchart, mindmap, sequenceDiagram, stateDiagram, gitGraph) becomes a drawing, laid out automatically (details: drawing_help). " +
 			"template starts the note with the bullets of one of the user's note templates (its id or exact title; list_notes with templates=true lists them, isTemplate marks them), as the app's \"new note from template\" does: to-dos open, {{datum}}/{{date}} become today's date, {{titel}}/{{title}} the new title; content, if given, follows below. Using a template reads it, so it needs notes:read as well. " +
-			"Structure: MindSift is an outliner, so use its levels. Split longer notes with ## and ### headings, and instead of a line like \"**Term:** explanation\" write the term as a bullet and the details as indented bullets below it (\"- Term\\n\\t- explanation\"); one thought per bullet reads better than long paragraphs. " +
-			"All bullets have the same line spacing, so headings right after text look cramped: put an empty bullet (a line with just -) before each heading except the first to set the sections apart. A recommendation, not a rule: leave it out where it does not fit. " +
+			"Structure: MindSift is an outliner. One thought per bullet; a term as a bullet with its details indented below (\"- Term\\n\\t- explanation\") rather than \"**Term:** explanation\"; ## and ### headings for longer notes, " +
+			"with an empty bullet (a line with just -) before each heading except the first, as all bullets have the same spacing (a recommendation: leave it out where it does not fit). " +
 			"Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
 		Scope: storage.ScopeNotesCreate,
 		Schema: schema([]string{"title"}, map[string]any{

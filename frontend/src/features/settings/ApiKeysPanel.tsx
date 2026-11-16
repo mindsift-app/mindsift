@@ -29,7 +29,7 @@ interface ApiKeysPanelProps {
 }
 
 type SimTarget = 'triage' | 'task' | 'list_item';
-// The tools of the MCP endpoint (internal/api/mcp.go, mcp_write.go, mcp_structure.go)
+// The tools of the MCP endpoint (internal/api/mcp.go, mcp_write.go, mcp_structure.go, mcp_drawing.go)
 const MCP_TOOLS = [
   'list_task_lists',
   'create_task_list',
@@ -57,6 +57,7 @@ const MCP_TOOLS = [
   'delete_note_bullet',
   'move_note_bullet',
   'extract_note_bullet',
+  'drawing_help',
   'delete_note',
   'search',
   'capture_to_inbox',

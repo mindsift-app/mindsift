@@ -210,7 +210,7 @@ const fr: HelpContent = {
       title: 'Dessins (/canvas)',
       subtitle: 'Croquis, organigrammes et cartes mentales directement dans la note',
       icon: Shapes,
-      keywords: ['dessin', 'canvas', 'croquis', 'diagramme', 'organigramme', 'carte mentale', 'flèche', 'formes', 'main levée', 'grille', 'mermaid', 'en direct', 'dessiner à plusieurs'],
+      keywords: ['dessin', 'canvas', 'croquis', 'diagramme', 'organigramme', 'carte mentale', 'diagramme de séquence', 'diagramme d’états', 'flèche', 'formes', 'main levée', 'grille', 'mermaid', 'en direct', 'dessiner à plusieurs'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -236,7 +236,7 @@ const fr: HelpContent = {
               <strong className="text-main">Hors ligne et brouillons :</strong> Ce que tu dessines hors ligne est enregistré dès le retour de la connexion ; un brouillon non enregistré est proposé à la restauration à la prochaine ouverture. Si tout le monde quitte un dessin en direct sans « Terminé », le serveur garde son état environ 10 minutes ; qui choisit de nouveau « Dessiner ensemble » dans ce délai reprend là où il en était.
             </li>
             <li>
-              <strong className="text-main">Partout :</strong> La recherche trouve les mots des dessins, copier-coller conserve le dessin et l’export Markdown le contient en image SVG (l’import en refait un dessin). Les agents IA (MCP) lisent une description du dessin et peuvent eux-mêmes créer des dessins à partir d’organigrammes et de cartes mentales Mermaid.
+              <strong className="text-main">Partout :</strong> La recherche trouve les mots des dessins, copier-coller conserve le dessin et l’export Markdown le contient en image SVG (l’import en refait un dessin). Les agents IA (MCP) lisent une description du dessin et peuvent eux-mêmes créer des dessins à partir de Mermaid : organigrammes, cartes mentales, diagrammes de séquence et d’états, et graphes Git.
             </li>
           </ul>
         </div>
