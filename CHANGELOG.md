@@ -10,70 +10,37 @@ Versions without a git tag were development states and were never published as a
 
 **The biggest update so far, and a big step towards 1.0.** Draw together live in shared notes, start notes from templates, paste or drag images and code straight into a note, and let MindSift understand dates and quantities as you type. Subscribe to your tasks in your calendar app. Administrators get two-factor sign-in, passkeys and single sign-on, an audit log, an update hint and a command line for emergencies. And it all runs comfortably for over a thousand people at once on a single CPU core.
 
-**Before you update:**
-- Without `TZ` the server now runs on UTC instead of Europe/Berlin: alarms, the daily summary and backups shift until you pick your time zone under Administration → Server (or set `TZ`).
-- A new server's setup wizard asks for a one-time setup code from the log (`docker logs mindsift | grep 'Setup code'`); scripts calling `POST /api/v1/auth/setup` send it as `setupCode`.
-- Passwords are stored in a new form at the next sign-in that v0.95.0 and earlier cannot read: going back means restoring the pre-migration copy this update writes ("Rolling back" in the README). Keep `SECRETS_KEY` (or `data/secrets.key`).
-- The update converts stored notes once and may compact the database, which briefly needs free space of up to about twice its size (with less it skips the compaction and says so).
-- The app needs Safari 16.4, Chrome/Edge 111 or Firefox 128 or newer.
-- Details are in the items marked **Attention**.
+**Before you update:** read the items marked **Attention**. In short: set your time zone (the server now defaults to UTC), keep `SECRETS_KEY`, keep the pre-migration backup this update writes if you might go back to v0.95.0, and have free disk space of about twice the database's size for the one-time conversion. New servers ask for a setup code from the log. The app needs Safari 16.4, Chrome/Edge 111 or Firefox 128.
 
 ### Added
-- **Live drawing together:** in a shared note, "Draw together" starts a live session: others draw along or watch, with their pointers. The starter is host and saves for everyone with "Done"; if the host leaves, the person drawing longest takes over; the last one to leave can discard and undo that for a few seconds. Opening a drawing on its own means drawing alone, locked for others. When the server is short of room for live drawings, your changes stay in the editor and are sent later instead of being lost; `DRAW_LIVE_MAX_MB` sets that room (by default a twelfth of the server's memory, at most 128 MB).
-- **Note templates:** mark any note you can read as your template (⋯ menu); `/template` (`/vorlage`) inserts it at the cursor and "New note" can start from one, with `{{date}}` and `{{title}}` filled in. AI agents can create notes from templates too.
-- **Images:** paste a screenshot or picture (Ctrl+V) or drag image files onto a bullet to add image bullets. Administrators pick the image quality (Administration → Server, `MEDIA_IMAGE_QUALITY`; size stays at 2048 px).
-- **Code from chat pages:** pasting an answer from ChatGPT, Claude or a documentation page (or Markdown with ``` fences) gives code blocks with their language. Code blocks take any language name; iptables, nftables, Apache, Properties, DNS zone files and .gitignore are highlighted.
-- **Dates and quantities from what you type:** "Dentist tomorrow 2pm" in Quick Dump or a new task sets the due date (shown as a chip with ×), also when dictating by holding the +; "2x milk" or "500 g pasta" in a list fills the quantity field. English and German fully, French, Italian and Spanish the common forms; a personal switch under Settings → Language turns it off.
-- **Dictate on the desktop:** hold the + in the navigation rail to dictate straight into Quick Dump.
-- **Calendar subscription:** a private link (Settings → Calendar subscription) shows your open tasks with a due date in Google, Apple, Thunderbird or Outlook, read-only. Administrators can switch it off (`CALENDAR_FEEDS`).
-- **Lists suggest what you added before** while you type, most frequent first, also offline; the quantity field takes units ("500 g").
-- **Several hashtags in the task filter** at once; switching the list resets it.
-- **Command line for operators:** `docker exec mindsift mindsift users` lists, creates and deletes accounts; `reset-password` (`--must-change`, `--revoke-keys`, `--disable-2fa`), `make-admin`, `check --backup` and `audit`, with `--json` for scripts. Helps a locked-out administrator.
-- **Audit log:** Administration → Log shows who changed accounts, roles, invites, organizations and server settings, and when, from the app, the command line or single sign-on. Secrets only as "changed", no IP addresses, kept a year.
-- **Password reset options:** the administrator can require a new password at the next sign-in and revoke the account's API keys, AI connections and calendar subscription.
-- **Update hint:** administrators see when a new release is out (daily check against GitHub, nothing about your server is sent; `UPDATE_CHECK=false` turns it off).
-- **Single sign-on:** signing out at the provider (Keycloak, Authentik) signs you out of MindSift too (back-channel logout); the administration shows the URL to enter there.
-- **Outgoing requests through a proxy** (`HTTP(S)_PROXY`, `NO_PROXY`) for webhooks, link previews, image fetches and the update check; private addresses stay blocked.
-- Two-factor sign-in with an authenticator app or **passkeys**, recovery codes and trusted devices, optionally required by the administration; single sign-on with any OpenID Connect provider (`OIDC_ISSUER` …, `OIDC_ADMIN_GROUP`, `OIDC_PASSWORD_LOGIN=false`).
-- Server time zone in Administration → Server (or the setup wizard), followed at once by due dates, alarms, the daily summary and backups.
-- A compressed backup before every database update (`data/backups/system/`); MindSift refuses to start on a database a newer version changed and says how to go back.
-- Prometheus metrics with `METRICS_TOKEN`; `/api/v1/health?db=1`; `LOG_FORMAT=json`.
-- AI agents (MCP): add images (`add_note_image`), move bullets with their children, turn a bullet into a note, code blocks with a language and dividers.
-- `API_KEYS_ENABLED=false` keeps API keys for MCP only; link previews can be switched off for the whole server.
-- Notes: a delete button on note rows in the tree (with a confirmation); Enter after a to-do adds another to-do, Enter in an empty one turns it into a bullet; Enter on an empty last line leaves a code block or table.
-- Administrators can change or remove an account's e-mail address; licenses of third-party software in the image, the release archives and "About MindSift".
+- **Live drawing together** in shared notes, with a host who saves for everyone; opening a drawing alone locks it for others.
+- **Note templates** (`/template`, "New note" from a template, also for AI agents).
+- **Images and code straight into notes:** paste or drag images (quality set by the administrator), and code from ChatGPT, Claude or docs becomes code blocks with their language; any code language name, more config formats highlighted.
+- **Dates and quantities from what you type** ("dentist tomorrow 2pm", "2x milk"), also when dictating; a personal switch turns it off. Hold the + in the desktop rail to dictate.
+- **Calendar subscription** of your tasks for Google, Apple, Thunderbird and Outlook.
+- **Lists suggest earlier items**; tasks filter by several hashtags.
+- **For administrators:** command line (`docker exec mindsift mindsift …`), audit log, update hint, password reset options, two-factor sign-in and passkeys, single sign-on with back-channel logout, server time zone, backups before database updates, Prometheus metrics, outgoing proxy support.
+- **AI agents (MCP):** images, moving and extracting bullets, code blocks, notes from templates.
 
 ### Changed
-- **Attention:** without `TZ` the server runs on UTC instead of Europe/Berlin; pick your time zone under Administration → Server or set `TZ`. `docker-compose.yml`, `.env.example` and `install.sh` default to UTC.
-- **Attention:** a new server's setup wizard asks for a one-time setup code from the log, so only someone who can read the log becomes its admin. Scripts calling `POST /api/v1/auth/setup` send `setupCode`; `POST /api/v1/auth/register` no longer creates the first account.
-- **Attention:** passwords count to the last character (up to 1,024); before, only the first 72 bytes counted. They are stored in a new form at the next sign-in that older versions cannot read.
-- **Attention:** notes take far less space: their text is stored once, the history keeps only changes (17.8 MB of text used to cost about 220 MB, now about 50 MB). The update converts notes once and may compact the database file.
-- **Attention:** the SMTP password is stored encrypted with `SECRETS_KEY`; `SMTP_PASS` is no longer copied into the database.
-- **Attention:** the app needs Safari 16.4, Chrome/Edge 111 or Firefox 128 or newer (Tailwind CSS 4).
-- **Attention:** note titles have at most 60 characters; the API answers `400` for longer ones (existing ones stay).
-- **Much more on a small server:** on 1 CPU core and 1 GB RAM, 1,200 people working at once see 0.03 % errors (before 1.6 %), 500 with their own task lists 0.2 %; live drawing keeps edits under 100 ms with 50 people in one drawing or 130 sessions at once, since pointers are now bundled (about 90 % fewer messages in a busy drawing). The note list no longer carries every bullet, and the container sets `GOMEMLIMIT` from its memory limit.
-- **Desktop redesign:** a navigation rail replaces the header and page tabs; Quick Dump opens as a window (+ or C); pages use the full width; a softer dark theme, calmer bullet dots, a soft blur behind dialogs and a slight press effect on buttons.
-- Shared lists and tasks offline: ticks are sent with their time, so a late or repeated tick never undoes someone else's; quantity changes and deletions work offline; pending ticks stay visible after a reload.
-- Linked to-dos and their tasks stay in step: concurrent changes are merged, typing over a renamed to-do keeps both, turning a to-do into another kind of bullet unlinks its task (which stays).
-- A plain tick puts a task into the last done column of its list, also through the API and AI agents.
-- A hidden value copied into another note gets its own copy there; code blocks keep no hidden values. The slash command is now `/hidden`.
-- Kanban card titles break long words and are shortened after 140 characters.
-- Lock hints for a bullet open in your own other tab or device say "You" with the device.
-- The app starts faster, loads each language on its own, and the server log is in English.
+- **Attention:** the server runs on UTC without `TZ`; set your time zone under Administration → Server.
+- **Attention:** a new server's setup asks for a one-time code from the log (`setupCode` for `POST /auth/setup`).
+- **Attention:** passwords count to the last character and are stored in a new form older versions cannot read.
+- **Attention:** notes are stored far more compactly; the update converts them once.
+- **Attention:** the SMTP password is stored encrypted with `SECRETS_KEY`.
+- **Attention:** the app needs Safari 16.4, Chrome/Edge 111 or Firefox 128 or newer.
+- **Attention:** note titles have at most 60 characters.
+- **Much more on a small server:** 1,200 people at once on 1 CPU core and 1 GB RAM with 0.03 % errors.
+- **Desktop redesign** with a navigation rail, Quick Dump as a window and a calmer look.
+- Offline changes in shared lists and tasks never undo someone else's, and linked to-dos stay in step with their tasks.
 
 ### Fixed
-- A repeating task whose next occurrence was deleted repeats again; reopening it right after ticking removes the untouched next occurrence.
-- Live drawing: the host sees the session and that they are host right away, also alone; no "discard for everyone?" without changes; a double-click right after "Done" opens the drawing again.
-- Search finds your own notes and list items even when others on the server have many matches, and is much faster.
-- Linked to-dos no longer lose changes made at the same time in the note and the task view, or their assignees; a deleted to-do restored with undo keeps its link.
-- A role change or a locked account signs the person out of all sessions, also when single sign-on changes the role.
-- **Attention:** two accounts can no longer get the same username; existing duplicates are renamed (`anna` → `anna1`, listed in the log).
-- **Attention:** the app loads pictures only from MindSift itself, so custom themes lose background pictures from other servers.
-- Knowing the id of someone else's file no longer gives access to it.
-- Imports no longer need a lot of memory, no longer fail when two run at once, and a failed import or restore keeps your previous data.
-- A copied image or audio bullet pastes back as one; a file dropped outside a note no longer makes the browser leave the app.
-- Backups are flushed to disk and keep their seconds in the name; the container starts on network storage where it may not change owners.
-- Many smaller fixes: reconnecting after a dropped connection, values typed in dialogs no longer lost, shared notes keep their pins, the demo resets reliably, and more texts follow the app's language.
+- **Attention:** usernames are unique; existing duplicates are renamed (`anna` → `anna1`).
+- **Attention:** pictures load only from MindSift itself (custom themes lose external backgrounds).
+- Repeating tasks repeat again after their next occurrence was deleted.
+- Search finds your own notes even when others have many matches.
+- Imports and restores no longer lose data when they fail.
+- Many smaller fixes in live drawing, linked to-dos, sharing, reconnecting and translations.
 
 ## [0.95.0] - 2026-11-12
 

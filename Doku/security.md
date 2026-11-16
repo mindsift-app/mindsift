@@ -2,7 +2,7 @@
 
 What protects the data on a MindSift server, and how the image is scanned. The README has the short version; how sign-in, sessions and the second factor work inside is in [architecture.md](architecture.md#authentication), sign-in through a provider in [oidc.md](oidc.md). To report a vulnerability, follow [SECURITY.md](../SECURITY.md).
 
-MindSift is meant to be reachable from the internet behind a reverse proxy ([reverse-proxy.md](reverse-proxy.md)). The whole code base was reviewed for security in November 2026 (v0.94.0), and the findings are fixed (see the [changelog](../CHANGELOG.md)). Sign-in through OpenID Connect, two-factor sign-in and passkeys came after that review; they have their own browser tests ([e2e/](../e2e/README.md)).
+MindSift is meant to be reachable from the internet behind a reverse proxy ([reverse-proxy.md](reverse-proxy.md)). Before v0.96.0 MindSift went through code reviews and four penetration tests with fuzzing (November 2026), sign-in through OpenID Connect, two-factor sign-in and passkeys included; every rated finding is fixed. The [security report](security-report.md) lists the findings, their fixes, the accepted trade-offs and the limits of the tests.
 
 ## What protects your data
 
