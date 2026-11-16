@@ -1,6 +1,54 @@
 package storage
 
-import "github.com/mindsift-app/mindsift/internal/domain"
+import (
+	"slices"
+
+	"github.com/mindsift-app/mindsift/internal/domain"
+)
+
+// SeedHelpNotes gives an account only the MindSift help as notes (folder "MindSift help" and its notes in
+// the account's language): what the setup wizard offers. The full sample data of the online demo is
+// SeedStarterContent.
+func (s *Store) SeedHelpNotes(user *domain.User) error {
+	s.seedHelpNotes(user)
+	// The help notes link each other by title; links carry the note's id like ones made in the app
+	s.LinkWikiTitles(user.ID)
+	return nil
+}
+
+// seedHelpNotes: a short guide to MindSift as notes in the account's language (German, English, Spanish,
+// French or Italian, English for anything else), so the notes explain the app while showing the block
+// types (headings, callouts, numbered lists, code, links to notes). The notes link only each other.
+func (s *Store) seedHelpNotes(user *domain.User) {
+	switch s.MessageLanguage(user.ID) {
+	case "de":
+		s.seedHelpNotesDE(user, false)
+	case "es":
+		s.seedHelpNotesES(user)
+	case "fr":
+		s.seedHelpNotesFR(user)
+	case "it":
+		s.seedHelpNotesIT(user)
+	default:
+		s.seedHelpNotesEN(user, false)
+	}
+}
+
+// demoText is text for the online demo's help notes only (German and English, "" elsewhere), demoBlock the
+// same for a whole block.
+func demoText(demo bool, text string) string {
+	if demo {
+		return text
+	}
+	return ""
+}
+
+func demoBlock(demo bool, b seedBlock) []seedBlock {
+	if demo {
+		return []seedBlock{b}
+	}
+	return nil
+}
 
 // seedLinkedTodos shows the link between notes and tasks both ways: a checklist in a note whose main
 // checkbox became a task (the checkboxes below are its subtasks), and a task deepened into a note.
@@ -48,9 +96,8 @@ func (s *Store) seedLinkedTodos(user *domain.User, listID, title, folder, tag st
 	}
 }
 
-// seedHelpNotes: a short guide to MindSift as notes, so the demo explains itself while showing the block
-// types (headings, callouts, numbered lists, code, links to notes).
-func (s *Store) seedHelpNotesDE(user *domain.User) {
+// seedHelpNotesDE: the help notes in German, see seedHelpNotes. demo adds what only fits the online demo.
+func (s *Store) seedHelpNotesDE(user *domain.User, demo bool) {
 	_, _ = s.CreateFolder(user.ID, "MindSift-Hilfe")
 	help := func(title, icon string, spec []seedBlock) {
 		_, _ = s.CreateDocument(user.ID, "", title, icon, "MindSift-Hilfe", seedBlocks(spec), []string{"hilfe"}, false)
@@ -119,7 +166,7 @@ func (s *Store) seedHelpNotesDE(user *domain.User) {
 		{typ: "h2", text: "Arbeiten mit Aufgaben"},
 		{level: 1, text: "Klick öffnet die Details: Priorität, Fälligkeit mit Uhrzeit, Wiederholung, Unteraufgaben, Notizen (mit Mikrofon)"},
 		{level: 1, text: "Ziehen sortiert um oder wechselt die Spalte; `Strg+Z` nimmt Löschen, Verschieben und Abhaken zurück"},
-		{level: 1, text: "Aufgaben und Notizen lassen sich verknüpfen – Beispiel: [[Backup-Konzept]]"},
+		{level: 1, text: "Aufgaben und Notizen lassen sich verknüpfen" + demoText(demo, " – Beispiel: [[Backup-Konzept]]")},
 		{typ: "h2", text: "Aufräumen"},
 		{level: 1, text: "Erledigte wandern nach einer Frist in den Papierkorb, der sich später selbst leert"},
 		{level: 1, text: "Die Fristen stellst du unter Kontoeinstellungen → Aufbewahrung ein"},
@@ -142,18 +189,17 @@ func (s *Store) seedHelpNotesDE(user *domain.User) {
 		{typ: "h2", text: "Aufgaben"},
 		{level: 1, text: "`Strg+Z` nimmt Löschen, Verschieben und Abhaken zurück"},
 	})
-	help("Spracheingabe", "🎙️", []seedBlock{
+	help("Spracheingabe", "🎙️", slices.Concat([]seedBlock{
 		{text: "Mikrofone gibt es im Quick Dump, beim Anlegen von Aufgaben und Listeneinträgen, in den Detailnotizen einer Aufgabe und als `/diktat` in Notizen"},
 		{text: "Am Handy: das + gedrückt halten startet sofort eine Aufnahme"},
 		{text: "Mit eigenem Whisper-Server bleibt die Aufnahme auf deinem Server; unter Kontoeinstellungen → Spracheingabe wählst du Whisper oder die Erkennung des Browsers"},
-		{typ: "callout", text: "In dieser Demo nutzt MindSift die Spracherkennung des Browsers."},
-	})
-	help("Teilen & gemeinsam bearbeiten", "🤝", []seedBlock{
+	}, demoBlock(demo, seedBlock{typ: "callout", text: "In dieser Demo nutzt MindSift die Spracherkennung des Browsers."})))
+	help("Teilen & gemeinsam bearbeiten", "🤝", slices.Concat([]seedBlock{
 		{text: "Notizen, Ordner, Aufgabenlisten und Listen lassen sich mit Personen oder Gruppen teilen – zum Bearbeiten oder nur zum Lesen"},
 		{text: "In einer geteilten Notiz schreiben mehrere gleichzeitig; wer in einem Punkt tippt, hält ihn kurz für sich"},
-		{level: 1, text: "Probier es aus: In der Demo ist alles mit dem Konto **user** geteilt – in einem zweiten Browser als user/user anmelden"},
+	}, demoBlock(demo, seedBlock{level: 1, text: "Probier es aus: In der Demo ist alles mit dem Konto **user** geteilt – in einem zweiten Browser als user/user anmelden"}), []seedBlock{
 		{text: "Aufgaben in geteilten Listen lassen sich Personen zuweisen und beobachten"},
-	})
+	}))
 	help("API & Smart Home", "🔌", []seedBlock{
 		{text: "Unter Kontoeinstellungen → API legst du Schlüssel mit genau den Rechten an, die ein Gerät braucht"},
 		{typ: "h3", text: "Heute fällige Aufgaben abfragen"},

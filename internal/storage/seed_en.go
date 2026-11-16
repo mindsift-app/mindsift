@@ -1,6 +1,10 @@
 package storage
 
-import "github.com/mindsift-app/mindsift/internal/domain"
+import (
+	"slices"
+
+	"github.com/mindsift-app/mindsift/internal/domain"
+)
 
 // English sample data and help notes, for every account that is not German (the demo too). Same
 // structure as the German version in seed.go and seed_help.go.
@@ -252,13 +256,11 @@ func (s *Store) seedStarterEN(user *domain.User) error {
 		{level: 1, text: "New checkboxes one level below automatically become subtasks"},
 		{level: 1, text: "The other way round: “Deepen into note” in the tasks – see the note for the task “Uptime monitoring”"},
 	}))
-	s.seedHelpNotesEN(user)
 	return nil
 }
 
-// seedHelpNotesEN: a short guide to MindSift as notes, so the demo explains itself while showing the
-// block types (headings, callouts, numbered lists, code, links to notes).
-func (s *Store) seedHelpNotesEN(user *domain.User) {
+// seedHelpNotesEN: the help notes in English, see seedHelpNotes. demo adds what only fits the online demo.
+func (s *Store) seedHelpNotesEN(user *domain.User, demo bool) {
 	const folder = "MindSift help"
 	_, _ = s.CreateFolder(user.ID, folder)
 	help := func(title, icon string, spec []seedBlock) {
@@ -328,7 +330,7 @@ func (s *Store) seedHelpNotesEN(user *domain.User) {
 		{typ: "h2", text: "Working with tasks"},
 		{level: 1, text: "A click opens the details: priority, due date with time, repeat, subtasks, notes (with microphone)"},
 		{level: 1, text: "Dragging reorders or changes the column; `Ctrl+Z` undoes deleting, moving and ticking off"},
-		{level: 1, text: "Tasks and notes can be linked – example: [[Backup plan]]"},
+		{level: 1, text: "Tasks and notes can be linked" + demoText(demo, " – example: [[Backup plan]]")},
 		{typ: "h2", text: "Tidying up"},
 		{level: 1, text: "Completed tasks move to the trash after a while, and the trash empties itself later"},
 		{level: 1, text: "Set the periods under Account settings → Retention"},
@@ -351,18 +353,17 @@ func (s *Store) seedHelpNotesEN(user *domain.User) {
 		{typ: "h2", text: "Tasks"},
 		{level: 1, text: "`Ctrl+Z` undoes deleting, moving and ticking off"},
 	})
-	help("Voice input", "🎙️", []seedBlock{
+	help("Voice input", "🎙️", slices.Concat([]seedBlock{
 		{text: "Microphones are in the quick dump, when adding tasks and list items, in a task's notes and as `/diktat` in notes"},
 		{text: "On the phone: holding the + starts a recording right away"},
 		{text: "With your own Whisper server the recording stays on your server; under Account settings → Voice input you choose Whisper or the browser's recognition"},
-		{typ: "callout", text: "In this demo MindSift uses the browser's speech recognition."},
-	})
-	help("Sharing & editing together", "🤝", []seedBlock{
+	}, demoBlock(demo, seedBlock{typ: "callout", text: "In this demo MindSift uses the browser's speech recognition."})))
+	help("Sharing & editing together", "🤝", slices.Concat([]seedBlock{
 		{text: "Notes, folders, task lists and lists can be shared with people or groups – for editing or read-only"},
 		{text: "Several people write in a shared note at the same time; whoever types in a bullet holds it for a moment"},
-		{level: 1, text: "Try it: in the demo everything is shared with the account **user** – sign in as user/user in a second browser"},
+	}, demoBlock(demo, seedBlock{level: 1, text: "Try it: in the demo everything is shared with the account **user** – sign in as user/user in a second browser"}), []seedBlock{
 		{text: "Tasks in shared lists can be assigned to people and watched"},
-	})
+	}))
 	help("API & smart home", "🔌", []seedBlock{
 		{text: "Under Account settings → API you create keys with exactly the permissions a device needs"},
 		{typ: "h3", text: "Get the tasks due today"},

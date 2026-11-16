@@ -1362,9 +1362,10 @@ func openSharing(t *testing.T, store *storage.Store) {
 	}
 }
 
-// The setup switch "Beispieldaten anlegen" fills the new admin's account, but creates no other users
-// (shared demo accounts exist only in demo mode).
-func TestFirstBootSetupWithSampleData(t *testing.T) {
+// The setup switch "MindSift-Hilfe als Notizen anlegen" gives the new admin the help notes and nothing else
+// (no task lists, lists or inbox thoughts), and creates no other users (shared demo accounts exist only
+// in demo mode).
+func TestFirstBootSetupWithHelpNotes(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "sample.db")
 	store, err := storage.NewStore(dbPath)
 	if err != nil {
@@ -1401,9 +1402,19 @@ func TestFirstBootSetupWithSampleData(t *testing.T) {
 		t.Fatalf("sample data must not create users, found %d", n)
 	}
 	docs, _ := store.GetDocuments(res.User.ID)
-	lists, _ := store.GetTaskLists(res.User.ID)
-	if len(docs) == 0 || len(lists) == 0 {
-		t.Fatalf("expected sample notes and task lists, got %d notes, %d task lists", len(docs), len(lists))
+	if len(docs) != 9 {
+		t.Fatalf("expected the 9 help notes, got %d notes", len(docs))
+	}
+	for _, d := range docs {
+		if d.FolderPath != "MindSift-Hilfe" {
+			t.Errorf("note %q outside the help folder: %q", d.Title, d.FolderPath)
+		}
+	}
+	taskLists, _ := store.GetTaskLists(res.User.ID)
+	lists, _ := store.GetAllListsForUser(res.User.ID)
+	thoughts, _ := store.GetThoughts(res.User.ID, "", 100)
+	if len(lists) != 0 || len(thoughts) != 0 || len(taskLists) > 1 {
+		t.Fatalf("the help must not add sample data: %d task lists, %d lists, %d thoughts", len(taskLists), len(lists), len(thoughts))
 	}
 }
 

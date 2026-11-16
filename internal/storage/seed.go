@@ -72,15 +72,23 @@ type seedTask struct {
 	doneSubs int
 }
 
-// SeedStarterContent fills a new account with realistic sample data (optional at setup, always in demo mode):
-// inbox thoughts, two task lists with Kanban states, shopping and packing lists and a few linked notes.
-// German accounts get it in German, all others in English (seed_en.go).
+// SeedStarterContent fills a new account with the full sample data of the online demo (demo mode only; the
+// setup wizard offers just SeedHelpNotes): inbox thoughts, two task lists with Kanban states, shopping and
+// packing lists, linked notes and the help notes. German accounts get it in German, all others in English
+// (seed_en.go), the help notes included.
 func (s *Store) SeedStarterContent(user *domain.User) error {
 	var err error
 	if s.MessageLanguage(user.ID) == "de" {
 		err = s.seedStarterDE(user)
 	} else {
 		err = s.seedStarterEN(user)
+	}
+	// The sample notes link the help notes by their German or English title, so the demo gets the help in
+	// the language of its sample data (the setup offers it in all five)
+	if s.MessageLanguage(user.ID) == "de" {
+		s.seedHelpNotesDE(user, true)
+	} else {
+		s.seedHelpNotesEN(user, true)
 	}
 	// The sample notes link each other by title; links carry the note's id like ones made in the app
 	s.LinkWikiTitles(user.ID)
@@ -345,7 +353,6 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 
 	s.seedKnowledgeBaseDE(user)
 	s.seedLinkedTodosDE(user, homelab)
-	s.seedHelpNotesDE(user)
 	return nil
 }
 
