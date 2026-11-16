@@ -3,6 +3,7 @@ package storage
 import (
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -131,6 +132,31 @@ func TestTagsSeeEveryKindOfShare(t *testing.T) {
 	}
 	if tags[0].Tag != "gemeinsam" || tags[1].Tag != "team" {
 		t.Fatalf("tags not by count: %v", tags)
+	}
+
+	// The notes per hashtag (for the sidebar's filter): the same notes as the counts, each once, sorted,
+	// none in the trash and none not shared
+	docsOf := map[string][]string{}
+	for _, tg := range tags {
+		docsOf[tg.Tag] = tg.DocIDs
+	}
+	sortedIDs := func(ids ...string) []string {
+		sort.Strings(ids)
+		return ids
+	}
+	wantDocs := map[string][]string{
+		"gemeinsam":  sortedIDs(own.ID, d1.ID, d2.ID, d2b.ID, d3.ID, d4.ID, d5.ID),
+		"team":       sortedIDs(d2.ID, d2b.ID),
+		"eigen":      {own.ID},
+		"direkt":     {d1.ID},
+		"ordner":     {d3.ID},
+		"teamordner": {d4.ID},
+		"gast":       {d5.ID},
+	}
+	for tag, ids := range wantDocs {
+		if strings.Join(docsOf[tag], ",") != strings.Join(ids, ",") {
+			t.Fatalf("notes of #%s = %v, want %v", tag, docsOf[tag], ids)
+		}
 	}
 
 	details, err := store.GetTagDetails(me.ID, "#gemeinsam")

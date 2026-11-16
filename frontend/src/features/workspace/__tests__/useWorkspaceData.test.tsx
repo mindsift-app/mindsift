@@ -136,7 +136,7 @@ describe('useWorkspaceData', () => {
       })
     );
     await waitFor(() => expect(result.current.docs.find((d) => d.id === 'b')?.openTodos).toBe(2));
-    expect(result.current.tagsSummary).toEqual([{ tag: 'einkauf', count: 3 }]);
+    expect(result.current.tagsSummary).toEqual([{ tag: 'einkauf', count: 3, docIds: ['b'] }]);
     // Unknown notes change nothing
     const before = result.current.docs;
     act(() => lastHandler()({ event: 'DOC_COUNTS', payload: { id: 'x', openTodos: 1 } }));

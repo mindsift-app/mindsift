@@ -46,7 +46,7 @@ import { SidebarJournal, SidebarTags, SidebarTrash } from './SidebarSections';
 import { useWorkspaceData } from './useWorkspaceData';
 import { useTrashActions } from './useTrashActions';
 import { buildWorkspaceMenu } from './workspaceMenu';
-import { buildFolderTree, collectFolderPaths, folderAncestors, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata, withTodoToggled } from './workspaceListing';
+import { buildFolderTree, collectFolderPaths, docsWithAllTags, filterFolderTree, folderAncestors, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata, withTodoToggled } from './workspaceListing';
 import { FolderDialogs, type NewNoteSheet } from './FolderDialogs';
 import { WorkspaceSubView } from './workspaceTypes';
 import { Trans, useTranslation } from 'react-i18next';
@@ -671,6 +671,40 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   const folderTree = useMemo(() => buildFolderTree(allFolderPaths, treeDocs, sharedFolders), [allFolderPaths, treeDocs, sharedFolders]);
 
+  // Hashtags clicked in the sidebar filter the tree: only notes carrying all of them, their folders open.
+  // Not saved (a reload shows everything again); a hashtag that no note carries any more drops out.
+  const [sidebarTagFilter, setSidebarTagFilter] = useState<string[]>([]);
+  // Folders folded up while the filter is on (all open otherwise); a changed filter opens them again
+  const [filterFolded, setFilterFolded] = useState<Record<string, boolean>>({});
+  const activeTagFilter = useMemo(
+    () => sidebarTagFilter.filter((tag) => tagsSummary.some((s) => s.tag === tag)),
+    [sidebarTagFilter, tagsSummary]
+  );
+  const toggleSidebarTag = useCallback((tag: string) => {
+    setSidebarTagFilter((prev) => (prev.includes(tag) ? prev.filter((x) => x !== tag) : [...prev, tag]));
+    setFilterFolded({});
+  }, []);
+  const clearSidebarTagFilter = useCallback(() => {
+    setSidebarTagFilter([]);
+    setFilterFolded({});
+  }, []);
+  const filterDocIds = useMemo(() => docsWithAllTags(tagsSummary, activeTagFilter), [tagsSummary, activeTagFilter]);
+  const filteredTree = useMemo(() => {
+    if (!filterDocIds) return null;
+    const paths: string[] = [];
+    const tree = filterFolderTree(folderTree, filterDocIds, paths);
+    return { tree, expanded: Object.fromEntries(paths.map((p) => [p, !filterFolded[p]])) };
+  }, [folderTree, filterDocIds, filterFolded]);
+  // Folding a folder while filtering changes only the filter's view, not the saved open folders
+  const setFilterExpanded = useCallback<React.Dispatch<React.SetStateAction<Record<string, boolean>>>>(
+    (action) => {
+      const current = filteredTree?.expanded || {};
+      const next = typeof action === 'function' ? action(current) : action;
+      setFilterFolded(Object.fromEntries(Object.keys(current).map((p) => [p, !next[p]])));
+    },
+    [filteredTree]
+  );
+
   // Demo, first visit in this browser: all folders open once (folding them up afterwards is kept)
   useEffect(() => {
     if (!demoMode || hadSavedFolders.current || allFolderPaths.length === 0) return;
@@ -690,13 +724,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   }, [selectedDocId, selectedFolder]);
 
   const pinnedDocs = useMemo(
-    () => treeDocs.filter((d) => d.isPinned),
-    [treeDocs]
+    () => treeDocs.filter((d) => d.isPinned && (!filterDocIds || filterDocIds.has(d.id))),
+    [treeDocs, filterDocIds]
   );
 
   const rootDocs = useMemo(
-    () => treeDocs.filter((d) => !d.folderPath && !d.isPinned),
-    [treeDocs]
+    () => treeDocs.filter((d) => !d.folderPath && !d.isPinned && (!filterDocIds || filterDocIds.has(d.id))),
+    [treeDocs, filterDocIds]
   );
 
   // Global To-Dos rollup collections
@@ -927,9 +961,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           <FolderTree
             pinnedDocs={pinnedDocs}
             rootDocs={rootDocs}
-            folderTree={folderTree}
-            expandedFolders={expandedFolders}
-            setExpandedFolders={setExpandedFolders}
+            folderTree={filteredTree ? filteredTree.tree : folderTree}
+            expandedFolders={filteredTree ? filteredTree.expanded : expandedFolders}
+            setExpandedFolders={filteredTree ? setFilterExpanded : setExpandedFolders}
+            filterActive={Boolean(filteredTree)}
             selectedDocId={selectedDocId}
             subView={subView}
             drag={drag}
@@ -954,12 +989,23 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
           {/* Tags Explorer */}
           {tagsSummary.length > 0 && (
-            <SidebarTags tagsSummary={tagsSummary} subView={subView} selectedTag={selectedTag} handleSelectTag={handleSelectTag} />
+            <SidebarTags
+              tagsSummary={tagsSummary}
+              selectedTags={activeTagFilter}
+              toggleTag={toggleSidebarTag}
+              clearFilter={clearSidebarTagFilter}
+            />
           )}
         </div>
 
         {/* Trash at the bottom of the tree */}
-        <SidebarTrash drag={drag} subView={subView} trashCount={trash.length} openTrash={openTrash} />
+        <SidebarTrash
+          drag={drag}
+          subView={subView}
+          trashCount={trash.length}
+          openTrash={openTrash}
+          filterActive={activeTagFilter.length > 0}
+        />
       </aside>
 
       {/* RIGHT DETAIL AREA (STRICTLY ISOLATED BY KEY) */}

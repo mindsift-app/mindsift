@@ -701,6 +701,8 @@ type NoteTodo struct {
 type TagSummary struct {
 	Tag   string `json:"tag"`
 	Count int    `json:"count"`
+	// The visible notes carrying the hashtag (sorted; empty for a hashtag that only has a tag page)
+	DocIDs []string `json:"docIds"`
 }
 
 type MatchedTagBlock struct {

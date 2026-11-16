@@ -422,7 +422,12 @@
   },
   "sidebar": {
     "hashtags": "Hashtags (#)",
-    "trashTitle": "Papierkorb – Notizen hierher ziehen, um sie zu löschen"
+    "trashTitle": "Papierkorb – Notizen hierher ziehen, um sie zu löschen",
+    "tagFilterOn": "Nur Notizen mit #{{tag}} zeigen",
+    "tagFilterOff": "#{{tag}} nicht mehr filtern",
+    "clearFilter": "Hashtag-Filter aufheben",
+    "filterActive": "Filter aktiv",
+    "filterNoMatch": "Keine Notiz enthält alle gewählten Hashtags."
   },
   "outlineBar": {
     "label": "Punkt bearbeiten",

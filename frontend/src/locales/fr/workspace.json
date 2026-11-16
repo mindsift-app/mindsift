@@ -425,7 +425,12 @@
   },
   "sidebar": {
     "hashtags": "Hashtags (#)",
-    "trashTitle": "Corbeille – glisse des notes ici pour les supprimer"
+    "trashTitle": "Corbeille – glisse des notes ici pour les supprimer",
+    "tagFilterOn": "Afficher seulement les notes avec #{{tag}}",
+    "tagFilterOff": "Ne plus filtrer par #{{tag}}",
+    "clearFilter": "Retirer le filtre de hashtags",
+    "filterActive": "Filtre actif",
+    "filterNoMatch": "Aucune note ne contient tous les hashtags choisis."
   },
   "outlineBar": {
     "label": "Modifier la puce",

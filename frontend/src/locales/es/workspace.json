@@ -425,7 +425,12 @@
   },
   "sidebar": {
     "hashtags": "Hashtags (#)",
-    "trashTitle": "Papelera – arrastra notas aquí para eliminarlas"
+    "trashTitle": "Papelera – arrastra notas aquí para eliminarlas",
+    "tagFilterOn": "Mostrar solo notas con #{{tag}}",
+    "tagFilterOff": "Dejar de filtrar por #{{tag}}",
+    "clearFilter": "Quitar filtro de hashtags",
+    "filterActive": "Filtro activo",
+    "filterNoMatch": "Ninguna nota contiene todos los hashtags elegidos."
   },
   "outlineBar": {
     "label": "Editar punto",

@@ -75,19 +75,52 @@ export function noteStats(d: Document): NoteStats {
   return stats;
 }
 
-// Every hashtag of the notes with the number of bullets carrying it, most frequent first
+// Every hashtag of the notes with the number of bullets carrying it and the notes it is in, most frequent first
 export function countHashtags(docs: Document[]): TagSummary[] {
-  const tagMap = new Map<string, number>();
+  const tagMap = new Map<string, TagSummary>();
   for (const d of docs) {
     noteStats(d).tagCounts.forEach((count, tag) => {
-      tagMap.set(tag, (tagMap.get(tag) || 0) + count);
+      if (count <= 0) return;
+      const entry = tagMap.get(tag);
+      if (entry) {
+        entry.count += count;
+        entry.docIds!.push(d.id);
+      } else {
+        tagMap.set(tag, { tag, count, docIds: [d.id] });
+      }
     });
   }
-  const list: TagSummary[] = [];
-  tagMap.forEach((count, tag) => {
-    list.push({ tag, count });
-  });
-  return list.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  return Array.from(tagMap.values()).sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
+/**
+ * The notes carrying every one of the hashtags (the sidebar's filter of the folder tree); null without
+ * hashtags, i.e. no filter.
+ */
+export function docsWithAllTags(tagsSummary: TagSummary[], tags: readonly string[]): Set<string> | null {
+  if (tags.length === 0) return null;
+  let ids: Set<string> | null = null;
+  for (const tag of tags) {
+    const docIds = tagsSummary.find((s) => s.tag === tag)?.docIds || [];
+    ids = new Set(ids ? docIds.filter((id) => ids!.has(id)) : docIds);
+  }
+  return ids;
+}
+
+/**
+ * The folder tree cut to the notes of the filter: only those notes, only folders holding one of them
+ * somewhere below (the paths of these folders in `paths`, to show them open).
+ */
+export function filterFolderTree(nodes: FolderTreeNode[], ids: Set<string>, paths: string[] = []): FolderTreeNode[] {
+  const out: FolderTreeNode[] = [];
+  for (const node of nodes) {
+    const subfolders = filterFolderTree(node.subfolders, ids, paths);
+    const docs = node.docs.filter((d) => ids.has(d.id));
+    if (subfolders.length === 0 && docs.length === 0) continue;
+    paths.push(node.fullPath);
+    out.push({ ...node, subfolders, docs });
+  }
+  return out;
 }
 
 /**

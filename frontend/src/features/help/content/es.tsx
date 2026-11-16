@@ -372,6 +372,9 @@ const es: HelpContent = {
               <strong className="text-main">Vista «Etiquetas y filtros»:</strong> el resumen de etiquetas está en las pestañas del Workspace, arriba. Muestra todos los hashtags en uso, permite buscar sus apariciones en todos los documentos e incluso añadir notas libres en las páginas de etiquetas.
             </li>
             <li>
+              <strong className="text-main">Hashtags en la barra de carpetas:</strong> un clic en un hashtag debajo de las carpetas filtra el árbol: solo quedan las notas con ese hashtag, sus carpetas se abren y las demás se ocultan. Con varios hashtags elegidos se ven las notas que los contienen todos; un segundo clic quita uno, la ✕ roja junto a «Hashtags» quita el filtro. Mientras está activo, la barra sobre la papelera brilla ligeramente en rojo; al recargar desaparece.
+            </li>
+            <li>
               <strong className="text-main">Enlaces entrantes (backlinks):</strong> al final de cada nota, «Vinculado a esta nota» muestra qué otras notas la enlazan mediante <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[título]]</code>. Al hacer clic en un lugar, se salta directamente allí.
             </li>
             <li>

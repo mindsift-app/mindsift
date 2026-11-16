@@ -752,6 +752,8 @@ export interface FolderShare {
 export interface TagSummary {
   tag: string;
   count: number;
+  // The notes carrying the hashtag (the sidebar filters its folder tree by them)
+  docIds?: string[];
 }
 
 export interface MatchedTagBlock {

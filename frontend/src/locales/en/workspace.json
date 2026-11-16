@@ -425,7 +425,12 @@
   },
   "sidebar": {
     "hashtags": "Hashtags (#)",
-    "trashTitle": "Trash – drag notes here to delete them"
+    "trashTitle": "Trash – drag notes here to delete them",
+    "tagFilterOn": "Show only notes with #{{tag}}",
+    "tagFilterOff": "Stop filtering by #{{tag}}",
+    "clearFilter": "Clear hashtag filter",
+    "filterActive": "Filter on",
+    "filterNoMatch": "No note contains all selected hashtags."
   },
   "outlineBar": {
     "label": "Edit bullet",

@@ -320,6 +320,9 @@ const it: HelpContent = {
               <strong className="text-main">Vista «Tag e filtri»:</strong> la panoramica dei tag si trova nelle schede in alto nel Workspace. Mostra tutti gli hashtag in uso, consente di cercare le loro occorrenze in tutti i documenti e include anche note libere sulle pagine dei tag.
             </li>
             <li>
+              <strong className="text-main">Hashtag nella barra delle cartelle:</strong> un clic su un hashtag sotto le cartelle filtra l'albero: restano solo le note con quell'hashtag, le loro cartelle si aprono, tutte le altre vengono nascoste. Con più hashtag scelti si vedono le note che li contengono tutti; un secondo clic ne toglie uno, la ✕ rossa accanto a «Hashtag» toglie il filtro. Finché è attivo, la barra sopra il cestino si illumina leggermente di rosso; ricaricando la pagina sparisce.
+            </li>
+            <li>
               <strong className="text-main">Backlink:</strong> in fondo a ogni nota, la sezione «Collegano a questa nota» mostra quali altre note la collegano con <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[titolo]]</code>. Facendo clic su un riferimento si salta direttamente al blocco corrispondente.
             </li>
             <li>

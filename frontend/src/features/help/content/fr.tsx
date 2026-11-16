@@ -323,7 +323,10 @@ const fr: HelpContent = {
               <strong className="text-main">Hashtags :</strong> tape <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">#tag</code> directement dans le texte. Les hashtags regroupent automatiquement les thèmes dans la vue d'ensemble des tags.
             </li>
             <li>
-              <strong className="text-main">Vue d'ensemble des tags :</strong> clique sur un hashtag dans la barre latérale pour afficher toutes les puces et notes contenant ce tag sous forme de tuiles filtrables.
+              <strong className="text-main">Vue d'ensemble des tags :</strong> l'onglet « Hashtags » en haut de l'espace de travail, ou un clic sur un hashtag dans le texte d'une note, affiche toutes les puces et notes contenant ce tag sous forme de tuiles filtrables.
+            </li>
+            <li>
+              <strong className="text-main">Hashtags dans la barre des dossiers :</strong> un clic sur un hashtag sous les dossiers filtre l'arborescence : seules les notes avec ce hashtag restent, leurs dossiers s'ouvrent, tous les autres sont masqués. Avec plusieurs hashtags choisis, tu vois les notes qui les contiennent tous ; un second clic en retire un, la ✕ rouge à côté de « Hashtags » retire le filtre. Tant qu'il est actif, la barre au-dessus de la corbeille luit légèrement en rouge ; un rechargement le supprime.
             </li>
             <li>
               <strong className="text-main">Rétroliens (Backlinks) :</strong> en bas de chaque note, une section affiche toutes les autres notes qui font référence à la note actuelle.

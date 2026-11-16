@@ -320,6 +320,9 @@ const en: HelpContent = {
               <strong className="text-main">“Tags & filters” view:</strong> the tag overview is in the workspace tabs at the top. It shows all hashtags in use, lets you search their places across all documents and even keep free notes on tag pages.
             </li>
             <li>
+              <strong className="text-main">Hashtags in the folder sidebar:</strong> a click on a hashtag below the folders filters the tree: only notes with that hashtag stay, their folders open, all others are hidden. Several selected hashtags show the notes that contain all of them; a second click takes one out again, the red ✕ next to “Hashtags” clears the filter. While it is on, the bar above the trash glows faintly red; a reload removes it.
+            </li>
+            <li>
               <strong className="text-main">Backlinks:</strong> at the end of every note, “Linked to this note” shows which other notes link to it with <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[title]]</code>. Clicking a place jumps right there.
             </li>
             <li>

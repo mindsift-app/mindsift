@@ -383,6 +383,9 @@ const de: HelpContent = {
               <strong className="text-main">Ansicht „Tags & Filter“:</strong> Im oberen Workspace-Reiter findest du die Tag-Übersicht. Hier siehst du alle verwendeten Hashtags, kannst Fundstellen aus allen Dokumenten gebündelt durchsuchen und sogar eigene freie Notizen auf Tag-Seiten hinterlegen.
             </li>
             <li>
+              <strong className="text-main">Hashtags in der Ordnerleiste:</strong> Ein Klick auf einen Hashtag unter den Ordnern filtert den Baum: Es bleiben nur Notizen mit diesem Hashtag, ihre Ordner stehen offen, alle anderen sind ausgeblendet. Mehrere gewählte Hashtags zeigen Notizen, die alle enthalten; ein zweiter Klick nimmt einen wieder heraus, das rote ✕ neben „Hashtags“ hebt den Filter auf. Solange er aktiv ist, leuchtet die Leiste über dem Papierkorb leicht rot; nach dem Neuladen ist er weg.
+            </li>
+            <li>
               <strong className="text-main">Rückverweise:</strong> Am Ende jeder Notiz siehst du unter „Verlinkt auf diese Notiz“, welche anderen Notizen sie mit <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[Titel]]</code> verlinken. Ein Klick auf die Fundstelle springt direkt dorthin.
             </li>
             <li>

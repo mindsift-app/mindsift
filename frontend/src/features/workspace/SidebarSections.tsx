@@ -1,4 +1,4 @@
-import { CalendarDays, Trash } from 'lucide-react';
+import { CalendarDays, Trash, X } from 'lucide-react';
 import { JournalDay, TagSummary } from '../../lib/types';
 import { todayISO } from '../../lib/journal';
 import { CountBadge } from '../../components/CountBadge';
@@ -84,61 +84,84 @@ export function SidebarJournal({
   );
 }
 
-// Hashtags of all notes below the tree
+// Hashtags of all notes below the tree. A click filters the tree by the hashtag (again: off); several
+// hashtags = notes carrying all of them. While a filter is on, a small red ✕ beside the heading resets it.
 export function SidebarTags({
   tagsSummary,
-  subView,
-  selectedTag,
-  handleSelectTag,
+  selectedTags,
+  toggleTag,
+  clearFilter,
 }: {
   tagsSummary: TagSummary[];
-  subView: WorkspaceSubView;
-  selectedTag: string | null;
-  handleSelectTag: (tag: string) => void;
+  selectedTags: readonly string[];
+  toggleTag: (tag: string) => void;
+  clearFilter: () => void;
 }) {
   const { t } = useTranslation('workspace');
   return (
     <div>
-      <div className="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-faint">
-        {t('sidebar.hashtags')}
+      <div className="flex items-center justify-between gap-1 px-2 mb-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-faint">{t('sidebar.hashtags')}</span>
+        {selectedTags.length > 0 && (
+          <button
+            type="button"
+            onClick={clearFilter}
+            title={t('sidebar.clearFilter')}
+            aria-label={t('sidebar.clearFilter')}
+            className="-my-3.5 sm:-my-1 -mr-2 sm:-mr-1 inline-flex items-center justify-center w-11 h-11 sm:w-5 sm:h-5 shrink-0 rounded-full text-status-err/80 hover:text-status-err hover:bg-status-err/10 transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
+          </button>
+        )}
       </div>
       <div className="flex flex-wrap gap-1 px-1">
-        {tagsSummary.map((tag) => (
-          <button
-            key={tag.tag}
-            type="button"
-            onClick={() => handleSelectTag(tag.tag)}
-            className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-btn text-[10px] font-medium transition-colors ${
-              subView === 'tag_detail' && selectedTag === tag.tag
-                ? 'bg-accent text-on-accent'
-                : 'bg-panel-elevated text-muted hover:text-accent'
-            }`}
-          >
-            <span>#{tag.tag}</span>
-            <span className="opacity-60 font-mono text-[9px]">{tag.count}</span>
-          </button>
-        ))}
+        {tagsSummary.map((tag) => {
+          const selected = selectedTags.includes(tag.tag);
+          return (
+            <button
+              key={tag.tag}
+              type="button"
+              onClick={() => toggleTag(tag.tag)}
+              aria-pressed={selected}
+              title={selected ? t('sidebar.tagFilterOff', { tag: tag.tag }) : t('sidebar.tagFilterOn', { tag: tag.tag })}
+              className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-btn text-[10px] font-medium transition-colors cursor-pointer ${
+                selected ? 'bg-accent text-on-accent' : 'bg-panel-elevated text-muted hover:text-accent'
+              }`}
+            >
+              <span>#{tag.tag}</span>
+              <span className="opacity-60 font-mono text-[9px]">{tag.count}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// Trash at the bottom of the sidebar; notes dragged onto it are deleted
+// Trash at the bottom of the sidebar; notes dragged onto it are deleted. While the hashtag filter is on,
+// its bar glows faintly red, so the filter is noticed even with the hashtags scrolled out of view.
 export function SidebarTrash({
   drag,
   subView,
   trashCount,
   openTrash,
+  filterActive = false,
 }: {
   drag: ReturnType<typeof useDocDragDrop>;
   subView: WorkspaceSubView;
   trashCount: number;
   openTrash: () => void;
+  filterActive?: boolean;
 }) {
   const { t } = useTranslation('workspace');
   const { draggingDocId, trashDragOver, setTrashDragOver, handleDropOnTrash } = drag;
   return (
-    <div className="p-2 border-t border-border shrink-0">
+    <div
+      data-filter-active={filterActive || undefined}
+      className={`p-2 border-t shrink-0 transition-colors ${
+        filterActive ? 'border-status-err/50 bg-status-err/10' : 'border-border'
+      }`}
+    >
       <button
         type="button"
         onClick={openTrash}
@@ -161,6 +184,7 @@ export function SidebarTrash({
       >
         <Trash className="w-3.5 h-3.5" />
         <span className="flex-1 text-left">{t('trash.title')}</span>
+        {filterActive && <span className="text-[10px] font-semibold text-status-err/80">{t('sidebar.filterActive')}</span>}
         <CountBadge count={trashCount} />
       </button>
     </div>

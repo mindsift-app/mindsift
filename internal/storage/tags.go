@@ -30,16 +30,15 @@ func (s *Store) UpdateTagPageNote(userID, tag, content string) (string, error) {
 func (s *Store) GetWorkspaceTags(userID string) ([]domain.TagSummary, error) {
 	// Only the notes the person can see (sqlVisibleDocIDs), not every note of the server; a hashtag is
 	// in block_tags once per bullet (key tag, block_id) and every note is in visible once, so COUNT(*)
-	// counts the bullets
+	// counts the bullets. One row per hashtag and note: the sidebar filters the folder tree by the notes.
 	rows, err := s.db.Query(
 		`WITH visible(id) AS (`+sqlVisibleDocIDs+`)
-		 SELECT t.tag, COUNT(*) AS count
+		 SELECT t.tag, d.id, COUNT(*) AS count
 		 FROM visible
 		 CROSS JOIN documents d ON d.id = visible.id
 		 CROSS JOIN block_tags t ON t.document_id = d.id
 		 WHERE d.is_archived = 0
-		 GROUP BY t.tag
-		 ORDER BY count DESC, t.tag ASC`,
+		 GROUP BY t.tag, d.id`,
 		userID,
 	)
 	if err != nil {
@@ -48,18 +47,35 @@ func (s *Store) GetWorkspaceTags(userID string) ([]domain.TagSummary, error) {
 	defer rows.Close()
 
 	results := make([]domain.TagSummary, 0)
-	seen := make(map[string]bool)
+	byTag := make(map[string]int) // hashtag: index in results
 	for rows.Next() {
-		var ts domain.TagSummary
-		if err := rows.Scan(&ts.Tag, &ts.Count); !dbFailed(err) {
-			results = append(results, ts)
-			seen[ts.Tag] = true
+		var tag, docID string
+		var count int
+		if err := rows.Scan(&tag, &docID, &count); dbFailed(err) {
+			continue
 		}
+		i, ok := byTag[tag]
+		if !ok {
+			i = len(results)
+			byTag[tag] = i
+			results = append(results, domain.TagSummary{Tag: tag, DocIDs: []string{}})
+		}
+		results[i].Count += count
+		results[i].DocIDs = append(results[i].DocIDs, docID)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	_ = rows.Close()
+	for i := range results {
+		sort.Strings(results[i].DocIDs)
+	}
+	sort.Slice(results, func(i, j int) bool {
+		if results[i].Count != results[j].Count {
+			return results[i].Count > results[j].Count
+		}
+		return results[i].Tag < results[j].Tag
+	})
 
 	// Also include tags that have a non-empty tag_pages note even if not currently used in a block
 	pageRows, err := s.db.Query(
@@ -69,9 +85,12 @@ func (s *Store) GetWorkspaceTags(userID string) ([]domain.TagSummary, error) {
 	if err == nil {
 		for pageRows.Next() {
 			var t string
-			if err := pageRows.Scan(&t); !dbFailed(err) && t != "" && !seen[t] {
-				results = append(results, domain.TagSummary{Tag: t, Count: 0})
-				seen[t] = true
+			if err := pageRows.Scan(&t); !dbFailed(err) && t != "" {
+				if _, used := byTag[t]; used {
+					continue
+				}
+				byTag[t] = len(results)
+				results = append(results, domain.TagSummary{Tag: t, Count: 0, DocIDs: []string{}})
 			}
 		}
 		logDBErr(pageRows.Err())
