@@ -23,8 +23,7 @@
       "default": "Source: default UTC – no time zone is set here or through TZ"
     },
     "hint": "One time zone for the whole server: due dates, alarms, the daily summary, backups and dates in emails follow it. A change applies at once.",
-    "useBrowser": "Use this browser's time zone ({{zone}})",
-    "reset": "Unset"
+    "useBrowser": "Use this browser's time zone ({{zone}})"
   },
   "user": {
     "backTitle": "Back to the overview",
@@ -597,15 +596,15 @@
   },
   "sharing": {
     "private": {
-      "title": "1. Private",
+      "title": "Private",
       "text": "Nobody shares with others: no sharing with people, no groups."
     },
     "organizations": {
-      "title": "2. Within organizations (recommended)",
+      "title": "Within organizations (recommended)",
       "text": "Sharing only with people one has at least one organization in common with. Whoever belongs to none can share with nobody."
     },
     "open": {
-      "title": "3. Open",
+      "title": "Open",
       "text": "Everyone on this server can share with each other."
     }
   },

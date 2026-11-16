@@ -23,8 +23,7 @@
       "default": "Origen: UTC por defecto; no hay zona horaria definida ni aquí ni mediante TZ"
     },
     "hint": "Una zona horaria para todo el servidor: de ella dependen los vencimientos, las alarmas, el resumen diario, las copias de seguridad y las fechas de los correos. Un cambio se aplica al instante.",
-    "useBrowser": "Usar la zona horaria de este navegador ({{zone}})",
-    "reset": "Dejar sin definir"
+    "useBrowser": "Usar la zona horaria de este navegador ({{zone}})"
   },
   "user": {
     "backTitle": "Volver a la vista general",
@@ -56,15 +55,15 @@
   "sending": "Enviando…",
   "sharing": {
     "private": {
-      "title": "1. Privado",
+      "title": "Privado",
       "text": "Nadie comparte con otros: sin compartir con personas, sin grupos."
     },
     "organizations": {
-      "title": "2. Dentro de las organizaciones (recomendado)",
+      "title": "Dentro de las organizaciones (recomendado)",
       "text": "Solo se comparte con personas con las que se tiene al menos una organización en común. Quien no pertenece a ninguna no puede compartir con nadie."
     },
     "open": {
-      "title": "3. Abierto",
+      "title": "Abierto",
       "text": "Todos en este servidor pueden compartir entre sí."
     }
   },

@@ -63,10 +63,11 @@ describe('TimeZoneSetting (server time zone in the administration)', () => {
     expect(screen.getByText('Quelle: diese Einstellung')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Zeitzone dieses Browsers übernehmen (America/Los Angeles)' }));
     expect(onSave).toHaveBeenLastCalledWith({ timeZone: 'America/Los_Angeles' });
-    fireEvent.click(screen.getByRole('button', { name: 'Nicht mehr festlegen' }));
-    expect(onSave).toHaveBeenLastCalledWith({ timeZone: '' });
+    // No button of its own takes the setting back: the empty choice of the menu does
+    expect(screen.queryByRole('button', { name: 'Nicht mehr festlegen' })).toBeNull();
     // Without the setting the server would use TZ: the empty choice says so
     fireEvent.click(screen.getByRole('button', { name: 'Zeitzone' }));
-    expect(screen.getByRole('option', { name: 'Nicht festgelegt (Asia/Tokyo)' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('option', { name: 'Nicht festgelegt (Asia/Tokyo)' }));
+    expect(onSave).toHaveBeenLastCalledWith({ timeZone: '' });
   });
 });

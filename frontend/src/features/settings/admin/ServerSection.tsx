@@ -1,9 +1,6 @@
 import React from 'react';
-import {
-  Users,
-  CircleAlert,
-} from 'lucide-react';
-import { RegistrationMode } from '../../../lib/types';
+import { CircleAlert } from 'lucide-react';
+import { RegistrationMode, SharingMode } from '../../../lib/types';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { BackupAdminCard } from '../BackupAdminCard';
 import { VoiceStatusCard } from '../VoiceStatusCard';
@@ -50,78 +47,76 @@ export function ServerSection({
           {/* Installed and latest release (read only) */}
           <UpdateStatusCard />
 
-          <div>
-            <label className="block text-muted font-semibold mb-1">
-              {t('server.instanceName')}
-            </label>
-            <div className="flex gap-2 max-w-md">
-              <input
-                {...NO_AUTOFILL}
-                type="text"
-                value={settings.instanceName}
-                onChange={(e) =>
-                  setSettings((prev) => ({ ...prev, instanceName: e.target.value }))
-                }
-                className="flex-1 h-9 px-3 input-field"
-              />
-              <button
-                type="button"
-                onClick={() => handleSaveSystemSettings()}
-                className="btn-primary h-9 px-4 text-xs"
-              >
-                {t('common:save')}
-              </button>
+          {/* The instance: its name, the default language and the server's time zone */}
+          <div className="bg-canvas border border-border rounded-card divide-y divide-border" data-admin-instance>
+            <div className="p-4 flex flex-wrap items-center justify-between gap-4">
+              <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
+                <p className="font-bold text-main">{t('server.instanceName')}</p>
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <input
+                  {...NO_AUTOFILL}
+                  type="text"
+                  aria-label={t('server.instanceName')}
+                  value={settings.instanceName}
+                  onChange={(e) =>
+                    setSettings((prev) => ({ ...prev, instanceName: e.target.value }))
+                  }
+                  className="flex-1 min-w-0 sm:flex-none sm:w-56 h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSaveSystemSettings()}
+                  className="btn-primary h-11 sm:h-8 px-4 text-xs"
+                >
+                  {t('common:save')}
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Default language: login screen, new accounts and browsers in other languages */}
-          <div>
-            <p className="block text-muted font-semibold mb-1">{t('defaultLanguage.title')}</p>
-            <div className="w-full max-w-md">
+            {/* Default language: login screen, new accounts and browsers in other languages */}
+            <div className="p-4 flex flex-wrap items-center justify-between gap-4">
+              <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
+                <p className="font-bold text-main">{t('defaultLanguage.title')}</p>
+                <p className="text-[11px] text-muted mt-0.5">{t('defaultLanguage.hint')}</p>
+              </div>
               <SelectMenu
+                size="sm"
                 ariaLabel={t('defaultLanguage.title')}
                 value={settings.defaultLanguage || FALLBACK_LANGUAGE}
                 onChange={(defaultLanguage) => handleSaveSystemSettings({ defaultLanguage })}
                 options={LANGUAGES.map((l) => ({ value: l.id, label: l.name }))}
               />
             </div>
-            <p className="text-[11px] text-muted mt-1 max-w-md">{t('defaultLanguage.hint')}</p>
+
+            {/* The server's time zone: due dates, alarms, the daily summary and backups follow it */}
+            <TimeZoneSetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
           </div>
 
-          {/* The server's time zone: due dates, alarms, the daily summary and backups follow it */}
-          <TimeZoneSetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
-
-          {/* Sharing Isolation Cards */}
-          <div className="space-y-2">
-            <label className="block text-muted font-semibold flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-accent" />
-              <span>{t('server.sharing')}</span>
-            </label>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {SHARING_MODES.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => handleSelectSharingMode(m.id)}
-                  className={`p-4 text-left border rounded-card transition-colors ${
-                    settings.sharingMode === m.id
-                      ? 'bg-canvas border-accent text-main shadow-panel'
-                      : 'bg-canvas/50 border-border text-muted hover:text-main'
-                  }`}
-                >
-                  <p className="font-bold text-xs text-main">{m.title}</p>
-                  <p className="text-[11px] text-muted mt-1 leading-relaxed">{m.text}</p>
-                </button>
-              ))}
+          {/* Who may share with whom: one of three modes, stricter first */}
+          <div className="p-4 bg-canvas border border-border rounded-card space-y-3" data-admin-sharing-mode>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
+                <p className="font-bold text-main">{t('server.sharing')}</p>
+                <p className="text-[11px] text-muted mt-0.5">
+                  {SHARING_MODES.find((m) => m.id === settings.sharingMode)?.text}
+                </p>
+              </div>
+              <SelectMenu<SharingMode>
+                size="sm"
+                ariaLabel={t('server.sharing')}
+                value={settings.sharingMode}
+                onChange={(mode) => handleSelectSharingMode(mode)}
+                options={SHARING_MODES.map((m) => ({ value: m.id, label: m.title, hint: m.text }))}
+              />
             </div>
 
             {pendingMode && (
-              <div className="p-3 border border-status-warn/40 bg-status-warn/5 rounded-card flex flex-wrap items-center gap-2">
+              <div className="pt-3 border-t border-border flex flex-wrap items-center gap-2">
                 <CircleAlert className="w-4 h-4 text-status-warn shrink-0" />
                 <span className="flex-1 min-w-0 text-main">
                   {t('server.switchWarning', {
-                    mode: SHARING_MODES.find((m) => m.id === pendingMode.mode)?.title.replace(/^\d\.\s*/, ''),
+                    mode: SHARING_MODES.find((m) => m.id === pendingMode.mode)?.title || '',
                     count: pendingMode.affected,
                   })}
                 </span>
@@ -131,11 +126,11 @@ export function ServerSection({
                     setPendingMode(null);
                     handleSaveSystemSettings({ sharingMode: mode });
                   }}
-                  className="btn-primary h-7 px-3 text-[11px]"
+                  className="btn-primary h-11 sm:h-7 px-3 text-[11px]"
                 >
                   {t('server.switchAnyway')}
                 </button>
-                <button onClick={() => setPendingMode(null)} className="btn-action h-7 px-2 text-[11px]">
+                <button onClick={() => setPendingMode(null)} className="btn-action h-11 sm:h-7 px-2 text-[11px]">
                   {t('common:cancel')}
                 </button>
               </div>
@@ -236,7 +231,7 @@ export function ServerSection({
 
           {/* Who must sign in with a second factor; without one the next request leads to its setup */}
           <div className="p-4 bg-canvas border border-border rounded-card flex flex-wrap items-center justify-between gap-4" data-admin-mfa-required>
-            <div className="pr-4 min-w-0 flex-1">
+            <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
               <p className="font-bold text-main">{t('server.mfaRequired')}</p>
               <p className="text-[11px] text-muted mt-0.5">{t('server.mfaRequiredHint')}</p>
             </div>
