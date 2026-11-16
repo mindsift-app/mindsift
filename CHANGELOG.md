@@ -35,7 +35,7 @@ Versions without a git tag were development states and were never published as a
 - **Much more on a small server:** 1,200 people at once on 1 CPU core and 1 GB RAM with 0.03 % errors.
 - **Desktop redesign** with a navigation rail, Quick Dump as a window and a calmer look.
 - Offline changes in shared lists and tasks never undo someone else's, and linked to-dos stay in step with their tasks.
-- A dragged bullet takes the level of the bullet it is dropped in front of; the drop line shows that level.
+- A dragged bullet takes the level of the bullet it is dropped in front of; move the mouse to the right while dragging to drop it deeper, down to the last sub-bullet of the bullet above. The drop line shows the level, the bullets around it keep their place.
 - An image's empty caption only shows on hover or after tapping; on touch screens the first tap shows the controls, the second opens the image.
 - On phones, code blocks have no indent arrows; the bar above the keyboard indents them.
 
