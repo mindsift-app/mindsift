@@ -98,7 +98,8 @@ describe('dragging a bullet in the outliner', () => {
     renderTree();
     const data = transfer();
     await start('u', data);
-    expect(data.effectAllowed).toBe('move');
+    // Copy is allowed too: with Ctrl the system asks for a copy and would otherwise refuse the drop
+    expect(data.effectAllowed).toBe('copyMove');
     await over('br', data);
     expect(data.dropEffect).toBe('move');
     expect(dropLine()?.getAttribute('data-drop-line')).toBe('1');
@@ -136,13 +137,26 @@ describe('dragging a bullet in the outliner', () => {
     // Pressed during the drag: its own child becomes a target, on the level it has after moving up
     await over('f', data, { ctrlKey: true });
     expect(lastGhost()).toBe(true);
-    expect(data.dropEffect).toBe('move');
+    // The operation the system asks for with Ctrl (Linux, Windows: copy), else it refuses the drop
+    expect(data.dropEffect).toBe('copy');
     expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
     // Released: the whole branch again
     await over('f', data);
     expect(lastGhost()).toBe(false);
+    expect(data.dropEffect).toBe('move');
     expect(dropLine()).toBeNull();
     await over('u', data, { ctrlKey: true });
+    await drop('u', data);
+    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
+  });
+
+  it('moves (never copies) when the system reports the drop as a copy, without the key in the drop event', async () => {
+    renderTree();
+    const data = transfer();
+    await start('a', data);
+    await over('u', data, { ctrlKey: true });
+    expect(data.dropEffect).toBe('copy');
+    // The drop event itself carries no Ctrl here: the state seen while dragging counts
     await drop('u', data);
     expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
   });
@@ -167,6 +181,8 @@ describe('dragging a bullet in the outliner', () => {
     expect(lastGhost()).toBe(false);
     await over('u', data, { altKey: true });
     expect(lastGhost()).toBe(true);
+    // Option means copy on macOS as well
+    expect(data.dropEffect).toBe('copy');
     await drop('u', data);
     expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
   });
