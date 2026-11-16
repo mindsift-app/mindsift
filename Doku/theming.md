@@ -14,64 +14,55 @@ Every theme resides in the [`frontend/src/themes/`](../frontend/src/themes/) dir
 
 ---
 
-## 🧱 2. The 6 Standardized Variable Blocks
+## 🧱 2. The Variable Blocks
 
-Each theme file is structured into six strictly defined sections:
+Each theme file is structured into the same groups (the full, commented list is [`theme-template.css`](../frontend/src/themes/theme-template.css)). Components only use the Tailwind names on the right (section 4), never fixed colours.
+
+| Variable | Tailwind class | Used for | In the custom theme editor |
+| :--- | :--- | :--- | :--- |
+| `--accent-primary` | `accent`, `brand` | Primary buttons, active tabs, focus, links | tile |
+| `--accent-hover` | `accent-hover`, `status-info` | Hover of accent elements, info colour | set along with the accent |
+| `--accent-dim`, `--accent-border` | `accent-dim`, `accent-border` | Tinted background and border of accent badges | derived from the accent |
+| `--text-on-accent` | `on-accent` | Text on accent surfaces | set along with the accent |
+| `--bg-app` | `canvas` | Page background | tile |
+| `--bg-panel` | `panel`, `surface` | Cards, header, sidebar, dropdowns | tile |
+| `--bg-panel-elevated` | `panel-elevated` | Highlighted elements, active rows | tile |
+| `--bg-panel-hover` | `panel-hover` | Hover on surfaces | more colours |
+| `--bg-input` | `input` | Text fields, selects | more colours |
+| `--bg-code` | `code` | Code blocks, keyboard badges | more colours |
+| `--bg-editor`, `--bg-sidebar` | `editor`, `sidebar` | Note editor and folder bar (default `--bg-app` / `--bg-panel`) | – |
+| `--bg-overlay` | `overlay` | Backdrop behind dialogs | – |
+| `--text-main` | `main` | Main text, headings | tile |
+| `--text-muted` | `muted` | Secondary text, descriptions | tile |
+| `--text-faint` | `faint` | Subtlest text: placeholders, hints, counts, done tasks, inactive buttons | more colours |
+| `--text-code` | `code-fg` | Plain text in code blocks (default `--text-main`) | – |
+| `--border-color`, `--border-subtle`, `--border-strong` | `border`, `border-subtle`, `border-strong` | Lines, dividers, hovered and focused borders | `--border-color` under more colours |
+| `--shadow-panel` | `shadow-panel` | Shadows of panels and menus | – |
+| `--scrollbar-thumb`, `--scrollbar-thumb-hover` | – | Scrollbars | – |
+| `--color-success` / `--bg-success` / `--border-success` | `status-ok…` | Done, online, saved | – |
+| `--color-danger` / `--bg-danger` / `--border-danger` | `status-err…` | Errors, delete, urgent | – |
+| `--color-warning` / `--bg-warning` / `--border-warning` | `status-warn…` | Important, warnings, locked | – |
+| `--color-info`, `--color-purple` | `tone-blue`, `tone-purple` | Extra Kanban column colours (defaults in `index.css`) | – |
+| `--radius-card`, `--radius-btn`, `--radius-input`, `--radius-checkbox`, `--radius-pill` | `rounded-card` … | Corners | – |
+| `--code-keyword` … `--code-variable` | – | Syntax highlighting (defaults in `index.css`) | – |
+
+### Derived colours
+
+The template does not give the secondary colours fixed values but derives them from the main ones with `color-mix()`, so a theme that only changes the six tiles stays consistent (`DERIVED_THEME_VARS` in [`themeCss.ts`](../frontend/src/lib/themeCss.ts)):
 
 ```css
-:root[data-theme="your-theme"] {
-  /* ==========================================================================
-     1. ACCENT COLOR (Focus, Primary Actions, Highlights)
-     ========================================================================== */
-  --accent: #2563eb;                    /* Primary buttons & active tabs */
-  --accent-hover: #3b82f6;              /* Hover state */
-  --accent-dim: rgba(37, 99, 235, 0.15);/* Transparent background for badges */
-  --accent-contrast: #ffffff;           /* Text color on accent surfaces */
-
-  /* ==========================================================================
-     2. SURFACES & BACKGROUNDS
-     ========================================================================== */
-  --bg-canvas: #0e1013;                 /* Base background of the entire page */
-  --bg-panel: #16181d;                  /* Panels, cards, modals & sidebars */
-  --bg-panel-elevated: #1f2229;         /* Elevated elements & hover panels */
-  --bg-input: #121418;                  /* Background of text input fields */
-  --bg-code: #0b0c0f;                   /* Code blocks & keyboard badges */
-                                        /* Optional: --text-code, plain text in code blocks (default --text-main) */
-  --bg-overlay: rgba(0, 0, 0, 0.75);    /* Modal backdrop overlay */
-
-  /* ==========================================================================
-     3. TEXT & CONTRAST
-     ========================================================================== */
-  --text-main: #f4f4f5;                 /* Main text, headings, labels */
-  --text-muted: #a1a1aa;                /* Secondary text, descriptions */
-  --text-faint: #71717a;                /* Subtlest text, keyboard hints */
-  --text-on-accent: #ffffff;            /* Readable text on --accent */
-
-  /* ==========================================================================
-     4. BORDERS, DIVIDERS & SHADOWS
-     ========================================================================== */
-  --border-color: rgba(255, 255, 255, 0.08); /* Default divider lines */
-  --border-strong: rgba(255, 255, 255, 0.18);/* Focused borders, tabs */
-  --shadow-panel: 0 4px 20px -2px rgba(0, 0, 0, 0.45); /* Box shadows */
-
-  /* ==========================================================================
-     5. STATUS & SIGNAL COLORS
-     ========================================================================== */
-  --status-ok: #22c55e;                 /* Done, Online, Active (Green) */
-  --status-err: #ef4444;                /* Error, Delete, Urgent (Red) */
-  --status-warn: #eab308;               /* Important, Warning, Locked (Yellow) */
-  --status-info: #3b82f6;               /* Hints, Information (Blue) */
-
-  /* ==========================================================================
-     6. CORNER RADII / GEOMETRY
-     ========================================================================== */
-  --radius-card: 0px;                   /* Corner radius of panels & cards */
-  --radius-btn: 2px;                    /* Corner radius of buttons */
-  --radius-input: 2px;                  /* Corner radius of input fields */
-  --radius-checkbox: 2px;               /* Checkboxes */
-  --radius-pill: 9999px;                /* Pills & status badges */
-}
+--text-faint: color-mix(in srgb, var(--text-muted) 70%, var(--bg-app));
+--bg-panel-hover: color-mix(in srgb, var(--bg-panel-elevated) 88%, var(--text-main));
+--bg-input: var(--bg-app);
+--bg-code: color-mix(in srgb, var(--bg-app) 70%, #000000);
+--border-color: color-mix(in srgb, var(--text-main) 12%, transparent);
+--border-subtle: color-mix(in srgb, var(--border-color) 55%, transparent);
+--border-strong: color-mix(in srgb, var(--border-color) 82%, var(--text-main));
+--scrollbar-thumb: color-mix(in srgb, var(--text-main) 16%, transparent);
+--scrollbar-thumb-hover: color-mix(in srgb, var(--text-main) 30%, transparent);
 ```
+
+Built-in themes set all of these themselves. For a custom theme, a variable it leaves out gets the derived value (a `:root` rule put before the theme's CSS) instead of the default theme's grey, and a value still equal to the fixed grey of the template before it derived them (`#71717a`, `rgba(255, 255, 255, 0.09)` …) is treated as derived too; the stored CSS takes this over with the next colour change.
 
 ---
 
@@ -116,7 +107,7 @@ The standard MindSift brand icon (`frontend/public/icon.svg`, PWA icons, and soc
 
 Under **Account Settings → Appearance & Themes**, every user can create custom themes:
 
-- Under the heading **Custom themes**, each theme is one flat row: a round button to use it, the name (editable in place, saved on Enter or leaving the field), colour tiles for `--bg-app`, `--bg-panel`, `--bg-panel-elevated`, `--text-main`, `--text-muted` and `--accent-primary` (the browser's colour picker, as for the device accent colour), **Export** and **Delete** (asks with `ConfirmPopover`, cannot be undone).
+- Under the heading **Custom themes**, each theme is one flat row: a round button to use it, the name (editable in place, saved on Enter or leaving the field), colour tiles for `--bg-app`, `--bg-panel`, `--bg-panel-elevated`, `--text-main`, `--text-muted` and `--accent-primary` (the browser's colour picker, as for the device accent colour), a fold-out **More colours** with labelled tiles for `--text-faint`, `--bg-panel-hover`, `--bg-input`, `--border-color` and `--bg-code`, **Export** and **Delete** (asks with `ConfirmPopover`, cannot be undone). A tile of a derived colour shows the colour it currently gives; picking one fixes it to that value.
 - A colour change rewrites only that variable's value in the CSS ([`themeCss.ts`](../frontend/src/lib/themeCss.ts); comments and everything else stay as they are, a missing variable is added to the first rule). A new accent also sets `--accent-hover` and `--text-on-accent` when the theme has plain hex values for them. The change applies live while the theme is active and is saved about 0.6 s after the picker rests. A device accent colour still takes precedence over the theme's.
 - The dashed **+** below the list asks for a name and creates a theme from `theme-template.css`, which it activates right away.
 - **Export** downloads the stored CSS unchanged as `theme-<name>.css`; **Import CSS** reads such a file back (name from the file name without `theme-` and `.css`), so themes can be shared. The template stays downloadable and can be copied.

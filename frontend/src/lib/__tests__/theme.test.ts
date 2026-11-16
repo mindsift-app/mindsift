@@ -26,7 +26,9 @@ describe('custom themes', () => {
   it('injects the CSS live and uses its data-theme', () => {
     setActiveTheme('custom:thm_1', lightCss);
     const style = document.getElementById('mindsift-custom-theme');
-    expect(style?.textContent).toBe(lightCss);
+    // The theme's own CSS last, so it wins over the derived colours put before it for what it leaves out
+    expect(style?.textContent?.endsWith(lightCss)).toBe(true);
+    expect(style?.textContent).toContain('--text-faint: color-mix(in srgb, var(--text-muted) 70%, var(--bg-app));');
     expect(document.documentElement.getAttribute('data-theme')).toBe('papier');
     // light background -> no Tailwind dark class
     expect(document.documentElement.classList.contains('dark')).toBe(false);
@@ -42,7 +44,7 @@ describe('custom themes', () => {
     setActiveTheme('custom:thm_1', lightCss);
     document.getElementById('mindsift-custom-theme')?.remove();
     expect(initThemeOnBoot()).toBe('custom:thm_1');
-    expect(document.getElementById('mindsift-custom-theme')?.textContent).toBe(lightCss);
+    expect(document.getElementById('mindsift-custom-theme')?.textContent?.endsWith(lightCss)).toBe(true);
   });
 
   it('removes the custom CSS when switching back to a built-in theme', () => {

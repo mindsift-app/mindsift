@@ -461,6 +461,8 @@
       "export": "Exportar como archivo CSS",
       "deleteQuestion": "¿Eliminar el tema «{{name}}»? No se puede deshacer.",
       "colorOf": "{{color}} de {{name}}",
+      "moreColors": "Más colores",
+      "moreColorsHint": "Sin un color propio siguen los colores de arriba.",
       "unnamed": "Tema propio",
       "hint": "Un tema es un archivo CSS. «+» crea uno con los colores de la plantilla; al pulsar una casilla de color, el color cambia al instante. Los archivos exportados se pueden volver a importar aquí y compartir con otras personas. Los temas propios se guardan en el servidor y están disponibles en todos tus dispositivos; un color de énfasis propio (más arriba) tiene prioridad sobre el del tema.",
       "colors": {
@@ -469,7 +471,12 @@
         "bg-panel-elevated": "Superficie destacada",
         "text-main": "Texto",
         "text-muted": "Texto secundario",
-        "accent-primary": "Énfasis"
+        "accent-primary": "Énfasis",
+        "text-faint": "Texto tenue",
+        "bg-panel-hover": "Superficie al pasar el ratón",
+        "bg-input": "Campo de entrada",
+        "border-color": "Bordes",
+        "bg-code": "Bloque de código"
       },
       "import": "Importar CSS"
     },

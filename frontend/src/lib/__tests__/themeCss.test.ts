@@ -1,6 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import template from '../../themes/theme-template.css?raw';
-import { readThemeVar, setThemeColor, setThemeVar, themeFileName, themeNameFromFile, toHexColor } from '../themeCss';
+import dark from '../../themes/theme-dark.css?raw';
+import {
+  customThemePageCss,
+  DEFAULT_THEME_COLORS,
+  derivedThemeDefaults,
+  readThemeVar,
+  resolveThemeColor,
+  setThemeColor,
+  setThemeVar,
+  themeFileName,
+  themeNameFromFile,
+  toHexColor,
+  upgradeThemeCss,
+} from '../themeCss';
 
 describe('colours of a custom theme', () => {
   it('reads the colours of the template', () => {
@@ -47,5 +60,43 @@ describe('colours of a custom theme', () => {
     for (const name of ['Wald', 'Mein Theme', 'Nacht über dem See']) expect(themeNameFromFile(themeFileName(name))).toBe(name);
     expect(themeFileName('a/b:c')).toBe('theme-a-b-c.css');
     expect(themeFileName('template')).toBe('theme-template.css');
+  });
+
+  it('lets the template derive faint text, hover, input and lines from the main colours', () => {
+    let css = setThemeColor(template, 'text-muted', '#ff8800');
+    css = setThemeColor(css, 'text-main', '#ffcc00');
+    css = setThemeColor(css, 'bg-app', '#101010');
+    // Faint text lies between the secondary text and the background, not on a fixed grey
+    expect(resolveThemeColor(css, 'text-faint')).toBe('#b76405');
+    expect(resolveThemeColor(css, 'bg-input')).toBe('#101010');
+    // Lines are a little of the text colour, laid over the background for the picker
+    expect(resolveThemeColor(css, 'border-color')).toBe('#2d270e');
+    expect(resolveThemeColor(css, 'accent-primary')).toBe('#2563eb');
+  });
+
+  it('turns the old template greys into derived colours, but keeps colours the user chose', () => {
+    const old =
+      ':root[data-theme="custom-template"] {\n  --bg-app: #000000;\n  --text-muted: #ff8800;\n  --text-faint: #71717a;\n  --border-color: rgba(255, 255, 255, 0.09);\n  --bg-panel-hover: #123456;\n}\n';
+    const next = upgradeThemeCss(old);
+    expect(readThemeVar(next, 'text-faint')).toBe('color-mix(in srgb, var(--text-muted) 70%, var(--bg-app))');
+    expect(readThemeVar(next, 'border-color')).toBe('color-mix(in srgb, var(--text-main) 12%, transparent)');
+    expect(readThemeVar(next, 'bg-panel-hover')).toBe('#123456');
+    expect(resolveThemeColor(old, 'text-faint')).toBe('#b35f00');
+    // A colour change stores the upgrade along with it
+    expect(readThemeVar(setThemeColor(old, 'bg-panel', '#111111'), 'text-faint')).toContain('color-mix');
+  });
+
+  it('fills in the colours a theme leaves out before the theme itself', () => {
+    const css = ':root[data-theme="wald"] {\n  --text-muted: #ff8800;\n  --border-color: #333333;\n}\n';
+    const defaults = derivedThemeDefaults(css);
+    expect(defaults).toContain('--text-faint: color-mix(in srgb, var(--text-muted) 70%, var(--bg-app));');
+    expect(defaults).toContain('--bg-panel-hover:');
+    expect(defaults).not.toContain('--border-color:');
+    expect(customThemePageCss(css)).toBe(defaults + css);
+    expect(derivedThemeDefaults(template)).toBe('');
+  });
+
+  it('knows the main colours of the default theme that lies underneath', () => {
+    for (const [name, value] of Object.entries(DEFAULT_THEME_COLORS)) expect(readThemeVar(dark, name)).toBe(value);
   });
 });

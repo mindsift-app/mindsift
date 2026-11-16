@@ -343,6 +343,8 @@
       "export": "Export as CSS file",
       "deleteQuestion": "Delete the theme “{{name}}”? This cannot be undone.",
       "colorOf": "{{color}} of {{name}}",
+      "moreColors": "More colours",
+      "moreColorsHint": "Without a colour of their own they follow the colours above.",
       "unnamed": "Custom theme",
       "hint": "A theme is a CSS file. “+” creates one with the colours of the template; clicking a colour tile changes that colour right away. Exported files can be imported here again and shared with others. Custom themes are stored on the server and available on all your devices; a custom accent colour above takes precedence over the theme's.",
       "colors": {
@@ -351,7 +353,12 @@
         "bg-panel-elevated": "Raised surface",
         "text-main": "Text",
         "text-muted": "Secondary text",
-        "accent-primary": "Accent"
+        "accent-primary": "Accent",
+        "text-faint": "Faint text",
+        "bg-panel-hover": "Surface on hover",
+        "bg-input": "Input field",
+        "border-color": "Borders",
+        "bg-code": "Code block"
       },
       "import": "Import CSS"
     },

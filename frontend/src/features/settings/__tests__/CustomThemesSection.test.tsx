@@ -118,6 +118,29 @@ describe('Eigene Themes', () => {
     expect(api.saveTheme.mock.calls[0][0]).toEqual({ id: 'thm_wald', name: 'Wald', css: wald.css.replace('#16241a', '#445566') });
   });
 
+  it('folds the less important colours away and shows what they follow', async () => {
+    render(<Harness initial={[wald]} active="custom:thm_wald" />);
+    expect(within(row('thm_wald')).queryByLabelText('Dezenter Text von Wald')).toBeNull();
+    const more = within(row('thm_wald')).getByRole('button', { name: 'Weitere Farben' });
+    fireEvent.click(more);
+    expect(more.getAttribute('aria-expanded')).toBe('true');
+    expect(within(row('thm_wald')).getByText('Ohne eigene Farbe richten sie sich nach den Farben oben.')).toBeTruthy();
+    for (const label of ['Fläche beim Überfahren', 'Eingabefeld', 'Rahmen', 'Codeblock']) {
+      expect(within(row('thm_wald')).getByLabelText(`${label} von Wald`)).toBeTruthy();
+    }
+
+    // Wald sets no faint text: the tile shows the colour it gets from the secondary text and the background
+    const faint = within(row('thm_wald')).getByLabelText('Dezenter Text von Wald') as HTMLInputElement;
+    expect(faint.value).toMatch(/^#[0-9a-f]{6}$/);
+    expect(faint.value).not.toBe('#808080');
+    // Wald's input field follows its background
+    expect((within(row('thm_wald')).getByLabelText('Eingabefeld von Wald') as HTMLInputElement).value).toBe('#0f1a12');
+
+    fireEvent.change(faint, { target: { value: '#ff4400' } });
+    expect(readThemeVar(latest[0].css, 'text-faint')).toBe('#ff4400');
+    await waitFor(() => expect(api.saveTheme).toHaveBeenCalledTimes(1));
+  });
+
   it('exports the CSS so that importing the file gives the same theme', async () => {
     render(<Harness initial={[wald]} />);
     fireEvent.click(within(row('thm_wald')).getByRole('button', { name: 'Als CSS-Datei exportieren' }));

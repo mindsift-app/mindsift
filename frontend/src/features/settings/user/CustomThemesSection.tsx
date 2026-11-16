@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, Copy, Download, FileDown, Plus, Trash, Upload } from 'lucide-react';
+import { Check, ChevronDown, Copy, Download, FileDown, Plus, Trash, Upload } from 'lucide-react';
 import { UserTheme } from '../../../lib/types';
 import { customThemeId, ThemeId } from '../../../lib/theme';
-import { readThemeVar, THEME_COLOR_VARS, toHexColor } from '../../../lib/themeCss';
+import { readThemeVar, resolveThemeColor, THEME_COLOR_VARS, THEME_EXTRA_COLOR_VARS, ThemeColorVar } from '../../../lib/themeCss';
 import { ConfirmPopover } from '../../../components/ConfirmPopover';
 import { useAppearanceSettings } from './useAppearanceSettings';
 
@@ -145,6 +145,8 @@ function CustomThemeRow({
   // What is being typed; null shows the saved name (also after a rename on another device)
   const [draft, setDraft] = useState<string | null>(null);
   const name = draft ?? theme.name;
+  // "Weitere Farben": the less important colours, folded away
+  const [more, setMore] = useState(false);
 
   return (
     <div
@@ -187,22 +189,19 @@ function CustomThemeRow({
       />
 
       <div className="flex flex-wrap items-center gap-1.5">
-        {THEME_COLOR_VARS.map((v) => {
-          const raw = readThemeVar(theme.css, v);
-          const hex = toHexColor(raw);
-          const label = t(`appearance.custom.colors.${v}`);
-          return (
-            <input
-              key={v}
-              type="color"
-              value={hex || '#808080'}
-              onChange={(e) => handleThemeColor(theme, v, e.target.value)}
-              title={raw ? `${label}: ${raw}` : label}
-              aria-label={t('appearance.custom.colorOf', { color: label, name: theme.name })}
-              className="w-11 h-11 sm:w-7 sm:h-7 rounded-btn border border-strong bg-transparent p-0 cursor-pointer"
-            />
-          );
-        })}
+        {THEME_COLOR_VARS.map((v) => (
+          <ColorTile key={v} theme={theme} name={v} onChange={(hex) => handleThemeColor(theme, v, hex)} />
+        ))}
+        <button
+          type="button"
+          onClick={() => setMore((m) => !m)}
+          aria-expanded={more}
+          title={t('appearance.custom.moreColors')}
+          aria-label={t('appearance.custom.moreColors')}
+          className="btn-icon w-11 h-11 sm:w-7 sm:h-7"
+        >
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${more ? 'rotate-180' : ''}`} />
+        </button>
       </div>
 
       <div className="flex items-center gap-1.5 ml-auto">
@@ -225,7 +224,36 @@ function CustomThemeRow({
           <Trash className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      {more && (
+        <div className="basis-full flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-2 border-t border-border" data-more-colors>
+          <span className="basis-full text-[11px] text-muted">{t('appearance.custom.moreColorsHint')}</span>
+          {THEME_EXTRA_COLOR_VARS.map((v) => (
+            <label key={v} className="flex items-center gap-1.5 text-[11px] text-muted cursor-pointer">
+              <ColorTile theme={theme} name={v} onChange={(hex) => handleThemeColor(theme, v, hex)} />
+              <span>{t(`appearance.custom.colors.${v}`)}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+// One colour of a theme as the browser's colour picker; derived values (color-mix, var) show the colour they give
+function ColorTile({ theme, name, onChange }: { theme: UserTheme; name: ThemeColorVar; onChange: (hex: string) => void }) {
+  const { t } = useTranslation('settings');
+  const raw = readThemeVar(theme.css, name);
+  const label = t(`appearance.custom.colors.${name}`);
+  return (
+    <input
+      type="color"
+      value={resolveThemeColor(theme.css, name) || '#808080'}
+      onChange={(e) => onChange(e.target.value)}
+      title={raw ? `${label}: ${raw}` : label}
+      aria-label={t('appearance.custom.colorOf', { color: label, name: theme.name })}
+      className="w-11 h-11 sm:w-7 sm:h-7 rounded-btn border border-strong bg-transparent p-0 cursor-pointer"
+    />
   );
 }
 

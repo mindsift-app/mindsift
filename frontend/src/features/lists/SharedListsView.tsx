@@ -592,7 +592,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       <>
         <Plus className="w-4 h-4 text-accent ml-1 shrink-0" />
         <div className="relative flex-1 min-w-0">
-          {renderItemInput(true, 'w-full bg-transparent px-2 py-1 text-sm text-main placeholder-faint focus:outline-hidden')}
+          {renderItemInput(true, 'w-full bg-transparent px-2 py-1 text-sm text-main placeholder:text-faint focus:outline-hidden')}
           {renderItemSuggestions(true)}
         </div>
         <div className="flex items-center gap-1 shrink-0">

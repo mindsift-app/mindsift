@@ -343,6 +343,8 @@
       "export": "Exporter en fichier CSS",
       "deleteQuestion": "Supprimer le thème « {{name}} » ? Cette action est irréversible.",
       "colorOf": "{{color}} de {{name}}",
+      "moreColors": "Autres couleurs",
+      "moreColorsHint": "Sans couleur propre, elles suivent les couleurs ci-dessus.",
       "unnamed": "Thème personnalisé",
       "hint": "Un thème est un fichier CSS. « + » en crée un avec les couleurs du modèle ; un clic sur une case de couleur change la couleur aussitôt. Les fichiers exportés peuvent être réimportés ici et partagés. Les thèmes personnalisés sont enregistrés sur le serveur et disponibles sur tous vos appareils ; une couleur d'accent personnalisée (plus haut) l'emporte sur celle du thème.",
       "colors": {
@@ -351,7 +353,12 @@
         "bg-panel-elevated": "Surface en relief",
         "text-main": "Texte",
         "text-muted": "Texte secondaire",
-        "accent-primary": "Accent"
+        "accent-primary": "Accent",
+        "text-faint": "Texte discret",
+        "bg-panel-hover": "Surface au survol",
+        "bg-input": "Champ de saisie",
+        "border-color": "Bordures",
+        "bg-code": "Bloc de code"
       },
       "import": "Importer un CSS"
     },

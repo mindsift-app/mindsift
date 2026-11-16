@@ -69,7 +69,7 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
           quickVoiceError ||
           (currentSelectedList ? t('quickAdd.toList', { title: currentSelectedList.title }) : t('quickAdd.placeholder'))
         }
-        className="flex-1 bg-transparent px-2 py-1.5 sm:py-1 text-sm text-main placeholder-faint focus:outline-hidden min-w-0"
+        className="flex-1 bg-transparent px-2 py-1.5 sm:py-1 text-sm text-main placeholder:text-faint focus:outline-hidden min-w-0"
       />
       {natural.parsed && (
         <>

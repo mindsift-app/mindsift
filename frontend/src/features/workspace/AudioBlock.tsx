@@ -175,7 +175,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
           placeholder={locked ? '' : t('media.caption')}
           // An empty caption only shows while the pointer is over the block (phones always show it); its line
           // stays, so nothing below moves
-          className={`w-full bg-transparent border-0 p-0 text-xs text-muted placeholder-faint focus:outline-hidden focus:ring-0 transition-opacity ${
+          className={`w-full bg-transparent border-0 p-0 text-xs text-muted placeholder:text-faint focus:outline-hidden focus:ring-0 transition-opacity ${
             caption ? '' : '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/audio:opacity-100 focus:opacity-100'
           }`}
         />
