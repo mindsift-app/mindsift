@@ -104,7 +104,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [selectedDocId, setSelectedDocId] = useState<string | null>(
     navStep ? navStep.docId ?? null : initialDocId || readWorkspaceSession().docId || null
   );
-  const [targetBlockId, setTargetBlockId] = useState<string | null>(initialBlockId || null);
+  // The bullet a link or search hit pointed to, kept with its note: opening another note any other way
+  // (tree, plain link, back) must not look for it there ("bullet no longer exists")
+  const [target, setTarget] = useState<{ docId: string; blockId: string } | null>(
+    initialDocId && initialBlockId ? { docId: initialDocId, blockId: initialBlockId } : null
+  );
+  const targetBlockId = target && target.docId === selectedDocId ? target.blockId : null;
   const [newlyCreatedDocId, setNewlyCreatedDocId] = useState<string | null>(null);
   // Journal open and the last regular note survive switching to other tabs (the view remounts)
   const [subView, setSubView] = useState<WorkspaceSubView>(() =>
@@ -269,7 +274,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedDocId(initialDocId);
       // A bullet hit of the search while the workspace is already open
-      setTargetBlockId(initialBlockId || null);
+      setTarget(initialBlockId ? { docId: initialDocId, blockId: initialBlockId } : null);
       setSubView('editor');
       setMobileShowDetail(true);
     }
@@ -316,7 +321,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         });
         setDocs((prev) => (prev.some((d) => d.id === created.id) ? prev : [created, ...prev]));
         setNewlyCreatedDocId(created.id);
-        setTargetBlockId(null);
+        setTarget(null);
         setSelectedDocId(created.id);
         setSubView('editor');
         setMobileShowDetail(true);
@@ -362,7 +367,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   const handleJumpToDocBlock = useCallback((docId: string, blockId?: string) => {
     setSelectedDocId(docId);
-    setTargetBlockId(blockId || null);
+    setTarget(blockId ? { docId, blockId } : null);
     setNewlyCreatedDocId(null);
     setSubView('editor');
     setMobileShowDetail(true);
@@ -415,7 +420,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   const handleOpenTrashedDoc = (docId: string) => {
     setSelectedDocId(docId);
-    setTargetBlockId(null);
+    setTarget(null);
     setNewlyCreatedDocId(null);
     setSubView('editor');
     setMobileShowDetail(true);
@@ -504,7 +509,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     triggerHaptic(20);
     setDocs((prev) => prev.filter((d) => d.id !== result.sourceId));
     setSelectedDocId(result.targetId);
-    setTargetBlockId(null);
+    setTarget(null);
     setSubView('editor');
     setMobileShowDetail(true);
     setEditorNonce((n) => n + 1);
@@ -558,9 +563,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       if (match && link.blockId) {
         handleJumpToDocBlock(match.id, link.blockId);
       } else if (match) {
-        setSelectedDocId(match.id);
-        setSubView('editor');
-        setMobileShowDetail(true);
+        handleJumpToDocBlock(match.id);
       } else if (link.title.trim()) {
         // Deleted or never created: ask instead of creating a note right away
         const title = link.title.trim();
@@ -975,12 +978,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             requestDeleteDoc={requestDeleteDoc}
             onOpenDoc={(id) => {
               setSelectedDocId(id);
+              setTarget(null);
               setSubView('editor');
               setMobileShowDetail(true);
             }}
             onSelectDoc={(id) => {
               setSelectedDocId(id);
-              setTargetBlockId(null);
+              setTarget(null);
               setNewlyCreatedDocId(null);
               setSubView('editor');
               setMobileShowDetail(true);
