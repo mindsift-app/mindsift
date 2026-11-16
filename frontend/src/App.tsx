@@ -920,7 +920,6 @@ export const App: React.FC = () => {
               <views.UserSettingsView
                 currentUser={user}
                 activeTheme={activeTheme}
-                themes={allThemes}
                 customThemes={customThemes}
                 onThemeChange={handleChangeTheme}
                 onCustomThemesChange={handleCustomThemesChange}

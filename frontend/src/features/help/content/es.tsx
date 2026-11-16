@@ -737,7 +737,7 @@ const es: HelpContent = {
               <strong className="text-main">Cambiar de tema:</strong> en el menú de perfil (tu foto de perfil; en el escritorio, abajo en la barra de la izquierda) o en <em>Ajustes de la cuenta → Apariencia y temas</em>.
             </li>
             <li>
-              <strong className="text-main">Tema personalizado:</strong> descarga o pega la plantilla, ajusta colores y esquinas, súbela o pégala como archivo <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> y selecciona «Guardar y activar». El tema se aplica de inmediato y estará disponible en todos tus dispositivos.
+              <strong className="text-main">Temas propios:</strong> en <em>Temas personalizados</em>, «+» crea un tema con los colores de la plantilla; el nombre y las casillas de color se cambian directamente en la fila (se aplica al instante si el tema está activo), y exportar lo descarga como archivo <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> que se puede volver a importar y compartir. Los temas propios están disponibles en todos tus dispositivos.
             </li>
           </ul>
         </div>

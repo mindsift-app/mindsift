@@ -654,7 +654,7 @@ const fr: HelpContent = {
               <strong className="text-main">Changer de thème :</strong> dans le menu de profil en haut à droite ou sous <em>Paramètres du compte → Apparence &amp; thèmes</em>.
             </li>
             <li>
-              <strong className="text-main">Thème personnalisé :</strong> télécharge ou colle le modèle, ajuste les couleurs et les arrondis, téléverse-le ou colle-le sous forme de fichier <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> et choisis « Enregistrer &amp; activer ». Le thème s'applique immédiatement et est disponible sur tous tes appareils.
+              <strong className="text-main">Thèmes personnalisés :</strong> sous <em>Thèmes personnalisés</em>, « + » crée un thème avec les couleurs du modèle ; son nom et ses cases de couleur se modifient directement dans la ligne (appliqué aussitôt si le thème est actif), et l'export le télécharge en fichier <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> qu'on peut réimporter et partager. Les thèmes personnalisés sont disponibles sur tous tes appareils.
             </li>
           </ul>
         </div>

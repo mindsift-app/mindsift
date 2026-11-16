@@ -40,7 +40,6 @@ describe('UserSettingsView notification matrix', () => {
       <UserSettingsView
         currentUser={baseUser}
         activeTheme="dark"
-        themes={[]}
         customThemes={[]}
         onThemeChange={() => {}}
         onCustomThemesChange={() => {}}
@@ -118,7 +117,6 @@ describe('UserSettingsView notification matrix', () => {
       <UserSettingsView
         currentUser={baseUser}
         activeTheme="dark"
-        themes={[]}
         customThemes={[]}
         onThemeChange={() => {}}
         onCustomThemesChange={() => {}}
@@ -151,7 +149,6 @@ describe('UserSettingsView notification matrix', () => {
       <UserSettingsView
         currentUser={user}
         activeTheme="dark"
-        themes={[]}
         customThemes={[]}
         onThemeChange={() => {}}
         onCustomThemesChange={() => {}}

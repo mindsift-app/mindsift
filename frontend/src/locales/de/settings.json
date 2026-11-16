@@ -325,27 +325,35 @@
     "accentHint": "Ersetzt die Akzentfarbe des Themes (Knöpfe, Links, Markierungen). Gilt für dieses Gerät.",
     "accentPick": "Eigene Akzentfarbe wählen",
     "customThemes": "Eigene Themes",
-    "previewCanvas": "Canvas-Hintergrund",
-    "previewPanel": "Panel-Oberfläche",
-    "previewText": "Textfarbe",
     "custom": {
-      "confirmDelete": "Theme wirklich löschen?",
       "delete": "Löschen",
-      "editTitle": "Theme bearbeiten",
       "deleteTitle": "Theme löschen",
       "downloadTemplate": "Vorlage herunterladen",
       "copyTemplate": "Vorlage kopieren",
-      "pasteTemplate": "Vorlage einfügen",
-      "namePlaceholder": "Name, z. B. Wald",
-      "upload": "CSS-Datei hochladen",
-      "blocks": "Ein Theme ist CSS mit 6 Blöcken: <b>1. Akzentfarbe</b>, <b>2. Oberflächen</b>, <b>3. Textfarben</b>, <b>4. Rahmen & Schatten</b>, <b>5. Statusfarben</b> und <b>6. Rundungen</b>. Am einfachsten startest du mit der Vorlage und änderst die Werte. Gespeicherte Themes liegen auf dem Server und stehen dir auf allen Geräten zur Verfügung.",
-      "edit": "Eigenes Theme bearbeiten",
-      "add": "Eigenes Theme hinzufügen",
-      "saveActivate": "Speichern & aktivieren",
       "copied": "Vorlage in die Zwischenablage kopiert.",
-      "copyFailed": "Kopieren nicht möglich – nutze „Vorlage einfügen“ oder den Download.",
+      "copyFailed": "Kopieren nicht möglich – lade die Vorlage stattdessen herunter.",
       "saveFailed": "Theme konnte nicht gespeichert werden",
-      "deleteFailed": "Theme konnte nicht gelöscht werden"
+      "deleteFailed": "Theme konnte nicht gelöscht werden",
+      "use": "Verwenden",
+      "nameLabel": "Name des Themes",
+      "newTheme": "Neues Theme",
+      "newNamePlaceholder": "Name des neuen Themes, z. B. Wald",
+      "create": "Anlegen",
+      "fromTemplate": "Startet mit den Farben der Vorlage.",
+      "export": "Als CSS-Datei exportieren",
+      "deleteQuestion": "Theme „{{name}}“ löschen? Das lässt sich nicht rückgängig machen.",
+      "colorOf": "{{color}} von {{name}}",
+      "unnamed": "Eigenes Theme",
+      "hint": "Ein Theme ist eine CSS-Datei. „+“ legt eins mit den Farben der Vorlage an, ein Klick auf ein Farbfeld ändert die Farbe sofort. Exportierte Dateien lassen sich hier wieder importieren und mit anderen teilen. Eigene Themes liegen auf dem Server und stehen dir auf allen Geräten zur Verfügung; eine eigene Akzentfarbe weiter oben geht der des Themes vor.",
+      "colors": {
+        "bg-app": "Hintergrund",
+        "bg-panel": "Fläche",
+        "bg-panel-elevated": "Hervorgehobene Fläche",
+        "text-main": "Text",
+        "text-muted": "Nebentext",
+        "accent-primary": "Akzent"
+      },
+      "import": "CSS importieren"
     },
     "round": "Rund",
     "square": "Eckig",
@@ -872,7 +880,7 @@
   },
   "appearanceExtra": {
     "accentColor": "Akzentfarbe {{color}}",
-    "themeSaved": "Theme „{{name}}“ gespeichert und aktiviert."
+    "themeImported": "Theme „{{name}}“ importiert und aktiviert."
   },
   "pendingEmail": {
     "waiting": "Wartet auf Bestätigung: {{email}}. Wir haben einen Link an diese Adresse geschickt – bis zum Klick darauf gilt die bisherige.",

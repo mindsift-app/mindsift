@@ -325,27 +325,35 @@
     "accentHint": "Replaces the theme's accent color (buttons, links, highlights). Applies to this device.",
     "accentPick": "Choose your own accent color",
     "customThemes": "Custom themes",
-    "previewCanvas": "Canvas background",
-    "previewPanel": "Panel surface",
-    "previewText": "Text color",
     "custom": {
-      "confirmDelete": "Really delete the theme?",
       "delete": "Delete",
-      "editTitle": "Edit theme",
       "deleteTitle": "Delete theme",
       "downloadTemplate": "Download template",
       "copyTemplate": "Copy template",
-      "pasteTemplate": "Paste template",
-      "namePlaceholder": "Name, e.g. Forest",
-      "upload": "Upload CSS file",
-      "blocks": "A theme is CSS with 6 blocks: <b>1. accent color</b>, <b>2. surfaces</b>, <b>3. text colors</b>, <b>4. borders & shadows</b>, <b>5. status colors</b> and <b>6. corners</b>. The easiest start is the template with your own values. Saved themes live on the server and are available on all your devices.",
-      "edit": "Edit custom theme",
-      "add": "Add custom theme",
-      "saveActivate": "Save & activate",
       "copied": "Template copied to the clipboard.",
-      "copyFailed": "Copying is not possible – use “Paste template” or the download.",
+      "copyFailed": "Copying is not possible – download the template instead.",
       "saveFailed": "The theme could not be saved",
-      "deleteFailed": "The theme could not be deleted"
+      "deleteFailed": "The theme could not be deleted",
+      "use": "Use",
+      "nameLabel": "Theme name",
+      "newTheme": "New theme",
+      "newNamePlaceholder": "Name of the new theme, e.g. Forest",
+      "create": "Create",
+      "fromTemplate": "Starts with the colours of the template.",
+      "export": "Export as CSS file",
+      "deleteQuestion": "Delete the theme “{{name}}”? This cannot be undone.",
+      "colorOf": "{{color}} of {{name}}",
+      "unnamed": "Custom theme",
+      "hint": "A theme is a CSS file. “+” creates one with the colours of the template; clicking a colour tile changes that colour right away. Exported files can be imported here again and shared with others. Custom themes are stored on the server and available on all your devices; a custom accent colour above takes precedence over the theme's.",
+      "colors": {
+        "bg-app": "Background",
+        "bg-panel": "Surface",
+        "bg-panel-elevated": "Raised surface",
+        "text-main": "Text",
+        "text-muted": "Secondary text",
+        "accent-primary": "Accent"
+      },
+      "import": "Import CSS"
     },
     "round": "Round",
     "square": "Square",
@@ -873,7 +881,7 @@
   },
   "appearanceExtra": {
     "accentColor": "Accent colour {{color}}",
-    "themeSaved": "Theme “{{name}}” saved and activated."
+    "themeImported": "Theme “{{name}}” imported and activated."
   },
   "pendingEmail": {
     "waiting": "Waiting for confirmation: {{email}}. We sent a link to this address – until it is clicked, the previous one stays in use.",

@@ -836,7 +836,7 @@ const de: HelpContent = {
               <strong className="text-main">Theme wechseln:</strong> Im Profilmenü (dein Profilbild, am Desktop unten in der Leiste links) oder unter <em>Kontoeinstellungen → Darstellung &amp; Themes</em>.
             </li>
             <li>
-              <strong className="text-main">Eigenes Theme:</strong> Vorlage herunterladen oder einfügen, Farben und Rundungen anpassen, als <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code>-Datei hochladen oder einfügen und „Speichern &amp; aktivieren“. Das Theme greift sofort und steht dir auf allen Geräten zur Verfügung.
+              <strong className="text-main">Eigene Themes:</strong> Unter <em>Eigene Themes</em> legt „+“ ein Theme mit den Farben der Vorlage an; Name und Farbfelder lassen sich direkt in der Zeile ändern (gilt sofort, wenn das Theme aktiv ist), der Export lädt es als <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code>-Datei herunter, die sich wieder importieren und teilen lässt. Eigene Themes stehen dir auf allen Geräten zur Verfügung.
             </li>
           </ul>
         </div>

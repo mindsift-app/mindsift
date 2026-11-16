@@ -656,7 +656,7 @@ const it: HelpContent = {
               <strong className="text-main">Cambio tema:</strong> nel menu del profilo (la tua foto profilo, sul desktop in basso nella barra a sinistra) oppure in <em>Impostazioni account → Aspetto e temi</em>.
             </li>
             <li>
-              <strong className="text-main">Tema personalizzato:</strong> scarica o incolla il modello, adatta colori e angoli, carica o incolla come file <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> e scegli «Salva e attiva». Il tema si applica subito ed è disponibile su tutti i tuoi dispositivi.
+              <strong className="text-main">Temi personalizzati:</strong> in <em>Temi personalizzati</em>, «+» crea un tema con i colori del modello; nome e riquadri di colore si modificano direttamente nella riga (si applica subito se il tema è attivo), e l'esportazione lo scarica come file <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> da reimportare e condividere. I temi personalizzati sono disponibili su tutti i tuoi dispositivi.
             </li>
           </ul>
         </div>

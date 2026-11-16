@@ -656,7 +656,7 @@ const en: HelpContent = {
               <strong className="text-main">Switching themes:</strong> in the profile menu (your profile picture, on the desktop at the bottom of the bar on the left) or under <em>Account settings → Appearance &amp; themes</em>.
             </li>
             <li>
-              <strong className="text-main">Custom theme:</strong> download or paste the template, adjust colors and corners, upload or paste it as a <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> file and choose “Save &amp; activate”. The theme applies right away and is available on all your devices.
+              <strong className="text-main">Custom themes:</strong> under <em>Custom themes</em>, “+” creates a theme with the colours of the template; its name and colour tiles can be changed right in the row (applied at once while the theme is active), and export downloads it as a <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> file that can be imported again and shared. Custom themes are available on all your devices.
             </li>
           </ul>
         </div>

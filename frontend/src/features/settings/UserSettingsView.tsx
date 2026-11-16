@@ -19,7 +19,6 @@ import { api } from '../../lib/api';
 import { EffectiveVoiceMode, loadVoiceConfig, voiceChoiceAvailable } from '../../lib/voice';
 import {
   ThemeId,
-  ThemeOption,
 } from '../../lib/theme';
 import { LegalLinks } from '../../components/LegalLinks';
 import { AboutModal } from '../../components/AboutModal';
@@ -40,7 +39,6 @@ import { CalendarFeedSection } from './user/CalendarFeedSection';
 interface UserSettingsViewProps {
   currentUser: User;
   activeTheme: ThemeId;
-  themes: ThemeOption[]; // built-in + custom
   customThemes: UserTheme[];
   onThemeChange: (themeId: ThemeId) => void;
   onCustomThemesChange: (themes: UserTheme[], activate?: ThemeId) => void;
@@ -53,7 +51,6 @@ type UserSettingsSection = 'profile' | 'security' | 'appearance' | 'language' | 
 export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   currentUser,
   activeTheme,
-  themes,
   customThemes,
   onThemeChange,
   onCustomThemesChange,
@@ -313,7 +310,6 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             <AppearanceSection
               appearance={appearance}
               activeTheme={activeTheme}
-              themes={themes}
               customThemes={customThemes}
               onThemeChange={onThemeChange}
             />
