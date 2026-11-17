@@ -233,7 +233,7 @@ export function useDocDragDrop({
           const target = docs.find((d) => d.id === targetId);
           if (docId && blockId && target) {
             triggerHaptic(15);
-            announceMoveBranch({ docId, blockId, targetId, targetTitle: target.title, single: isSingleBlockDrop(e) });
+            announceMoveBranch({ docId, blockId, targetId, targetTitle: target.title, single: isSingleBlockDrop() });
           }
         } catch {
           // not a bullet of this app
@@ -272,7 +272,7 @@ export function useDocDragDrop({
         const { docId, blockId } = JSON.parse(e.dataTransfer.getData(BLOCK_DRAG_TYPE) || '{}');
         if (docId && blockId) {
           triggerHaptic(15);
-          announceMoveBranch({ docId, blockId, targetId: '', targetTitle: '', single: isSingleBlockDrop(e) });
+          announceMoveBranch({ docId, blockId, targetId: '', targetTitle: '', single: isSingleBlockDrop() });
         }
       } catch {
         // not a bullet of this app

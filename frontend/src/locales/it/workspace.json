@@ -141,8 +141,7 @@
   "block": {
     "expand": "Espandi sottopunti (Ctrl+clic: tutti i livelli)",
     "collapse": "Comprimi sottopunti (Ctrl+clic: tutti i livelli)",
-    "dragZoom": "Trascina per spostare (con {{key}}: senza sottopunti) • Clic: ingrandisci questo ramo (modalità focus)",
-    "shiftKey": "Maiusc",
+    "dragZoom": "Trascina per spostare (compresso: con i sottopunti) • Clic: ingrandisci questo ramo (modalità focus)",
     "clickZoom": "Clic: ingrandisci questo ramo (modalità focus)",
     "markOpen": "Segna come da fare",
     "markDone": "Segna come completato",

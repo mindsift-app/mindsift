@@ -141,8 +141,7 @@
   "block": {
     "expand": "Expand sub-bullets (Ctrl+click: all levels)",
     "collapse": "Collapse sub-bullets (Ctrl+click: all levels)",
-    "dragZoom": "Drag to move (with {{key}}: without sub-bullets) • click: zoom into the branch (focus mode)",
-    "shiftKey": "Shift",
+    "dragZoom": "Drag to move (collapsed: with its sub-bullets) • click: zoom into the branch (focus mode)",
     "clickZoom": "Click: zoom into this branch (focus mode)",
     "markOpen": "Mark as open",
     "markDone": "Mark as done",

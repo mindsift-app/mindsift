@@ -6,7 +6,8 @@ import { BLOCK_DRAG_TYPE, MOVE_BRANCH_EVENT, setBlockDragSingle, type MoveBranch
 import type { Document } from '../../../lib/types';
 
 // A bullet dragged out of the open note onto another note in the sidebar or onto the "new note" button:
-// with Shift held only the bullet moves, without its children; the drop is always a move.
+// an open bullet moves alone, without its children (OutlinerTree tells at the start of the drag), a collapsed
+// one with them; the drop is always a move.
 
 vi.mock('../../../lib/api', () => ({ api: {}, triggerHaptic: () => {} }));
 
@@ -34,7 +35,7 @@ function renderDrag() {
   ).result;
 }
 
-function event(mods: { shiftKey?: boolean; ctrlKey?: boolean; altKey?: boolean } = {}) {
+function event() {
   const dataTransfer = {
     types: [BLOCK_DRAG_TYPE],
     dropEffect: 'none',
@@ -43,9 +44,6 @@ function event(mods: { shiftKey?: boolean; ctrlKey?: boolean; altKey?: boolean }
   };
   return {
     dataTransfer,
-    shiftKey: !!mods.shiftKey,
-    ctrlKey: !!mods.ctrlKey,
-    altKey: !!mods.altKey,
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(),
   } as unknown as React.DragEvent<HTMLDivElement> & React.DragEvent<HTMLButtonElement>;
@@ -63,18 +61,19 @@ afterEach(() => {
 });
 
 describe('dropping a bullet onto a note in the sidebar', () => {
-  it('moves the bullet alone with Shift held', () => {
+  it('moves an open bullet alone', () => {
     const drag = renderDrag();
+    setBlockDragSingle(true);
     const props = drag.current.docDropProps('d2');
-    const over = event({ shiftKey: true });
+    const over = event();
     props.onDragOver!(over);
     expect(over.preventDefault).toHaveBeenCalled();
     expect(over.dataTransfer.dropEffect).toBe('move');
-    props.onDrop!(event({ shiftKey: true }));
+    props.onDrop!(event());
     expect(moved).toEqual([{ docId: 'd1', blockId: 'b1', targetId: 'd2', targetTitle: 'Einkaufsliste', single: true }]);
   });
 
-  it('moves the whole branch without Shift, also with Ctrl or Alt (Option) held', () => {
+  it('moves a collapsed bullet with its whole branch', () => {
     const drag = renderDrag();
     const props = drag.current.docDropProps('d2');
     const over = event();
@@ -82,27 +81,17 @@ describe('dropping a bullet onto a note in the sidebar', () => {
     expect(over.dataTransfer.dropEffect).toBe('move');
     props.onDrop!(event());
     expect(moved).toEqual([{ docId: 'd1', blockId: 'b1', targetId: 'd2', targetTitle: 'Einkaufsliste', single: false }]);
-    moved = [];
-    props.onDrop!(event({ ctrlKey: true }));
-    props.onDrop!(event({ altKey: true }));
-    expect(moved.map((m) => m.single)).toEqual([false, false]);
-  });
-
-  it('takes Shift as seen during the drag when the drop event does not report it', () => {
-    const drag = renderDrag();
-    setBlockDragSingle(true);
-    drag.current.docDropProps('d2').onDrop!(event());
-    expect(moved[0].single).toBe(true);
   });
 });
 
 describe('dropping a bullet onto the "new note" button', () => {
-  it('turns the bullet alone into a note with Shift held', () => {
+  it('turns an open bullet alone into a note', () => {
     const drag = renderDrag();
-    const over = event({ shiftKey: true });
+    setBlockDragSingle(true);
+    const over = event();
     drag.current.newNoteDropProps.onDragOver!(over);
     expect(over.dataTransfer.dropEffect).toBe('move');
-    drag.current.newNoteDropProps.onDrop!(event({ shiftKey: true }));
+    drag.current.newNoteDropProps.onDrop!(event());
     expect(moved).toEqual([{ docId: 'd1', blockId: 'b1', targetId: '', targetTitle: '', single: true }]);
   });
 });

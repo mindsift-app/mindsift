@@ -286,7 +286,7 @@ func (s *Store) seedHelpNotesEN(user *domain.User, demo bool) {
 		{typ: "h2", text: "Bullets and levels"},
 		{level: 1, text: "`Enter` adds a new bullet, `Tab` indents, `Shift+Tab` outdents"},
 		{level: 1, text: "Bullets with children can be expanded and collapsed (arrow on the left when hovering)"},
-		{level: 1, text: "Dragging the bullet (•) moves the whole branch"},
+		{level: 1, text: "Dragging the bullet (•) moves it while its sub-bullets stay; collapsed, the whole branch moves along"},
 		{level: 1, text: "Clicking the bullet (•) **zooms** into the branch – try it in [[Try zooming]]"},
 		{typ: "h2", text: "Formatting"},
 		{level: 1, text: "At the start of a line: `- ` bullet, `1. ` number, `[] ` checkbox, `# ` heading"},

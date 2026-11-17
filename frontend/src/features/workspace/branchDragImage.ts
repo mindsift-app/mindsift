@@ -18,15 +18,10 @@ function stripeWidth(block: DocumentBlock): number {
 // The browser's drag image is a static snapshot of the small bullet, easy to miss. Instead the dragged
 // branch follows the pointer as a stack of rounded stripes, one per row and indented like in the note.
 // They take the text colour at low opacity (light on dark themes, dark on light ones), build up one after
-// another, trail the pointer a little and fade out when the drag ends.
-// setSingle switches between the whole branch and only its first row (the bullet dragged without its
-// children, OutlinerTree) while the drag goes on.
-export interface BranchDragGhost {
-  setSingle: (single: boolean) => void;
-}
-
-export function startBranchDragGhost(e: React.DragEvent, branch: DocumentBlock[], single = false): BranchDragGhost | null {
-  if (!branch.length || !hideBrowserDragImage(e)) return null;
+// another, trail the pointer a little and fade out when the drag ends. A bullet dragged without its children
+// (OutlinerTree) passes only its own row.
+export function startBranchDragGhost(e: React.DragEvent, branch: DocumentBlock[]): void {
+  if (!branch.length || !hideBrowserDragImage(e)) return;
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const base = Math.max(0, branch[0].level || 0);
 
@@ -36,7 +31,6 @@ export function startBranchDragGhost(e: React.DragEvent, branch: DocumentBlock[]
   // Dark text (light themes) weighs more than light text at the same opacity, so it gets less of it
   const [r, g, b] = (getComputedStyle(ghost).color.match(/[\d.]+/g) || ['255', '255', '255']).map(Number);
   const darkText = 0.299 * r + 0.587 * g + 0.114 * b < 128;
-  const rest: HTMLElement[] = [];
   branch.slice(0, MAX_ROWS).forEach((block, i) => {
     const stripe = document.createElement('div');
     const strength = darkText ? (i === 0 ? 14 : 8) : i === 0 ? 22 : 13;
@@ -47,8 +41,6 @@ export function startBranchDragGhost(e: React.DragEvent, branch: DocumentBlock[]
     // Rows past the limit fade out instead of being cut off hard
     if (branch.length > MAX_ROWS && i >= MAX_ROWS - 2) stripe.style.opacity = i === MAX_ROWS - 1 ? '0.35' : '0.7';
     ghost.appendChild(stripe);
-    if (i > 0) rest.push(stripe);
-    if (single && i > 0) stripe.style.display = 'none';
     if (!reduce) {
       stripe.animate(
         [
@@ -61,12 +53,4 @@ export function startBranchDragGhost(e: React.DragEvent, branch: DocumentBlock[]
   });
 
   followDragPointer(e, ghost, OFFSET_X, OFFSET_Y);
-  let shown = single;
-  return {
-    setSingle(next: boolean) {
-      if (next === shown) return;
-      shown = next;
-      rest.forEach((stripe) => (stripe.style.display = next ? 'none' : ''));
-    },
-  };
 }

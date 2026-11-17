@@ -141,8 +141,7 @@
   "block": {
     "expand": "Déplier les sous-puces (Ctrl+clic : tous les niveaux)",
     "collapse": "Replier les sous-puces (Ctrl+clic : tous les niveaux)",
-    "dragZoom": "Glisser pour déplacer (avec {{key}} : sans les sous-puces) • clic : zoomer sur la branche (mode focus)",
-    "shiftKey": "Maj",
+    "dragZoom": "Glisser pour déplacer (repliée : avec ses sous-puces) • clic : zoomer sur la branche (mode focus)",
     "clickZoom": "Clic : zoomer sur cette branche (mode focus)",
     "markOpen": "Marquer comme à faire",
     "markDone": "Marquer comme terminé",

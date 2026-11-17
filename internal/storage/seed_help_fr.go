@@ -30,7 +30,7 @@ func (s *Store) seedHelpNotesFR(user *domain.User) {
 		{typ: "h2", text: "Puces et niveaux"},
 		{level: 1, text: "`Entrée` crée une nouvelle puce, `Tab` l'indente, `Maj+Tab` la désindente"},
 		{level: 1, text: "Les puces avec des sous-puces se replient et se déplient (flèche à gauche au survol)"},
-		{level: 1, text: "Faire glisser la puce (•) déplace toute la branche"},
+		{level: 1, text: "Faire glisser la puce (•) la déplace et ses sous-puces restent ; repliée, toute la branche suit"},
 		{level: 1, text: "Un clic sur la puce (•) **zoome** sur la branche – essaie dans [[Essayer le zoom]]"},
 		{typ: "h2", text: "Mise en forme"},
 		{level: 1, text: "Au début d'une ligne : `- ` puce, `1. ` numéro, `[] ` case à cocher, `# ` titre"},
