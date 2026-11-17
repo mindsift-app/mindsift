@@ -56,6 +56,7 @@ Versions without a git tag were development states and were never published as a
 
 ### Fixed
 - Opening the journal no longer stutters: its days are built one after another instead of all at once.
+- Drawings from Mermaid: in a Git graph, a merge from a branch that goes on afterwards runs beside that branch's lane instead of sharing it; an arrow label no longer sits right at the arrowhead when two shapes are only slightly offset.
 - **Attention:** usernames are unique; existing duplicates are renamed (`anna` → `anna1`).
 - **Attention:** pictures load only from MindSift itself (custom themes lose external backgrounds).
 - Repeating tasks repeat again after their next occurrence was deleted.

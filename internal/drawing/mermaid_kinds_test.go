@@ -403,6 +403,22 @@ func TestGitGraph(t *testing.T) {
 	if bends < 4 || picks != 1 {
 		t.Errorf("bends %d, cherry-picks %d", bends, picks)
 	}
+	// entwicklung goes on after its merge into main: the merge line runs beside its lane, between the two
+	// lanes, instead of sharing it up to the merge
+	laneY := map[string]float64{}
+	for _, el := range d.Els {
+		laneY[el.ID] = el.Y + el.H/2
+	}
+	var merge *Element
+	for _, a := range arrows(d) {
+		if a.From == "c5" && a.To == "c6" {
+			merge = &a
+		}
+	}
+	if merge == nil || len(merge.Via) != 2 || merge.Via[0][1] != merge.Via[1][1] ||
+		!(merge.Via[0][1] > laneY["c1"] && merge.Via[0][1] < laneY["c5"]) {
+		t.Errorf("merge beside a lane that goes on: %+v, lanes %v / %v", merge, laneY["c1"], laneY["c5"])
+	}
 }
 
 func TestGitGraphTopToBottom(t *testing.T) {
