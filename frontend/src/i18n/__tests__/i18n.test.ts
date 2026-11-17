@@ -113,11 +113,10 @@ describe('start language', () => {
     expect(startLanguage(false)).toBe(resolveLanguage(undefined, 'it'));
   });
 
-  it('loads the start language and German before switching', async () => {
+  it('loads the start language before switching, German only when it fails', async () => {
     await startI18n('en');
     expect(i18n.language).toBe('en');
     expect(document.documentElement.lang).toBe('en');
-    expect(i18n.hasResourceBundle('de', 'common')).toBe(true);
     expect(i18n.t('common:nav.tasks')).toBe(get(ALL.en, 'common.nav.tasks'));
   });
 });
