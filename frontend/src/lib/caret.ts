@@ -12,12 +12,20 @@ export function caretAfterChange(before: string, after: string): number {
 
 // Rendered markdown only drops syntax characters (**, `, [..](url) …), so its text is a subsequence of the raw
 // text. Walking both strings in parallel maps a caret offset in the rendered text back to the raw text.
+// The end of a line is ambiguous (the closing markup is not rendered, so the walk stops in front of it):
+// a caret at the end of the rendered text, or in front of a line break, belongs behind the closing markup
+// (`code`, **bold**, [label](url) …), not in front of it.
 export function mapRenderedOffsetToRaw(raw: string, rendered: string, renderedOffset: number): number {
+  if (renderedOffset >= rendered.length) return raw.length;
   let j = 0;
   for (let i = 0; i < renderedOffset && i < rendered.length; i++) {
     const idx = raw.indexOf(rendered[i], j);
     if (idx === -1) break;
     j = idx + 1;
+  }
+  if (rendered[renderedOffset] === '\n') {
+    const nl = raw.indexOf('\n', j);
+    return nl === -1 ? raw.length : nl;
   }
   return Math.min(j, raw.length);
 }
