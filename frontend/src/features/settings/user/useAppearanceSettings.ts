@@ -15,7 +15,7 @@ import {
 import { useLinkPreviewsEnabled } from '../../../lib/linkPreview';
 import { isJournalEnabled } from '../../../lib/journal';
 import themeTemplateCss from '../../../themes/theme-template.css?raw';
-import { downloadThemeCss, setThemeColor, ThemeColorVar, themeNameFromFile } from '../../../lib/themeCss';
+import { downloadThemeCss, resetThemeColor, setThemeColor, ThemeColorVar, themeNameFromFile } from '../../../lib/themeCss';
 import { errorMessage } from '../../../lib/errorMessage';
 import { useLatestRef } from '../../../lib/useLatestRef';
 
@@ -97,9 +97,9 @@ export function useAppearanceSettings(
   };
 
   // Applies live (App re-injects the CSS of the active theme) and saves a moment later
-  const handleThemeColor = (theme: UserTheme, name: ThemeColorVar, hex: string) => {
+  const changeThemeCss = (theme: UserTheme, change: (css: string) => string) => {
     const current = themesRef.current.find((t) => t.id === theme.id) ?? theme;
-    updateLocal({ ...current, css: setThemeColor(current.css, name, hex) });
+    updateLocal({ ...current, css: change(current.css) });
     const timers = saveTimers.current;
     clearTimeout(timers.get(theme.id));
     timers.set(
@@ -111,6 +111,12 @@ export function useAppearanceSettings(
       }, 600)
     );
   };
+
+  const handleThemeColor = (theme: UserTheme, name: ThemeColorVar, hex: string) =>
+    changeThemeCss(theme, (css) => setThemeColor(css, name, hex));
+
+  // A secondary colour follows the main ones again
+  const handleResetThemeColor = (theme: UserTheme, name: ThemeColorVar) => changeThemeCss(theme, (css) => resetThemeColor(css, name));
 
   const handleExportTheme = (theme: UserTheme) => downloadThemeCss(theme.name, theme.css);
 
@@ -161,6 +167,7 @@ export function useAppearanceSettings(
     handleThemeFile,
     handleRenameTheme,
     handleThemeColor,
+    handleResetThemeColor,
     handleExportTheme,
     handleDownloadTemplate,
     handleCopyTemplate,

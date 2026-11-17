@@ -6,7 +6,13 @@
 export const THEME_COLOR_VARS = ['bg-app', 'bg-panel', 'bg-panel-elevated', 'text-main', 'text-muted', 'accent-primary'] as const;
 /** Less important colours, behind "Weitere Farben"; without a value of their own they follow the ones above */
 export const THEME_EXTRA_COLOR_VARS = ['text-faint', 'bg-panel-hover', 'bg-input', 'border-color', 'bg-code'] as const;
-export type ThemeColorVar = (typeof THEME_COLOR_VARS)[number] | (typeof THEME_EXTRA_COLOR_VARS)[number];
+/** Status colours (done, error, warning) and the two extra tones of Kanban columns; their light fills and
+ *  borders follow them */
+export const THEME_STATUS_COLOR_VARS = ['color-success', 'color-danger', 'color-warning', 'color-info', 'color-purple'] as const;
+export type ThemeColorVar =
+  | (typeof THEME_COLOR_VARS)[number]
+  | (typeof THEME_EXTRA_COLOR_VARS)[number]
+  | (typeof THEME_STATUS_COLOR_VARS)[number];
 
 /** How a custom theme's secondary colours follow its main ones (as in theme-template.css). A theme that does
  *  not set one gets this instead of the default theme's grey. */
@@ -23,6 +29,12 @@ export const DERIVED_THEME_VARS: Record<string, string> = {
   'border-strong': 'color-mix(in srgb, var(--border-color) 82%, var(--text-main))',
   'scrollbar-thumb': 'color-mix(in srgb, var(--text-main) 16%, transparent)',
   'scrollbar-thumb-hover': 'color-mix(in srgb, var(--text-main) 30%, transparent)',
+  'bg-success': 'color-mix(in srgb, var(--color-success) 12%, transparent)',
+  'border-success': 'color-mix(in srgb, var(--color-success) 38%, transparent)',
+  'bg-danger': 'color-mix(in srgb, var(--color-danger) 12%, transparent)',
+  'border-danger': 'color-mix(in srgb, var(--color-danger) 38%, transparent)',
+  'bg-warning': 'color-mix(in srgb, var(--color-warning) 12%, transparent)',
+  'border-warning': 'color-mix(in srgb, var(--color-warning) 38%, transparent)',
 };
 
 /** The main colours of the default theme (theme-dark.css), which lies underneath a custom theme on the page */
@@ -33,6 +45,11 @@ export const DEFAULT_THEME_COLORS: Record<string, string> = {
   'text-main': '#d9dde4',
   'text-muted': '#a9b0bc',
   'accent-primary': '#2563eb',
+  'color-success': '#16a34a',
+  'color-danger': '#ef4444',
+  'color-warning': '#d97706',
+  'color-info': '#4f8bff',
+  'color-purple': '#a78bfa',
 };
 
 // Fixed greys of the template before it derived these colours: a theme made from it that still has one of
@@ -47,6 +64,12 @@ const OLD_TEMPLATE_VALUES: Record<string, string> = {
   'border-strong': 'rgba(255, 255, 255, 0.22)',
   'scrollbar-thumb': 'rgba(255, 255, 255, 0.14)',
   'scrollbar-thumb-hover': 'rgba(255, 255, 255, 0.26)',
+  'bg-success': 'rgba(34, 197, 94, 0.12)',
+  'border-success': 'rgba(34, 197, 94, 0.38)',
+  'bg-danger': 'rgba(239, 68, 68, 0.12)',
+  'border-danger': 'rgba(239, 68, 68, 0.38)',
+  'bg-warning': 'rgba(245, 158, 11, 0.12)',
+  'border-warning': 'rgba(245, 158, 11, 0.38)',
 };
 
 // Splits the CSS into code and comments, so variables named inside a comment are left alone
@@ -108,13 +131,38 @@ function isLight(hex: string | null): boolean {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 140;
 }
 
-/** Replaces the old template's fixed greys with the derived values (see OLD_TEMPLATE_VALUES) */
+const sameValue = (a: string | undefined, b: string) => a !== undefined && a.replace(/\s+/g, '').toLowerCase() === b.replace(/\s+/g, '').toLowerCase();
+
+// The old template's accent and its fixed hover shade: a theme that changed the accent outside the editor
+// (imported, via the API) but kept this hover never chose it, so its hover follows its own accent
+const OLD_TEMPLATE_ACCENT = '#2563eb';
+const OLD_TEMPLATE_ACCENT_HOVER = '#3b82f6';
+
+/** Replaces the old template's fixed greys and its blue hover with the derived values (see OLD_TEMPLATE_VALUES) */
 export function upgradeThemeCss(css: string): string {
   let next = css;
   for (const [name, old] of Object.entries(OLD_TEMPLATE_VALUES)) {
-    if (readThemeVar(next, name)?.replace(/\s+/g, '') === old.replace(/\s+/g, '')) next = setThemeVar(next, name, DERIVED_THEME_VARS[name]);
+    if (sameValue(readThemeVar(next, name), old)) next = setThemeVar(next, name, DERIVED_THEME_VARS[name]);
+  }
+  const accent = readThemeVar(next, 'accent-primary');
+  if (sameValue(readThemeVar(next, 'accent-hover'), OLD_TEMPLATE_ACCENT_HOVER) && accent !== undefined && !sameValue(accent, OLD_TEMPLATE_ACCENT)) {
+    next = setThemeVar(next, 'accent-hover', DERIVED_THEME_VARS['accent-hover']);
   }
   return next;
+}
+
+/** Whether the theme sets a colour of its own for a secondary colour, instead of following the main ones */
+export function hasOwnThemeColor(css: string, name: ThemeColorVar): boolean {
+  const derived = DERIVED_THEME_VARS[name];
+  if (!derived) return false;
+  const raw = readThemeVar(upgradeThemeCss(css), name);
+  return raw !== undefined && !sameValue(raw, derived);
+}
+
+/** Lets a secondary colour follow the main ones again (the template's derived value) */
+export function resetThemeColor(css: string, name: ThemeColorVar): string {
+  const derived = DERIVED_THEME_VARS[name];
+  return derived ? setThemeVar(upgradeThemeCss(css), name, derived) : css;
 }
 
 /** A rule with the derived values of the colours the theme does not set; goes before the theme's own CSS */

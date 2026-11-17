@@ -650,6 +650,9 @@ function connectPorts(a: Point, da: Point, b: Point, db: Point, own: ShapeElemen
   return best;
 }
 
+// A stretch of an elbow line shorter than this is too short to carry the label clear of the arrowhead
+const LABEL_MIN_STRETCH = 40;
+
 /** Where an arrow's label sits: on the line, or just above it on a level stretch */
 export function arrowLabelBox(el: ArrowElement, g: ArrowGeometry): Box & { level: boolean } {
   const fs = el.fs || ARROW_FONT_SIZE;
@@ -795,8 +798,16 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
     const poly = tidyCorners([...head(from, el.fromPort, el.a, via[0]), ...via, ...head(to, el.toPort, el.b, via[via.length - 1]).reverse()]);
     const n = poly.length;
     const angle = (p: Point, q: Point) => Math.atan2(q[1] - p[1], q[0] - p[0]);
-    // The label sits on the last stretch: lines of a fork share their first ones
-    const labelAt: Point = n >= 3 ? [(poly[n - 2][0] + poly[n - 1][0]) / 2, (poly[n - 2][1] + poly[n - 1][1]) / 2] : halfway(poly);
+    // The label sits on the last stretch (lines of a fork share their first ones). Is that one too short for
+    // it, on the longest stretch after the first; are they all short (a small offset between two shapes),
+    // halfway along the line as on a straight one, so it keeps off the head
+    const stretch = (i: number) => Math.hypot(poly[i][0] - poly[i - 1][0], poly[i][1] - poly[i - 1][1]);
+    let at = n - 1;
+    if (n >= 3 && stretch(at) < LABEL_MIN_STRETCH) {
+      for (let i = 2; i < n - 1; i++) if (stretch(i) > stretch(at)) at = i;
+    }
+    const labelAt: Point =
+      n >= 3 && stretch(at) >= LABEL_MIN_STRETCH ? [(poly[at - 1][0] + poly[at][0]) / 2, (poly[at - 1][1] + poly[at][1]) / 2] : halfway(poly);
     return {
       start: poly[0],
       end: poly[n - 1],

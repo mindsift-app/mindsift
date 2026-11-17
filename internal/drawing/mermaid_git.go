@@ -18,6 +18,7 @@ import (
 const (
 	maxGitCommits = 150
 	gitFont       = 14.0
+	gitBeside     = 22.0 // how far a merge line runs beside a lane that is taken
 )
 
 var gitAttrRe = regexp.MustCompile(`(\w+)\s*:\s*("([^"]*)"|[^\s"]+)`)
@@ -88,6 +89,16 @@ func (gg *gitGraph) commit(cur int, attrs map[string]string, parents []int) *git
 	}
 	gg.branches[cur].head = len(gg.commits) - 1
 	return c
+}
+
+// continuesAfter: whether the branch of commit c has a later commit, so its lane goes on past c
+func (gg *gitGraph) continuesAfter(c int) bool {
+	for _, n := range gg.commits[c+1:] {
+		if n.branch == gg.commits[c].branch {
+			return true
+		}
+	}
+	return false
 }
 
 func parseGitGraph(lines []string) *gitGraph {
@@ -327,12 +338,29 @@ func layoutGitGraph(gg *gitGraph) layoutResult {
 		} else {
 			corner = [2]float64{a[0], b[1]}
 		}
+		via := [][2]float64{corner}
+		// A merge from a branch that goes on after it: its own lane is taken up to its next commit, so the
+		// line runs beside the lanes instead, just past the one nearer the top (left), where no ids or tags sit
+		if !acrossFirst && gg.continuesAfter(from) {
+			if vertical {
+				x := math.Min(a[0], b[0]) + gitBeside
+				via = [][2]float64{{x, a[1]}, {x, b[1]}}
+			} else {
+				y := math.Min(a[1], b[1]) + gitBeside
+				via = [][2]float64{{a[0], y}, {b[0], y}}
+			}
+		}
 		el["route"] = "elbow"
-		el["via"] = [][2]float64{{r1(corner[0]), r1(corner[1])}}
-		el["fromPort"] = portToward(a, sizes[from], corner)
-		el["toPort"] = portToward(b, sizes[to], corner)
-		el["a"] = outline(a[0], a[1], sizes[from], corner[0], corner[1])
-		el["b"] = outline(b[0], b[1], sizes[to], corner[0], corner[1])
+		vias := make([][2]float64, len(via))
+		for n, v := range via {
+			vias[n] = [2]float64{r1(v[0]), r1(v[1])}
+		}
+		el["via"] = vias
+		enter, leave := via[0], via[len(via)-1]
+		el["fromPort"] = portToward(a, sizes[from], enter)
+		el["toPort"] = portToward(b, sizes[to], leave)
+		el["a"] = outline(a[0], a[1], sizes[from], enter[0], enter[1])
+		el["b"] = outline(b[0], b[1], sizes[to], leave[0], leave[1])
 		res.els = append(res.els, el)
 	}
 	for i, c := range gg.commits {

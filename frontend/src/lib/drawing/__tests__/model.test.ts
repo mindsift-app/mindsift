@@ -338,6 +338,21 @@ describe('laid out arrows', () => {
     expect(g.labelAt[0]).toBeCloseTo(173);
   });
 
+  it('keep the label of an elbow line with a small offset off its head', () => {
+    // b a little to the right below a: down, a short jog across, down into b
+    const a = rect('a', 0, 0);
+    const b = rect('b', 16, 120);
+    const ar = arrow({ from: 'a', to: 'b', route: 'elbow', via: [[50, 85], [66, 85]], fromPort: { side: 'b', at: 0.5 }, toPort: { side: 't', at: 0.5 }, txt: 'ja' });
+    const g = arrowGeometry(ar, elementMap([a, b, ar]));
+    // Halfway, as on a straight line, not in the middle of the last short stretch just above the head
+    expect(g.labelAt[1]).toBeLessThan(95);
+    // A long last stretch still carries the label
+    const far = rect('b', 16, 300);
+    const g2 = arrowGeometry(ar, elementMap([a, far, ar]));
+    expect(g2.labelAt[0]).toBeCloseTo(66);
+    expect(g2.labelAt[1]).toBeGreaterThan(150);
+  });
+
   it('lose their corners when a docked shape moves, but not when they move along', () => {
     const ar = arrow({ id: 'x', from: 'a', to: 'b', via: [[1, 1]] });
     expect((dropStaleVia([ar], new Set(['a']))[0] as ArrowElement).via).toBeUndefined();
