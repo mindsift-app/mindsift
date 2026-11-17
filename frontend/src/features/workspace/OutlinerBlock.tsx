@@ -53,7 +53,7 @@ import { AudioBlock } from './AudioBlock';
 import { DictationBlock } from './DictationBlock';
 import { currentVoiceConfig } from '../../lib/voice';
 import { LinkPreviewCard } from './LinkPreviewCard';
-import { linkCardUrl, hidePreviewContent, linkHost, useLinkPreviewsEnabled } from '../../lib/linkPreview';
+import { linkCardUrl, hidePreviewContent, linkHost, linkPreviewsEnabled, useLinkPreviewsEnabled } from '../../lib/linkPreview';
 import { mediaContent, parseMediaContent } from '../../lib/media';
 import { insertImages, PastedImages, pastedImages } from '../../lib/pasteImages';
 import { codeBlockText } from '../../lib/secretRef';
@@ -847,12 +847,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     setShowLinkModal(false);
     const b = linkBeforeRef.current ?? '';
     const a = linkAfterRef.current ?? '';
-    // A web link without a name of its own in an otherwise empty bullet becomes the bare address (with its
-    // preview card); a link with a name keeps the name
+    // A web link in an otherwise empty bullet becomes the bare address, so it gets its preview card; a name
+    // of its own is dropped then (the card shows the page's title). A named link is what a hidden card
+    // leaves behind, so it would show none. Without cards (http, previews off) a name stays.
     if (b.trim() === '' && a.trim() === '') {
       const webMatch = linkMarkdown.match(/^\[(.*)\]\((https?:\/\/[^\s)]+)\)$/);
-      if (webMatch && webMatch[1] === webMatch[2]) {
-        const bareUrl = webMatch[1];
+      if (webMatch && (webMatch[1] === webMatch[2] || (linkPreviewsEnabled() && linkCardUrl(webMatch[2])))) {
+        const bareUrl = webMatch[2];
         setLocalContent(bareUrl);
         localContentRef.current = bareUrl;
         flushDebounce(bareUrl);

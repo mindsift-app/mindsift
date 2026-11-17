@@ -304,6 +304,23 @@ describe('slash command menu and outliner fixes', () => {
     expect(onCreateBelow).toHaveBeenCalledWith('b1', '');
   });
 
+  it('drops an own text of /link in an empty bullet, so the address gets its preview card', () => {
+    const updates: DocumentBlock[] = [];
+    const block = { id: 'b1', type: 'bullet', content: '', level: 0 } as DocumentBlock;
+    const { container, getByText, getByRole, getByPlaceholderText } = renderBlock(block, {
+      onUpdateBlock: (u: DocumentBlock) => updates.push(u),
+    });
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    ta.focus();
+    fireEvent.change(ta, { target: { value: '/link' } });
+    fireEvent.keyDown(ta, { key: 'Enter' });
+    fireEvent.click(getByText('Web-Link'));
+    fireEvent.change(getByPlaceholderText('https://example.com'), { target: { value: 'https://example.com/artikel' } });
+    fireEvent.change(getByPlaceholderText('z. B. MindSift Dokumentation'), { target: { value: 'Mein Artikel' } });
+    fireEvent.click(getByRole('button', { name: 'Link einfügen' }));
+    expect(updates[updates.length - 1]?.content).toBe('https://example.com/artikel');
+  });
+
   it('inserts a bare URL for /link with a web address in an empty bullet, and [Text](url) otherwise', () => {
     const updates: DocumentBlock[] = [];
     const block = { id: 'b1', type: 'bullet', content: '', level: 0 } as DocumentBlock;
