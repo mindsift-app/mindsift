@@ -28,8 +28,9 @@ function usePicture(preview: LinkPreview | null, kind: 'image' | 'icon'): string
   return src;
 }
 
-// Compact card above a bullet with a web address: icon and site, title, one line of description and a
-// small picture. Nothing is shown when the page offers nothing usable.
+// Card above a bullet with a web address, as wide as the note: icon and site, title, two lines of description
+// and the page's picture. Nothing is shown when the page offers nothing usable. Its X sits at the bottom: the
+// bullet's floating action bubble covers the top right corner.
 export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, onHide }) => {
   const { t } = useTranslation('workspace');
   const [preview, setPreview] = useState<LinkPreview | null>(null);
@@ -51,12 +52,12 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, 
   if (!preview || !href) return null;
 
   return (
-    <div className="relative mb-1 max-w-xl">
+    <div className="relative mb-1">
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-stretch gap-3 min-h-26 rounded-card border border-border bg-panel hover:bg-panel-elevated transition-colors overflow-hidden no-underline"
+        className="flex items-stretch gap-3 min-h-26 sm:min-h-32 rounded-card border border-border bg-panel hover:bg-panel-elevated transition-colors overflow-hidden no-underline"
       >
         <div className="min-w-0 flex-1 py-3 pl-3 pr-11 sm:pr-8 space-y-1 flex flex-col justify-center">
           <div className="flex items-center gap-1.5 text-[11px] text-faint min-w-0">
@@ -70,7 +71,7 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, 
           {preview.title && <div className="text-sm font-semibold text-main line-clamp-2 leading-snug">{preview.title}</div>}
           {preview.description && <div className="text-xs text-muted line-clamp-2">{preview.description}</div>}
         </div>
-        {image && <img src={image} alt="" className="w-28 sm:w-40 object-cover shrink-0 border-l border-border" />}
+        {image && <img src={image} alt="" className="w-28 sm:w-56 object-cover shrink-0 border-l border-border" />}
       </a>
       {canEdit && (
         <button
@@ -78,7 +79,7 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, 
           onClick={() => onHide(preview.title)}
           title={t('preview.hideTitle')}
           aria-label={t('preview.hide')}
-          className="absolute top-0 right-0 sm:top-1 sm:right-1 w-11 h-11 sm:w-7 sm:h-7 flex items-center justify-center rounded-full bg-panel/70 text-muted hover:text-main"
+          className="absolute bottom-0 right-0 sm:bottom-1 sm:right-1 w-11 h-11 sm:w-7 sm:h-7 flex items-center justify-center rounded-full bg-panel/70 text-muted hover:text-main"
         >
           <X className="w-3.5 h-3.5" />
         </button>
