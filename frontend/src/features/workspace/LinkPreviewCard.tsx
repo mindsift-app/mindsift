@@ -28,8 +28,8 @@ function usePicture(preview: LinkPreview | null, kind: 'image' | 'icon'): string
   return src;
 }
 
-// Card above a bullet with a web address, as wide as the note: icon and site, title, two lines of description
-// and the page's picture. Nothing is shown when the page offers nothing usable. Its X sits at the bottom: the
+// Card above a bullet with a web address, as wide as the note: icon and site, title, up to three lines of
+// description and the page's picture. Nothing is shown when the page offers nothing usable. Its X sits at the bottom: the
 // bullet's floating action bubble covers the top right corner.
 export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, onHide }) => {
   const { t } = useTranslation('workspace');
@@ -57,7 +57,7 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, 
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-stretch gap-3 min-h-26 sm:min-h-32 rounded-card border border-border bg-panel hover:bg-panel-elevated transition-colors overflow-hidden no-underline"
+        className="flex items-stretch gap-3 min-h-26 rounded-card border border-border bg-panel hover:bg-panel-elevated transition-colors overflow-hidden no-underline"
       >
         <div className="min-w-0 flex-1 py-3 pl-3 pr-11 sm:pr-8 space-y-1 flex flex-col justify-center">
           <div className="flex items-center gap-1.5 text-[11px] text-faint min-w-0">
@@ -69,9 +69,16 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, 
             <span className="truncate">{preview.siteName}</span>
           </div>
           {preview.title && <div className="text-sm font-semibold text-main line-clamp-2 leading-snug">{preview.title}</div>}
-          {preview.description && <div className="text-xs text-muted line-clamp-2">{preview.description}</div>}
+          {preview.description && <div className="text-xs text-muted line-clamp-2 sm:line-clamp-3">{preview.description}</div>}
         </div>
-        {image && <img src={image} alt="" className="w-28 sm:w-56 object-cover shrink-0 border-l border-border" />}
+        {image && (
+          // Golden section from the phone layout on: 38 % of the card for the picture (at most 340 px, the
+          // width of a full note) in the usual format of link pictures, 1.91:1 (1200 x 630). Its height sets
+          // the card's; a longer text makes the card taller and the picture is cut to fit.
+          <div className="relative w-28 sm:w-[38%] sm:max-w-[340px] sm:aspect-[1.91/1] shrink-0 border-l border-border">
+            <img src={image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          </div>
+        )}
       </a>
       {canEdit && (
         <button

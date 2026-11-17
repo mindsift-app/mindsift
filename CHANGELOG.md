@@ -54,7 +54,7 @@ Versions without a git tag were development states and were never published as a
 - Clicking a hashtag below the folder tree filters the tree to the notes carrying it (several hashtags: notes with all of them); a red ✕ beside "Hashtags" clears the filter, and the bar above the trash glows red while it is on. The hashtag page stays reachable through the "Hashtags" tab and hashtags in a note.
 - AI agents (MCP) are encouraged to use colour in diagrams and to structure notes with sub-headings and indented details; the MCP descriptions are much shorter, so clients that cut long descriptions off see them whole.
 - The app starts with only the texts of your language; it no longer loads the German ones as well.
-- Link previews in notes span the full width of the note with a larger picture; the button that hides a preview sits at its bottom right, where the bullet's floating buttons no longer cover it. A web link added with `/link` to an empty bullet gets its preview too, also when you typed a text for it (the preview shows the page's title).
+- Link previews in notes span the full width of the note; the picture takes 38 % of it (golden section, at most 340 px) in the usual 1.91:1 format of link pictures and sets the card's height; the button that hides a preview sits at its bottom right, where the bullet's floating buttons no longer cover it. A web link added with `/link` to an empty bullet gets its preview too, also when you typed a text for it (the preview shows the page's title).
 
 ### Fixed
 - Opening the journal no longer stutters: its days are built one after another instead of all at once.
