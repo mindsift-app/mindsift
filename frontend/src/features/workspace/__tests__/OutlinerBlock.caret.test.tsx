@@ -17,6 +17,35 @@ describe('mapRenderedOffsetToRaw', () => {
   it('maps into a link label', () => {
     expect(mapRenderedOffsetToRaw('x [Seite](https://a.de) y', 'x Seite y', 4)).toBe(5);
   });
+  it('puts the end of the text behind closing inline code', () => {
+    const raw = 'Server starten mit `npm run dev`';
+    expect(mapRenderedOffsetToRaw(raw, 'Server starten mit npm run dev', 'Server starten mit npm run dev'.length)).toBe(raw.length);
+    // inside the code the click still lands where it was
+    expect(mapRenderedOffsetToRaw(raw, 'Server starten mit npm run dev', 22)).toBe(23);
+  });
+  it('puts the end of the text behind other closing markup', () => {
+    const cases: [string, string][] = [
+      ['Das ist **wichtig**', 'Das ist wichtig'],
+      ['Das ist *wichtig*', 'Das ist wichtig'],
+      ['Das ist ~~alt~~', 'Das ist alt'],
+      ['Das ist ==wichtig==', 'Das ist wichtig'],
+      ['Siehe [die Seite](https://a.de)', 'Siehe die Seite'],
+      ['Siehe [[Meine Notiz]]', 'Siehe Meine Notiz'],
+      ['Ein `Befehl`.', 'Ein Befehl.'],
+      ['Mehr **fett und `code`**', 'Mehr fett und code'],
+    ];
+    for (const [raw, rendered] of cases) {
+      expect(mapRenderedOffsetToRaw(raw, rendered, rendered.length)).toBe(raw.length);
+    }
+  });
+  it('puts the end of a line behind its closing markup, in front of the line break', () => {
+    const raw = 'Erste `Zeile`\nZweite **Zeile**';
+    const rendered = 'Erste Zeile\nZweite Zeile';
+    expect(mapRenderedOffsetToRaw(raw, rendered, 11)).toBe(13);
+    expect(mapRenderedOffsetToRaw(raw, rendered, rendered.length)).toBe(raw.length);
+    // in the middle of the first line the break rule does not apply
+    expect(mapRenderedOffsetToRaw(raw, rendered, 8)).toBe(9);
+  });
   it('handles the empty placeholder', () => {
     expect(mapRenderedOffsetToRaw('', '​', 1)).toBe(0);
   });
