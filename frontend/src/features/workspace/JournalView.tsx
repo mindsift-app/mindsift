@@ -9,6 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { useLatestRef } from '../../lib/useLatestRef';
 
 const PAGE = 7;
+// The sidebar's journal panel opens in 300 ms; the days after the first get their editor only after that
+const MOUNT_DELAY_MS = 320;
 
 interface JournalViewProps {
   days: JournalDay[];
@@ -100,6 +102,16 @@ export const JournalView: React.FC<JournalViewProps> = ({
   const shown = dates.slice(0, limit);
   const [showCalendar, setShowCalendar] = useState(false);
 
+  // The days get their editor one after another: the first at once, the others once the sidebar's panel has
+  // opened, one per task, so the browser paints in between (seven editors built at once made the opening
+  // stutter). A jump further down builds the days up to its target at once.
+  const [mounted, setMounted] = useState(1);
+  useEffect(() => {
+    if (mounted >= shown.length) return;
+    const id = window.setTimeout(() => setMounted((m) => m + 1), mounted === 1 ? MOUNT_DELAY_MS : 0);
+    return () => window.clearTimeout(id);
+  }, [mounted, shown.length]);
+
   // Days on screen without a note yet (today, a day jumped to) get one
   const opening = useRef(new Set<string>());
   useEffect(() => {
@@ -153,13 +165,14 @@ export const JournalView: React.FC<JournalViewProps> = ({
     // A jump to a day further down loads enough days first
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (idx >= limit) setLimit(idx + PAGE);
+    setMounted((m) => Math.max(m, idx + 1));
     pendingJump.current = jumpRequest.date;
   }, [jumpRequest, dates, limit]);
   useEffect(() => {
     const date = pendingJump.current;
     if (!date) return;
     const el = sectionRefs.current.get(date);
-    if (el && docIdByDate.has(date)) {
+    if (el && docIdByDate.has(date) && dates.indexOf(date) < mounted) {
       pendingJump.current = null;
       el.scrollIntoView({ block: 'start' });
     }
@@ -302,7 +315,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
               }}
               className="min-h-32"
             >
-              {docId ? (
+              {idx >= mounted ? null : docId ? (
                 <DocumentEditor
                   key={docId}
                   variant="journal"

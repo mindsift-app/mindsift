@@ -167,6 +167,29 @@ describe('dragging a bullet in the outliner', () => {
     expect(moves).toEqual([['e', { beforeId: 'br' }, 0, true]]);
   });
 
+  it('keeps Shift from grabbing when drag events never report the key (Wayland)', async () => {
+    renderTree();
+    const data = transfer();
+    await start('e', data, { shiftKey: true });
+    // Under Wayland every dragover says Shift is not held
+    await over('br', data);
+    expect(ghost.single).not.toContain(false);
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
+    await drop('br', data);
+    expect(moves).toEqual([['e', { beforeId: 'br' }, 0, true]]);
+  });
+
+  it('follows a release once drag events have reported Shift', async () => {
+    renderTree();
+    const data = transfer();
+    await start('a', data, { shiftKey: true });
+    await over('u', data, { shiftKey: true });
+    await over('u', data);
+    expect(lastGhost()).toBe(false);
+    await drop('u', data);
+    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, false]]);
+  });
+
   it('ignores Ctrl and Alt (Option): only Shift moves the bullet alone', async () => {
     renderTree();
     const data = transfer();

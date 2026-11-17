@@ -867,12 +867,28 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   // bullet above (dropLevelRange: no bullet around it changes parents). Its children keep their depth below
   // it. Holding Shift moves it alone: its children move up into its old place. The key may be
   // pressed or released during the drag: dragover reports it about every 50 ms, also without moving, while
-  // keyboard events often do not arrive during a drag.
+  // keyboard events often do not arrive during a drag. Under Wayland the browsers report Shift as never held in
+  // drag events: as long as no dragover has reported it, Shift held on grabbing the bullet stays in effect.
   const setSingle = useCallback((single: boolean) => {
     dragGhostRef.current?.setSingle(single);
     dragSingleRef.current = single;
     setBlockDragSingle(single);
   }, []);
+
+  // Whether a dragover of this drag has reported Shift held: then the system reports the key during drags and
+  // a dragover without it means released
+  const dragKeySeenRef = useRef(false);
+  const applyDragKey = useCallback(
+    (e: { shiftKey: boolean }) => {
+      if (singleDragKey(e)) {
+        dragKeySeenRef.current = true;
+        setSingle(true);
+      } else if (dragKeySeenRef.current || !dragSingleRef.current) {
+        setSingle(false);
+      }
+    },
+    [setSingle]
+  );
 
   const clearDrag = useCallback(() => {
     setDraggedIndex(null);
@@ -881,6 +897,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     dragStartXRef.current = null;
     dragGhostRef.current = null;
     dragSingleRef.current = false;
+    dragKeySeenRef.current = false;
     setBlockDragSingle(false);
   }, []);
 
@@ -889,6 +906,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     e.dataTransfer.effectAllowed = 'move';
     const single = singleDragKey(e);
     dragSingleRef.current = single;
+    dragKeySeenRef.current = false;
     setBlockDragSingle(single);
     dragStartXRef.current = Number.isFinite(e.clientX) ? e.clientX : null;
     dragGhostRef.current = startBranchDragGhost(e, blocks.slice(index, branchEnd(blocks, index)), single) || null;
@@ -896,7 +914,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
 
   useEffect(() => {
     if (draggedIndex === null) return;
-    const onDragOver = (e: DragEvent) => setSingle(singleDragKey(e));
+    const onDragOver = (e: DragEvent) => applyDragKey(e);
     const onKey = (e: KeyboardEvent) => setSingle(singleDragKey(e));
     document.addEventListener('dragover', onDragOver, true);
     window.addEventListener('keydown', onKey, true);
@@ -906,7 +924,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       window.removeEventListener('keydown', onKey, true);
       window.removeEventListener('keyup', onKey, true);
     };
-  }, [draggedIndex, setSingle]);
+  }, [draggedIndex, setSingle, applyDragKey]);
 
   // The level for a drop in front of the row at index (blocks.length: below the last one): the lowest allowed
   // (the level of the bullet it lands in front of) as long as the pointer has not moved right since the drag
@@ -933,14 +951,14 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       e.preventDefault();
       if (draggedIndex === null) return;
       e.dataTransfer.dropEffect = 'move';
-      const single = singleDragKey(e);
-      setSingle(single);
+      applyDragKey(e);
+      const single = dragSingleRef.current;
       const level = dropLevelAt(e, index, single);
       dragOverRef.current = level === null ? null : { index, level };
       setDragOverIndex(level === null ? null : index);
       if (level !== null) setDragOverLevel(level);
     },
-    [draggedIndex, dropLevelAt, setSingle]
+    [draggedIndex, dropLevelAt, applyDragKey]
   );
 
   const handleDropBlock = useCallback(
