@@ -218,3 +218,22 @@ func TestStaticFilesLocalized(t *testing.T) {
 		t.Fatalf("English manifest: %s", got)
 	}
 }
+
+// The page preloads the texts of the language it is served in, not always the German ones.
+func TestStaticPreloadsPageLanguage(t *testing.T) {
+	html := `<html lang="de"><link rel="modulepreload" crossorigin href="/assets/react-1.js">` +
+		`<meta name="mindsift-texts" content="de=/assets/de-A.js en=/assets/en-B.js fr=/assets/fr-C.js">` +
+		`<link rel="modulepreload" crossorigin href="/assets/de-A.js">`
+	fr := string(localizeStatic([]byte(html), "fr"))
+	if !strings.Contains(fr, `<link rel="modulepreload" crossorigin href="/assets/fr-C.js">`) ||
+		strings.Contains(fr, `href="/assets/de-A.js"`) || !strings.Contains(fr, `href="/assets/react-1.js"`) {
+		t.Fatalf("French page: %s", fr)
+	}
+	if de := string(localizeStatic([]byte(html), "de")); de != html {
+		t.Fatalf("German page changed: %s", de)
+	}
+	// A language without a chunk in the list keeps the German preload
+	if it := string(localizeStatic([]byte(html), "it")); !strings.Contains(it, `crossorigin href="/assets/de-A.js">`) {
+		t.Fatalf("Italian page without its chunk: %s", it)
+	}
+}

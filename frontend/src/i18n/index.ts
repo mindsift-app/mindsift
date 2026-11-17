@@ -30,9 +30,10 @@ export const NAMESPACES = [
   'public',
   'tour',
 ] as const satisfies readonly (keyof typeof de)[];
-// Every language is a chunk of its own, German included: the start chunk holds no texts. German is the
-// fallback for keys a language lacks, so it is loaded together with any other (startI18n); the build
-// preloads its chunk next to the start chunk (vite.config.ts) and the service worker keeps them all.
+// Every language is a chunk of its own, German included: the start chunk holds no texts. Every language has
+// all keys (a test checks), so a start loads only its own; German comes only when that one fails. The page
+// preloads the chunk of the language it is served in (vite.config.ts, preloadStartTexts) and the service
+// worker keeps them all.
 const loaders: Record<Language, () => Promise<{ default: Record<string, object> }>> = {
   de: () => import('../locales/de'),
   en: () => import('../locales/en'),
@@ -112,12 +113,12 @@ export function startLanguage(signedIn: boolean): Language {
   return isLanguage(last) ? last : resolveLanguage(undefined, document.documentElement.lang);
 }
 
-// Before the first render (main.tsx): the start language and German, the fallback for keys it lacks, are
-// both loaded before anything shows, so neither raw keys nor German before the start language flash up.
-// Resolves even when a chunk fails (the app then shows what it has).
+// Before the first render (main.tsx): the start language is loaded before anything shows, so no raw keys
+// flash up. Should its chunk fail, German instead, so the app still has texts. Resolves even when both fail
+// (the app then shows what it has).
 export async function startI18n(lang: Language): Promise<void> {
-  const langs: Language[] = lang === FALLBACK_LANGUAGE ? [lang] : [FALLBACK_LANGUAGE, lang];
-  await Promise.all(langs.map((l) => loadLanguage(l).catch(() => {})));
+  await loadLanguage(lang).catch(() => {});
+  if (!i18n.hasResourceBundle(lang, 'common')) await loadLanguage(FALLBACK_LANGUAGE).catch(() => {});
   if (i18n.hasResourceBundle(lang, 'common')) await i18n.changeLanguage(lang);
   document.documentElement.lang = i18n.language;
 }

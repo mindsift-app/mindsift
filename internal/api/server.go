@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -682,11 +683,26 @@ var staticTexts = []string{
 	"Einen Eintrag zur Einkaufsliste hinzufügen",
 }
 
-// localizeStatic translates the quoted staticTexts of a static file and sets <html lang>.
+// textChunksRe: the meta tag of index.html that names the chunk of each language's texts ("de=/assets/… en=…")
+var textChunksRe = regexp.MustCompile(`<meta name="mindsift-texts" content="([^"]*)"`)
+
+// localizeStatic translates the quoted staticTexts of a static file and sets <html lang>. In index.html
+// the preload of the German texts becomes one of the page's language (vite.config.ts, preloadStartTexts).
 func localizeStatic(data []byte, lang string) []byte {
 	out := strings.Replace(string(data), `<html lang="de"`, `<html lang="`+lang+`"`, 1)
 	for _, de := range staticTexts {
 		out = strings.ReplaceAll(out, `"`+de+`"`, `"`+i18n.T(lang, de)+`"`)
+	}
+	if m := textChunksRe.FindStringSubmatch(out); m != nil && lang != "de" {
+		chunks := map[string]string{}
+		for _, pair := range strings.Fields(m[1]) {
+			if code, href, ok := strings.Cut(pair, "="); ok {
+				chunks[code] = href
+			}
+		}
+		if de, own := chunks["de"], chunks[lang]; de != "" && own != "" {
+			out = strings.Replace(out, `rel="modulepreload" crossorigin href="`+de+`"`, `rel="modulepreload" crossorigin href="`+own+`"`, 1)
+		}
 	}
 	return []byte(out)
 }

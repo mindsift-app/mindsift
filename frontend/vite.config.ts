@@ -37,20 +37,31 @@ function precacheList(): Plugin {
   };
 }
 
-// German is the fallback for missing texts and loaded at every start, before the first render (src/i18n/index.ts);
-// a modulepreload link in index.html fetches its chunk together with the start chunk instead of after it
-function preloadGermanTexts(): Plugin {
+// The texts of the start language are loaded before the first render (src/i18n/index.ts). A modulepreload link in
+// index.html fetches their chunk together with the start chunk instead of after it: German as built, and a meta
+// tag names every language's chunk, so the server swaps in the one of the language it serves the page in
+// (localizeStatic in internal/api/server.go). Other languages no longer fetch the German texts as well.
+function preloadStartTexts(): Plugin {
   return {
-    name: 'mindsift-preload-german',
+    name: 'mindsift-preload-texts',
     apply: 'build',
     transformIndexHtml: {
       order: 'post',
       handler(_html, ctx) {
-        const chunk = Object.values(ctx.bundle ?? {}).find(
-          (c) => c.type === 'chunk' && c.facadeModuleId?.replace(/\\/g, '/').endsWith('/src/locales/de/index.ts')
-        );
-        if (!chunk) throw new Error('mindsift-preload-german: no chunk for src/locales/de/index.ts');
-        return [{ tag: 'link', attrs: { rel: 'modulepreload', crossorigin: true, href: `/${chunk.fileName}` }, injectTo: 'head' }];
+        const chunks: Record<string, string> = {};
+        for (const c of Object.values(ctx.bundle ?? {})) {
+          const lang = c.type === 'chunk' ? c.facadeModuleId?.replace(/\\/g, '/').match(/\/src\/locales\/(\w+)\/index\.ts$/)?.[1] : undefined;
+          if (lang) chunks[lang] = `/${c.fileName}`;
+        }
+        if (!chunks.de) throw new Error('mindsift-preload-texts: no chunk for src/locales/de/index.ts');
+        const map = Object.entries(chunks)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([lang, href]) => `${lang}=${href}`)
+          .join(' ');
+        return [
+          { tag: 'meta', attrs: { name: 'mindsift-texts', content: map }, injectTo: 'head' },
+          { tag: 'link', attrs: { rel: 'modulepreload', crossorigin: true, href: chunks.de }, injectTo: 'head' },
+        ];
       },
     },
   };
@@ -93,7 +104,7 @@ export default defineConfig({
       },
     },
     precacheList(),
-    preloadGermanTexts(),
+    preloadStartTexts(),
     nameMainChunk(),
   ],
   define: {
