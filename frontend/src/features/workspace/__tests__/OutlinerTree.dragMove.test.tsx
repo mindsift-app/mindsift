@@ -7,14 +7,14 @@ import { DocumentBlock } from '../../../lib/types';
 import type { BranchDrop } from '../../../lib/outlineList';
 
 // Dragging a bullet by its handle (OutlinerTree): it lands on the level of the row it is dropped in front
-// of, and with Shift held it goes without its children. The tree operation itself is tested in
+// of; an open bullet goes without its children, a collapsed one takes them along. The tree operation itself is tested in
 // lib/__tests__/outlineList.test.ts.
 
-const ghost = vi.hoisted(() => ({ single: [] as boolean[], started: [] as boolean[] }));
+// Number of rows each drag preview shows
+const ghost = vi.hoisted(() => ({ rows: [] as number[] }));
 vi.mock('../branchDragImage', () => ({
-  startBranchDragGhost: (_e: unknown, _branch: unknown, single: boolean) => {
-    ghost.started.push(single);
-    return { setSingle: (s: boolean) => ghost.single.push(s) };
+  startBranchDragGhost: (_e: unknown, branch: unknown[]) => {
+    ghost.rows.push(branch.length);
   },
 }));
 
@@ -32,11 +32,13 @@ const blocks = [
 
 let moves: Array<[string, BranchDrop, number, boolean | undefined]> = [];
 let refused: string[] = [];
-const renderTree = (locked?: Map<string, BlockLock>) =>
+// Arbeit collapsed (Bericht and Folien hidden)
+const collapsedBlocks = blocks.map((b) => (b.id === 'a' ? { ...b, collapsed: true } : b));
+const renderTree = (locked?: Map<string, BlockLock>, shown: DocumentBlock[] = blocks) =>
   render(
     <OutlinerTree
       docId="d1"
-      blocks={blocks}
+      blocks={shown}
       canEdit
       onUpdateBlock={() => {}}
       onCreateBlock={() => {}}
@@ -64,13 +66,10 @@ function transfer(): DataTransfer {
   } as unknown as DataTransfer;
 }
 
-type Mods = { shiftKey?: boolean; ctrlKey?: boolean; altKey?: boolean; clientX?: number };
-// A drag event with the modifier keys held (jsdom has no DragEvent, its plain Event carries no keys)
+type Mods = { clientX?: number };
+// A drag event at a pointer position (jsdom has no DragEvent)
 async function fire(type: 'dragStart' | 'dragOver' | 'drop', el: Element, data: DataTransfer, mods: Mods = {}) {
   const ev = createEvent[type](el, { dataTransfer: data });
-  Object.defineProperty(ev, 'shiftKey', { value: !!mods.shiftKey });
-  Object.defineProperty(ev, 'ctrlKey', { value: !!mods.ctrlKey });
-  Object.defineProperty(ev, 'altKey', { value: !!mods.altKey });
   if (mods.clientX !== undefined) Object.defineProperty(ev, 'clientX', { value: mods.clientX });
   await act(async () => {
     fireEvent(el, ev);
@@ -80,13 +79,11 @@ const start = (id: string, data: DataTransfer, mods: Mods = {}) =>
   fire('dragStart', rowOf(id).querySelector('button[draggable="true"]')!, data, mods);
 const over = (id: string, data: DataTransfer, mods: Mods = {}) => fire('dragOver', rowOf(id), data, mods);
 const drop = (id: string, data: DataTransfer) => fire('drop', rowOf(id), data);
-const lastGhost = () => ghost.single[ghost.single.length - 1];
 
 beforeEach(() => {
   moves = [];
   refused = [];
-  ghost.single = [];
-  ghost.started = [];
+  ghost.rows = [];
 });
 
 describe('dragging a bullet in the outliner', () => {
@@ -94,7 +91,6 @@ describe('dragging a bullet in the outliner', () => {
     renderTree();
     const data = transfer();
     await start('u', data);
-    // Move only: Shift (unlike Ctrl or Alt) never turns a drag into a copy
     expect(data.effectAllowed).toBe('move');
     await over('br', data);
     expect(data.dropEffect).toBe('move');
@@ -115,93 +111,35 @@ describe('dragging a bullet in the outliner', () => {
     expect(moves).toEqual([['br', { beforeId: 'u' }, 0, false]]);
   });
 
-  it('does not offer its own children as a target', async () => {
+  it('moves an open bullet alone: its own child becomes a target, on the level it has after moving up', async () => {
     renderTree();
     const data = transfer();
     await start('a', data);
+    expect(ghost.rows).toEqual([1]);
     await over('f', data);
-    expect(dropLine()).toBeNull();
-    await drop('f', data);
-    expect(moves).toEqual([]);
-  });
-
-  it('moves the bullet alone with Shift held, switched on and off during the drag', async () => {
-    renderTree();
-    const data = transfer();
-    await start('a', data);
-    expect(ghost.started).toEqual([false]);
-    // Pressed during the drag: its own child becomes a target, on the level it has after moving up
-    await over('f', data, { shiftKey: true });
-    expect(lastGhost()).toBe(true);
     expect(data.dropEffect).toBe('move');
     expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
-    // Released: the whole branch again
-    await over('f', data);
-    expect(lastGhost()).toBe(false);
-    expect(data.dropEffect).toBe('move');
-    expect(dropLine()).toBeNull();
-    await over('u', data, { shiftKey: true });
-    await drop('u', data);
-    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
-  });
-
-  it('takes the key as seen during the drag when the drop event does not report it', async () => {
-    renderTree();
-    const data = transfer();
-    await start('a', data);
-    await over('u', data, { shiftKey: true });
-    expect(data.dropEffect).toBe('move');
-    // The drop event itself carries no Shift here: the state seen while dragging counts
-    await drop('u', data);
-    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
-  });
-
-  it('starts alone when Shift is held already on grabbing the bullet', async () => {
-    renderTree();
-    const data = transfer();
-    await start('e', data, { shiftKey: true });
-    expect(ghost.started).toEqual([true]);
-    await over('br', data, { shiftKey: true });
-    expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
-    await drop('br', data);
-    expect(moves).toEqual([['e', { beforeId: 'br' }, 0, true]]);
-  });
-
-  it('keeps Shift from grabbing when drag events never report the key (Wayland)', async () => {
-    renderTree();
-    const data = transfer();
-    await start('e', data, { shiftKey: true });
-    // Under Wayland every dragover says Shift is not held
-    await over('br', data);
-    expect(ghost.single).not.toContain(false);
-    expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
-    await drop('br', data);
-    expect(moves).toEqual([['e', { beforeId: 'br' }, 0, true]]);
-  });
-
-  it('follows a release once drag events have reported Shift', async () => {
-    renderTree();
-    const data = transfer();
-    await start('a', data, { shiftKey: true });
-    await over('u', data, { shiftKey: true });
     await over('u', data);
-    expect(lastGhost()).toBe(false);
+    await drop('u', data);
+    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, true]]);
+  });
+
+  it('moves a collapsed bullet with its children', async () => {
+    renderTree(undefined, collapsedBlocks);
+    const data = transfer();
+    await start('a', data);
+    expect(ghost.rows).toEqual([3]);
+    await over('u', data);
+    expect(dropLine()?.getAttribute('data-drop-line')).toBe('0');
     await drop('u', data);
     expect(moves).toEqual([['a', { beforeId: 'u' }, 0, false]]);
   });
 
-  it('ignores Ctrl and Alt (Option): only Shift moves the bullet alone', async () => {
+  it('moves an open bullet alone also onto another note in the sidebar', async () => {
+    const { isSingleBlockDrop } = await import('../moveBranchEvent');
     renderTree();
-    const data = transfer();
-    await start('a', data, { ctrlKey: true });
-    expect(ghost.started).toEqual([false]);
-    await over('u', data, { ctrlKey: true });
-    expect(lastGhost()).toBe(false);
-    await over('u', data, { altKey: true });
-    expect(lastGhost()).toBe(false);
-    expect(data.dropEffect).toBe('move');
-    await drop('u', data);
-    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, false]]);
+    await start('e', transfer());
+    expect(isSingleBlockDrop()).toBe(true);
   });
 
   // jsdom: one level is 22px (DEFAULT_INDENT); the level counts from where the pointer was on grabbing
@@ -279,18 +217,23 @@ describe('dragging a bullet in the outliner', () => {
   });
 
   it('is not started while someone else types in a child that would move up', async () => {
+    // Alone, Folien would get a new parent
     renderTree(new Map([['f', { userId: 'u2', name: 'Bea' }]]));
     const data = transfer();
-    // With its children the branch moves as a whole: Folien keeps its parent
     await start('a', data);
     await over('u', data);
     await drop('u', data);
-    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, false]]);
-    // Alone, Folien would get a new parent
-    await start('a', data, { shiftKey: true });
-    await over('u', data, { shiftKey: true });
-    await drop('u', data);
     expect(refused).toEqual(['Bea']);
-    expect(moves).toHaveLength(1);
+    expect(moves).toEqual([]);
+  });
+
+  it('moves a collapsed branch while someone types in it: the child keeps its parent', async () => {
+    renderTree(new Map([['f', { userId: 'u2', name: 'Bea' }]]), collapsedBlocks);
+    const data = transfer();
+    await start('a', data);
+    await over('u', data);
+    await drop('u', data);
+    expect(refused).toEqual([]);
+    expect(moves).toEqual([['a', { beforeId: 'u' }, 0, false]]);
   });
 });

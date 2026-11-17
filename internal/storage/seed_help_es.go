@@ -30,7 +30,7 @@ func (s *Store) seedHelpNotesES(user *domain.User) {
 		{typ: "h2", text: "Puntos y niveles"},
 		{level: 1, text: "`Enter` crea un punto nuevo, `Tab` lo sangra, `Shift+Tab` reduce la sangría"},
 		{level: 1, text: "Los puntos con subpuntos se pueden plegar y desplegar (flecha a la izquierda al pasar el ratón)"},
-		{level: 1, text: "Arrastrar el punto (•) mueve toda la rama"},
+		{level: 1, text: "Arrastrar el punto (•) lo mueve y sus subpuntos se quedan; plegado, se mueve toda la rama"},
 		{level: 1, text: "Hacer clic en el punto (•) **hace zoom** en la rama: pruébalo en [[Probar el zoom]]"},
 		{typ: "h2", text: "Dar formato"},
 		{level: 1, text: "Al principio de una línea: `- ` punto, `1. ` número, `[] ` casilla, `# ` encabezado"},

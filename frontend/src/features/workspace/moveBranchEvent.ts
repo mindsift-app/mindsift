@@ -2,19 +2,16 @@
 // (useDocDragDrop) announces it, the editor of the source note moves the branch (DocumentEditor), since
 // only it can remove the branch as an own edit that Strg+Z brings back.
 export const MOVE_BRANCH_EVENT = 'mindsift:move-branch';
-import { singleDragKey } from '../../lib/platform';
-
 // What a dragged bullet carries (set by the bullet handle in OutlinerBlock)
 export const BLOCK_DRAG_TYPE = 'application/mindsift-block';
 
-// Whether the bullet dragged right now goes without its children, as last seen during the drag (OutlinerTree
-// keeps it up to date): a drop event may not report the key on every system
+// Whether the bullet dragged right now goes without its children (it is not collapsed; set by OutlinerTree)
 let draggingSingle = false;
 export function setBlockDragSingle(single: boolean) {
   draggingSingle = single;
 }
-export function isSingleBlockDrop(e: { shiftKey: boolean }): boolean {
-  return singleDragKey(e) || draggingSingle;
+export function isSingleBlockDrop(): boolean {
+  return draggingSingle;
 }
 
 export interface MoveBranchDetail {
@@ -23,7 +20,7 @@ export interface MoveBranchDetail {
   // Empty when dropped onto the "new note" button: the branch becomes a note of its own
   targetId: string;
   targetTitle: string;
-  // Shift held at the drop: only the bullet moves, its children stay and move up into its place
+  // Dragged open (not collapsed): only the bullet moves, its children stay and move up into its place
   single?: boolean;
 }
 

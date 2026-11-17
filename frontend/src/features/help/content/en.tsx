@@ -346,7 +346,7 @@ const en: HelpContent = {
               <strong className="text-main">Zoom hoisting:</strong> click right on the bullet (<code className="text-accent">•</code>) of a block to zoom into that branch alone. The breadcrumb navigation at the top leads you back step by step at any time; on phones the house icon there takes you to the start of the note, and the back button goes up one level.
             </li>
             <li>
-              <strong className="text-main">Moving blocks:</strong> grab a bullet with the mouse button held down to drag it with all its sub-bullets to a new spot. It takes the level of the bullet you drop it in front of and becomes its sibling; the line with the dot shows that level before you let go. Dragged below the last bullet, it goes to the end on the top level. Move the mouse further right to drop it deeper, as far as the last sub-bullet of the bullet above. Hold <strong className="text-main">Shift</strong> while dragging to move only that one bullet: its sub-bullets stay where they are and move up into its place. You can press or release the key mid-drag; Ctrl+Z undoes the move in one step.
+              <strong className="text-main">Moving blocks:</strong> grab a bullet with the mouse button held down to drag it to a new spot. An expanded bullet moves alone: its sub-bullets stay where they are and move up into its place. A collapsed bullet takes all its sub-bullets along. It takes the level of the bullet you drop it in front of and becomes its sibling; the line with the dot shows that level before you let go. Dragged below the last bullet, it goes to the end on the top level. Move the mouse further right to drop it deeper, as far as the last sub-bullet of the bullet above. Ctrl+Z undoes the move in one step.
             </li>
             <li>
               <strong className="text-main">Into another note:</strong> drag the bullet onto a note in the sidebar and the whole branch moves to the end of that note. Dropped onto the plus for a new note at the top of the sidebar, it becomes a new note of its own. The hint afterwards offers “Open” and “Undo”, Ctrl+Z works as well; linked tasks move along.
@@ -755,7 +755,6 @@ const en: HelpContent = {
     { key: 'Ctrl + Shift + ↓', scope: 'Workspace outliner', desc: 'Expand all collapsed bullets of the note' },
     { key: 'Ctrl + Shift + ↑', scope: 'Workspace outliner', desc: 'Collapse all bullets of the note (in focus mode only within the branch)' },
     { key: 'Ctrl + click on ▸ / ▾', scope: 'Workspace outliner', desc: 'Expand or collapse a bullet together with all its sub-bullets' },
-    { key: 'Shift while dragging', scope: 'Workspace outliner', desc: 'Move only the dragged bullet; its sub-bullets stay and move up into its place' },
     { key: 'Ctrl + Z / Cmd + Z', scope: 'Workspace outliner', desc: 'Undo the last note action' },
     { key: 'Ctrl + Y / Ctrl + Shift + Z', scope: 'Workspace outliner', desc: 'Redo an undone action' },
     { key: 'Drag the mouse over several bullets', scope: 'Workspace outliner', desc: 'Select text across several bullets; Del/Backspace deletes it, typing replaces it, Ctrl + C copies it as Markdown (indentation, to-dos, headings)' },

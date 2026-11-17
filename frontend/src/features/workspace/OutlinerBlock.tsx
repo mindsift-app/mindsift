@@ -1561,7 +1561,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           }`}
           title={
             canEdit
-              ? t('block.dragZoom', { key: t('block.shiftKey') })
+              ? t('block.dragZoom')
               : t('block.clickZoom')
           }
         >

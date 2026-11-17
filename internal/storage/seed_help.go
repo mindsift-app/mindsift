@@ -122,7 +122,7 @@ func (s *Store) seedHelpNotesDE(user *domain.User, demo bool) {
 		{typ: "h2", text: "Punkte und Ebenen"},
 		{level: 1, text: "`Enter` legt einen neuen Punkt an, `Tab` rückt ein, `Shift+Tab` rückt aus"},
 		{level: 1, text: "Punkte mit Unterpunkten lassen sich auf- und zuklappen (Pfeil links beim Drüberfahren)"},
-		{level: 1, text: "Am Punkt (•) ziehen verschiebt den ganzen Ast"},
+		{level: 1, text: "Am Punkt (•) ziehen verschiebt ihn, die Unterpunkte bleiben stehen; zugeklappt wandert der ganze Ast mit"},
 		{level: 1, text: "Klick auf den Punkt (•) **zoomt** in den Ast – probier es in [[Zoom ausprobieren]]"},
 		{typ: "h2", text: "Formatieren"},
 		{level: 1, text: "Am Zeilenanfang: `- ` Punkt, `1. ` Nummer, `[] ` Häkchen, `# ` Überschrift"},

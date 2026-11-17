@@ -30,7 +30,7 @@ func (s *Store) seedHelpNotesIT(user *domain.User) {
 		{typ: "h2", text: "Punti e livelli"},
 		{level: 1, text: "`Invio` crea un nuovo punto, `Tab` lo rientra, `Shift+Tab` riduce il rientro"},
 		{level: 1, text: "I punti con sottopunti si possono comprimere ed espandere (freccia a sinistra al passaggio del mouse)"},
-		{level: 1, text: "Trascinare il punto (•) sposta l'intero ramo"},
+		{level: 1, text: "Trascinare il punto (•) lo sposta e i sottopunti restano; compresso, si sposta l'intero ramo"},
 		{level: 1, text: "Un clic sul punto (•) **ingrandisce** il ramo (zoom) – provalo in [[Prova lo zoom]]"},
 		{typ: "h2", text: "Formattare"},
 		{level: 1, text: "All'inizio di una riga: `- ` punto, `1. ` numero, `[] ` casella, `# ` titolo"},
