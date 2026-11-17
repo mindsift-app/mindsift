@@ -463,6 +463,9 @@
       "colorOf": "{{color}} de {{name}}",
       "moreColors": "Más colores",
       "moreColorsHint": "Sin un color propio siguen los colores de arriba.",
+      "resetColor": "Automático de nuevo (sigue los colores de arriba)",
+      "resetColorOf": "{{color}} automático de nuevo",
+      "statusColorsHint": "Colores de estado y de columnas; los fondos claros y bordes los siguen.",
       "unnamed": "Tema propio",
       "hint": "Un tema es un archivo CSS. «+» crea uno con los colores de la plantilla; al pulsar una casilla de color, el color cambia al instante. Los archivos exportados se pueden volver a importar aquí y compartir con otras personas. Los temas propios se guardan en el servidor y están disponibles en todos tus dispositivos; un color de énfasis propio (más arriba) tiene prioridad sobre el del tema.",
       "colors": {
@@ -476,7 +479,12 @@
         "bg-panel-hover": "Superficie al pasar el ratón",
         "bg-input": "Campo de entrada",
         "border-color": "Bordes",
-        "bg-code": "Bloque de código"
+        "bg-code": "Bloque de código",
+        "color-success": "Hecho",
+        "color-danger": "Error",
+        "color-warning": "Aviso",
+        "color-info": "Azul (columnas)",
+        "color-purple": "Morado (columnas)"
       },
       "import": "Importar CSS"
     },

@@ -65,6 +65,7 @@ Versions without a git tag were development states and were never published as a
 - Controls in a block someone else is editing (indent arrows, code language, table + and ⋯, audio caption) stay in place, greyed out, so the layout no longer jumps.
 - Dragging a bullet inside a zoomed-in branch put it in the wrong place.
 - Custom themes: faint text, placeholders, counts, done tasks, hover surfaces, input fields and borders follow the theme's own colours instead of staying grey; "More colours" in the theme editor sets faint text, hover surface, input field, borders and code blocks.
+- Custom themes: a colour set under "More colours" can follow the main colours again (round arrow next to it); status and Kanban column colours can be changed there too, their light fills and borders follow them. An imported theme with its own accent no longer keeps the template's blue hover, and the drop line when sorting tasks and list items and the edge of the swiped Quick Dump card glow in the theme's colours.
 - In diagrams drawn from Mermaid, two arrows between the same two boxes (there and back) no longer lie on top of each other.
 - Pulling a note back into the note it was extracted from now asks first when people it is shared with link to it from their own notes, instead of silently leaving their links pointing nowhere.
 - Voice input with the browser's speech recognition (Chrome, Edge): a spoken language chosen in the account settings is passed as a full language tag (e.g. de-DE), so Chrome no longer falls back to English.

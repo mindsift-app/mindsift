@@ -345,6 +345,9 @@
       "colorOf": "{{color}} von {{name}}",
       "moreColors": "Weitere Farben",
       "moreColorsHint": "Ohne eigene Farbe richten sie sich nach den Farben oben.",
+      "resetColor": "Wieder automatisch (folgt den Farben oben)",
+      "resetColorOf": "{{color}} wieder automatisch",
+      "statusColorsHint": "Status- und Spaltenfarben; helle Flächen und Ränder richten sich nach ihnen.",
       "unnamed": "Eigenes Theme",
       "hint": "Ein Theme ist eine CSS-Datei. „+“ legt eins mit den Farben der Vorlage an, ein Klick auf ein Farbfeld ändert die Farbe sofort. Exportierte Dateien lassen sich hier wieder importieren und mit anderen teilen. Eigene Themes liegen auf dem Server und stehen dir auf allen Geräten zur Verfügung; eine eigene Akzentfarbe weiter oben geht der des Themes vor.",
       "colors": {
@@ -358,7 +361,12 @@
         "bg-panel-hover": "Fläche beim Überfahren",
         "bg-input": "Eingabefeld",
         "border-color": "Rahmen",
-        "bg-code": "Codeblock"
+        "bg-code": "Codeblock",
+        "color-success": "Erledigt",
+        "color-danger": "Fehler",
+        "color-warning": "Warnung",
+        "color-info": "Blau (Spalten)",
+        "color-purple": "Lila (Spalten)"
       },
       "import": "CSS importieren"
     },

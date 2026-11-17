@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, ChevronDown, Copy, Download, FileDown, Plus, Trash, Upload } from 'lucide-react';
+import { Check, ChevronDown, Copy, Download, FileDown, Plus, RotateCcw, Trash, Upload } from 'lucide-react';
 import { UserTheme } from '../../../lib/types';
 import { customThemeId, ThemeId } from '../../../lib/theme';
-import { readThemeVar, resolveThemeColor, THEME_COLOR_VARS, THEME_EXTRA_COLOR_VARS, ThemeColorVar } from '../../../lib/themeCss';
+import { hasOwnThemeColor, readThemeVar, resolveThemeColor, THEME_COLOR_VARS, THEME_EXTRA_COLOR_VARS, THEME_STATUS_COLOR_VARS, ThemeColorVar } from '../../../lib/themeCss';
 import { ConfirmPopover } from '../../../components/ConfirmPopover';
 import { useAppearanceSettings } from './useAppearanceSettings';
 
@@ -141,7 +141,7 @@ function CustomThemeRow({
   onAskDelete: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   const { t } = useTranslation('settings');
-  const { handleRenameTheme, handleThemeColor, handleExportTheme } = appearance;
+  const { handleRenameTheme, handleThemeColor, handleResetThemeColor, handleExportTheme } = appearance;
   // What is being typed; null shows the saved name (also after a rename on another device)
   const [draft, setDraft] = useState<string | null>(null);
   const name = draft ?? theme.name;
@@ -229,6 +229,26 @@ function CustomThemeRow({
         <div className="basis-full flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-2 border-t border-border" data-more-colors>
           <span className="basis-full text-[11px] text-muted">{t('appearance.custom.moreColorsHint')}</span>
           {THEME_EXTRA_COLOR_VARS.map((v) => (
+            <span key={v} className="flex items-center gap-1">
+              <label className="flex items-center gap-1.5 text-[11px] text-muted cursor-pointer">
+                <ColorTile theme={theme} name={v} onChange={(hex) => handleThemeColor(theme, v, hex)} />
+                <span>{t(`appearance.custom.colors.${v}`)}</span>
+              </label>
+              {hasOwnThemeColor(theme.css, v) && (
+                <button
+                  type="button"
+                  onClick={() => handleResetThemeColor(theme, v)}
+                  title={t('appearance.custom.resetColor')}
+                  aria-label={t('appearance.custom.resetColorOf', { color: t(`appearance.custom.colors.${v}`) })}
+                  className="btn-icon w-11 h-11 sm:w-6 sm:h-6"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                </button>
+              )}
+            </span>
+          ))}
+          <span className="basis-full pt-1 text-[11px] text-muted">{t('appearance.custom.statusColorsHint')}</span>
+          {THEME_STATUS_COLOR_VARS.map((v) => (
             <label key={v} className="flex items-center gap-1.5 text-[11px] text-muted cursor-pointer">
               <ColorTile theme={theme} name={v} onChange={(hex) => handleThemeColor(theme, v, hex)} />
               <span>{t(`appearance.custom.colors.${v}`)}</span>

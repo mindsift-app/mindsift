@@ -345,6 +345,9 @@
       "colorOf": "{{color}} of {{name}}",
       "moreColors": "More colours",
       "moreColorsHint": "Without a colour of their own they follow the colours above.",
+      "resetColor": "Automatic again (follows the colours above)",
+      "resetColorOf": "{{color}} automatic again",
+      "statusColorsHint": "Status and column colours; their light fills and borders follow them.",
       "unnamed": "Custom theme",
       "hint": "A theme is a CSS file. “+” creates one with the colours of the template; clicking a colour tile changes that colour right away. Exported files can be imported here again and shared with others. Custom themes are stored on the server and available on all your devices; a custom accent colour above takes precedence over the theme's.",
       "colors": {
@@ -358,7 +361,12 @@
         "bg-panel-hover": "Surface on hover",
         "bg-input": "Input field",
         "border-color": "Borders",
-        "bg-code": "Code block"
+        "bg-code": "Code block",
+        "color-success": "Done",
+        "color-danger": "Error",
+        "color-warning": "Warning",
+        "color-info": "Blue (columns)",
+        "color-purple": "Purple (columns)"
       },
       "import": "Import CSS"
     },

@@ -289,11 +289,6 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
   const rotate = useTransform(x, [-220, 0, 220], [-8, 0, 8]);
   const keepOpacity = useTransform(x, [25, 110], [0, 1]);
   const discardOpacity = useTransform(x, [-110, -25], [1, 0]);
-  const cardBorderColor = useTransform(
-    x,
-    [-140, 0, 140],
-    ['rgba(239, 68, 68, 0.7)', 'rgba(255, 255, 255, 0.08)', 'rgba(29, 140, 248, 0.8)']
-  );
 
   const handleAction = async (
     action: 'keep' | 'discard',
@@ -571,7 +566,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
         <>
           <m.div
             key={activeCard.id}
-            style={{ x, rotate, borderColor: cardBorderColor }}
+            style={{ x, rotate }}
             drag={isEditingCard ? false : 'x'}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.8}
@@ -609,6 +604,11 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
             // frame on every re-render (the deck reloading), which made the card flash
             className="relative w-full h-full panel-surface p-5 cursor-grab active:cursor-grabbing flex flex-col justify-between overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-2 duration-200"
           >
+            {/* Edge tinted in the theme's colours while swiping (red to discard, accent to keep); Motion cannot
+                blend CSS variables, so two frames fade in instead of animating the border colour */}
+            <m.div style={{ opacity: discardOpacity }} className="pointer-events-none absolute inset-0 rounded-[inherit] border border-status-err" />
+            <m.div style={{ opacity: keepOpacity }} className="pointer-events-none absolute inset-0 rounded-[inherit] border border-accent" />
+
             {/* Dynamic Swipe Overlays */}
             <m.div
               style={{ opacity: keepOpacity }}

@@ -7,8 +7,8 @@
 :root[data-theme="custom-template"] {
   /* --- 1. ACCENT COLOUR (buttons, active tabs, focus rings, badges) --- */
   --accent-primary: #2563eb;
-  --accent-hover: #3b82f6;
-  /* Tints follow --accent-primary automatically; set fixed values only if you want different ones */
+  /* Hover shade and tints follow --accent-primary automatically; set fixed values only if you want different ones */
+  --accent-hover: color-mix(in srgb, var(--accent-primary) 80%, var(--text-main));
   --accent-dim: color-mix(in srgb, var(--accent-primary) 14%, transparent);
   --accent-border: color-mix(in srgb, var(--accent-hover) 45%, transparent);
   --text-on-accent: #ffffff;
@@ -40,17 +40,18 @@
   --scrollbar-thumb-hover: color-mix(in srgb, var(--text-main) 30%, transparent);
 
   /* --- 5. STATUS & SIGNAL COLOURS --- */
+  /* Light fills and borders follow each colour; set fixed values only if you want different ones */
   --color-success: #22c55e;
-  --bg-success: rgba(34, 197, 94, 0.12);
-  --border-success: rgba(34, 197, 94, 0.38);
+  --bg-success: color-mix(in srgb, var(--color-success) 12%, transparent);
+  --border-success: color-mix(in srgb, var(--color-success) 38%, transparent);
 
   --color-danger: #ef4444;
-  --bg-danger: rgba(239, 68, 68, 0.12);
-  --border-danger: rgba(239, 68, 68, 0.38);
+  --bg-danger: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  --border-danger: color-mix(in srgb, var(--color-danger) 38%, transparent);
 
   --color-warning: #f59e0b;
-  --bg-warning: rgba(245, 158, 11, 0.12);
-  --border-warning: rgba(245, 158, 11, 0.38);
+  --bg-warning: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  --border-warning: color-mix(in srgb, var(--color-warning) 38%, transparent);
 
   /* Optional: blue and purple for Kanban columns (defaults apply when unset) */
   --color-info: #60a5fa;

@@ -3,6 +3,9 @@ import template from '../../themes/theme-template.css?raw';
 import dark from '../../themes/theme-dark.css?raw';
 import {
   customThemePageCss,
+  DERIVED_THEME_VARS,
+  hasOwnThemeColor,
+  resetThemeColor,
   DEFAULT_THEME_COLORS,
   derivedThemeDefaults,
   readThemeVar,
@@ -35,10 +38,34 @@ describe('colours of a custom theme', () => {
   it('brings hover and the text on the accent along with a new accent', () => {
     const next = setThemeColor(template, 'accent-primary', '#ffd700');
     expect(readThemeVar(next, 'accent-primary')).toBe('#ffd700');
-    expect(readThemeVar(next, 'accent-hover')).not.toBe('#3b82f6');
     expect(readThemeVar(next, 'text-on-accent')).toBe('#111111');
+    // The template's hover follows the accent; a fixed hover of an older theme gets a new shade
+    expect(readThemeVar(next, 'accent-hover')).toBe('color-mix(in srgb, var(--accent-primary) 80%, var(--text-main))');
+    const old = template.replace(/--accent-hover:[^;]+;/, '--accent-hover: #3b82f6;');
+    expect(readThemeVar(setThemeColor(old, 'accent-primary', '#ffd700'), 'accent-hover')).toBe('#ffdf33');
     // The tints that refer to the accent stay references
     expect(next).toContain('color-mix(in srgb, var(--accent-primary) 14%, transparent)');
+  });
+
+  it('lets the hover of an imported theme with its own accent follow that accent', () => {
+    const old = template.replace(/--accent-hover:[^;]+;/, '--accent-hover: #3b82f6;');
+    // Accent of the old template: its blue hover belongs to it and stays
+    expect(readThemeVar(upgradeThemeCss(old), 'accent-hover')).toBe('#3b82f6');
+    // Accent changed outside the editor: the blue hover was never chosen
+    const imported = old.replace('--accent-primary: #2563eb;', '--accent-primary: #16a34a;');
+    expect(readThemeVar(upgradeThemeCss(imported), 'accent-hover')).toBe(DERIVED_THEME_VARS['accent-hover']);
+    expect(resolveThemeColor(imported, 'accent-hover')).not.toBe('#3b82f6');
+  });
+
+  it('sets a secondary colour back to following the main ones', () => {
+    expect(hasOwnThemeColor(template, 'text-faint')).toBe(false);
+    const own = setThemeColor(template, 'text-faint', '#123456');
+    expect(hasOwnThemeColor(own, 'text-faint')).toBe(true);
+    const back = resetThemeColor(own, 'text-faint');
+    expect(hasOwnThemeColor(back, 'text-faint')).toBe(false);
+    expect(back).toBe(template);
+    // Main colours have nothing to follow
+    expect(hasOwnThemeColor(template, 'bg-app')).toBe(false);
   });
 
   it('leaves variables in comments alone and adds a missing one to the first rule', () => {

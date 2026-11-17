@@ -95,10 +95,10 @@ export function OpenItemGroups({
                     >
                       {/* Drop insertion line indicator */}
                       {isTarget && dragOverItemTarget.position === 'before' && (
-                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-accent z-20 pointer-events-none rounded-full shadow-[0_0_8px_rgba(var(--accent-rgb),0.6)]" />
+                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-accent z-20 pointer-events-none rounded-full shadow-[0_0_8px_color-mix(in_srgb,var(--accent-primary)_60%,transparent)]" />
                       )}
                       {isTarget && dragOverItemTarget.position === 'after' && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent z-20 pointer-events-none rounded-full shadow-[0_0_8px_rgba(var(--accent-rgb),0.6)]" />
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent z-20 pointer-events-none rounded-full shadow-[0_0_8px_color-mix(in_srgb,var(--accent-primary)_60%,transparent)]" />
                       )}
 
                       <div className="flex items-center gap-3 sm:gap-2.5 min-w-0 flex-1">
