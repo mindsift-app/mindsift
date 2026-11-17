@@ -21,7 +21,7 @@ Versions without a git tag were development states and were never published as a
 - **Lists suggest earlier items**; tasks filter by several hashtags.
 - **For administrators:** command line (`docker exec mindsift mindsift …`), audit log, update hint, password reset options, two-factor sign-in and passkeys, single sign-on with back-channel logout, server time zone, backups before database updates, Prometheus metrics, outgoing proxy support.
 - **AI agents (MCP):** images, moving and extracting bullets, code blocks, notes from templates; sequence diagrams, state diagrams and Git graphs from Mermaid besides flowcharts and mind maps; a `drawing_help` tool with the drawing syntax.
-- **Drag a single bullet:** hold Shift while dragging to move a bullet without its sub-bullets, also onto another note in the sidebar; the preview shows it before you let go.
+- **Drag a single bullet:** hold Shift while dragging to move a bullet without its sub-bullets, also onto another note in the sidebar; the preview shows it before you let go. Under Wayland, press Shift before grabbing the bullet.
 - Images, drawings and audio in notes have indent arrows, shown on hover or after tapping.
 - Images in notes can be resized by dragging their bottom right corner (the aspect ratio stays, up to the width of the note); a button at the top right brings back the default size. The size is kept when copying, in Markdown export (Obsidian's `![caption|320](…)`) and on import.
 - Quick Dump on the desktop: with your own Whisper server you can hold the + in the left rail again right away while earlier dictations are still being recognised; they are saved in the order you spoke them, a counter on the + shows how many are waiting, and one that fails keeps its recording until a reload and offers "Try again".
@@ -55,6 +55,7 @@ Versions without a git tag were development states and were never published as a
 - AI agents (MCP) are encouraged to use colour in diagrams and to structure notes with sub-headings and indented details; the MCP descriptions are much shorter, so clients that cut long descriptions off see them whole.
 
 ### Fixed
+- Opening the journal no longer stutters: its days are built one after another instead of all at once.
 - **Attention:** usernames are unique; existing duplicates are renamed (`anna` → `anna1`).
 - **Attention:** pictures load only from MindSift itself (custom themes lose external backgrounds).
 - Repeating tasks repeat again after their next occurrence was deleted.
