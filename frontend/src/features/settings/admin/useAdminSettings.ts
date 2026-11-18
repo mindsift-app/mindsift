@@ -154,7 +154,6 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           audioBitrateConfiguredViaEnv: Boolean(sys.audioBitrateConfiguredViaEnv),
           audioLimitMB: sys.audioLimitMB || 7,
           audioLimitMBConfiguredViaEnv: Boolean(sys.audioLimitMBConfiguredViaEnv),
-          audioMaxMB: sys.audioMaxMB,
           audioUploads: sys.audioUploads ?? true,
           audioUploadsConfiguredViaEnv: Boolean(sys.audioUploadsConfiguredViaEnv),
           calendarFeeds: sys.calendarFeeds ?? true,

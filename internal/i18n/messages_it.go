@@ -599,7 +599,6 @@ var messagesIT = map[string]string{
 	"Ungültige Audio-Komprimierung (erlaubt: recordings, off)":                                     "Compressione audio non valida (consentite: recordings, off)",
 	"Ungültige Bitrate (erlaubt: 8 bis 320 kbit/s)":                                                "Bitrate non valido (consentito: da 8 a 320 kbit/s)",
 	"Ungültige Größenbegrenzung für Audiodateien":                                                  "Limite di dimensione non valido per i file audio",
-	"Audiodatei zu groß (höchstens {mb} MB)":                                                       "File audio troppo grande (al massimo {mb} MB)",
 	"Größenbegrenzung für Audiodateien: 1 bis {mb} MB":                                             "Limite di dimensione dei file audio: da 1 a {mb} MB",
 	"Unbekannte Zeitzone":                                                                         "Fuso orario sconosciuto",
 	"ungewöhnlich stark gepackt, wird nicht entpackt":                                             "compresso in modo insolitamente forte, non viene estratto",

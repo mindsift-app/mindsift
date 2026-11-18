@@ -683,7 +683,7 @@
     "audioBitrateOption": "{{kbps}} kbit/s",
     "audioBitrateDefault": "{{kbps}} kbit/s (par défaut)",
     "audioLimit": "Fichier audio le plus grand",
-    "audioLimitHint": "S'applique aux enregistrements faits dans l'app et aux fichiers audio envoyés. Un enregistrement s'arrête de lui-même avant d'atteindre la limite. {{max}} Mo au maximum (MEDIA_MAX_AUDIO_MB).",
+    "audioLimitHint": "S'applique aux enregistrements faits dans l'app et aux fichiers audio envoyés. Un enregistrement s'arrête de lui-même avant d'atteindre la limite.",
     "audioUploads": "Envoyer des fichiers audio",
     "audioUploadsHint": "Désactivé : les notes n'acceptent que les enregistrements faits dans l'app ; les fichiers audio de l'appareil sont refusés.",
     "mb": "Mo",

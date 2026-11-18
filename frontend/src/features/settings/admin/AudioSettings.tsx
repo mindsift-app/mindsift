@@ -8,11 +8,13 @@ type AudioCompression = NonNullable<SystemSettings['audioCompression']>;
 
 // Bitrates offered for recordings (kbit/s); a value set through MEDIA_AUDIO_BITRATE is shown as well
 const BITRATES = [16, 24, 32, 48, 64, 96, 128];
+// The largest limit the server takes (storage.MaxAudioLimitMB)
+const MAX_LIMIT_MB = 2000;
 
 // Administration → Media: audio in notes. Recordings made in the app are compressed to the chosen
 // bitrate (or left to the browser when off); audio files from the device are stored as they are and may
-// be switched off. One size limit holds for both. Each part is locked when its MEDIA_AUDIO_* variable
-// fixes it.
+// be switched off. One size limit holds for both. Each part is locked when its variable fixes it
+// (MEDIA_AUDIO_*, MEDIA_MAX_AUDIO_MB); the bitrate is greyed out while compression is off.
 export function AudioSettings({
   settings,
   onSave,
@@ -24,7 +26,6 @@ export function AudioSettings({
   const compression = settings.audioCompression || 'recordings';
   const bitrate = settings.audioBitrate || 32;
   const limit = settings.audioLimitMB || 7;
-  const maxMB = settings.audioMaxMB || 50;
   const bitrates = BITRATES.includes(bitrate) ? BITRATES : [...BITRATES, bitrate].sort((a, b) => a - b);
 
   // The limit is typed, so it is saved when the field is left (or with Enter), not on every keystroke
@@ -37,7 +38,7 @@ export function AudioSettings({
   }
   const commitLimit = () => {
     const n = parseInt(draft, 10);
-    if (Number.isInteger(n) && n >= 1 && n <= maxMB) {
+    if (Number.isInteger(n) && n >= 1 && n <= MAX_LIMIT_MB) {
       if (n !== limit) onSave({ audioLimitMB: n });
     } else {
       setDraft(String(limit));
@@ -67,42 +68,43 @@ export function AudioSettings({
         />
       </div>
 
-      {compression !== 'off' && (
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
-          <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
-            <p className="text-main font-semibold">{t('server.audioBitrate')}</p>
-            <p className="text-[11px] text-muted mt-0.5">
-              {t('server.audioBitrateHint')}
-              {settings.audioBitrateConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_AUDIO_BITRATE' })}`}
-            </p>
-          </div>
-          <SelectMenu
-            size="sm"
-            ariaLabel={t('server.audioBitrate')}
-            value={String(bitrate)}
-            disabled={Boolean(settings.audioBitrateConfiguredViaEnv)}
-            onChange={(v) => onSave({ audioBitrate: Number(v) })}
-            options={bitrates.map((k) => ({
-              value: String(k),
-              label: k === 32 ? t('server.audioBitrateDefault', { kbps: k }) : t('server.audioBitrateOption', { kbps: k }),
-            }))}
-          />
+      <div
+        className={`flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border ${compression === 'off' ? 'opacity-50' : ''}`}
+        data-admin-audio-bitrate
+      >
+        <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
+          <p className="text-main font-semibold">{t('server.audioBitrate')}</p>
+          <p className="text-[11px] text-muted mt-0.5">
+            {t('server.audioBitrateHint')}
+            {settings.audioBitrateConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_AUDIO_BITRATE' })}`}
+          </p>
         </div>
-      )}
+        <SelectMenu
+          size="sm"
+          ariaLabel={t('server.audioBitrate')}
+          value={String(bitrate)}
+          disabled={compression === 'off' || Boolean(settings.audioBitrateConfiguredViaEnv)}
+          onChange={(v) => onSave({ audioBitrate: Number(v) })}
+          options={bitrates.map((k) => ({
+            value: String(k),
+            label: k === 32 ? t('server.audioBitrateDefault', { kbps: k }) : t('server.audioBitrateOption', { kbps: k }),
+          }))}
+        />
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
         <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
           <p className="text-main font-semibold">{t('server.audioLimit')}</p>
           <p className="text-[11px] text-muted mt-0.5">
-            {t('server.audioLimitHint', { max: maxMB })}
-            {settings.audioLimitMBConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_AUDIO_LIMIT_MB' })}`}
+            {t('server.audioLimitHint')}
+            {settings.audioLimitMBConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_MAX_AUDIO_MB' })}`}
           </p>
         </div>
         <label className="flex items-center gap-2 text-[11px] text-muted">
           <input
             type="number"
             min={1}
-            max={maxMB}
+            max={MAX_LIMIT_MB}
             value={draft}
             disabled={Boolean(settings.audioLimitMBConfiguredViaEnv)}
             aria-label={t('server.audioLimit')}

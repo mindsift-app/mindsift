@@ -599,7 +599,6 @@ var messagesFR = map[string]string{
 	"Ungültige Audio-Komprimierung (erlaubt: recordings, off)":                                     "Compression audio non valide (autorisées : recordings, off)",
 	"Ungültige Bitrate (erlaubt: 8 bis 320 kbit/s)":                                                "Débit non valide (autorisé : 8 à 320 kbit/s)",
 	"Ungültige Größenbegrenzung für Audiodateien":                                                  "Limite de taille non valide pour les fichiers audio",
-	"Audiodatei zu groß (höchstens {mb} MB)":                                                       "Fichier audio trop volumineux ({mb} Mo au maximum)",
 	"Größenbegrenzung für Audiodateien: 1 bis {mb} MB":                                             "Limite de taille des fichiers audio : 1 à {mb} Mo",
 	"Unbekannte Zeitzone":                                                                         "Fuseau horaire inconnu",
 	"ungewöhnlich stark gepackt, wird nicht entpackt":                                             "compressé de façon inhabituelle, pas décompressé",

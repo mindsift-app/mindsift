@@ -599,7 +599,6 @@ var messagesES = map[string]string{
 	"Ungültige Audio-Komprimierung (erlaubt: recordings, off)":                                     "Compresión de audio no válida (permitidas: recordings, off)",
 	"Ungültige Bitrate (erlaubt: 8 bis 320 kbit/s)":                                                "Tasa de bits no válida (permitida: de 8 a 320 kbit/s)",
 	"Ungültige Größenbegrenzung für Audiodateien":                                                  "Límite de tamaño no válido para archivos de audio",
-	"Audiodatei zu groß (höchstens {mb} MB)":                                                       "Archivo de audio demasiado grande (como máximo {mb} MB)",
 	"Größenbegrenzung für Audiodateien: 1 bis {mb} MB":                                             "Límite de tamaño de los archivos de audio: de 1 a {mb} MB",
 	"Unbekannte Zeitzone":                                                                         "Zona horaria desconocida",
 	"ungewöhnlich stark gepackt, wird nicht entpackt":                                             "comprimido de forma inusualmente fuerte, no se descomprime",

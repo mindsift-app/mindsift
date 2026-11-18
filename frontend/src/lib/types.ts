@@ -532,16 +532,14 @@ export interface SystemSettings {
   imageQuality?: 'high' | 'medium' | 'low' | 'off';
   imageQualityConfiguredViaEnv?: boolean;
   // Audio in notes: recordings with audioBitrate (kbit/s) or the browser's own ('off'); every audio file
-  // up to audioLimitMB, never above audioMaxMB (MEDIA_MAX_AUDIO_MB, read only); files from the device
-  // only with audioUploads. Each fixed when set via MEDIA_AUDIO_COMPRESSION / MEDIA_AUDIO_BITRATE /
-  // MEDIA_AUDIO_LIMIT_MB / MEDIA_AUDIO_UPLOADS
+  // up to audioLimitMB; files from the device only with audioUploads. Each fixed when set via
+  // MEDIA_AUDIO_COMPRESSION / MEDIA_AUDIO_BITRATE / MEDIA_MAX_AUDIO_MB / MEDIA_AUDIO_UPLOADS
   audioCompression?: 'recordings' | 'off';
   audioCompressionConfiguredViaEnv?: boolean;
   audioBitrate?: number;
   audioBitrateConfiguredViaEnv?: boolean;
   audioLimitMB?: number;
   audioLimitMBConfiguredViaEnv?: boolean;
-  audioMaxMB?: number;
   audioUploads?: boolean;
   audioUploadsConfiguredViaEnv?: boolean;
   // Language for new accounts and everyone whose browser language the app does not speak

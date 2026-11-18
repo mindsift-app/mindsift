@@ -683,7 +683,7 @@
     "audioBitrateOption": "{{kbps}} kbit/s",
     "audioBitrateDefault": "{{kbps}} kbit/s (Standard)",
     "audioLimit": "Größte Audiodatei",
-    "audioLimitHint": "Gilt für Aufnahmen in der App und für hochgeladene Audiodateien. Eine Aufnahme endet automatisch, bevor sie die Grenze erreicht. Höchstens {{max}} MB (MEDIA_MAX_AUDIO_MB).",
+    "audioLimitHint": "Gilt für Aufnahmen in der App und für hochgeladene Audiodateien. Eine Aufnahme endet automatisch, bevor sie die Grenze erreicht.",
     "audioUploads": "Audiodateien hochladen",
     "audioUploadsHint": "Aus: In Notizen sind nur Aufnahmen in der App möglich, Audiodateien vom Gerät werden abgelehnt.",
     "mb": "MB",

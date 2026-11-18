@@ -298,7 +298,7 @@ func (a InitialAdmin) ResolvePassword() (string, error) {
 }
 
 // MediaConfig limits uploads of images and audio recordings in notes. Sizes in MB; QuotaMB 0 = no limit
-// per user. The demo uses DemoMaxMB for every file.
+// per user. The demo uses DemoMaxMB for every file. MaxAudioMB 0: the administration's audio limit.
 type MediaConfig struct {
 	MaxImageMB int
 	MaxAudioMB int
@@ -308,11 +308,10 @@ type MediaConfig struct {
 	// before uploading them; empty leaves it to the system settings.
 	ImageQuality string
 	// AudioCompression: MEDIA_AUDIO_COMPRESSION=recordings|off; AudioBitrate: MEDIA_AUDIO_BITRATE in
-	// kbit/s; AudioLimitMB: MEDIA_AUDIO_LIMIT_MB (every audio file); AudioUploads: MEDIA_AUDIO_UPLOADS
-	// (false: recordings only). Empty, 0 or nil leaves each to the system settings.
+	// kbit/s; AudioUploads: MEDIA_AUDIO_UPLOADS (false: recordings only). Empty, 0 or nil leaves each to
+	// the system settings, as MaxAudioMB 0 (MEDIA_MAX_AUDIO_MB not set) does for the audio limit.
 	AudioCompression string
 	AudioBitrate     int
-	AudioLimitMB     int
 	AudioUploads     *bool
 }
 
@@ -631,13 +630,12 @@ func Load() *Config {
 		OIDC: loadOIDC(),
 		Media: MediaConfig{
 			MaxImageMB:       envInt("MEDIA_MAX_IMAGE_MB", 15, 1, 1000),
-			MaxAudioMB:       envInt("MEDIA_MAX_AUDIO_MB", 50, 1, 2000),
+			MaxAudioMB:       envInt("MEDIA_MAX_AUDIO_MB", 0, 1, 2000),
 			QuotaMB:          envInt("MEDIA_QUOTA_MB", 0, 0, 10000000),
 			DemoMaxMB:        envInt("MEDIA_DEMO_MAX_MB", 3, 1, 100),
 			ImageQuality:     imageQualityFromEnv(),
 			AudioCompression: audioCompressionFromEnv(),
 			AudioBitrate:     envInt("MEDIA_AUDIO_BITRATE", 0, 8, 320),
-			AudioLimitMB:     envInt("MEDIA_AUDIO_LIMIT_MB", 0, 1, 2000),
 			AudioUploads:     envBoolPtr("MEDIA_AUDIO_UPLOADS"),
 		},
 		Legal: func() LegalTexts {

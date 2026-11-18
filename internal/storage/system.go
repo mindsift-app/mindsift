@@ -287,7 +287,7 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 				on := v != "false"
 				settings.AudioUploads = &on
 			case "audio_limit_mb":
-				if n, err := strconv.Atoi(v); err == nil && n >= 1 {
+				if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= MaxAudioLimitMB {
 					settings.AudioLimitMB = n
 				}
 			case "time_zone":
@@ -515,7 +515,7 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.AudioUploads))
 	}
 	if err == nil && settings.AudioLimitMB != 0 {
-		if settings.AudioLimitMB < 1 {
+		if settings.AudioLimitMB < 1 || settings.AudioLimitMB > MaxAudioLimitMB {
 			return ErrInvalidAudioLimit
 		}
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_limit_mb', ?)
@@ -590,6 +590,7 @@ const (
 	MinAudioBitrate            = 8
 	MaxAudioBitrate            = 320
 	DefaultAudioLimitMB        = 7
+	MaxAudioLimitMB            = 2000
 )
 
 var (

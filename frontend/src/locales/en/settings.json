@@ -683,7 +683,7 @@
     "audioBitrateOption": "{{kbps}} kbit/s",
     "audioBitrateDefault": "{{kbps}} kbit/s (default)",
     "audioLimit": "Largest audio file",
-    "audioLimitHint": "Applies to recordings in the app and to uploaded audio files. A recording ends on its own before it reaches the limit. At most {{max}} MB (MEDIA_MAX_AUDIO_MB).",
+    "audioLimitHint": "Applies to recordings in the app and to uploaded audio files. A recording ends on its own before it reaches the limit.",
     "audioUploads": "Upload audio files",
     "audioUploadsHint": "Off: notes only take recordings made in the app; audio files from the device are refused.",
     "mb": "MB",
