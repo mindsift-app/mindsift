@@ -54,7 +54,7 @@ func TestPushSubscribeKeyAndChannel(t *testing.T) {
 	set.Events.Watched = domain.ChannelChoice{Push: true}
 	_ = store.SetNotificationSettings(me.ID, set)
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, token, `{"priority":"high"}`, "")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if len(pushed) != 1 || !strings.Contains(pushed[0].Body, "Reifen wechseln") {
 		t.Fatalf("expected one push, got %+v", pushed)
 	}

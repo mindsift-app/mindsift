@@ -32,7 +32,7 @@ func TestMentionsInTasks(t *testing.T) {
 		}
 	}
 	flush := func() []string {
-		srv.flushNotifications(time.Now().Add(10 * time.Minute))
+		srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 		got := mailsTo(*sent, "bob@example.com")
 		*sent = nil
 		return got
@@ -84,7 +84,7 @@ func TestMentionsInNotes(t *testing.T) {
 	}
 	write("Frag " + mention(bob.ID))
 	write("Frag " + mention(bob.ID) + " morgen") // typing on: no second notification
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if got := mailsTo(*sent, "bob@example.com"); len(got) != 1 || !strings.Contains(got[0], "hat dich in „Planung“ erwähnt") {
 		t.Fatalf("bob should be told once, got %+v", *sent)
 	}
@@ -92,7 +92,7 @@ func TestMentionsInNotes(t *testing.T) {
 	*sent = nil
 	write("Frag morgen")
 	write("Frag " + mention(bob.ID) + " morgen")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if got := mailsTo(*sent, "bob@example.com"); len(got) != 1 {
 		t.Fatalf("mention written again notifies again, got %+v", *sent)
 	}

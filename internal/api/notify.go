@@ -571,16 +571,28 @@ func (s *Server) startNotificationJobs() {
 			return
 		case now = <-ticker.C:
 		}
-		s.flushNotifications(now)
-		s.sendDailySummaries(now)
-		if now.Minute()%30 == 0 {
-			s.store.PruneCenter(now)
-		}
+		s.runNotificationJobs(now)
 	}
 }
 
-// flushNotifications sends one bundled message per recipient whose oldest event waited long enough.
-func (s *Server) flushNotifications(now time.Time) {
+// runNotificationJobs is one run of the notification job: digests, daily summaries and pruning the
+// center. Digests and summaries share one circuit breaker (outages), so a mail server that is down
+// holds up the run once, not once per recipient.
+func (s *Server) runNotificationJobs(now time.Time) {
+	run := &outages{}
+	s.flushNotifications(now, run)
+	s.sendDailySummaries(now, run)
+	if now.Minute()%30 == 0 {
+		s.store.PruneCenter(now)
+	}
+}
+
+// flushNotifications sends one bundled message per recipient whose oldest event waited long enough. run
+// is the circuit breaker of the job's run (nil: a fresh one).
+func (s *Server) flushNotifications(now time.Time, run *outages) {
+	if run == nil {
+		run = &outages{}
+	}
 	minutes := s.cfg.NotifyDigestMinutes
 	if minutes < 1 {
 		minutes = 5
@@ -619,17 +631,20 @@ func (s *Server) flushNotifications(now time.Time) {
 			item := notifyItem{kind: q.Kind, title: q.Payload["title"], text: q.Payload["text"]}
 			out.add(pending[i], item)
 		}
-		failed := s.deliver(uid, headingNews, out, false, now)
+		failed := s.deliver(uid, headingNews, out, false, now, run)
 		// An event is done once every channel it went out on got it (or has nothing to deliver to); one
-		// with a failed channel stays queued for that channel alone, up to notifyMaxAttempts runs
+		// with a failed channel stays queued for that channel alone, up to notifyMaxAttempts runs. A
+		// channel the circuit breaker skipped was not tried: the event waits for the next run without
+		// counting an attempt, so an outage does not use up the attempts of everyone the run skipped
 		var done, dropped []int64
-		retry := map[int64][]string{}
+		retry, wait := map[int64][]string{}, map[int64][]string{}
 		for i, q := range queued {
 			delivered := slices.Clone(q.Delivered)
-			missing := false
+			missing, tried := false, false
 			for _, c := range channelNames(pending[i]) {
-				if failed[c] != nil {
+				if err := failed[c]; err != nil {
 					missing = true
+					tried = tried || !skipped(err)
 				} else {
 					delivered = append(delivered, c)
 				}
@@ -637,6 +652,8 @@ func (s *Server) flushNotifications(now time.Time) {
 			switch {
 			case !missing:
 				done = append(done, q.ID)
+			case !tried:
+				wait[q.ID] = delivered
 			case q.Attempts+1 >= notifyMaxAttempts:
 				dropped = append(dropped, q.ID)
 			default:
@@ -644,6 +661,10 @@ func (s *Server) flushNotifications(now time.Time) {
 			}
 		}
 		for c, err := range failed {
+			if skipped(err) {
+				slog.Info("Notifications held back for the next run", "channel", c, "user_id", uid, "error", err)
+				continue
+			}
 			slog.Warn("Notifications not delivered", "channel", c, "user_id", uid, "retry", len(retry), "dropped", len(dropped), "error", err)
 		}
 		if len(dropped) > 0 {
@@ -653,6 +674,9 @@ func (s *Server) flushNotifications(now time.Time) {
 		logFailed("Removing delivered notifications from the queue", s.store.DeleteQueuedNotifications(append(done, dropped...)), "user_id", uid)
 		if len(retry) > 0 {
 			logFailed("Counting a failed attempt to notify", s.store.RetryQueuedNotifications(retry), "user_id", uid)
+		}
+		if len(wait) > 0 {
+			logFailed("Recording the channels a held back notification reached", s.store.SetQueuedNotificationsDelivered(wait), "user_id", uid)
 		}
 	}
 }
@@ -718,8 +742,10 @@ const (
 // deliver sends the items to the user's mail address, Discord webhook, own webhook and/or devices
 // (push) and returns the channels that failed, with their error (none: every channel got through). A
 // channel with nothing to deliver to (no address, no webhook, no push device) is skipped, not failed.
-// now is the time the run is for (greeting "Guten Morgen" follows the summary time, not the clock).
-func (s *Server) deliver(userID, heading string, out channelItems, summary bool, now time.Time) map[string]error {
+// now is the time the run is for (greeting "Guten Morgen" follows the summary time, not the clock); run
+// is the job's circuit breaker: a channel whose target failed earlier in the run fails with
+// errTargetSkipped without being tried.
+func (s *Server) deliver(userID, heading string, out channelItems, summary bool, now time.Time, run *outages) map[string]error {
 	emailItems, discordItems := out.email, out.discord
 	u, err := s.store.GetUserByID(userID)
 	if err != nil || u == nil || !u.IsActive {
@@ -745,13 +771,17 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 			c = s.summaryMail(lang, u.DisplayName, emailItems, now)
 		}
 		text, htmlBody := renderMail(c)
-		fail("email", s.sendNotifyEmail(to, subject, text, htmlBody))
+		fail("email", run.send("email", func() error { return s.sendNotifyEmail(to, subject, text, htmlBody) }))
 	}
 	if len(discordItems) > 0 && u.DiscordWebhookURL != "" {
-		fail("discord", s.sendNotifyDiscord(lang, u.DiscordWebhookURL, heading, discordItems))
+		fail("discord", run.send(webhookTarget(u.DiscordWebhookURL), func() error {
+			return s.sendNotifyDiscord(lang, u.DiscordWebhookURL, heading, discordItems)
+		}))
 	}
 	if len(out.webhook) > 0 && u.CustomWebhookURL != "" {
-		fail("webhook", s.sendNotifyWebhook(u.CustomWebhookURL, heading, out.webhook))
+		fail("webhook", run.send(webhookTarget(u.CustomWebhookURL), func() error {
+			return s.sendNotifyWebhook(u.CustomWebhookURL, heading, out.webhook)
+		}))
 	}
 	if len(out.push) > 0 {
 		// Without a device there is nothing to deliver, and nothing to try again
@@ -968,9 +998,9 @@ func (s *Server) summaryMail(lang, name string, items []notifyItem, now time.Tim
 // --- Daily summary ---
 
 // dailySummaryWindow: the summary goes out in this time after the chosen time, a failed channel is tried
-// again within it, at most every dailySummaryRetryEvery (about 6 attempts). The spacing matters: the job
-// runs the users one after another, so every attempt against a mail server that is down holds up the
-// summaries of everyone after them by the SMTP timeout.
+// again within it, at most every dailySummaryRetryEvery (about 6 attempts). The spacing keeps a channel
+// that keeps failing for one person (a webhook answering 500) from being hammered every minute; a target
+// that is down for everyone holds up a run only once (outages).
 const (
 	dailySummaryWindow     = 30 * time.Minute
 	dailySummaryRetryEvery = 5 * time.Minute
@@ -1032,8 +1062,11 @@ func dailySummarySlot(now time.Time, chosen string) (day string, at time.Time, o
 
 // sendDailySummaries sends each user who wants one their summary in the 30 minutes after the chosen
 // time (server time zone), once a day; a window that starts late in the evening runs on past midnight.
-// Nothing due → no message.
-func (s *Server) sendDailySummaries(now time.Time) {
+// Nothing due → no message. run is the circuit breaker of the job's run (nil: a fresh one).
+func (s *Server) sendDailySummaries(now time.Time, run *outages) {
+	if run == nil {
+		run = &outages{}
+	}
 	now = clock.In(now)
 	for _, uid := range s.store.ActiveUserIDs() {
 		set := s.store.NotificationSettingsOf(uid)
@@ -1075,20 +1108,28 @@ func (s *Server) sendDailySummaries(now time.Time) {
 		}
 		var out channelItems
 		out.add(choice, items...)
-		failed := s.deliver(uid, headingSummary, out, true, now)
+		failed := s.deliver(uid, headingSummary, out, true, now, run)
 		var again []string
+		tried := false // a channel failed that was really tried, not skipped by the circuit breaker
 		for _, c := range channelNames(choice) {
 			if err := failed[c]; err != nil {
 				again = append(again, c)
+				if skipped(err) {
+					slog.Info("Daily summary held back for the next run", "channel", c, "user_id", uid, "error", err)
+					continue
+				}
+				tried = true
 				slog.Warn("Sending the daily summary failed, will try again", "channel", c, "user_id", uid, "until", at.Add(dailySummaryWindow).Format("15:04"), "error", err)
 			}
 		}
 		if claimed || len(again) > 0 {
 			logFailed("Recording the channels of a daily summary to try again", s.store.SetDailySummaryRetry(uid, day, again), "user_id", uid)
 		}
-		if len(again) > 0 {
+		switch {
+		case tried:
 			s.summaryRetries.set(uid, day, now.Add(dailySummaryRetryEvery))
-		} else if claimed {
+		case len(again) > 0 || claimed:
+			// Delivered, or only skipped: those go again in the next run, as soon as the target is back
 			s.summaryRetries.set(uid, day, time.Time{})
 		}
 	}

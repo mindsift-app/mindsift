@@ -155,12 +155,12 @@ func TestDailySummaryFollowsTimeZone(t *testing.T) {
 	}
 
 	instant := time.Date(2026, 11, 13, 23, 31, 0, 0, time.UTC)
-	srv.sendDailySummaries(instant) // 23:31 in UTC
+	srv.sendDailySummaries(instant, nil) // 23:31 in UTC
 	if len(*sent) != 0 {
 		t.Fatalf("UTC: not the time yet, got %d", len(*sent))
 	}
 	clock.Set(clock.Zone{Loc: tokyo, Source: clock.SourceSetting})
-	srv.sendDailySummaries(instant) // 08:31 in Tokyo
+	srv.sendDailySummaries(instant, nil) // 08:31 in Tokyo
 	if len(*sent) != 1 || !strings.Contains((*sent)[0].text, "HEUTE\n• Zahnarzt (10:00 Uhr)") || !strings.Contains((*sent)[0].text, "Guten Morgen") {
 		t.Fatalf("Tokyo: %+v", *sent)
 	}

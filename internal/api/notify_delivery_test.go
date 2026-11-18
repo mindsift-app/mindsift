@@ -45,7 +45,7 @@ func TestNotificationRetryOnlyOnFailedChannel(t *testing.T) {
 	run := 0
 	flush := func() {
 		run++
-		srv.flushNotifications(time.Now().Add(time.Duration(10+run) * time.Minute))
+		srv.flushNotifications(time.Now().Add(time.Duration(10+run)*time.Minute), nil)
 	}
 	texts := func(channel string) []string {
 		var out []string
@@ -193,16 +193,16 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 	// 1. The mail fails at 07:00 while Discord, webhook and push get through: the retry waits 5 minutes,
 	// then sends only the mail, later runs nothing more
 	bench.fail["email"] = errors.New("smtp: connection refused")
-	srv.sendDailySummaries(at(1, 7, 0))
+	srv.sendDailySummaries(at(1, 7, 0), nil)
 	counts(map[string]int{"discord": 1, "webhook": 1, "push": 1})
 	delete(bench.fail, "email")
 	for m := 1; m < 5; m++ {
-		srv.sendDailySummaries(at(1, 7, m))
+		srv.sendDailySummaries(at(1, 7, m), nil)
 	}
 	counts(map[string]int{"discord": 1, "webhook": 1, "push": 1})
-	srv.sendDailySummaries(at(1, 7, 5))
-	srv.sendDailySummaries(at(1, 7, 10))
-	srv.sendDailySummaries(at(1, 7, 40))
+	srv.sendDailySummaries(at(1, 7, 5), nil)
+	srv.sendDailySummaries(at(1, 7, 10), nil)
+	srv.sendDailySummaries(at(1, 7, 40), nil)
 	counts(map[string]int{"email": 1, "discord": 1, "webhook": 1, "push": 1})
 	for _, s := range bench.sent {
 		if s.channel == "email" && (!strings.Contains(s.text, "Steuererklärung abgeben") || !strings.Contains(s.text, "Guten Morgen")) {
@@ -216,7 +216,7 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 	clear(tries)
 	bench.fail["webhook"] = errors.New("HTTP Status 500")
 	for m := 0; m < 30; m++ {
-		srv.sendDailySummaries(at(2, 7, m))
+		srv.sendDailySummaries(at(2, 7, m), nil)
 	}
 	if retry, claimed := store.DailySummaryRetry(me.ID, "2026-12-02"); !claimed || len(retry) != 1 || retry[0] != "webhook" {
 		t.Fatalf("within the window the webhook waits: %v %v", retry, claimed)
@@ -224,22 +224,22 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 	if tries["webhook"] != 6 {
 		t.Errorf("webhook attempts in the window: want 6, got %d", tries["webhook"])
 	}
-	srv.sendDailySummaries(at(2, 7, 30))
+	srv.sendDailySummaries(at(2, 7, 30), nil)
 	if retry, _ := store.DailySummaryRetry(me.ID, "2026-12-02"); len(retry) != 0 {
 		t.Fatalf("given up after the window: %v", retry)
 	}
 	delete(bench.fail, "webhook")
-	srv.sendDailySummaries(at(2, 7, 31))
+	srv.sendDailySummaries(at(2, 7, 31), nil)
 	counts(map[string]int{"email": 1, "discord": 1, "push": 1})
 
 	// 3. Push chosen but no device: the other channels once, nothing waits for push
 	bench.reset()
 	srv.notifyPushHook = func(string, pushMessage) error { return errNoPushDevice }
-	srv.sendDailySummaries(at(3, 7, 0))
+	srv.sendDailySummaries(at(3, 7, 0), nil)
 	if retry, claimed := store.DailySummaryRetry(me.ID, "2026-12-03"); !claimed || len(retry) != 0 {
 		t.Fatalf("nothing to retry without a device: %v %v", retry, claimed)
 	}
-	srv.sendDailySummaries(at(3, 7, 1))
+	srv.sendDailySummaries(at(3, 7, 1), nil)
 	counts(map[string]int{"email": 1, "discord": 1, "webhook": 1})
 
 	// 4. Chosen time 23:50, the window runs past midnight: the retries of the 4th go on after the day
@@ -251,23 +251,23 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 	bench.reset()
 	clear(tries)
 	bench.fail["email"] = errors.New("smtp: connection refused")
-	srv.sendDailySummaries(at(4, 23, 49))
-	srv.sendDailySummaries(at(4, 23, 50))
-	srv.sendDailySummaries(at(4, 23, 52))
-	srv.sendDailySummaries(at(4, 23, 55))
+	srv.sendDailySummaries(at(4, 23, 49), nil)
+	srv.sendDailySummaries(at(4, 23, 50), nil)
+	srv.sendDailySummaries(at(4, 23, 52), nil)
+	srv.sendDailySummaries(at(4, 23, 55), nil)
 	if tries["email"] != 2 {
 		t.Fatalf("attempts before midnight: want 2, got %d", tries["email"])
 	}
 	delete(bench.fail, "email")
-	srv.sendDailySummaries(at(4, 23, 59))
-	srv.sendDailySummaries(at(5, 0, 0))
-	srv.sendDailySummaries(at(5, 0, 5))
-	srv.sendDailySummaries(at(5, 12, 0))
+	srv.sendDailySummaries(at(4, 23, 59), nil)
+	srv.sendDailySummaries(at(5, 0, 0), nil)
+	srv.sendDailySummaries(at(5, 0, 5), nil)
+	srv.sendDailySummaries(at(5, 12, 0), nil)
 	counts(map[string]int{"email": 1})
 	if retry, claimed := store.DailySummaryRetry(me.ID, "2026-12-04"); !claimed || len(retry) != 0 {
 		t.Fatalf("the summary of the 4th after midnight: %v %v", retry, claimed)
 	}
-	srv.sendDailySummaries(at(5, 23, 50))
+	srv.sendDailySummaries(at(5, 23, 50), nil)
 	counts(map[string]int{"email": 2})
 
 	// 5. The mail keeps failing past midnight: tried every 5 minutes until 00:20, then given up
@@ -275,10 +275,10 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 	clear(tries)
 	bench.fail["email"] = errors.New("smtp: connection refused")
 	for m := 50; m < 60; m++ {
-		srv.sendDailySummaries(at(6, 23, m))
+		srv.sendDailySummaries(at(6, 23, m), nil)
 	}
 	for m := 0; m < 20; m++ {
-		srv.sendDailySummaries(at(7, 0, m))
+		srv.sendDailySummaries(at(7, 0, m), nil)
 	}
 	if retry, claimed := store.DailySummaryRetry(me.ID, "2026-12-06"); !claimed || len(retry) != 1 || retry[0] != "email" {
 		t.Fatalf("until 00:20 the mail of the 6th waits: %v %v", retry, claimed)
@@ -286,13 +286,13 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 	if tries["email"] != 6 {
 		t.Errorf("mail attempts in the window past midnight: want 6, got %d", tries["email"])
 	}
-	srv.sendDailySummaries(at(7, 0, 20))
+	srv.sendDailySummaries(at(7, 0, 20), nil)
 	if retry, _ := store.DailySummaryRetry(me.ID, "2026-12-06"); len(retry) != 0 {
 		t.Fatalf("given up at the end of the window past midnight: %v", retry)
 	}
 	delete(bench.fail, "email")
-	srv.sendDailySummaries(at(7, 0, 25))
-	srv.sendDailySummaries(at(7, 23, 49))
+	srv.sendDailySummaries(at(7, 0, 25), nil)
+	srv.sendDailySummaries(at(7, 23, 49), nil)
 	if tries["email"] != 6 {
 		t.Errorf("nothing more after giving up: %d attempts", tries["email"])
 	}

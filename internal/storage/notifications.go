@@ -173,6 +173,16 @@ func (s *Store) RetryQueuedNotifications(delivered map[int64][]string) error {
 	return s.execInTx(stmts...)
 }
 
+// SetQueuedNotificationsDelivered records, per event, every channel that got it so far without counting
+// an attempt: the missing channels were skipped in this run (their target was down), not tried.
+func (s *Store) SetQueuedNotificationsDelivered(delivered map[int64][]string) error {
+	stmts := make([]sqlStmt, 0, len(delivered))
+	for id, channels := range delivered {
+		stmts = append(stmts, stmt(`UPDATE notification_queue SET delivered = ? WHERE id = ?`, strings.Join(channels, ","), id))
+	}
+	return s.execInTx(stmts...)
+}
+
 // migrateQueueDelivered (migration 69): which channels got a queued event while another failed.
 func (s *Store) migrateQueueDelivered() error {
 	return s.execSchemaStatement(`ALTER TABLE notification_queue ADD COLUMN delivered TEXT NOT NULL DEFAULT ''`)

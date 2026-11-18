@@ -64,11 +64,11 @@ func TestWatchedTaskChangesAreBundled(t *testing.T) {
 	// Two changes by the owner within the window → one bundled mail for the watcher, none for the owner
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"content":"Fenster putzen (innen)"}`, "")
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"isCompleted":true}`, "")
-	srv.flushNotifications(time.Now())
+	srv.flushNotifications(time.Now(), nil)
 	if len(*sent) != 0 {
 		t.Fatalf("nothing may go out before the window ends: %+v", *sent)
 	}
-	srv.flushNotifications(time.Now().Add(6 * time.Minute))
+	srv.flushNotifications(time.Now().Add(6*time.Minute), nil)
 	var mails []sentNote
 	for _, n := range *sent {
 		if n.channel == "email" {
@@ -80,7 +80,7 @@ func TestWatchedTaskChangesAreBundled(t *testing.T) {
 		t.Fatalf("expected one bundled HTML mail to the watcher, got %+v", *sent)
 	}
 	*sent = nil
-	srv.flushNotifications(time.Now().Add(20 * time.Minute))
+	srv.flushNotifications(time.Now().Add(20*time.Minute), nil)
 	if len(*sent) != 0 {
 		t.Fatal("queue must be empty after sending")
 	}
@@ -96,7 +96,7 @@ func TestOwnChangesPauseAndChannels(t *testing.T) {
 
 	// Own change on a watched task: nothing …
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, myToken, `{"priority":"high"}`, "")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if len(*sent) != 0 {
 		t.Fatalf("own change must not notify: %+v", *sent)
 	}
@@ -108,7 +108,7 @@ func TestOwnChangesPauseAndChannels(t *testing.T) {
 	hook := "https://discord.com/api/webhooks/1/x"
 	_, _ = store.UpdateUserFull(me.ID, nil, nil, nil, nil, nil, &hook, nil, nil, nil)
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, myToken, `{"priority":"low"}`, "")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if len(*sent) != 1 || (*sent)[0].channel != "discord" {
 		t.Fatalf("expected one Discord message, got %+v", *sent)
 	}
@@ -120,7 +120,7 @@ func TestOwnChangesPauseAndChannels(t *testing.T) {
 	own := "https://hooks.example.com/mindsift"
 	_, _ = store.UpdateUserFull(me.ID, nil, nil, nil, nil, nil, nil, &own, nil, nil)
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, myToken, `{"priority":"normal"}`, "")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if len(*sent) != 1 || (*sent)[0].channel != "webhook" || (*sent)[0].to != own {
 		t.Fatalf("expected one webhook message, got %+v", *sent)
 	}
@@ -130,7 +130,7 @@ func TestOwnChangesPauseAndChannels(t *testing.T) {
 	set.Paused = true
 	_ = store.SetNotificationSettings(me.ID, set)
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, myToken, `{"priority":"urgent"}`, "")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if len(*sent) != 0 {
 		t.Fatalf("paused must send nothing: %+v", *sent)
 	}
@@ -151,7 +151,7 @@ func TestDailySummary(t *testing.T) {
 	set.DailySummary = domain.DailySummary{Enabled: true, Time: "07:00", Email: true}
 	_ = store.SetNotificationSettings(me.ID, set)
 
-	srv.sendDailySummaries(now)
+	srv.sendDailySummaries(now, nil)
 	if len(*sent) != 0 {
 		t.Fatal("nothing due → no summary")
 	}
@@ -162,11 +162,11 @@ func TestDailySummary(t *testing.T) {
 		}
 	}
 
-	srv.sendDailySummaries(now.Add(-2 * time.Minute)) // before the chosen time
+	srv.sendDailySummaries(now.Add(-2*time.Minute), nil) // before the chosen time
 	if len(*sent) != 0 {
 		t.Fatal("no summary before the chosen time")
 	}
-	srv.sendDailySummaries(now)
+	srv.sendDailySummaries(now, nil)
 	if len(*sent) != 1 {
 		t.Fatalf("expected one summary, got %d", len(*sent))
 	}
@@ -182,7 +182,7 @@ func TestDailySummary(t *testing.T) {
 			t.Fatalf("summary HTML lacks %q", want)
 		}
 	}
-	srv.sendDailySummaries(now.Add(5 * time.Minute))
+	srv.sendDailySummaries(now.Add(5*time.Minute), nil)
 	if len(*sent) != 1 {
 		t.Fatal("only one summary per day")
 	}
@@ -212,7 +212,7 @@ func TestDailySummaryIncludesGroupSharedLists(t *testing.T) {
 	set := store.NotificationSettingsOf(me.ID)
 	set.DailySummary = domain.DailySummary{Enabled: true, Time: "07:00", Email: true}
 	_ = store.SetNotificationSettings(me.ID, set)
-	srv.sendDailySummaries(time.Date(2026, 10, 30, 7, 1, 0, 0, clock.Location()))
+	srv.sendDailySummaries(time.Date(2026, 10, 30, 7, 1, 0, 0, clock.Location()), nil)
 	if len(*sent) != 1 || !strings.Contains((*sent)[0].text, "Bericht abgeben (10:00 Uhr · Projekt)") {
 		t.Fatalf("group-shared task missing: %+v", *sent)
 	}
@@ -245,7 +245,7 @@ func TestAssignedNotification(t *testing.T) {
 	if rec := sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"assignees":["`+bob.ID+`","`+owner.ID+`"]}`, ""); rec.Code != http.StatusOK {
 		t.Fatalf("assign: %d %s", rec.Code, rec.Body.String())
 	}
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if got := mailsTo(*sent, "bob@example.com"); len(got) != 1 || !strings.Contains(got[0], "hat dir „Keller aufräumen“ zugewiesen") {
 		t.Fatalf("bob should get one assignment mail, got %+v", *sent)
 	}
@@ -258,7 +258,7 @@ func TestAssignedNotification(t *testing.T) {
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"assignees":["`+bob.ID+`"]}`, "")
 	task2, _ := store.CreateThoughtWithDetails(owner.ID, "Rasen mähen", "normal", "manual", "", list.ID, "todo", "")
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task2.ID, bobToken, `{"assignees":["`+bob.ID+`"]}`, "")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if len(*sent) != 0 {
 		t.Fatalf("no new assignment, nothing to send: %+v", *sent)
 	}
@@ -269,7 +269,7 @@ func TestAssignedNotification(t *testing.T) {
 	_ = store.SetNotificationSettings(bob.ID, set)
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"assignees":[]}`, "")
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"assignees":["`+bob.ID+`"]}`, "")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if len(*sent) != 0 {
 		t.Fatalf("switched off, nothing to send: %+v", *sent)
 	}
@@ -300,7 +300,7 @@ func TestTaskAddedToSharedList(t *testing.T) {
 	own, _ := store.CreateThoughtWithDetails(owner.ID, "Müll rausbringen", "normal", "manual", "", "", "todo", "")
 	own, _ = store.UpdateThoughtTriage(owner.ID, own.ID, "keep", "task", "", "", "")
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+own.ID, ownerToken, `{"taskListId":"`+list.ID+`"}`, "")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	got := mailsTo(*sent, "bob@example.com")
 	if len(got) != 1 || !strings.Contains(got[0], "hat „Fenster putzen“ zur Liste „Haushalt“ hinzugefügt") ||
 		!strings.Contains(got[0], "hat „Müll rausbringen“ zur Liste „Haushalt“ hinzugefügt") {
@@ -329,7 +329,7 @@ func TestWatchedTaskNamesEveryChange(t *testing.T) {
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"kanbanStatus":"waiting"}`, "")
 	// Completing moves it to the done column too: told as completed only
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"isCompleted":true}`, "")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	got := mailsTo(*sent, "watcher@example.com")
 	if len(got) != 1 {
 		t.Fatalf("one bundled mail expected, got %+v", *sent)
@@ -384,7 +384,7 @@ func TestTaskTickedInNoteNotifiesWatchers(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	got := mailsTo(*sent, "watcher@example.com")
 	if len(got) != 1 || !strings.Contains(got[0], "hat „Keller aufräumen“ erledigt") ||
 		strings.Count(got[0], "hat den Text von") != 1 || !strings.Contains(got[0], "„Keller aufräumen und fegen“") {
@@ -430,10 +430,10 @@ func TestCreatorAssignedAndMutedLists(t *testing.T) {
 		t.Fatalf("lists should show the mute: %s", rec.Body.String())
 	}
 	*sent = nil
-	srv.flushNotifications(time.Now().Add(10 * time.Minute)) // the first task, from before the mute
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil) // the first task, from before the mute
 	*sent = nil
 	create(shared.ID, "Rasen mähen")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if len(mailsTo(*sent, "bob@example.com")) != 0 {
 		t.Fatalf("muted list must stay quiet: %+v", *sent)
 	}
@@ -446,7 +446,7 @@ func TestCreatorAssignedAndMutedLists(t *testing.T) {
 		}
 	}
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+mow, ownerToken, `{"assignees":["`+bob.ID+`"]}`, "")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if got := mailsTo(*sent, "bob@example.com"); len(got) != 1 || !strings.Contains(got[0], "zugewiesen") {
 		t.Fatalf("assignment must come through a muted list: %+v", *sent)
 	}
@@ -514,7 +514,7 @@ func TestNotificationOnMailAndPush(t *testing.T) {
 	}
 
 	assign("Keller aufräumen")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if got := mailsTo(*sent, "bob@example.com"); len(got) != 1 || len(pushes) != 1 || !strings.Contains(pushes[0].Body, "Keller aufräumen") {
 		t.Fatalf("mail and push once each: mails %+v, pushes %+v", got, pushes)
 	}
@@ -523,8 +523,8 @@ func TestNotificationOnMailAndPush(t *testing.T) {
 	*sent, pushes = nil, nil
 	srv.notifyPushHook = func(string, pushMessage) error { return errNoPushDevice }
 	assign("Rasen mähen")
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
-	srv.flushNotifications(time.Now().Add(20 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
+	srv.flushNotifications(time.Now().Add(20*time.Minute), nil)
 	if got := mailsTo(*sent, "bob@example.com"); len(got) != 1 || !strings.Contains(got[0], "Rasen mähen") {
 		t.Fatalf("mail once without a push device: %+v", *sent)
 	}

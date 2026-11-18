@@ -225,13 +225,16 @@ func (s *Server) startAlarmTicker() {
 // device); it is skipped, not tried again.
 var errChannelNotSetUp = errors.New("channel not set up")
 
-// checkAlarms sends the alarms whose time has come (and puts them into the notification center)
+// checkAlarms sends the alarms whose time has come (and puts them into the notification center). The
+// run has its own circuit breaker (outages): a mail server or webhook host that is down is tried once,
+// the alarms after it skip that channel and get it in a later run.
 func (s *Server) checkAlarms(now time.Time) {
 	alarms, err := s.store.GetDueTasksForAlarm()
 	if err != nil {
 		slog.Error("Reading the due task alarms failed", "error", err)
 		return
 	}
+	run := &outages{}
 	for _, a := range alarms {
 		if !alarmDue(a.DueDate, a.NotifyBeforeMinutes, now) {
 			continue
@@ -291,9 +294,10 @@ func (s *Server) checkAlarms(now time.Time) {
 
 		// Each chosen channel once: one that got through in an earlier run is left out, one that failed
 		// is tried again in the next run (up to MaxAlarmFailures runs), one that is not set up (no
-		// address, no webhook, no device) is skipped
+		// address, no webhook, no device) is skipped. One the circuit breaker skipped (its target failed
+		// earlier in this run) is tried again in the next run too, but counts no failure: it was not tried
 		var delivered []string
-		missing := false
+		missing, tried := false, false
 		for _, ch := range a.AlarmChannels {
 			if slices.Contains(a.Delivered, ch) {
 				continue
@@ -303,7 +307,9 @@ func (s *Server) checkAlarms(now time.Time) {
 			case "discord":
 				err = errChannelNotSetUp
 				if a.DiscordWebhookURL != "" {
-					err = s.sendDiscordNotification(lang, a.DiscordWebhookURL, a.Title, desc, due, a.Priority)
+					err = run.send(webhookTarget(a.DiscordWebhookURL), func() error {
+						return s.sendDiscordNotification(lang, a.DiscordWebhookURL, a.Title, desc, due, a.Priority)
+					})
 				}
 			case "push":
 				err = s.sendPush(a.UserID, pushMessage{Title: pushTitle, Body: a.Title + " – " + due, URL: "/", Tag: "task-" + a.TaskID})
@@ -313,13 +319,15 @@ func (s *Server) checkAlarms(now time.Time) {
 			case "webhook":
 				err = errChannelNotSetUp
 				if a.CustomWebhookURL != "" {
-					err = s.sendCustomWebhookNotification(a.CustomWebhookURL, "task_due", a.Title, desc, a.DueDate, a.Priority, map[string]any{"remindBeforeMinutes": a.NotifyBeforeMinutes})
+					err = run.send(webhookTarget(a.CustomWebhookURL), func() error {
+						return s.sendCustomWebhookNotification(a.CustomWebhookURL, "task_due", a.Title, desc, a.DueDate, a.Priority, map[string]any{"remindBeforeMinutes": a.NotifyBeforeMinutes})
+					})
 				}
 			case "email":
 				// Always the confirmed login address; there is no address of its own for alarms
 				err = errChannelNotSetUp
 				if a.UserEmail != "" {
-					err = s.sendMailContent(a.UserEmail, subject, s.dueAlarmMail(lang, a, due))
+					err = run.send("email", func() error { return s.sendMailContent(a.UserEmail, subject, s.dueAlarmMail(lang, a, due)) })
 				}
 			}
 			switch {
@@ -327,8 +335,11 @@ func (s *Server) checkAlarms(now time.Time) {
 				delivered = append(delivered, ch)
 			case errors.Is(err, errChannelNotSetUp):
 				slog.Info("Task alarm channel not set up, skipped", "channel", ch, "task_id", a.TaskID, "user_id", a.UserID)
-			default:
+			case skipped(err):
 				missing = true
+				slog.Info("Task alarm held back for the next run", "channel", ch, "task_id", a.TaskID, "user_id", a.UserID, "error", err)
+			default:
+				missing, tried = true, true
 				slog.Warn("Task alarm not delivered, will try again", "channel", ch, "task_id", a.TaskID, "user_id", a.UserID, "error", err)
 			}
 		}
@@ -341,6 +352,9 @@ func (s *Server) checkAlarms(now time.Time) {
 		}
 		if len(delivered) > 0 {
 			logFailed("Recording the channels an alarm reached", s.store.MarkTaskAlarmDelivered(a.TaskID, a.UserID, a.Reminder, delivered), "task_id", a.TaskID)
+		}
+		if !tried {
+			continue // only skipped: the next run sends it, no failure counted
 		}
 		if gaveUp, _ := s.store.RecordTaskAlarmFailure(a.TaskID, a.UserID, a.Reminder); gaveUp {
 			slog.Warn("Task alarm given up after 3 failed attempts", "task_id", a.TaskID, "user_id", a.UserID, "title", a.Title)
