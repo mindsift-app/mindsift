@@ -3,8 +3,10 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -139,6 +141,9 @@ func (s *Server) sendDiscordNotification(lang, webhookURL, title, description, d
 			},
 		},
 	}
+	if s.alarmOutHook != nil { // tests
+		return s.alarmOutHook("discord", webhookURL, payload)
+	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -174,6 +179,9 @@ func (s *Server) sendCustomWebhookNotification(webhookURL, event, title, notes, 
 	}
 	for k, v := range extra {
 		payload[k] = v
+	}
+	if s.alarmOutHook != nil { // tests
+		return s.alarmOutHook("webhook", webhookURL, payload)
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -213,10 +221,15 @@ func (s *Server) startAlarmTicker() {
 	}
 }
 
+// errChannelNotSetUp: a chosen alarm channel has nothing to deliver to (no address, no webhook, no
+// device); it is skipped, not tried again.
+var errChannelNotSetUp = errors.New("channel not set up")
+
 // checkAlarms sends the alarms whose time has come (and puts them into the notification center)
 func (s *Server) checkAlarms(now time.Time) {
 	alarms, err := s.store.GetDueTasksForAlarm()
-	if err != nil || len(alarms) == 0 {
+	if err != nil {
+		slog.Error("Reading the due task alarms failed", "error", err)
 		return
 	}
 	for _, a := range alarms {
@@ -263,7 +276,6 @@ func (s *Server) checkAlarms(now time.Time) {
 			continue
 		}
 
-		sentAny := false
 		lang := s.userLanguage(a.UserID)
 		due := domain.HumanDue(lang, a.DueDate)
 		desc := a.Notes
@@ -277,39 +289,60 @@ func (s *Server) checkAlarms(now time.Time) {
 			pushTitle, subject = "🔔 "+i18n.T(lang, "Erinnerung an eine Aufgabe"), "🔔 "+i18n.T(lang, "Erinnerung: {title}", "title", a.Title)
 		}
 
+		// Each chosen channel once: one that got through in an earlier run is left out, one that failed
+		// is tried again in the next run (up to MaxAlarmFailures runs), one that is not set up (no
+		// address, no webhook, no device) is skipped
+		var delivered []string
+		missing := false
 		for _, ch := range a.AlarmChannels {
+			if slices.Contains(a.Delivered, ch) {
+				continue
+			}
+			var err error
 			switch ch {
 			case "discord":
+				err = errChannelNotSetUp
 				if a.DiscordWebhookURL != "" {
-					if err := s.sendDiscordNotification(lang, a.DiscordWebhookURL, a.Title, desc, due, a.Priority); err == nil {
-						sentAny = true
-					}
+					err = s.sendDiscordNotification(lang, a.DiscordWebhookURL, a.Title, desc, due, a.Priority)
 				}
 			case "push":
-				if err := s.sendPush(a.UserID, pushMessage{Title: pushTitle, Body: a.Title + " – " + due, URL: "/", Tag: "task-" + a.TaskID}); err == nil {
-					sentAny = true
+				err = s.sendPush(a.UserID, pushMessage{Title: pushTitle, Body: a.Title + " – " + due, URL: "/", Tag: "task-" + a.TaskID})
+				if errors.Is(err, errNoPushDevice) {
+					err = errChannelNotSetUp
 				}
 			case "webhook":
+				err = errChannelNotSetUp
 				if a.CustomWebhookURL != "" {
-					if err := s.sendCustomWebhookNotification(a.CustomWebhookURL, "task_due", a.Title, desc, a.DueDate, a.Priority, map[string]any{"remindBeforeMinutes": a.NotifyBeforeMinutes}); err == nil {
-						sentAny = true
-					}
+					err = s.sendCustomWebhookNotification(a.CustomWebhookURL, "task_due", a.Title, desc, a.DueDate, a.Priority, map[string]any{"remindBeforeMinutes": a.NotifyBeforeMinutes})
 				}
 			case "email":
 				// Always the confirmed login address; there is no address of its own for alarms
+				err = errChannelNotSetUp
 				if a.UserEmail != "" {
-					if err := s.sendMailContent(a.UserEmail, subject, s.dueAlarmMail(lang, a, due)); err == nil {
-						sentAny = true
-					}
+					err = s.sendMailContent(a.UserEmail, subject, s.dueAlarmMail(lang, a, due))
 				}
+			}
+			switch {
+			case err == nil:
+				delivered = append(delivered, ch)
+			case errors.Is(err, errChannelNotSetUp):
+				slog.Info("Task alarm channel not set up, skipped", "channel", ch, "task_id", a.TaskID, "user_id", a.UserID)
+			default:
+				missing = true
+				slog.Warn("Task alarm not delivered, will try again", "channel", ch, "task_id", a.TaskID, "user_id", a.UserID, "error", err)
 			}
 		}
 
-		if sentAny {
+		if !missing {
 			if err := s.store.MarkTaskAlarmSent(a.TaskID, a.UserID, a.Reminder); err != nil {
 				slog.Error("Marking the alarm as sent failed (it will be sent again)", "task_id", a.TaskID, "error", err)
 			}
-		} else if gaveUp, _ := s.store.RecordTaskAlarmFailure(a.TaskID, a.UserID, a.Reminder); gaveUp {
+			continue
+		}
+		if len(delivered) > 0 {
+			logFailed("Recording the channels an alarm reached", s.store.MarkTaskAlarmDelivered(a.TaskID, a.UserID, a.Reminder, delivered), "task_id", a.TaskID)
+		}
+		if gaveUp, _ := s.store.RecordTaskAlarmFailure(a.TaskID, a.UserID, a.Reminder); gaveUp {
 			slog.Warn("Task alarm given up after 3 failed attempts", "task_id", a.TaskID, "user_id", a.UserID, "title", a.Title)
 		}
 	}

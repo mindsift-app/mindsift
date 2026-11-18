@@ -956,4 +956,6 @@ type DueTaskAlarm struct {
 	DiscordWebhookURL   string
 	CustomWebhookURL    string
 	NotifyBeforeMinutes int
+	// Delivered: the channels that got this alarm already in an earlier run (the others are tried again)
+	Delivered []string
 }

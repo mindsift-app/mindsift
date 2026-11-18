@@ -482,3 +482,50 @@ func TestRenameShoppingList(t *testing.T) {
 		t.Fatalf("stranger rename: want 404, got %d", rec.Code)
 	}
 }
+
+// Notifications of events reach e-mail and push as chosen; push without a device holds nothing back:
+// the mail goes out once and the queue is empty afterwards (no retry that would send it again).
+func TestNotificationOnMailAndPush(t *testing.T) {
+	srv, sent := notifyServer(t)
+	store := srv.store
+	router := srv.Router()
+	owner, ownerToken := newTestUser(t, store, "owner@example.com")
+	bob, _ := newTestUser(t, store, "bob@example.com")
+	list, _ := store.CreateTaskList(owner.ID, "", "", "Haushalt", "🏠", "#000000")
+	if _, err := store.AddTaskListShare(list.ID, "user", bob.ID, "editor", owner.ID); err != nil {
+		t.Fatal(err)
+	}
+	set := store.NotificationSettingsOf(bob.ID)
+	set.Events.Assigned = domain.ChannelChoice{Email: true, Push: true}
+	_ = store.SetNotificationSettings(bob.ID, set)
+	var pushes []pushMessage
+	srv.notifyPushHook = func(userID string, msg pushMessage) error {
+		if userID == bob.ID {
+			pushes = append(pushes, msg)
+		}
+		return nil
+	}
+	assign := func(title string) {
+		t.Helper()
+		task, _ := store.CreateThoughtWithDetails(owner.ID, title, "normal", "manual", "", list.ID, "todo", "")
+		if rec := sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"assignees":["`+bob.ID+`"]}`, ""); rec.Code != http.StatusOK {
+			t.Fatalf("assign: %d %s", rec.Code, rec.Body.String())
+		}
+	}
+
+	assign("Keller aufräumen")
+	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	if got := mailsTo(*sent, "bob@example.com"); len(got) != 1 || len(pushes) != 1 || !strings.Contains(pushes[0].Body, "Keller aufräumen") {
+		t.Fatalf("mail and push once each: mails %+v, pushes %+v", got, pushes)
+	}
+
+	// No device for push: the mail still goes out, and only once
+	*sent, pushes = nil, nil
+	srv.notifyPushHook = func(string, pushMessage) error { return errNoPushDevice }
+	assign("Rasen mähen")
+	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(20 * time.Minute))
+	if got := mailsTo(*sent, "bob@example.com"); len(got) != 1 || !strings.Contains(got[0], "Rasen mähen") {
+		t.Fatalf("mail once without a push device: %+v", *sent)
+	}
+}

@@ -90,6 +90,7 @@ var migrations = []migration{
 	{65, "When a task was last ticked, opened or moved to another column", (*Store).migrateTaskStatusChangedAt},
 	{66, "Repeating tasks know the occurrence they follow", (*Store).migrateRecurrenceOf},
 	{67, "When a task was last changed and how often; switch for dates and quantities in typed text", (*Store).migrate67},
+	{68, "Task alarms remember which channels got through", (*Store).migrateAlarmDelivered},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a

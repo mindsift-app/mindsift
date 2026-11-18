@@ -68,8 +68,11 @@ func (s *Server) sendPush(userID string, msg pushMessage) error {
 		return errDemoOutgoing
 	}
 	subs, err := s.store.PushSubscriptions(userID)
-	if err != nil || len(subs) == 0 {
+	if err != nil {
 		return err
+	}
+	if len(subs) == 0 {
+		return errNoPushDevice
 	}
 	pub, priv, err := s.vapidKeys()
 	if err != nil {
@@ -117,8 +120,14 @@ func (s *Server) sendPush(userID string, msg pushMessage) error {
 	if sent == 0 && lastErr != nil {
 		return lastErr
 	}
+	if sent == 0 {
+		return errNoPushDevice // every device was gone
+	}
 	return nil
 }
+
+// errNoPushDevice: push is chosen, but no device of the person receives it (nothing to retry).
+var errNoPushDevice = errors.New("no device receives push notifications")
 
 func (s *Server) handlePushKey(w http.ResponseWriter, r *http.Request) {
 	if s.cfg.DemoMode {
