@@ -61,6 +61,15 @@ type pushMessage struct {
 // sendPush delivers a message to every device of the user; devices the push service no longer knows
 // are forgotten. Error when no device could be reached.
 func (s *Server) sendPush(userID string, msg pushMessage) error {
+	return s.sendPushVia(userID, msg, nil)
+}
+
+// sendPushVia is sendPush with the circuit breaker of a background job's run (nil: none, as for the
+// test push): a push service that did not answer or refused the connection is skipped for the rest of
+// the run (target "push:<host>"). Skipped devices count as not reached; when no device was reached and
+// none was really tried, the error is errTargetSkipped, so the jobs send again in a later run without
+// counting a failed attempt.
+func (s *Server) sendPushVia(userID string, msg pushMessage, run *outages) error {
 	if s.notifyPushHook != nil {
 		return s.notifyPushHook(userID, msg)
 	}
@@ -83,7 +92,7 @@ func (s *Server) sendPush(userID string, msg pushMessage) error {
 	if client == nil {
 		client = guardedClient(s.allowPrivateWebhooks())
 	}
-	var lastErr error
+	var lastErr, skipErr error
 	sent := 0
 	knownOnly := s.pushKnownServicesOnly()
 	for _, sub := range subs {
@@ -92,17 +101,26 @@ func (s *Server) sendPush(userID string, msg pushMessage) error {
 			lastErr = err
 			continue
 		}
-		resp, err := webpush.SendNotification(payload, &webpush.Subscription{
-			Endpoint: sub.Endpoint,
-			Keys:     webpush.Keys{P256dh: sub.P256dh, Auth: sub.Auth},
-		}, &webpush.Options{
-			HTTPClient:      client,
-			Subscriber:      s.vapidSubject(),
-			VAPIDPublicKey:  pub,
-			VAPIDPrivateKey: priv,
-			TTL:             24 * 3600,
-			Urgency:         webpush.UrgencyHigh,
+		var resp *http.Response
+		err := run.send(pushTarget(sub.Endpoint), func() error {
+			var err error
+			resp, err = webpush.SendNotification(payload, &webpush.Subscription{
+				Endpoint: sub.Endpoint,
+				Keys:     webpush.Keys{P256dh: sub.P256dh, Auth: sub.Auth},
+			}, &webpush.Options{
+				HTTPClient:      client,
+				Subscriber:      s.vapidSubject(),
+				VAPIDPublicKey:  pub,
+				VAPIDPrivateKey: priv,
+				TTL:             24 * 3600,
+				Urgency:         webpush.UrgencyHigh,
+			})
+			return err
 		})
+		if skipped(err) {
+			skipErr = err
+			continue
+		}
 		if err != nil {
 			lastErr = err
 			continue
@@ -117,13 +135,24 @@ func (s *Server) sendPush(userID string, msg pushMessage) error {
 			sent++
 		}
 	}
-	if sent == 0 && lastErr != nil {
-		return lastErr
+	switch {
+	case sent > 0:
+		return nil
+	case lastErr != nil:
+		return lastErr // a device was really tried
+	case skipErr != nil:
+		return skipErr // only skipped: no failed attempt
 	}
-	if sent == 0 {
-		return errNoPushDevice // every device was gone
+	return errNoPushDevice // every device was gone
+}
+
+// pushTarget: the circuit breaker's target for a device, the host of its push service (all Chrome and
+// Android devices share fcm.googleapis.com).
+func pushTarget(endpoint string) string {
+	if u, err := url.Parse(endpoint); err == nil && u.Host != "" {
+		return "push:" + strings.ToLower(u.Host)
 	}
-	return nil
+	return "push:" + endpoint
 }
 
 // errNoPushDevice: push is chosen, but no device of the person receives it (nothing to retry).

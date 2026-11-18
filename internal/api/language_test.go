@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/config"
@@ -155,7 +156,7 @@ func TestMessageTextsTranslated(t *testing.T) {
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	_ = store.SetLanguage(claims.UserID, "en")
-	c := srv.dueAlarmMail(srv.userLanguage(claims.UserID), storage.DueTaskAlarm{Title: "Dentist", UserName: "Ada", Priority: "high"}, domain.HumanDue("en", "2026-10-30T15:30"))
+	c := srv.dueAlarmMail(srv.userLanguage(claims.UserID), storage.DueTaskAlarm{Title: "Dentist", UserName: "Ada", Priority: "high"}, domain.HumanDue("en", "2026-10-30T15:30"), time.Now())
 	text, html := renderMail(c)
 	for _, want := range []string{"Ada", "One of your tasks is due now:", "Due: 10/30/2026, 3:30 PM · Important", "notes, tasks and a clear head, self-hosted"} {
 		if !strings.Contains(text+html, want) {

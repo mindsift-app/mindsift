@@ -48,8 +48,9 @@ func priorityTone(p string) string {
 // its texts name the due date instead of saying the task is due now
 func earlyReminder(a storage.DueTaskAlarm) bool { return a.NotifyBeforeMinutes >= 24*60 }
 
-// dueAlarmMail: one task is due now, or soon for an early reminder.
-func (s *Server) dueAlarmMail(lang string, a storage.DueTaskAlarm, due string) mailContent {
+// dueAlarmMail: one task is due now, or soon for an early reminder. now is the time of the alarm run:
+// the greeting follows it, not the clock.
+func (s *Server) dueAlarmMail(lang string, a storage.DueTaskAlarm, due string, now time.Time) mailContent {
 	meta := i18n.T(lang, "Fällig: {due}", "due", due)
 	if a.Priority != "" && a.Priority != "normal" {
 		meta += " · " + domain.PriorityLabel(lang, a.Priority)
@@ -63,7 +64,7 @@ func (s *Server) dueAlarmMail(lang string, a storage.DueTaskAlarm, due string) m
 	c := mailContent{
 		Lang:      lang,
 		Preheader: preheader,
-		Greeting:  mailGreeting(lang, time.Now(), a.UserName),
+		Greeting:  mailGreeting(lang, now, a.UserName),
 		Intro:     intro,
 		Sections:  []mailSection{{Items: []mailItem{{Title: a.Title, Meta: meta, Body: a.Notes, Tone: priorityTone(a.Priority)}}}},
 		Footer:    mailFooterAlarms(lang),
@@ -226,8 +227,8 @@ func (s *Server) startAlarmTicker() {
 var errChannelNotSetUp = errors.New("channel not set up")
 
 // checkAlarms sends the alarms whose time has come (and puts them into the notification center). The
-// run has its own circuit breaker (outages): a mail server or webhook host that is down is tried once,
-// the alarms after it skip that channel and get it in a later run.
+// run has its own circuit breaker (outages): a mail server, webhook host or push service that is down is
+// tried once, the alarms after it skip that channel and get it in a later run.
 func (s *Server) checkAlarms(now time.Time) {
 	alarms, err := s.store.GetDueTasksForAlarm()
 	if err != nil {
@@ -312,7 +313,7 @@ func (s *Server) checkAlarms(now time.Time) {
 					})
 				}
 			case "push":
-				err = s.sendPush(a.UserID, pushMessage{Title: pushTitle, Body: a.Title + " – " + due, URL: "/", Tag: "task-" + a.TaskID})
+				err = s.sendPushVia(a.UserID, pushMessage{Title: pushTitle, Body: a.Title + " – " + due, URL: "/", Tag: "task-" + a.TaskID}, run)
 				if errors.Is(err, errNoPushDevice) {
 					err = errChannelNotSetUp
 				}
@@ -327,7 +328,7 @@ func (s *Server) checkAlarms(now time.Time) {
 				// Always the confirmed login address; there is no address of its own for alarms
 				err = errChannelNotSetUp
 				if a.UserEmail != "" {
-					err = run.send("email", func() error { return s.sendMailContent(a.UserEmail, subject, s.dueAlarmMail(lang, a, due)) })
+					err = run.send("email", func() error { return s.sendMailContent(a.UserEmail, subject, s.dueAlarmMail(lang, a, due, now)) })
 				}
 			}
 			switch {
