@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { AudioSettings } from '../admin/AudioSettings';
 import { SystemSettings } from '../../../lib/types';
 
-const base: SystemSettings = { sharingMode: 'organizations', allowRegistration: false, instanceName: 'MindSift', audioMaxMB: 50 };
+const base: SystemSettings = { sharingMode: 'organizations', allowRegistration: false, instanceName: 'MindSift' };
 
 describe('AudioSettings (audio in notes for the whole server)', () => {
   it('shows the defaults and saves compression and bitrate', () => {
@@ -21,17 +21,19 @@ describe('AudioSettings (audio in notes for the whole server)', () => {
     expect(onSave).toHaveBeenCalledWith({ audioCompression: 'off' });
   });
 
-  it('hides the bitrate when compression is off', () => {
+  it('greys out the bitrate when compression is off', () => {
     render(<AudioSettings settings={{ ...base, audioCompression: 'off' }} onSave={() => {}} />);
-    expect(screen.queryByRole('button', { name: 'Bitrate der Aufnahmen' })).toBeNull();
+    const bitrate = screen.getByRole('button', { name: 'Bitrate der Aufnahmen' }) as HTMLButtonElement;
+    expect(bitrate.disabled).toBe(true);
+    expect(bitrate.closest('[data-admin-audio-bitrate]')?.className).toContain('opacity-50');
   });
 
-  it('saves the upload limit when the field is left, within 1 and MEDIA_MAX_AUDIO_MB', () => {
+  it('saves the upload limit when the field is left, within 1 and 2000 MB', () => {
     const onSave = vi.fn();
     render(<AudioSettings settings={base} onSave={onSave} />);
     const input = screen.getByRole('spinbutton', { name: 'Größte Audiodatei' }) as HTMLInputElement;
     expect(input.value).toBe('7');
-    fireEvent.change(input, { target: { value: '80' } });
+    fireEvent.change(input, { target: { value: '2001' } });
     fireEvent.blur(input);
     expect(onSave).not.toHaveBeenCalled();
     expect(input.value).toBe('7');
@@ -61,7 +63,7 @@ describe('AudioSettings (audio in notes for the whole server)', () => {
     expect((screen.getByRole('spinbutton') as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Audio-Komprimierung' }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.getByText(/Festgelegt per MEDIA_AUDIO_BITRATE/)).toBeTruthy();
-    expect(screen.getByText(/Festgelegt per MEDIA_AUDIO_LIMIT_MB/)).toBeTruthy();
+    expect(screen.getByText(/Festgelegt per MEDIA_MAX_AUDIO_MB/)).toBeTruthy();
     expect(screen.getByText(/Festgelegt per MEDIA_AUDIO_UPLOADS/)).toBeTruthy();
   });
 });

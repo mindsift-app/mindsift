@@ -599,7 +599,6 @@ var messagesEN = map[string]string{
 	"Ungültige Audio-Komprimierung (erlaubt: recordings, off)":                                     "Invalid audio compression (allowed: recordings, off)",
 	"Ungültige Bitrate (erlaubt: 8 bis 320 kbit/s)":                                                "Invalid bitrate (allowed: 8 to 320 kbit/s)",
 	"Ungültige Größenbegrenzung für Audiodateien":                                                  "Invalid size limit for audio files",
-	"Audiodatei zu groß (höchstens {mb} MB)":                                                       "Audio file too large (at most {mb} MB)",
 	"Größenbegrenzung für Audiodateien: 1 bis {mb} MB":                                             "Size limit for audio files: 1 to {mb} MB",
 	"Unbekannte Zeitzone":                                                                         "Unknown time zone",
 	"ungewöhnlich stark gepackt, wird nicht entpackt":                                             "packed unusually tightly, not unpacked",

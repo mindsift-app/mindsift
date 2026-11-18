@@ -37,11 +37,10 @@ func audioUpload(t *testing.T, router http.Handler, token, docID string, size in
 }
 
 // Audio settings: defaults (recordings at 32 kbit/s, uploads allowed, every audio file up to 7 MB),
-// chosen by the admin, refused when invalid, fixed by MEDIA_AUDIO_*; the limit applies to recordings
+// chosen by the admin, refused when invalid, fixed by MEDIA_AUDIO_* and MEDIA_MAX_AUDIO_MB; the limit applies to recordings
 // and uploaded files alike, switched-off uploads refuse files from the device only.
 func TestAudioSettings(t *testing.T) {
 	srv, store, token := setupTestServer(t)
-	srv.cfg.Media.MaxAudioMB = 50
 	router := srv.Router()
 	status := func() string { return sessionCall(router, "GET", "/api/v1/auth/status", "", "", "").Body.String() }
 	put := func(body string) *httptest.ResponseRecorder {
@@ -50,7 +49,7 @@ func TestAudioSettings(t *testing.T) {
 	if want := `"audio":{"compression":"recordings","bitrate":32,"limitMB":7,"uploads":true}`; !strings.Contains(status(), want) {
 		t.Fatalf("default: %s", status())
 	}
-	if body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String(); !strings.Contains(body, `"audioLimitMB":7`) || !strings.Contains(body, `"audioMaxMB":50`) {
+	if body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String(); !strings.Contains(body, `"audioLimitMB":7`) {
 		t.Fatalf("admin default: %s", body)
 	}
 
@@ -68,14 +67,14 @@ func TestAudioSettings(t *testing.T) {
 	if sys, _ := store.GetSystemSettings(); sys.AudioCompression != "off" || sys.AudioBitrate != 64 || sys.AudioLimitMB != 20 || *sys.AudioUploads {
 		t.Fatalf("kept: %+v", sys)
 	}
-	for _, bad := range []string{`"audioCompression":"all"`, `"audioBitrate":4`, `"audioBitrate":500`, `"audioLimitMB":51`, `"audioLimitMB":-1`} {
+	for _, bad := range []string{`"audioCompression":"all"`, `"audioBitrate":4`, `"audioBitrate":500`, `"audioLimitMB":2001`, `"audioLimitMB":-1`} {
 		if rec := put(bad); rec.Code != http.StatusBadRequest {
 			t.Fatalf("%s: want 400, got %d", bad, rec.Code)
 		}
 	}
 
 	// The environment wins and locks; what the admin sends is not stored
-	srv.cfg.Media.AudioCompression, srv.cfg.Media.AudioBitrate, srv.cfg.Media.AudioLimitMB = "recordings", 24, 1
+	srv.cfg.Media.AudioCompression, srv.cfg.Media.AudioBitrate, srv.cfg.Media.MaxAudioMB = "recordings", 24, 1
 	rec := put(`"audioCompression":"off","audioBitrate":96,"audioLimitMB":30`)
 	body := rec.Body.String()
 	for _, want := range []string{`"audioCompression":"recordings"`, `"audioCompressionConfiguredViaEnv":true`, `"audioBitrate":24`, `"audioBitrateConfiguredViaEnv":true`, `"audioLimitMB":1`, `"audioLimitMBConfiguredViaEnv":true`} {
@@ -114,10 +113,14 @@ func TestAudioSettings(t *testing.T) {
 	if !strings.Contains(sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String(), `"audioUploadsConfiguredViaEnv":true`) {
 		t.Fatal("MEDIA_AUDIO_UPLOADS must lock the switch")
 	}
-	// Never above MEDIA_MAX_AUDIO_MB
-	srv.cfg.Media.AudioLimitMB, srv.cfg.Media.MaxAudioMB = 0, 10
-	if !strings.Contains(status(), `"limitMB":10`) {
-		t.Fatalf("capped by MEDIA_MAX_AUDIO_MB: %s", status())
+	// Without MEDIA_MAX_AUDIO_MB the stored limit holds again, in the demo at most MEDIA_DEMO_MAX_MB
+	srv.cfg.Media.MaxAudioMB = 0
+	if !strings.Contains(status(), `"limitMB":20`) {
+		t.Fatalf("stored limit without the env: %s", status())
+	}
+	srv.cfg.DemoMode, srv.cfg.Media.DemoMaxMB = true, 3
+	if !strings.Contains(status(), `"limitMB":3`) {
+		t.Fatalf("capped in the demo: %s", status())
 	}
 }
 
