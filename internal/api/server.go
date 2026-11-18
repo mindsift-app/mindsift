@@ -71,7 +71,8 @@ type Server struct {
 	notifyDiscordHook func(webhookURL, heading string, items []notifyItem) error
 	notifyWebhookHook func(webhookURL, heading string, items []notifyItem) error
 	notifyPushHook    func(userID string, msg pushMessage) error
-	pushHTTPClient    *http.Client // tests: reach a local push service
+	alarmOutHook      func(channel, webhookURL string, payload map[string]any) error // tests: Discord and own webhook of alarms
+	pushHTTPClient    *http.Client                                                   // tests: reach a local push service
 	push              pushKeys
 
 	// Background jobs (tickers, compaction, backups); Close stops them

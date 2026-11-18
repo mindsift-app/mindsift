@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -697,7 +698,8 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 		}
 	}
 	if len(out.push) > 0 {
-		if err := s.sendPush(userID, pushDigest(lang, heading, out.push, s.notifyLink())); err != nil && firstErr == nil {
+		// Without a device there is nothing to deliver, and nothing to try again
+		if err := s.sendPush(userID, pushDigest(lang, heading, out.push, s.notifyLink())); err != nil && !errors.Is(err, errNoPushDevice) && firstErr == nil {
 			firstErr = err
 		}
 	}

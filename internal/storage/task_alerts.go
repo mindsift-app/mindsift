@@ -1,9 +1,12 @@
 package storage
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -152,18 +155,24 @@ func (s *Store) GetDueTasksForAlarm() ([]DueTaskAlarm, error) {
 	}
 
 	done := map[string]bool{}
-	sentRows, err := s.db.Query(`SELECT task_id, user_id, reminder FROM task_alarms_sent WHERE sent = 1`)
+	delivered := map[string][]string{}
+	sentRows, err := s.db.Query(`SELECT task_id, user_id, reminder, sent, delivered FROM task_alarms_sent`)
 	if err != nil {
 		return []DueTaskAlarm{}, err // not knowing what went out already must not send it all again
 	}
 	for sentRows.Next() {
-		var taskID, userID string
+		var taskID, userID, channels string
 		var reminder int
-		if err := sentRows.Scan(&taskID, &userID, &reminder); err != nil {
+		var sent bool
+		if err := sentRows.Scan(&taskID, &userID, &reminder, &sent, &channels); err != nil {
 			_ = sentRows.Close()
 			return []DueTaskAlarm{}, err
 		}
-		done[sentKey(taskID, userID, reminder)] = true
+		if sent {
+			done[sentKey(taskID, userID, reminder)] = true
+		} else if channels != "" {
+			delivered[sentKey(taskID, userID, reminder)] = strings.Split(channels, ",")
+		}
 	}
 	if err := sentRows.Err(); err != nil {
 		return []DueTaskAlarm{}, err
@@ -195,6 +204,7 @@ func (s *Store) GetDueTasksForAlarm() ([]DueTaskAlarm, error) {
 				a := *u
 				a.TaskID, a.Title, a.Notes, a.DueDate, a.Priority = t.ID, t.Content, t.Notes, t.DueDate, t.Priority
 				a.Reminder = reminder
+				a.Delivered = delivered[sentKey(t.ID, uid, reminder)]
 				if reminder != ReminderLeadTime {
 					a.NotifyBeforeMinutes = reminder
 				}
@@ -235,12 +245,45 @@ func (s *Store) MarkTaskAlarmSent(taskID, userID string, reminder int) error {
 	)
 }
 
-// MaxAlarmFailures: after this many runs in which no channel delivered, the alarm is given up instead of
+// MarkTaskAlarmDelivered records channels that got the alarm while others are still missing, so the next
+// run tries only those again (nobody gets a push twice because the mail failed).
+func (s *Store) MarkTaskAlarmDelivered(taskID, userID string, reminder int, channels []string) error {
+	var prev string
+	err := s.db.QueryRow(`SELECT delivered FROM task_alarms_sent WHERE task_id = ? AND user_id = ? AND reminder = ?`, taskID, userID, reminder).Scan(&prev)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	all := map[string]bool{}
+	for _, c := range append(strings.Split(prev, ","), channels...) {
+		if c != "" {
+			all[c] = true
+		}
+	}
+	list := make([]string, 0, len(all))
+	for c := range all {
+		list = append(list, c)
+	}
+	sort.Strings(list)
+	_, err = s.db.Exec(`INSERT INTO task_alarms_sent (task_id, user_id, reminder, sent, failures, delivered) VALUES (?, ?, ?, 0, 0, ?)
+		ON CONFLICT(task_id, user_id, reminder) DO UPDATE SET delivered = excluded.delivered`, taskID, userID, reminder, strings.Join(list, ","))
+	if err == nil {
+		// Someone has an entry now: a new due date or reopening clears it again
+		s.execLogged(`UPDATE thoughts SET alarm_sent = 1 WHERE id = ?`, taskID)
+	}
+	return err
+}
+
+// migrateAlarmDelivered (migration 68): which channels got an alarm that is not complete yet.
+func (s *Store) migrateAlarmDelivered() error {
+	return s.execSchemaStatement(`ALTER TABLE task_alarms_sent ADD COLUMN delivered TEXT NOT NULL DEFAULT ''`)
+}
+
+// MaxAlarmFailures: after this many runs in which a chosen channel did not deliver, the alarm is given up instead of
 // being retried every minute. A new due date or reopening the task starts over.
 const MaxAlarmFailures = 3
 
-// RecordTaskAlarmFailure counts a run in which no channel reached the person and reports whether their
-// alarm was given up now.
+// RecordTaskAlarmFailure counts a run in which a chosen channel did not reach the person and reports
+// whether their alarm was given up now.
 func (s *Store) RecordTaskAlarmFailure(taskID, userID string, reminder int) (gaveUp bool, err error) {
 	var failures int
 	err = s.db.QueryRow(`INSERT INTO task_alarms_sent (task_id, user_id, reminder, sent, failures) VALUES (?, ?, ?, 0, 1)

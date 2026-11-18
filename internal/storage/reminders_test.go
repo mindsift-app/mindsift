@@ -103,6 +103,10 @@ func TestReminderMigrationKeepsSentAlarms(t *testing.T) {
 	if err := store.migrateReminders(); err != nil {
 		t.Fatalf("migrateReminders: %v", err)
 	}
+	// The later migration 68 runs on the table this one built
+	if err := store.migrateAlarmDelivered(); err != nil {
+		t.Fatalf("migrateAlarmDelivered: %v", err)
+	}
 	if alarms, _ := store.GetDueTasksForAlarm(); len(alarms) != 0 {
 		t.Fatalf("the sent alarm stays sent: %+v", alarms)
 	}
