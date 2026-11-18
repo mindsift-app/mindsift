@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, CircleAlert, X } from 'lucide-react';
 import { useLatestRef } from '../lib/useLatestRef';
@@ -7,6 +7,21 @@ export type StatusMessage = { type: 'ok' | 'err'; text: string };
 
 // How long a confirmation stays; an error stays until it is closed
 const OK_MS = 4000;
+
+// The state of a notice for StatusToast, kept where it outlives the notice (a hook of the view): a
+// confirmation expires after its few seconds here, also while no notice shows it, so a save that ends
+// after the section was left never greets the way back with an old "Gespeichert". An error stays until it
+// is closed or replaced.
+export function useStatusMessage<T extends { type: StatusMessage['type'] }>() {
+  const [msg, setMsg] = useState<T | null>(null);
+  useEffect(() => {
+    if (msg?.type !== 'ok') return;
+    // Only this confirmation: a newer message keeps its own time
+    const timer = window.setTimeout(() => setMsg((cur) => (cur === msg ? null : cur)), OK_MS);
+    return () => window.clearTimeout(timer);
+  }, [msg]);
+  return [msg, setMsg] as const;
+}
 
 // The answer to a save in the settings ("Gespeichert", or what went wrong) as a notice at the bottom of the
 // screen, above the page instead of in it, so nothing below moves (Doku/ui-patterns.md). The live regions

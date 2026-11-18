@@ -98,6 +98,9 @@ Versions without a git tag were development states and were never published as a
 - Alarm settings: the messages after switching push on or off and after a test push appear as a notice at the bottom of the screen like the other settings' messages, instead of pushing the page down.
 - Settings: a "Saved" message no longer shows up again when you leave a section within a few seconds and come back.
 - Custom themes from an import or a restored backup appear right away instead of only after reloading the page.
+- Account settings on phones: the test buttons of the alarm channels, the push device remove button, the save buttons, the avatar and emoji buttons, the web address fields and the appearance options are now big enough to tap (at least 44 px high).
+- Voice input in the administration: when a model downloaded with "use after download" becomes the model in use, the audit log now records the switch as a change by the admin who asked for it.
+- Settings: a "Saved" confirmation of a change that finished only after you left the section no longer appears when you come back; errors still stay until closed.
 - Many smaller fixes in live drawing, linked to-dos, sharing, reconnecting and translations.
 
 ## [0.95.0] - 2026-11-12

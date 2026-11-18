@@ -6,6 +6,7 @@ import { AvatarPlacement, cropImageToDataUrl, loadImageFile } from '../../../lib
 import { clearStoredNotes } from '../../../lib/docSync/persist';
 import { withSecondFactor } from './askSecondFactor';
 import { errorMessage } from '../../../lib/errorMessage';
+import { StatusMessage, useStatusMessage } from '../../../components/StatusToast';
 
 // Kontoeinstellungen → Profil: name, username, login address, avatar, and the danger zone (delete own data
 // or the account). Lives in the view, so unsaved input survives switching sections. Password, two-factor
@@ -16,7 +17,7 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
   const [email, setEmail] = useState(currentUser.email || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser.avatarUrl || '');
   const [currentPassword, setCurrentPassword] = useState('');
-  const [profileMsg, setProfileMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [profileMsg, setProfileMsg] = useStatusMessage<StatusMessage>();
   const [savingProfile, setSavingProfile] = useState(false);
   const [isProcessingAvatar, setIsProcessingAvatar] = useState(false);
   // A picked picture waiting to be placed in the frame (AvatarCropSheet)

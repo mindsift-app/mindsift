@@ -18,7 +18,7 @@ import themeTemplateCss from '../../../themes/theme-template.css?raw';
 import { downloadThemeCss, resetThemeColor, setThemeColor, ThemeColorVar, themeNameFromFile } from '../../../lib/themeCss';
 import { errorMessage } from '../../../lib/errorMessage';
 import { useLatestRef } from '../../../lib/useLatestRef';
-import type { StatusMessage } from '../../../components/StatusToast';
+import { StatusMessage, useStatusMessage } from '../../../components/StatusToast';
 
 // Kontoeinstellungen → Darstellung & Themes: the device settings (corners, accent, borders, system theme,
 // link previews, journal) and the own themes. Lives in the view, so a pending colour save survives
@@ -36,7 +36,7 @@ export function useAppearanceSettings(
   const [accent, setAccent] = useState<string | null>(getAccentColor);
 
   // --- Own themes: one row each (name, colour tiles, export, delete), "+" adds one from the template ---
-  const [themeMsg, setThemeMsg] = useState<StatusMessage | null>(null);
+  const [themeMsg, setThemeMsg] = useStatusMessage<StatusMessage>();
   const [addingTheme, setAddingTheme] = useState(false);
   const themeFileRef = useRef<HTMLInputElement>(null);
   // The latest list, also between two renders (a colour picker fires many changes in a row)

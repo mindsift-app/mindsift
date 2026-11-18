@@ -1,6 +1,6 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { UserSettingsView } from '../UserSettingsView';
 import { api } from '../../../lib/api';
 import { User } from '../../../lib/types';
@@ -50,6 +50,9 @@ describe('Kontoeinstellungen, die sofort speichern', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('confirms a retention change with "Gespeichert" and reloads nothing else', async () => {
     const { onUserUpdated, onDataChanged } = renderView();
@@ -77,5 +80,33 @@ describe('Kontoeinstellungen, die sofort speichern', () => {
     expect(screen.getByRole('status').textContent).toBe('');
     fireEvent.click(screen.getByRole('button', { name: 'Schließen' }));
     expect(screen.getByRole('alert').textContent).toBe('');
+  });
+
+  it('never shows a confirmation older than its few seconds after returning; an error waits', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    let finish: (u: User) => void = () => {};
+    vi.mocked(api.updateSettings).mockImplementationOnce(() => new Promise<User>((resolve) => (finish = resolve)));
+    renderView();
+    fireEvent.click(screen.getByText('Sprache'));
+    fireEvent.click(screen.getByTitle('Datum und Menge beim Tippen erkennen'));
+    // The save ends only after the section was left
+    fireEvent.click(screen.getByText('Profil'));
+    await act(async () => finish({ ...baseUser, typedRecognition: false }));
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+    fireEvent.click(screen.getByText('Sprache'));
+    expect(screen.queryByText('Gespeichert')).toBeNull();
+
+    let fail: (e: Error) => void = () => {};
+    vi.mocked(api.updateSettings).mockImplementationOnce(() => new Promise<User>((_, reject) => (fail = reject)));
+    fireEvent.click(screen.getByRole('radio', { name: /English/ }));
+    fireEvent.click(screen.getByText('Profil'));
+    await act(async () => fail(new Error('Server nicht erreichbar')));
+    act(() => {
+      vi.advanceTimersByTime(10000);
+    });
+    fireEvent.click(screen.getByText('Sprache'));
+    expect(screen.getByRole('alert').textContent).toContain('Server nicht erreichbar');
   });
 });
