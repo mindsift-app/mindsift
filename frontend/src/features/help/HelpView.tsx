@@ -94,7 +94,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
             <button
               type="button"
               onClick={onBack}
-              className="btn-icon"
+              className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
               title={t('back')}
             >
               <ArrowLeft className="w-4 h-4" />

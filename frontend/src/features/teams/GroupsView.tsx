@@ -200,7 +200,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
   if (isSharingDisabled()) {
     return (
       <div className="w-full space-y-3">
-        <button onClick={onBack} className="btn-action h-8 px-2.5 text-xs flex items-center gap-1.5 cursor-pointer">
+        <button onClick={onBack} className="btn-action h-11 sm:h-8 px-2.5 text-xs flex items-center gap-1.5 cursor-pointer">
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>{t('back')}</span>
         </button>
@@ -216,7 +216,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="btn-action h-8 px-2.5 text-xs flex items-center gap-1.5 cursor-pointer"
+            className="btn-action h-11 sm:h-8 px-2.5 text-xs flex items-center gap-1.5 cursor-pointer"
             title={t('back')}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
