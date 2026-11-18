@@ -165,7 +165,7 @@ func cloneSystemSettings(in *domain.SystemSettings) *domain.SystemSettings {
 		v := *out.ServerTime
 		out.ServerTime = &v
 	}
-	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks, &out.LinkPreviews, &out.CalendarFeeds} {
+	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks, &out.LinkPreviews, &out.CalendarFeeds, &out.AudioUploads} {
 		if *p != nil {
 			v := **p
 			*p = &v
@@ -283,9 +283,12 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 				if n, err := strconv.Atoi(v); err == nil && ValidAudioBitrate(n) {
 					settings.AudioBitrate = n
 				}
-			case "audio_upload_max_mb":
+			case "audio_uploads":
+				on := v != "false"
+				settings.AudioUploads = &on
+			case "audio_limit_mb":
 				if n, err := strconv.Atoi(v); err == nil && n >= 1 {
-					settings.AudioUploadMaxMB = n
+					settings.AudioLimitMB = n
 				}
 			case "time_zone":
 				zone := v
@@ -348,8 +351,12 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	if settings.AudioBitrate == 0 {
 		settings.AudioBitrate = DefaultAudioBitrate
 	}
-	if settings.AudioUploadMaxMB == 0 {
-		settings.AudioUploadMaxMB = DefaultAudioUploadMaxMB
+	if settings.AudioUploads == nil {
+		on := true
+		settings.AudioUploads = &on
+	}
+	if settings.AudioLimitMB == 0 {
+		settings.AudioLimitMB = DefaultAudioLimitMB
 	}
 	if settings.TimeZone == nil {
 		notSet := ""
@@ -503,12 +510,16 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_bitrate', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(settings.AudioBitrate))
 	}
-	if err == nil && settings.AudioUploadMaxMB != 0 {
-		if settings.AudioUploadMaxMB < 1 {
-			return ErrInvalidAudioUploadMax
+	if err == nil && settings.AudioUploads != nil {
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_uploads', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.AudioUploads))
+	}
+	if err == nil && settings.AudioLimitMB != 0 {
+		if settings.AudioLimitMB < 1 {
+			return ErrInvalidAudioLimit
 		}
-		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_upload_max_mb', ?)
-			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(settings.AudioUploadMaxMB))
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_limit_mb', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(settings.AudioLimitMB))
 	}
 	if err == nil && settings.TimeZone != nil {
 		zone := strings.TrimSpace(*settings.TimeZone)
@@ -570,20 +581,21 @@ func ValidImageQuality(v string) bool {
 }
 
 // Audio in notes (domain.SystemSettings.AudioCompression): "recordings" records with AudioBitrate,
-// "off" leaves the bitrate to the browser. Uploaded audio files are never re-encoded.
+// "off" leaves the bitrate to the browser. Uploaded audio files are never re-encoded. AudioLimitMB
+// applies to recordings and uploaded files alike.
 const (
 	AudioCompressionRecordings = "recordings"
 	AudioCompressionOff        = "off"
 	DefaultAudioBitrate        = 32 // kbit/s, plenty for speech in Opus
 	MinAudioBitrate            = 8
 	MaxAudioBitrate            = 320
-	DefaultAudioUploadMaxMB    = 7
+	DefaultAudioLimitMB        = 7
 )
 
 var (
 	ErrInvalidAudioCompression = i18n.NewError("Ungültige Audio-Komprimierung (erlaubt: recordings, off)")
 	ErrInvalidAudioBitrate     = i18n.NewError("Ungültige Bitrate (erlaubt: 8 bis 320 kbit/s)")
-	ErrInvalidAudioUploadMax   = i18n.NewError("Ungültige Größenbegrenzung für Audiodateien")
+	ErrInvalidAudioLimit       = i18n.NewError("Ungültige Größenbegrenzung für Audiodateien")
 )
 
 func ValidAudioCompression(v string) bool {

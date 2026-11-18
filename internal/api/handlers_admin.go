@@ -588,7 +588,8 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 	audio := s.audioSettings()
 	out.AudioCompression, out.AudioCompressionViaEnv = audio.Compression, s.cfg.Media.AudioCompression != ""
 	out.AudioBitrate, out.AudioBitrateViaEnv = audio.Bitrate, s.cfg.Media.AudioBitrate > 0
-	out.AudioUploadMaxMB, out.AudioUploadMaxMBViaEnv = audio.UploadMaxMB, s.cfg.Media.AudioUploadMaxMB > 0
+	out.AudioLimitMB, out.AudioLimitMBViaEnv = audio.LimitMB, s.cfg.Media.AudioLimitMB > 0
+	out.AudioUploads, out.AudioUploadsViaEnv = &audio.Uploads, s.cfg.Media.AudioUploads != nil
 	out.AudioMaxMB = int(s.mediaLimit("audio") >> 20)
 	out.EmailLinksAvailable = s.emailLinksAvailable()
 	out.DefaultLanguage = s.defaultLanguage()
@@ -688,11 +689,15 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	if s.cfg.Media.AudioBitrate > 0 {
 		settings.AudioBitrate = 0 // fixed by MEDIA_AUDIO_BITRATE
 	}
-	if s.cfg.Media.AudioUploadMaxMB > 0 {
-		settings.AudioUploadMaxMB = 0 // fixed by MEDIA_AUDIO_UPLOAD_MAX_MB
+	if s.cfg.Media.AudioLimitMB > 0 {
+		settings.AudioLimitMB = 0 // fixed by MEDIA_AUDIO_LIMIT_MB
 	}
+	if s.cfg.Media.AudioUploads != nil {
+		settings.AudioUploads = nil // fixed by MEDIA_AUDIO_UPLOADS
+	}
+	settings.AudioUploadsViaEnv = false
 	settings.PeopleSearchViaEnv, settings.PublicLinksViaEnv, settings.PublicLinkMaxDaysViaEnv, settings.CalendarFeedsViaEnv = false, false, false, false
-	settings.ImageQualityViaEnv, settings.AudioCompressionViaEnv, settings.AudioBitrateViaEnv, settings.AudioUploadMaxMBViaEnv = false, false, false, false
+	settings.ImageQualityViaEnv, settings.AudioCompressionViaEnv, settings.AudioBitrateViaEnv, settings.AudioLimitMBViaEnv = false, false, false, false
 	settings.AudioMaxMB = 0 // read only
 	if settings.MFARequired != nil && !storage.ValidMFARequired(*settings.MFARequired) {
 		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidMFARequired)
@@ -710,7 +715,7 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidAudioBitrate)
 		return
 	}
-	if max := int(s.mediaLimit("audio") >> 20); settings.AudioUploadMaxMB < 0 || settings.AudioUploadMaxMB > max {
+	if max := int(s.mediaLimit("audio") >> 20); settings.AudioLimitMB < 0 || settings.AudioLimitMB > max {
 		writeErrorFrom(w, http.StatusBadRequest, i18n.NewError("Größenbegrenzung für Audiodateien: 1 bis {mb} MB", "mb", strconv.Itoa(max)))
 		return
 	}

@@ -236,6 +236,11 @@ export class VoiceRecorder {
   }
 
   /** Input level 0..1 (roughly loudness), or null when unknown. */
+  /** Bytes recorded so far in the current segment (the file grows about once a second). */
+  recordedBytes(): number {
+    return this.chunks.reduce((sum, c) => sum + c.size, 0);
+  }
+
   level(): number | null {
     if (!this.analyser || !this.samples) return null;
     this.analyser.getByteTimeDomainData(this.samples as Uint8Array<ArrayBuffer>);

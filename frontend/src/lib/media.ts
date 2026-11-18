@@ -153,21 +153,24 @@ export function serverImageQuality(): ImageQuality {
 }
 
 /** Audio in notes as the server says (`audio` in /auth/status): recordings at `bitrate` kbit/s unless
- * compression is off; files chosen from the device up to `uploadMaxMB`. */
+ * compression is off; every audio file, recorded or uploaded, up to `limitMB`; files from the device
+ * only while `uploads` is on. */
 export interface AudioSettings {
   compression: 'recordings' | 'off';
   bitrate: number;
-  uploadMaxMB: number;
+  limitMB: number;
+  uploads: boolean;
 }
 
-const DEFAULT_AUDIO: AudioSettings = { compression: 'recordings', bitrate: 32, uploadMaxMB: 7 };
+const DEFAULT_AUDIO: AudioSettings = { compression: 'recordings', bitrate: 32, limitMB: 7, uploads: true };
 let serverAudio: AudioSettings = DEFAULT_AUDIO;
 
 export function setServerAudioSettings(v: Partial<AudioSettings> | undefined | null): void {
   serverAudio = {
     compression: v?.compression === 'off' ? 'off' : 'recordings',
     bitrate: typeof v?.bitrate === 'number' && v.bitrate > 0 ? v.bitrate : DEFAULT_AUDIO.bitrate,
-    uploadMaxMB: typeof v?.uploadMaxMB === 'number' && v.uploadMaxMB > 0 ? v.uploadMaxMB : DEFAULT_AUDIO.uploadMaxMB,
+    limitMB: typeof v?.limitMB === 'number' && v.limitMB > 0 ? v.limitMB : DEFAULT_AUDIO.limitMB,
+    uploads: v?.uploads !== false,
   };
 }
 
@@ -176,9 +179,14 @@ export function audioRecordingBitrate(): number | undefined {
   return serverAudio.compression === 'off' ? undefined : serverAudio.bitrate * 1000;
 }
 
-/** The largest audio file that may be uploaded from the device, in MB. */
-export function audioUploadMaxMB(): number {
-  return serverAudio.uploadMaxMB;
+/** The largest audio file in a note, recorded or uploaded, in MB. */
+export function audioLimitMB(): number {
+  return serverAudio.limitMB;
+}
+
+/** Whether audio files may be uploaded from the device (else only recordings). */
+export function audioUploadsAllowed(): boolean {
+  return serverAudio.uploads;
 }
 
 function canvasBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
