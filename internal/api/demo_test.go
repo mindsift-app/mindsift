@@ -227,3 +227,38 @@ func TestDemoResetAnnouncesNextDeadlineBeforeGateOpens(t *testing.T) {
 		t.Errorf("status after the reset should announce the next deadline, got %d s", got)
 	}
 }
+
+func TestDemoStatusCarriesCountdownRightAfterStart(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "demo_countdown.db")
+	store, err := storage.NewStore(dbPath, storage.WithDemoMode())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	if err := store.ResetAndSeedDemo(); err != nil {
+		t.Fatal(err)
+	}
+	srv := NewServer(&config.Config{DatabasePath: dbPath, JWTSecret: "demo-secret", DemoMode: true, DemoResetMinutes: 20}, store, ws.NewHub(), nil)
+	t.Cleanup(srv.Close)
+
+	// No waiting for the ticker's goroutine: the first request already gets the countdown
+	rec := httptest.NewRecorder()
+	srv.Router().ServeHTTP(rec, httptest.NewRequest("GET", "/api/v1/auth/status", nil))
+	var st struct {
+		DemoNextReset      string `json:"demoNextReset"`
+		DemoResetInSeconds *int   `json:"demoResetInSeconds"`
+		DemoResetMinutes   int    `json:"demoResetMinutes"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &st); err != nil {
+		t.Fatalf("status: %d %s", rec.Code, rec.Body.String())
+	}
+	if st.DemoNextReset == "" || st.DemoResetInSeconds == nil || st.DemoResetMinutes != 20 {
+		t.Fatalf("countdown missing right after the start: %s", rec.Body.String())
+	}
+	if got := *st.DemoResetInSeconds; got < 19*60 || got > 20*60 {
+		t.Errorf("the first reset should be about 20 minutes away, got %d s", got)
+	}
+	if next, err := time.Parse(time.RFC3339, st.DemoNextReset); err != nil || time.Until(next) < 19*time.Minute {
+		t.Errorf("demoNextReset: %q %v", st.DemoNextReset, err)
+	}
+}

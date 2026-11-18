@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -967,22 +968,81 @@ func (s *Server) summaryMail(lang, name string, items []notifyItem, now time.Tim
 // --- Daily summary ---
 
 // dailySummaryWindow: the summary goes out in this time after the chosen time, a failed channel is tried
-// again in every run within it.
-const dailySummaryWindow = 30 * time.Minute
+// again within it, at most every dailySummaryRetryEvery (about 6 attempts). The spacing matters: the job
+// runs the users one after another, so every attempt against a mail server that is down holds up the
+// summaries of everyone after them by the SMTP timeout.
+const (
+	dailySummaryWindow     = 30 * time.Minute
+	dailySummaryRetryEvery = 5 * time.Minute
+)
+
+// summaryRetries: when the failed channels of a user's daily summary are tried next (only in memory: after
+// a restart they are tried in the first run).
+type summaryRetries struct {
+	mu   sync.Mutex
+	next map[string]summaryRetry
+}
+
+type summaryRetry struct {
+	day string
+	at  time.Time
+}
+
+// due: whether the retry of the summary of day may run now.
+func (r *summaryRetries) due(userID, day string, now time.Time) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	n, ok := r.next[userID]
+	return !ok || n.day != day || !now.Before(n.at)
+}
+
+// set records the next attempt; a zero time forgets it.
+func (r *summaryRetries) set(userID, day string, at time.Time) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if at.IsZero() {
+		delete(r.next, userID)
+		return
+	}
+	if r.next == nil {
+		r.next = map[string]summaryRetry{}
+	}
+	r.next[userID] = summaryRetry{day: day, at: at}
+}
+
+// dailySummarySlot: the day whose summary the run at now looks after and its chosen time: today's from
+// the chosen time on; before it yesterday's when its window reached midnight (chosen time from 23:30 on),
+// so its retries go on until the window ends and what is left is given up then.
+func dailySummarySlot(now time.Time, chosen string) (day string, at time.Time, ok bool) {
+	day = now.Format("2006-01-02")
+	at, err := time.ParseInLocation("2006-01-02 15:04", day+" "+chosen, now.Location())
+	if err != nil {
+		return "", time.Time{}, false
+	}
+	if !now.Before(at) {
+		return day, at, true
+	}
+	yesterday := now.AddDate(0, 0, -1).Format("2006-01-02")
+	at, err = time.ParseInLocation("2006-01-02 15:04", yesterday+" "+chosen, now.Location())
+	if err != nil || at.Add(dailySummaryWindow).Format("2006-01-02") == yesterday {
+		return "", time.Time{}, false // the window ends the same day: nothing left of yesterday's
+	}
+	return yesterday, at, true
+}
 
 // sendDailySummaries sends each user who wants one their summary in the 30 minutes after the chosen
-// time (server time zone), once a day. Nothing due → no message.
+// time (server time zone), once a day; a window that starts late in the evening runs on past midnight.
+// Nothing due → no message.
 func (s *Server) sendDailySummaries(now time.Time) {
 	now = clock.In(now)
-	day := now.Format("2006-01-02")
 	for _, uid := range s.store.ActiveUserIDs() {
 		set := s.store.NotificationSettingsOf(uid)
 		ds := set.DailySummary
 		if set.Paused || !ds.Enabled || (!ds.Email && !ds.Discord && !ds.Webhook && !ds.Push) {
 			continue
 		}
-		at, err := time.ParseInLocation("2006-01-02 15:04", day+" "+ds.Time, now.Location())
-		if err != nil || now.Before(at) {
+		day, at, ok := dailySummarySlot(now, ds.Time)
+		if !ok {
 			continue
 		}
 		retry, claimed := s.store.DailySummaryRetry(uid, day)
@@ -990,16 +1050,18 @@ func (s *Server) sendDailySummaries(now time.Time) {
 			if len(retry) > 0 {
 				slog.Warn("Daily summary given up on channels that kept failing", "channels", strings.Join(retry, ","), "user_id", uid)
 				logFailed("Clearing the channels of a daily summary given up", s.store.SetDailySummaryRetry(uid, day, nil), "user_id", uid)
+				s.summaryRetries.set(uid, day, time.Time{})
 			}
 			continue
 		}
-		if claimed && len(retry) == 0 {
-			continue // sent today, every channel got it
+		if claimed && (len(retry) == 0 || !s.summaryRetries.due(uid, day, now)) {
+			continue // sent, every channel got it; or the failed ones wait for their next attempt
 		}
 		items := s.summaryItems(uid, now)
 		if len(items) == 0 {
 			if claimed { // nothing left to tell (tasks done since): no retry
 				logFailed("Clearing the channels of a daily summary", s.store.SetDailySummaryRetry(uid, day, nil), "user_id", uid)
+				s.summaryRetries.set(uid, day, time.Time{})
 			}
 			continue
 		}
@@ -1023,6 +1085,11 @@ func (s *Server) sendDailySummaries(now time.Time) {
 		}
 		if claimed || len(again) > 0 {
 			logFailed("Recording the channels of a daily summary to try again", s.store.SetDailySummaryRetry(uid, day, again), "user_id", uid)
+		}
+		if len(again) > 0 {
+			s.summaryRetries.set(uid, day, now.Add(dailySummaryRetryEvery))
+		} else if claimed {
+			s.summaryRetries.set(uid, day, time.Time{})
 		}
 	}
 }
