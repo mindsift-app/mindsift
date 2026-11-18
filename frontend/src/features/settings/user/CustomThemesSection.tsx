@@ -5,6 +5,7 @@ import { UserTheme } from '../../../lib/types';
 import { customThemeId, ThemeId } from '../../../lib/theme';
 import { hasOwnThemeColor, readThemeVar, resolveThemeColor, THEME_COLOR_VARS, THEME_EXTRA_COLOR_VARS, THEME_STATUS_COLOR_VARS, ThemeColorVar } from '../../../lib/themeCss';
 import { ConfirmPopover } from '../../../components/ConfirmPopover';
+import { StatusToast } from '../../../components/StatusToast';
 import { useAppearanceSettings } from './useAppearanceSettings';
 
 type Appearance = ReturnType<typeof useAppearanceSettings>;
@@ -32,6 +33,7 @@ export function CustomThemesSection({
   const { t } = useTranslation('settings');
   const {
     themeMsg,
+    setThemeMsg,
     addingTheme,
     setAddingTheme,
     themeFileRef,
@@ -103,11 +105,7 @@ export function CustomThemesSection({
       </div>
       <p className="text-[11px] text-faint leading-relaxed">{t('appearance.custom.hint')}</p>
 
-      {themeMsg && (
-        <p className={`text-[11px] ${themeMsg.type === 'ok' ? 'text-status-ok' : 'text-status-err'}`} role="status">
-          {themeMsg.text}
-        </p>
-      )}
+      <StatusToast msg={themeMsg} onClose={() => setThemeMsg(null)} />
 
       {confirm && (
         <ConfirmPopover

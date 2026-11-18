@@ -305,12 +305,37 @@ func (s *Store) OpenTasksDueBefore(userID, beforeDay string) ([]SummaryTask, err
 
 // ClaimDailySummary marks today's summary as sent; false when it was already sent today.
 func (s *Store) ClaimDailySummary(userID, day string) bool {
-	res, err := s.db.Exec(`UPDATE users SET last_daily_summary = ? WHERE id = ? AND last_daily_summary != ?`, day, userID, day)
+	res, err := s.db.Exec(`UPDATE users SET last_daily_summary = ?, daily_summary_retry = '' WHERE id = ? AND last_daily_summary != ?`, day, userID, day)
 	if dbFailed(err) {
 		return false
 	}
 	n, _ := res.RowsAffected()
 	return n == 1
+}
+
+// DailySummaryRetry: whether the summary of the day was claimed already, and the channels that failed
+// then and are still to be tried again (none: every channel got it).
+func (s *Store) DailySummaryRetry(userID, day string) (channels []string, claimed bool) {
+	var last, retry string
+	if dbFailed(s.db.QueryRow(`SELECT last_daily_summary, daily_summary_retry FROM users WHERE id = ?`, userID).Scan(&last, &retry)) || last != day {
+		return nil, false
+	}
+	if retry != "" {
+		channels = strings.Split(retry, ",")
+	}
+	return channels, true
+}
+
+// SetDailySummaryRetry records the channels the summary of the day is still to be tried on (none: done).
+func (s *Store) SetDailySummaryRetry(userID, day string, channels []string) error {
+	_, err := s.db.Exec(`UPDATE users SET daily_summary_retry = ? WHERE id = ? AND last_daily_summary = ?`, strings.Join(channels, ","), userID, day)
+	return err
+}
+
+// migrateDailySummaryRetry (migration 70): the channels a daily summary failed on, tried again within
+// its window.
+func (s *Store) migrateDailySummaryRetry() error {
+	return s.addColumnIfMissing("users", "daily_summary_retry", "TEXT NOT NULL DEFAULT ''")
 }
 
 // SharedFolderName is the display name of a shared workspace folder.

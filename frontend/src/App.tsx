@@ -924,10 +924,8 @@ export const App: React.FC = () => {
                 customThemes={customThemes}
                 onThemeChange={handleChangeTheme}
                 onCustomThemesChange={handleCustomThemesChange}
-                onUserUpdated={(u) => {
-                  setUser(u);
-                  refreshAll();
-                }}
+                onUserUpdated={setUser}
+                onDataChanged={refreshAll}
                 onBack={() => setActiveTab('triage')}
               />
             )}

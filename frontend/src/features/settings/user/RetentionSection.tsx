@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import i18n from '../../../i18n';
 import { Retention, User } from '../../../lib/types';
-import { api } from '../../../lib/api';
 import { SelectMenu } from '../../../components/SelectMenu';
-import { StatusToast } from '../../../components/StatusToast';
-import { errorMessage } from '../../../lib/errorMessage';
+import { InstantSaveToast, useInstantSave } from './InstantSave';
 
 // Kontoeinstellungen → Aufbewahrung: the areas and the delays offered (storage.RetentionChoices); texts in
 // settings:retention.areas.<key> and settings:retention.options.<days>
@@ -14,22 +11,13 @@ const RETENTION_DAYS = [7, 14, 30, 90, 365, 730, 0];
 
 // Retention: one delay per area (storage/retention.go); "nie" only when the server allows it
 export function useRetentionSettings(currentUser: User, onUserUpdated: (u: User) => void) {
-  const [retentionSaving, setRetentionSaving] = useState(false);
-  const [retentionError, setRetentionError] = useState<string | null>(null);
+  const instant = useInstantSave(onUserUpdated);
   const handleChangeRetention = async (key: keyof Retention, days: number) => {
     if (!currentUser.retention) return;
-    setRetentionSaving(true);
-    setRetentionError(null);
-    try {
-      onUserUpdated(await api.updateSettings({ retention: { ...currentUser.retention, [key]: days } }));
-    } catch (err) {
-      setRetentionError(errorMessage(err, i18n.t('settings:api.saveFailed')));
-    } finally {
-      setRetentionSaving(false);
-    }
+    await instant.save({ retention: { ...currentUser.retention, [key]: days } });
   };
 
-  return { retentionSaving, retentionError, setRetentionError, handleChangeRetention };
+  return { instant, retentionSaving: instant.saving, handleChangeRetention };
 }
 
 // Kontoeinstellungen → Aufbewahrung
@@ -41,7 +29,7 @@ export function RetentionSection({
   currentUser: User;
 }) {
   const { t } = useTranslation('settings');
-  const { retentionSaving, retentionError, setRetentionError, handleChangeRetention } = retention;
+  const { instant, retentionSaving, handleChangeRetention } = retention;
   return (
     <div className="space-y-5">
       <div className="border-b border-border pb-3">
@@ -50,7 +38,7 @@ export function RetentionSection({
           {t('retention.intro')}
         </p>
       </div>
-      <StatusToast msg={retentionError ? { type: 'err', text: retentionError } : null} onClose={() => setRetentionError(null)} />
+      <InstantSaveToast save={instant} />
       {currentUser.retention && (
         <div className="divide-y divide-border">
           {RETENTION_AREAS.map((key) => {

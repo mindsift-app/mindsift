@@ -173,6 +173,7 @@
     "signingOut": "Cerrando sesión…"
   },
   "api": {
+    "saved": "Guardado",
     "saveFailed": "Error al guardar",
     "sim": {
       "chooseList": "❌ Por favor, elige una lista.",

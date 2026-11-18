@@ -8,8 +8,9 @@ import { SectionPicker } from './SectionPicker';
 import { formatDateTime } from '../../lib/format';
 import { errorMessage } from '../../lib/errorMessage';
 
-// The user's own automatic backups on the server: download or restore (all or some sections)
-export const ServerBackupsCard: React.FC = () => {
+// The user's own automatic backups on the server: download or restore (all or some sections); after a
+// restore the app loads the own data again (onRestored)
+export const ServerBackupsCard: React.FC<{ onRestored?: () => void }> = ({ onRestored }) => {
   const { t } = useTranslation('settings');
   const [files, setFiles] = useState<BackupFile[]>([]);
   const [open, setOpen] = useState<string | null>(null); // backup being restored
@@ -38,6 +39,7 @@ export const ServerBackupsCard: React.FC = () => {
     try {
       setResult(await api.restoreMyBackup(open, mode, sections));
       setConfirm(false);
+      onRestored?.();
     } catch (err) {
       setError(errorMessage(err, t('backups.restoreFailed')));
     } finally {

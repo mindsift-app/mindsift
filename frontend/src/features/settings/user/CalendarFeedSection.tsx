@@ -6,6 +6,7 @@ import { CalendarFeedState } from '../../../lib/types';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { askConfirm } from '../../../components/askConfirm';
+import { StatusMessage, StatusToast } from '../../../components/StatusToast';
 import { errorMessage } from '../../../lib/errorMessage';
 
 // Calendar apps with a short how-to each (settings:calendarFeed.apps.<key>)
@@ -18,21 +19,25 @@ export const CalendarFeedSection: React.FC = () => {
   const { t } = useTranslation('settings');
   const [state, setState] = useState<CalendarFeedState | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  // The answer to a switch or a new link, and loading errors (StatusToast, Doku/ui-patterns.md)
+  const [msg, setMsg] = useState<StatusMessage | null>(null);
   const [copied, setCopied] = useState(false);
   const urlRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    api.getCalendarFeed().then(setState).catch((err) => setError(errorMessage(err, t('calendarFeed.loadFailed'))));
+    api
+      .getCalendarFeed()
+      .then(setState)
+      .catch((err) => setMsg({ type: 'err', text: errorMessage(err, t('calendarFeed.loadFailed')) }));
   }, [t]);
 
   const run = async (fn: () => Promise<CalendarFeedState>) => {
     setBusy(true);
-    setError('');
     try {
       setState(await fn());
+      setMsg({ type: 'ok', text: t('api.saved') });
     } catch (err) {
-      setError(errorMessage(err, t('api.saveFailed')));
+      setMsg({ type: 'err', text: errorMessage(err, t('api.saveFailed')) });
     } finally {
       setBusy(false);
     }
@@ -68,7 +73,7 @@ export const CalendarFeedSection: React.FC = () => {
         <p className="text-muted mt-0.5">{t('calendarFeed.intro')}</p>
       </div>
 
-      {error && <p className="text-[11px] text-status-err">{error}</p>}
+      <StatusToast msg={msg} onClose={() => setMsg(null)} />
 
       {state && !state.enabled && <p className="text-muted">{t('calendarFeed.serverOff')}</p>}
 

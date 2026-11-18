@@ -19,7 +19,6 @@
   "title": "Groups",
   "intro": "Create groups (e.g. family, flatmates or a project team) from people you can see, and share notes, tasks and lists with all of them at once.",
   "newGroup": "New group",
-  "close": "Close",
   "create": {
     "title": "Create a new group",
     "name": "Group name *",

@@ -1,34 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../../../lib/types';
-import { api } from '../../../lib/api';
-import { errorMessage } from '../../../lib/errorMessage';
-import { showError } from '../../../components/ErrorNotice';
 import i18n, { languageName } from '../../../i18n';
 import type { EffectiveVoiceMode } from '../../../lib/voice';
 import { voiceLanguageOptions } from '../../../lib/voiceLanguages';
 import { SelectMenu } from '../../../components/SelectMenu';
+import { InstantSaveToast, useInstantSave } from './InstantSave';
 
 // Voice input: Whisper server or the browser (only offered with a Whisper server that allows the
 // browser), and the language spoken into the microphone
 export function useVoiceSetting(onUserUpdated: (u: User) => void) {
-  const [voiceSaving, setVoiceSaving] = useState(false);
+  const instant = useInstantSave(onUserUpdated);
 
-  const save = async (settings: { voiceInput?: '' | 'browser'; voiceLanguage?: string }) => {
-    setVoiceSaving(true);
-    try {
-      onUserUpdated(await api.updateSettings(settings));
-    } catch (err) {
-      showError(errorMessage(err, i18n.t('settings:api.saveFailed')));
-    } finally {
-      setVoiceSaving(false);
-    }
-  };
+  const handleChangeVoiceInput = (next: '' | 'browser') => instant.save({ voiceInput: next });
+  const handleChangeVoiceLanguage = (next: string) => instant.save({ voiceLanguage: next });
 
-  const handleChangeVoiceInput = (next: '' | 'browser') => save({ voiceInput: next });
-  const handleChangeVoiceLanguage = (next: string) => save({ voiceLanguage: next });
-
-  return { voiceSaving, handleChangeVoiceInput, handleChangeVoiceLanguage };
+  return { instant, voiceSaving: instant.saving, handleChangeVoiceInput, handleChangeVoiceLanguage };
 }
 
 // Kontoeinstellungen → Spracheingabe
@@ -44,7 +31,7 @@ export function VoiceSection({
   mode?: EffectiveVoiceMode;
 }) {
   const { t } = useTranslation('settings');
-  const { voiceSaving, handleChangeVoiceInput, handleChangeVoiceLanguage } = voice;
+  const { instant, voiceSaving, handleChangeVoiceInput, handleChangeVoiceLanguage } = voice;
   // Whisper does the recognition (only then "automatic" works)
   const whisper = choice ? (currentUser.voiceInput || '') === '' : mode === 'server';
   // No choice yet means automatic
@@ -56,6 +43,7 @@ export function VoiceSection({
         <h2 className="text-sm font-bold text-main">{t('voice.title')}</h2>
         <p className="text-muted mt-0.5">{t('voice.intro')}</p>
       </div>
+      <InstantSaveToast save={instant} />
       {choice && (
         <div className="space-y-2" role="radiogroup" aria-label={t('voice.title')}>
           {([

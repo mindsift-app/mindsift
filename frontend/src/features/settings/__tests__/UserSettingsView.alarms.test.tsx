@@ -44,6 +44,7 @@ describe('UserSettingsView notification matrix', () => {
         onThemeChange={() => {}}
         onCustomThemesChange={() => {}}
         onUserUpdated={onUserUpdated}
+        onDataChanged={() => {}}
         onBack={() => {}}
       />
     );
@@ -121,6 +122,7 @@ describe('UserSettingsView notification matrix', () => {
         onThemeChange={() => {}}
         onCustomThemesChange={() => {}}
         onUserUpdated={() => {}}
+        onDataChanged={() => {}}
         onBack={() => {}}
       />
     );
@@ -153,6 +155,7 @@ describe('UserSettingsView notification matrix', () => {
         onThemeChange={() => {}}
         onCustomThemesChange={() => {}}
         onUserUpdated={() => {}}
+        onDataChanged={() => {}}
         onBack={() => {}}
       />
     );

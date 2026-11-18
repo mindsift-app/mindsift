@@ -104,9 +104,45 @@ describe('SelectMenu (dropdown in the app look)', () => {
     expect(before).toEqual(['Hoch', 'Aus (Bilder unverändert hochladen)']);
     rerender(<SelectMenu ariaLabel="Bildqualität" value="off" options={quality} onChange={() => {}} />);
     expect(reserved(button)).toEqual(before);
-    // The reserve is no text of the page; the chosen label is, and a cut-short one shows on hover
+    // The reserve is no text of the page; the chosen label is
     expect(button.textContent).toBe('Aus (Bilder unverändert hochladen)');
+  });
+
+  // The label that is shown (the reserve spans are aria-hidden)
+  const shownLabel = (button: HTMLElement) => button.querySelector('span.grid > span:not([data-label])') as HTMLElement;
+  const setWidths = (el: HTMLElement, scroll: number, client: number) => {
+    Object.defineProperty(el, 'scrollWidth', { configurable: true, value: scroll });
+    Object.defineProperty(el, 'clientWidth', { configurable: true, value: client });
+  };
+
+  it('shows the chosen label as tooltip only when it is cut short', () => {
+    const quality = [
+      { value: 'high', label: 'Hoch' },
+      { value: 'off', label: 'Aus (Bilder unverändert hochladen)' },
+    ];
+    render(<SelectMenu ariaLabel="Bildqualität" value="off" options={quality} onChange={() => {}} />);
+    const button = screen.getByRole('button', { name: 'Bildqualität' });
+    // Room enough: no tooltip
+    setWidths(shownLabel(button), 120, 120);
+    fireEvent.pointerEnter(button);
+    expect(button.getAttribute('title')).toBeNull();
+    // Cut short (a narrow screen): the whole label on hover
+    setWidths(shownLabel(button), 220, 120);
+    fireEvent.pointerEnter(button);
     expect(button.getAttribute('title')).toBe('Aus (Bilder unverändert hochladen)');
+    // Wide again: gone
+    setWidths(shownLabel(button), 220, 220);
+    fireEvent.pointerEnter(button);
+    expect(button.getAttribute('title')).toBeNull();
+  });
+
+  it('keeps a title passed in, cut short or not', () => {
+    render(<SelectMenu ariaLabel="Status" title="Status der Aufgabe" value="todo" options={options} onChange={() => {}} />);
+    const button = screen.getByRole('button', { name: 'Status' });
+    expect(button.getAttribute('title')).toBe('Status der Aufgabe');
+    setWidths(shownLabel(button), 220, 120);
+    fireEvent.pointerEnter(button);
+    expect(button.getAttribute('title')).toBe('Status der Aufgabe');
   });
 
   it('reserves only a few of the longest labels in long lists, and none with fitLabel', () => {

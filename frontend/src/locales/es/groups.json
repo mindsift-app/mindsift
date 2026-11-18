@@ -19,7 +19,6 @@
   "title": "Grupos",
   "intro": "Crea grupos (p. ej. familia, compañeros de piso o un equipo de proyecto) con personas que puedes ver, y comparte notas, tareas y listas con todos a la vez.",
   "newGroup": "Nuevo grupo",
-  "close": "Cerrar",
   "create": {
     "title": "Crear un nuevo grupo",
     "name": "Nombre del grupo *",

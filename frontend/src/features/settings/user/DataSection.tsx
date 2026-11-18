@@ -42,7 +42,13 @@ export function useDataExport() {
 }
 
 // Kontoeinstellungen → Export & Import
-export function DataSection({ dataExport }: { dataExport: ReturnType<typeof useDataExport> }) {
+export function DataSection({
+  dataExport,
+  onDataChanged,
+}: {
+  dataExport: ReturnType<typeof useDataExport>;
+  onDataChanged: () => void;
+}) {
   const { t } = useTranslation('settings');
   const { exportingBackup, exportingVault, vaultError, handleExportData, handleExportVault } = dataExport;
   return (
@@ -54,7 +60,7 @@ export function DataSection({ dataExport }: { dataExport: ReturnType<typeof useD
         </p>
       </div>
 
-      <ServerBackupsCard />
+      <ServerBackupsCard onRestored={onDataChanged} />
 
       {/* Full Data Backup */}
       <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -104,6 +110,7 @@ export function DataSection({ dataExport }: { dataExport: ReturnType<typeof useD
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <ImportCard
             source="mindsift"
+            onImported={onDataChanged}
             title={t('data.importMindSift')}
             accept=".json,.zip,application/json,application/zip"
             description={
@@ -112,6 +119,7 @@ export function DataSection({ dataExport }: { dataExport: ReturnType<typeof useD
           />
           <ImportCard
             source="obsidian"
+            onImported={onDataChanged}
             title={t('data.importObsidian')}
             accept=".zip,application/zip"
             description={

@@ -13,6 +13,7 @@ vi.mock('../../../lib/api', async () => {
     api: {
       ...actual.api,
       getMe: vi.fn(async () => ({ isLastAdmin: false })),
+      purgeOwnData: vi.fn(async () => {}),
       updateSettings: vi.fn(async (patch: { displayName?: string }) => ({
         ...user,
         displayName: patch.displayName?.trim() || user.username,
@@ -39,7 +40,7 @@ describe('useProfileSettings', () => {
 
   it('saves an empty display name and then shows the username the server stored', async () => {
     const onUserUpdated = vi.fn();
-    const { result } = renderHook(() => useProfileSettings(user, onUserUpdated));
+    const { result } = renderHook(() => useProfileSettings(user, onUserUpdated, () => {}));
 
     // The name already was the username: clearing it changes nothing the server would send back
     act(() => result.current.setDisplayName(''));
@@ -53,5 +54,25 @@ describe('useProfileSettings', () => {
     expect(result.current.displayName).toBe('sandro');
     expect(result.current.profileDirty).toBe(false);
     expect(result.current.profileMsg?.type).toBe('ok');
+  });
+
+  it('loads the own data again after "Eigene Daten löschen", an ordinary save does not', async () => {
+    const onUserUpdated = vi.fn();
+    const onDataChanged = vi.fn();
+    const { result } = renderHook(() => useProfileSettings(user, onUserUpdated, onDataChanged));
+
+    act(() => result.current.setDisplayName('Sandro'));
+    await act(async () => {
+      await result.current.handleSaveProfile(submit);
+    });
+    expect(onDataChanged).not.toHaveBeenCalled();
+
+    act(() => result.current.openDanger('data'));
+    act(() => result.current.setDangerPassword('geheim'));
+    await act(async () => {
+      await result.current.handleDangerSubmit(submit);
+    });
+    expect(api.purgeOwnData).toHaveBeenCalledWith('geheim', undefined);
+    expect(onDataChanged).toHaveBeenCalledTimes(1);
   });
 });
