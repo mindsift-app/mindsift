@@ -54,7 +54,7 @@ func TestNotificationCenter(t *testing.T) {
 	if len(getCenter(t, srv, ownerToken).Items) != 0 {
 		t.Fatal("own actions stay out of one's own center")
 	}
-	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	srv.flushNotifications(time.Now().Add(10*time.Minute), nil)
 	if len(*sent) != 0 {
 		t.Fatalf("paused: nothing sent by mail: %+v", *sent)
 	}
