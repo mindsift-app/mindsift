@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { StatusToast } from '../StatusToast';
+import { render, renderHook, screen, fireEvent, act } from '@testing-library/react';
+import { StatusMessage, StatusToast, useStatusMessage } from '../StatusToast';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -64,5 +64,45 @@ describe('StatusToast (answer to a save in the settings)', () => {
       vi.advanceTimersByTime(3000);
     });
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe('useStatusMessage (state of the notice in the view)', () => {
+  it('lets a confirmation expire in the state, also while no notice shows it; an error stays', () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useStatusMessage<StatusMessage>());
+    act(() => result.current[1]({ type: 'ok', text: 'Gespeichert' }));
+    act(() => {
+      vi.advanceTimersByTime(3999);
+    });
+    expect(result.current[0]?.text).toBe('Gespeichert');
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(result.current[0]).toBeNull();
+
+    act(() => result.current[1]({ type: 'err', text: 'Speichern fehlgeschlagen' }));
+    act(() => {
+      vi.advanceTimersByTime(60000);
+    });
+    expect(result.current[0]?.text).toBe('Speichern fehlgeschlagen');
+  });
+
+  it('gives a newer confirmation its own few seconds', () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useStatusMessage<StatusMessage>());
+    act(() => result.current[1]({ type: 'ok', text: 'Gespeichert' }));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    act(() => result.current[1]({ type: 'ok', text: 'Testnachricht gesendet' }));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current[0]?.text).toBe('Testnachricht gesendet');
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(result.current[0]).toBeNull();
   });
 });

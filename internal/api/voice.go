@@ -367,7 +367,7 @@ func (s *Server) voiceCheck(fetchModel bool) {
 			return
 		case st.Reachable && fetchModel && !downloadRequested:
 			downloadRequested = true
-			s.startModelDownload(cfg.Model, false)
+			s.startModelDownload(cfg.Model, nil)
 		case st.Reachable && !fetchModel:
 			return // the administration chooses (and downloads) the model
 		case !st.Reachable && attempt%6 == 0:

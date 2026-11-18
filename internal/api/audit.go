@@ -51,12 +51,17 @@ func auditName(u *domain.User) string {
 // audit records a change made by the signed-in account of the request. target carries TargetKind,
 // TargetID and TargetName; a failure is logged, the change itself stands.
 func (s *Server) audit(r *http.Request, action string, target storage.AuditEntry, details any) {
+	s.auditAs(s.auditActor(r), action, target, details)
+}
+
+// auditActor: the signed-in account of the request, also for a change it causes later in the background.
+func (s *Server) auditActor(r *http.Request) *domain.User {
 	id := auth.GetUserID(r.Context())
 	actor, _ := s.store.GetUserByID(id)
 	if actor == nil {
 		actor = &domain.User{ID: id}
 	}
-	s.auditAs(actor, action, target, details)
+	return actor
 }
 
 // auditAs records a change made in the app by actor, where the request carries no session yet (the

@@ -154,7 +154,7 @@ export function AppearanceSection({
                 setCornerStyle(value);
                 setCorners(value);
               }}
-              className={`h-9 sm:h-7 px-3 rounded-btn transition-colors cursor-pointer ${
+              className={`h-11 sm:h-7 px-3 rounded-btn transition-colors cursor-pointer ${
                 corners === value ? 'bg-panel text-main font-semibold shadow-xs' : 'text-muted hover:text-main'
               }`}
             >
@@ -187,7 +187,7 @@ export function AppearanceSection({
                 setFollowSystemState(value);
                 if (value) onThemeChange(resolveTheme(activeTheme));
               }}
-              className={`h-9 sm:h-7 px-3 rounded-btn transition-colors cursor-pointer ${
+              className={`h-11 sm:h-7 px-3 rounded-btn transition-colors cursor-pointer ${
                 followSystem === value ? 'bg-panel text-main font-semibold shadow-xs' : 'text-muted hover:text-main'
               }`}
             >
@@ -219,7 +219,7 @@ export function AppearanceSection({
                 setButtonBorders(value);
                 setButtonBordersState(value);
               }}
-              className={`h-9 sm:h-7 px-3 rounded-btn transition-colors cursor-pointer ${
+              className={`h-11 sm:h-7 px-3 rounded-btn transition-colors cursor-pointer ${
                 buttonBorders === value ? 'bg-panel text-main font-semibold shadow-xs' : 'text-muted hover:text-main'
               }`}
             >
@@ -243,7 +243,7 @@ export function AppearanceSection({
                 setAccentColor(null);
                 setAccent(null);
               }}
-              className="btn-action h-9 sm:h-7 px-2.5 text-xs"
+              className="btn-action h-11 sm:h-7 px-2.5 text-xs"
             >
               {t('appearance.likeTheme')}
             </button>
@@ -260,7 +260,7 @@ export function AppearanceSection({
               }}
               title={c}
               aria-label={t('appearanceExtra.accentColor', { color: c })}
-              className={`w-9 h-9 sm:w-7 sm:h-7 rounded-full transition-transform hover:scale-110 cursor-pointer ${
+              className={`w-11 h-11 sm:w-7 sm:h-7 rounded-full transition-transform hover:scale-110 cursor-pointer ${
                 accent === c ? 'ring-2 ring-offset-2 ring-offset-canvas ring-main' : ''
               }`}
               style={{ backgroundColor: c }}
@@ -274,7 +274,7 @@ export function AppearanceSection({
                 setAccentColor(e.target.value);
                 setAccent(e.target.value);
               }}
-              className="w-9 h-9 sm:w-7 sm:h-7 rounded-full border border-border bg-transparent p-0 cursor-pointer"
+              className="w-11 h-11 sm:w-7 sm:h-7 rounded-full border border-border bg-transparent p-0 cursor-pointer"
               aria-label={t('appearance.accentPick')}
             />
             {t('settings:appearance.customAccent')}

@@ -4,7 +4,7 @@ import i18n from '../../../i18n';
 import { User } from '../../../lib/types';
 import { api } from '../../../lib/api';
 import { errorMessage } from '../../../lib/errorMessage';
-import { StatusMessage, StatusToast } from '../../../components/StatusToast';
+import { StatusMessage, StatusToast, useStatusMessage } from '../../../components/StatusToast';
 
 type SettingsPatch = Parameters<typeof api.updateSettings>[0];
 
@@ -13,7 +13,7 @@ type SettingsPatch = Parameters<typeof api.updateSettings>[0];
 // (Doku/ui-patterns.md). Lives in the view, so a save still running finishes when the section is left.
 export function useInstantSave(onUserUpdated: (u: User) => void) {
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<{ type: 'ok' } | StatusMessage | null>(null);
+  const [msg, setMsg] = useStatusMessage<{ type: 'ok' } | StatusMessage>();
 
   const save = async (patch: SettingsPatch) => {
     setSaving(true);

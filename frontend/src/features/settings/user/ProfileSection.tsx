@@ -90,7 +90,7 @@ export function ProfileSection({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isProcessingAvatar}
-                  className="btn-action h-8 px-3 text-xs flex items-center gap-1.5"
+                  className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   <span>{t('profile.upload')}</span>
@@ -100,7 +100,7 @@ export function ProfileSection({
                   <button
                     type="button"
                     onClick={handleRemoveAvatar}
-                    className="btn-ghost h-8 px-2.5 text-xs text-status-err hover:bg-status-err/10 flex items-center gap-1"
+                    className="btn-ghost h-11 sm:h-8 px-2.5 text-xs text-status-err hover:bg-status-err/10 flex items-center gap-1"
                     title={t('profile.removeAvatar')}
                   >
                     <Trash className="w-3.5 h-3.5" />
@@ -119,7 +119,7 @@ export function ProfileSection({
                         key={preset}
                         type="button"
                         onClick={() => handleSelectPresetAvatar(preset)}
-                        className={`w-7 h-7 rounded-full text-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-95 ${
+                        className={`w-11 h-11 sm:w-7 sm:h-7 rounded-full text-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-95 ${
                           avatarUrl === preset
                             ? 'bg-primary/20 border-2 border-primary scale-105'
                             : 'bg-panel hover:bg-panel-hover border border-border'
@@ -148,7 +148,7 @@ export function ProfileSection({
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder={username.trim().toLowerCase()}
-              className="w-full h-9 px-3 input-field"
+              className="w-full h-11 sm:h-9 px-3 input-field"
             />
           </div>
 
@@ -167,7 +167,7 @@ export function ProfileSection({
               spellCheck={false}
               disabled={demoMode}
               title={demoMode ? t('profile.demoDisabled') : t('profile.usernameRules')}
-              className="w-full h-9 px-3 input-field font-mono disabled:opacity-60"
+              className="w-full h-11 sm:h-9 px-3 input-field font-mono disabled:opacity-60"
             />
             <p className="mt-1 text-[10px] text-faint">{t('profile.usernameHint')}</p>
           </div>
@@ -184,7 +184,7 @@ export function ProfileSection({
               required={Boolean(currentUser.email)}
               disabled={demoMode}
               title={demoMode ? t('profile.demoDisabled') : undefined}
-              className="w-full h-9 px-3 input-field disabled:opacity-60"
+              className="w-full h-11 sm:h-9 px-3 input-field disabled:opacity-60"
             />
             {!currentUser.email && !currentUser.pendingEmail && (
               <p className="mt-1 text-[10px] text-faint">{t('settings:profile.noEmail')}</p>
@@ -204,7 +204,7 @@ export function ProfileSection({
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full h-9 px-3 input-field"
+              className="w-full h-11 sm:h-9 px-3 input-field"
             />
           </div>
         )}

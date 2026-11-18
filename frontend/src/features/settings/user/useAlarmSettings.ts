@@ -4,6 +4,7 @@ import { NotificationEvents, NotificationSettings, PushDevice, User } from '../.
 import { api } from '../../../lib/api';
 import { currentPushSubscription, disablePush, enablePush, removePushDevice } from '../../../lib/push';
 import { errorMessage } from '../../../lib/errorMessage';
+import { StatusMessage, useStatusMessage } from '../../../components/StatusToast';
 
 // The notification settings of an account; old accounts only have alarmChannels (the channels of due tasks)
 export function buildNotificationSettings(user: User): NotificationSettings {
@@ -83,7 +84,7 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     currentUser.notifyBeforeMinutes ?? 30
   );
   // The answer to saving, a test and the push switches: one notice (StatusToast)
-  const [alarmMsg, setAlarmMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [alarmMsg, setAlarmMsg] = useStatusMessage<StatusMessage>();
   const [savingAlarms, setSavingAlarms] = useState(false);
   const [testingChannel, setTestingChannel] = useState<string | null>(null);
 

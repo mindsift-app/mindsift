@@ -214,12 +214,12 @@ var knownSpeechModels = []struct {
 // modelDownload: one download the server asked the Whisper server for. speaches answers only when it is
 // done, so there is no progress: started, running, done or the error.
 type modelDownload struct {
-	Model      string `json:"model"`
-	StartedAt  string `json:"startedAt"`
-	FinishedAt string `json:"finishedAt,omitempty"`
-	Running    bool   `json:"running"`
-	Error      string `json:"error,omitempty"`
-	selectIt   bool   // becomes the model in use once downloaded
+	Model      string       `json:"model"`
+	StartedAt  string       `json:"startedAt"`
+	FinishedAt string       `json:"finishedAt,omitempty"`
+	Running    bool         `json:"running"`
+	Error      string       `json:"error,omitempty"`
+	selectBy   *domain.User // asked for it with select: becomes the model in use once downloaded
 }
 
 type modelDownloads struct {
@@ -246,34 +246,39 @@ func (d *modelDownloads) snapshot() []modelDownload {
 }
 
 // startModelDownload asks the Whisper server for a model in the background (once at a time per model);
-// selectIt makes it the model in use when done (unless STT_MODEL fixes the model).
-func (s *Server) startModelDownload(model string, selectIt bool) {
+// selectBy (the admin who asked for it with select) makes it the model in use when done (unless STT_MODEL
+// fixes the model), recorded in the audit log as that admin's change; nil only downloads.
+func (s *Server) startModelDownload(model string, selectBy *domain.User) {
 	d := &s.voice.downloads
 	d.mu.Lock()
 	if d.list == nil {
 		d.list = map[string]*modelDownload{}
 	}
 	if cur := d.list[model]; cur != nil && cur.Running {
-		cur.selectIt = cur.selectIt || selectIt
+		if cur.selectBy == nil {
+			cur.selectBy = selectBy
+		}
 		d.mu.Unlock()
 		return
 	}
-	job := &modelDownload{Model: model, StartedAt: time.Now().UTC().Format(time.RFC3339), Running: true, selectIt: selectIt}
+	job := &modelDownload{Model: model, StartedAt: time.Now().UTC().Format(time.RFC3339), Running: true, selectBy: selectBy}
 	d.list[model] = job
 	d.mu.Unlock()
 	slog.Info("Speech recognition: downloading a model (can take a few minutes)", "model", model)
 	s.background(func() {
 		err := s.downloadModel(model)
 		d.mu.Lock()
-		selectIt := job.selectIt
+		selectBy := job.selectBy
 		d.mu.Unlock()
 		if err != nil {
 			slog.Warn("Speech recognition: model download failed", "model", model, "error", err)
 		} else {
 			slog.Info("Speech recognition: model downloaded", "model", model)
 			// In use before the download shows as done, so the page never sees "done" with the old model
-			if selectIt && s.cfg.Speech.Model == "" {
+			if before := s.speech().Model; selectBy != nil && s.cfg.Speech.Model == "" && before != model {
 				s.selectSpeechModel(model)
+				s.auditAs(selectBy, storage.AuditSettingsChanged, storage.AuditEntry{TargetKind: storage.AuditTargetSettings},
+					auditChanges{Changes: []auditChange{{Key: "speech.model", From: before, To: model}}})
 			}
 		}
 		d.mu.Lock()
@@ -432,7 +437,11 @@ func (s *Server) handleAdminSpeechModelDownload(w http.ResponseWriter, r *http.R
 	if !s.voice.downloads.running(model) {
 		s.audit(r, storage.AuditSpeechModelDownload, auditSpeechModelTarget(model), map[string]bool{"select": req.Select})
 	}
-	s.startModelDownload(model, req.Select)
+	var selectBy *domain.User
+	if req.Select {
+		selectBy = s.auditActor(r)
+	}
+	s.startModelDownload(model, selectBy)
 	writeJSON(w, http.StatusAccepted, map[string]any{"downloaded": false, "downloads": s.voice.downloads.snapshot()})
 }
 
