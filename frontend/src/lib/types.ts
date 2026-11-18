@@ -82,6 +82,8 @@ export interface AuthStatus {
   // Audio in notes: recordings at bitrate kbit/s unless compression is off; every audio file up to
   // limitMB; files from the device only while uploads is on
   audio?: { compression: 'recordings' | 'off'; bitrate: number; limitMB: number; uploads: boolean };
+  // Images in notes: new ones allowed at all, copies from other addresses, the largest one in MB
+  images?: { enabled: boolean; external: boolean; limitMB: number };
 }
 
 export type VoiceMode = 'server' | 'browser' | 'off';
@@ -542,6 +544,17 @@ export interface SystemSettings {
   audioLimitMBConfiguredViaEnv?: boolean;
   audioUploads?: boolean;
   audioUploadsConfiguredViaEnv?: boolean;
+  // Images in notes (off: no new ones), copies from other addresses, the largest image in MB, and the
+  // media storage per person (0 = unlimited). Fixed when set via MEDIA_IMAGES / MEDIA_EXTERNAL_IMAGES /
+  // MEDIA_MAX_IMAGE_MB / MEDIA_QUOTA_MB (external images also in the demo)
+  images?: boolean;
+  imagesConfiguredViaEnv?: boolean;
+  externalImages?: boolean;
+  externalImagesConfiguredViaEnv?: boolean;
+  imageLimitMB?: number;
+  imageLimitMBConfiguredViaEnv?: boolean;
+  mediaQuotaMB?: number;
+  mediaQuotaMBConfiguredViaEnv?: boolean;
   // Language for new accounts and everyone whose browser language the app does not speak
   defaultLanguage?: string;
   // The server's time zone (IANA name, '' = not set: TZ, else UTC) and the zone in effect now (read only)

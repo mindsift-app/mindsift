@@ -298,7 +298,8 @@ func (a InitialAdmin) ResolvePassword() (string, error) {
 }
 
 // MediaConfig limits uploads of images and audio recordings in notes. Sizes in MB; QuotaMB 0 = no limit
-// per user. The demo uses DemoMaxMB for every file. MaxAudioMB 0: the administration's audio limit.
+// per user. The demo uses DemoMaxMB for every file. MaxImageMB / MaxAudioMB 0 and QuotaMB -1 (not
+// set): the administration decides.
 type MediaConfig struct {
 	MaxImageMB int
 	MaxAudioMB int
@@ -313,6 +314,10 @@ type MediaConfig struct {
 	AudioCompression string
 	AudioBitrate     int
 	AudioUploads     *bool
+	// Images: MEDIA_IMAGES=false refuses new images in notes; ExternalImages: MEDIA_EXTERNAL_IMAGES=false
+	// refuses images from other addresses. nil leaves each to the system settings.
+	Images         *bool
+	ExternalImages *bool
 }
 
 // SpeechConfig: with STT_URL set, voice input is transcribed by a self-hosted, OpenAI-compatible
@@ -629,14 +634,16 @@ func Load() *Config {
 		},
 		OIDC: loadOIDC(),
 		Media: MediaConfig{
-			MaxImageMB:       envInt("MEDIA_MAX_IMAGE_MB", 15, 1, 1000),
+			MaxImageMB:       envInt("MEDIA_MAX_IMAGE_MB", 0, 1, 1000),
 			MaxAudioMB:       envInt("MEDIA_MAX_AUDIO_MB", 0, 1, 2000),
-			QuotaMB:          envInt("MEDIA_QUOTA_MB", 0, 0, 10000000),
+			QuotaMB:          envInt("MEDIA_QUOTA_MB", -1, 0, 10000000),
 			DemoMaxMB:        envInt("MEDIA_DEMO_MAX_MB", 3, 1, 100),
 			ImageQuality:     imageQualityFromEnv(),
 			AudioCompression: audioCompressionFromEnv(),
 			AudioBitrate:     envInt("MEDIA_AUDIO_BITRATE", 0, 8, 320),
 			AudioUploads:     envBoolPtr("MEDIA_AUDIO_UPLOADS"),
+			Images:           envBoolPtr("MEDIA_IMAGES"),
+			ExternalImages:   envBoolPtr("MEDIA_EXTERNAL_IMAGES"),
 		},
 		Legal: func() LegalTexts {
 			customLabel, customURL := legalCustomLink("LEGAL_CUSTOM_LINK_LABEL", "LEGAL_CUSTOM_LINK_URL")

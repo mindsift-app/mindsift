@@ -1,11 +1,12 @@
 import { AdminPage } from './AdminPage';
 import { AudioSettings } from './AudioSettings';
-import { ImageQualitySetting } from './ImageQualitySetting';
+import { ImageSettings } from './ImageSettings';
+import { MediaQuotaSetting } from './MediaQuotaSetting';
 import { useAdminSettings } from './useAdminSettings';
 import { useTranslation } from 'react-i18next';
 
-// Administration → Media: how pictures and audio in notes are compressed, and how large an uploaded
-// audio file may be (state in useAdminSettings)
+// Administration → Media: images and audio in notes (whether they may go in, compression, sizes) and
+// the storage per person (state in useAdminSettings)
 export function MediaSettingsSection({
   admin,
 }: {
@@ -15,8 +16,9 @@ export function MediaSettingsSection({
   const { settings, demoMode, handleSaveSystemSettings } = admin;
   return (
     <AdminPage title={t('admin.nav.media')} intro={t('admin.pages.mediaIntro')} demoMode={demoMode}>
-      <ImageQualitySetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
+      <ImageSettings settings={settings} demoMode={demoMode} onSave={(patch) => handleSaveSystemSettings(patch)} />
       <AudioSettings settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
+      <MediaQuotaSetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
     </AdminPage>
   );
 }

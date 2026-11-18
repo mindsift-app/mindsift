@@ -7,7 +7,7 @@ import { DEFAULT_BACKUP_RETENTION_DAYS, DEFAULT_BACKUP_TIME } from '../../../lib
 import { askConfirm } from '../../../components/askConfirm';
 import { errorMessage } from '../../../lib/errorMessage';
 import { setServerLinkPreviews } from '../../../lib/linkPreview';
-import { setServerAudioSettings, setServerImageQuality } from '../../../lib/media';
+import { setServerAudioSettings, setServerImageQuality, setServerImageSettings } from '../../../lib/media';
 
 // The three sharing modes, stricter first; texts in settings:sharing.<id> in the language shown when read
 const sharingMode = (id: SharingMode) => ({
@@ -154,6 +154,14 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           audioBitrateConfiguredViaEnv: Boolean(sys.audioBitrateConfiguredViaEnv),
           audioLimitMB: sys.audioLimitMB || 7,
           audioLimitMBConfiguredViaEnv: Boolean(sys.audioLimitMBConfiguredViaEnv),
+          images: sys.images ?? true,
+          imagesConfiguredViaEnv: Boolean(sys.imagesConfiguredViaEnv),
+          externalImages: sys.externalImages ?? true,
+          externalImagesConfiguredViaEnv: Boolean(sys.externalImagesConfiguredViaEnv),
+          imageLimitMB: sys.imageLimitMB || 15,
+          imageLimitMBConfiguredViaEnv: Boolean(sys.imageLimitMBConfiguredViaEnv),
+          mediaQuotaMB: sys.mediaQuotaMB ?? 0,
+          mediaQuotaMBConfiguredViaEnv: Boolean(sys.mediaQuotaMBConfiguredViaEnv),
           audioUploads: sys.audioUploads ?? true,
           audioUploadsConfiguredViaEnv: Boolean(sys.audioUploadsConfiguredViaEnv),
           calendarFeeds: sys.calendarFeeds ?? true,
@@ -532,6 +540,9 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       // This app follows the server's switch at once (others at their next start or preview request)
       if (saved.linkPreviews !== undefined) setServerLinkPreviews(saved.linkPreviews);
       if (saved.imageQuality) setServerImageQuality(saved.imageQuality);
+      if (saved.images !== undefined) {
+        setServerImageSettings({ enabled: saved.images, external: saved.externalImages, limitMB: saved.imageLimitMB });
+      }
       if (saved.audioCompression) {
         setServerAudioSettings({ compression: saved.audioCompression, bitrate: saved.audioBitrate, limitMB: saved.audioLimitMB, uploads: saved.audioUploads });
       }

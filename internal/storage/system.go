@@ -161,11 +161,15 @@ func cloneSystemSettings(in *domain.SystemSettings) *domain.SystemSettings {
 			*p = &v
 		}
 	}
+	if out.MediaQuotaMB != nil {
+		v := *out.MediaQuotaMB
+		out.MediaQuotaMB = &v
+	}
 	if out.ServerTime != nil {
 		v := *out.ServerTime
 		out.ServerTime = &v
 	}
-	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks, &out.LinkPreviews, &out.CalendarFeeds, &out.AudioUploads} {
+	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks, &out.LinkPreviews, &out.CalendarFeeds, &out.AudioUploads, &out.Images, &out.ExternalImages} {
 		if *p != nil {
 			v := **p
 			*p = &v
@@ -283,6 +287,20 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 				if n, err := strconv.Atoi(v); err == nil && ValidAudioBitrate(n) {
 					settings.AudioBitrate = n
 				}
+			case "images":
+				on := v != "false"
+				settings.Images = &on
+			case "external_images":
+				on := v != "false"
+				settings.ExternalImages = &on
+			case "image_limit_mb":
+				if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= MaxImageLimitMB {
+					settings.ImageLimitMB = n
+				}
+			case "media_quota_mb":
+				if n, err := strconv.Atoi(v); err == nil && n >= 0 && n <= MaxMediaQuotaMB {
+					settings.MediaQuotaMB = &n
+				}
 			case "audio_uploads":
 				on := v != "false"
 				settings.AudioUploads = &on
@@ -354,6 +372,21 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	if settings.AudioUploads == nil {
 		on := true
 		settings.AudioUploads = &on
+	}
+	if settings.Images == nil {
+		on := true
+		settings.Images = &on
+	}
+	if settings.ExternalImages == nil {
+		on := true
+		settings.ExternalImages = &on
+	}
+	if settings.ImageLimitMB == 0 {
+		settings.ImageLimitMB = DefaultImageLimitMB
+	}
+	if settings.MediaQuotaMB == nil {
+		unlimited := 0
+		settings.MediaQuotaMB = &unlimited
 	}
 	if settings.AudioLimitMB == 0 {
 		settings.AudioLimitMB = DefaultAudioLimitMB
@@ -510,6 +543,26 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_bitrate', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(settings.AudioBitrate))
 	}
+	for key, on := range map[string]*bool{"images": settings.Images, "external_images": settings.ExternalImages} {
+		if err == nil && on != nil {
+			_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES (?, ?)
+				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, strconv.FormatBool(*on))
+		}
+	}
+	if err == nil && settings.ImageLimitMB != 0 {
+		if settings.ImageLimitMB < 1 || settings.ImageLimitMB > MaxImageLimitMB {
+			return ErrInvalidImageLimit
+		}
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('image_limit_mb', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(settings.ImageLimitMB))
+	}
+	if err == nil && settings.MediaQuotaMB != nil {
+		if *settings.MediaQuotaMB < 0 || *settings.MediaQuotaMB > MaxMediaQuotaMB {
+			return ErrInvalidMediaQuota
+		}
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('media_quota_mb', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(*settings.MediaQuotaMB))
+	}
 	if err == nil && settings.AudioUploads != nil {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_uploads', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.AudioUploads))
@@ -591,12 +644,17 @@ const (
 	MaxAudioBitrate            = 320
 	DefaultAudioLimitMB        = 7
 	MaxAudioLimitMB            = 2000
+	DefaultImageLimitMB        = 15
+	MaxImageLimitMB            = 1000
+	MaxMediaQuotaMB            = 10000000
 )
 
 var (
 	ErrInvalidAudioCompression = i18n.NewError("Ungültige Audio-Komprimierung (erlaubt: recordings, off)")
 	ErrInvalidAudioBitrate     = i18n.NewError("Ungültige Bitrate (erlaubt: 8 bis 320 kbit/s)")
 	ErrInvalidAudioLimit       = i18n.NewError("Ungültige Größenbegrenzung für Audiodateien")
+	ErrInvalidImageLimit       = i18n.NewError("Größenbegrenzung für Bilder: 1 bis 1000 MB")
+	ErrInvalidMediaQuota       = i18n.NewError("Ungültiger Speicherplatz pro Person")
 )
 
 func ValidAudioCompression(v string) bool {

@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { setServerImageSettings } from '../media';
 import { dataUrlBlob, draggedFiles, droppedImages, MAX_PASTED_IMAGES, pastedImages } from '../pasteImages';
 import { clipboard, png } from '../../test/clipboard';
 
@@ -129,5 +130,18 @@ describe('droppedImages', () => {
     expect(droppedImages(clipboard({ text: 'Hallo' }))).toEqual({ images: null, otherFiles: 0 });
     expect(droppedImages(clipboard({ extra: { 'text/uri-list': 'https://example.com/seite' } })).images).toBeNull();
     expect(droppedImages(clipboard({ html: '<p>Text <img src="https://example.com/a.png"></p>' })).images).toBeNull();
+  });
+});
+
+describe('images from other addresses switched off by the administration', () => {
+  afterEach(() => setServerImageSettings(undefined));
+
+  it('leaves https images out, keeps data: images and image files', () => {
+    setServerImageSettings({ enabled: true, external: false });
+    expect(pastedImages(clipboard({ html: '<img src="https://example.com/a.png">' }))).toBeNull();
+    const data = 'data:image/png;base64,iVBORw0KGgo=';
+    expect(pastedImages(clipboard({ html: `<img src="https://example.com/a.png"><img src="${data}">` }))?.urls).toEqual([data]);
+    const file = png();
+    expect(pastedImages(clipboard({ files: [file], html: '<img src="https://example.com/a.png">', text: 'https://example.com/a.png' }))?.files).toEqual([file]);
   });
 });

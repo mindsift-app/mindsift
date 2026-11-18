@@ -101,6 +101,9 @@ func (s *Server) mcpAddNoteImage(ctx context.Context, userID string, actor *apiA
 		if s.cfg.DemoMode {
 			return nil, errors.New("In der Demo deaktiviert")
 		}
+		if !s.imageSettings().External {
+			return nil, errExternalImagesOff
+		}
 		// Stops when the client goes away; the guarded client gives up after 10 s on its own
 		if data, _, err = s.fetchExternalImage(ctx, a.URL); err != nil {
 			return nil, err

@@ -87,6 +87,8 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		"imageQuality": s.imageQuality(),
 		// Audio in notes: whether recordings use the bitrate, which bitrate, the limit for uploaded files
 		"audio": s.audioSettings(),
+		// Images in notes: allowed at all, copies from other addresses, the largest one in MB
+		"images": s.imageSettings(),
 		// Language of the login screen when MindSift does not speak the browser's language
 		"defaultLanguage": s.defaultLanguage(),
 		// Address to enter as connector in claude.ai / ChatGPT (OAuth); empty while OAuth is off

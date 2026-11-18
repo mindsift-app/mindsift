@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, ImagePlus, Link as LinkIcon, LoaderCircle, X } from 'lucide-react';
-import { copyExternalImage, prepareImage, UploadedMedia, uploadMedia } from '../../lib/media';
+import { copyExternalImage, externalImagesAllowed, prepareImage, UploadedMedia, uploadMedia } from '../../lib/media';
 import { useTranslation } from 'react-i18next';
 import { errorMessage } from '../../lib/errorMessage';
 
@@ -11,7 +11,7 @@ interface ImagePickerProps {
 }
 
 // Inline box an empty bullet turns into after /image: pick a file (or the camera on phones), drop or
-// paste an image, or give a link the server copies. Nothing is synced until the upload succeeded.
+// paste an image, or give a link the server fetches (when the administration allows it). Nothing is synced until the upload succeeded.
 export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCancel }) => {
   const { t } = useTranslation('workspace');
   const [busy, setBusy] = useState(false);
@@ -129,26 +129,29 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
               {t('media.dropHint')}
             </span>
           </div>
-          <form onSubmit={copyLink} className="flex gap-2">
-            <div className="relative flex-1 min-w-0">
-              <LinkIcon className="w-3.5 h-3.5 text-faint absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="url"
-                inputMode="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder={t('media.imageUrl')}
-                className="w-full h-11 sm:h-8 pl-8 pr-2 input-field text-xs"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={!url.trim()}
-              className="btn-secondary h-11 sm:h-8 px-3 text-xs shrink-0 disabled:opacity-40"
-            >
-              {t('media.take')}
-            </button>
-          </form>
+          {/* Images from other addresses only while the server may copy them */}
+          {externalImagesAllowed() && (
+            <form onSubmit={copyLink} className="flex gap-2">
+              <div className="relative flex-1 min-w-0">
+                <LinkIcon className="w-3.5 h-3.5 text-faint absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="url"
+                  inputMode="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder={t('media.imageUrl')}
+                  className="w-full h-11 sm:h-8 pl-8 pr-2 input-field text-xs"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!url.trim()}
+                className="btn-secondary h-11 sm:h-8 px-3 text-xs shrink-0 disabled:opacity-40"
+              >
+                {t('media.take')}
+              </button>
+            </form>
+          )}
         </>
       )}
 

@@ -34,8 +34,63 @@ func (s *Server) mediaLimit(kind string) int64 {
 	if kind == "audio" {
 		return int64(s.audioSettings().LimitMB) << 20
 	}
-	return int64(s.demoCap(s.cfg.Media.MaxImageMB)) << 20
+	return int64(s.imageSettings().LimitMB) << 20
 }
+
+// imageSettings: whether new images may go into notes, whether they may come from other addresses,
+// and how large one may be. Each value comes from its MEDIA_* variable if set, else from the admin.
+type imageSettings struct {
+	Enabled  bool `json:"enabled"`
+	External bool `json:"external"` // copies from other addresses (always off in the demo)
+	LimitMB  int  `json:"limitMB"`  // MEDIA_MAX_IMAGE_MB
+}
+
+func (s *Server) imageSettings() imageSettings {
+	out := imageSettings{true, true, storage.DefaultImageLimitMB}
+	if sys, _ := s.store.GetSystemSettings(); sys != nil {
+		if sys.Images != nil {
+			out.Enabled = *sys.Images
+		}
+		if sys.ExternalImages != nil {
+			out.External = *sys.ExternalImages
+		}
+		if sys.ImageLimitMB > 0 {
+			out.LimitMB = sys.ImageLimitMB
+		}
+	}
+	m := s.cfg.Media
+	if m.Images != nil {
+		out.Enabled = *m.Images
+	}
+	if m.ExternalImages != nil {
+		out.External = *m.ExternalImages
+	}
+	if m.MaxImageMB > 0 {
+		out.LimitMB = m.MaxImageMB
+	}
+	if s.cfg.DemoMode {
+		out.External = false // the demo server fetches nothing for visitors
+	}
+	out.External = out.External && out.Enabled
+	out.LimitMB = s.demoCap(out.LimitMB)
+	return out
+}
+
+// mediaQuotaMB: media storage per person in MB (MEDIA_QUOTA_MB, else the admin's choice); 0 = unlimited.
+func (s *Server) mediaQuotaMB() int {
+	if s.cfg.Media.QuotaMB >= 0 {
+		return s.cfg.Media.QuotaMB
+	}
+	if sys, _ := s.store.GetSystemSettings(); sys != nil && sys.MediaQuotaMB != nil {
+		return *sys.MediaQuotaMB
+	}
+	return 0
+}
+
+var (
+	errImagesOff         = errors.New("Bilder in Notizen sind auf diesem Server ausgeschaltet")
+	errExternalImagesOff = errors.New("Bilder von fremden Adressen sind auf diesem Server ausgeschaltet")
+)
 
 // demoCap: in the demo no file is larger than MEDIA_DEMO_MAX_MB.
 func (s *Server) demoCap(mb int) int {
@@ -124,13 +179,16 @@ func (s *Server) saveMedia(userID, docID string, data []byte, declared, sourceUR
 	if !ok {
 		return nil, http.StatusUnsupportedMediaType, errors.New("Nicht unterstütztes Format (Bilder: JPEG, PNG, GIF, WebP; Audio: WebM, Ogg, MP3, WAV, M4A)")
 	}
+	if kind == "image" && !s.imageSettings().Enabled {
+		return nil, http.StatusForbidden, errImagesOff
+	}
 	if limit := s.mediaLimit(kind); int64(len(data)) > limit {
 		return nil, http.StatusRequestEntityTooLarge, i18n.NewError("Datei zu groß (höchstens {mb} MB)", "mb", strconv.FormatInt(limit>>20, 10))
 	}
-	if quota := int64(s.cfg.Media.QuotaMB) << 20; quota > 0 {
+	if quotaMB := s.mediaQuotaMB(); quotaMB > 0 {
 		used, _ := s.store.MediaUsage(userID)
-		if used+int64(len(data)) > quota {
-			return nil, http.StatusRequestEntityTooLarge, i18n.NewError("Speicherplatz für Medien aufgebraucht ({mb} MB)", "mb", strconv.Itoa(s.cfg.Media.QuotaMB))
+		if used+int64(len(data)) > int64(quotaMB)<<20 {
+			return nil, http.StatusRequestEntityTooLarge, i18n.NewError("Speicherplatz für Medien aufgebraucht ({mb} MB)", "mb", strconv.Itoa(quotaMB))
 		}
 	}
 	errSave := errors.New("Datei konnte nicht gespeichert werden")
@@ -195,7 +253,9 @@ func (s *Server) handleUploadMedia(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleFetchMedia: POST /documents/{id}/media/fetch {url} copies an external image, so readers of the
-// note do not contact the other server and the image stays when it disappears there.
+// note do not contact the other server and the image stays when it disappears there. With
+// "download": true the image is only handed to the app, which compresses it and uploads it like a
+// picture of its own (nothing is stored here).
 func (s *Server) handleFetchMedia(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
@@ -203,8 +263,13 @@ func (s *Server) handleFetchMedia(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz")
 		return
 	}
+	if img := s.imageSettings(); !img.Enabled || !img.External {
+		writeErrorFrom(w, http.StatusForbidden, map[bool]error{true: errExternalImagesOff, false: errImagesOff}[img.Enabled])
+		return
+	}
 	var req struct {
-		URL string `json:"url"`
+		URL      string `json:"url"`
+		Download bool   `json:"download"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.URL) == "" {
 		writeError(w, http.StatusBadRequest, "Bild-URL erforderlich")
@@ -214,6 +279,15 @@ func (s *Server) handleFetchMedia(w http.ResponseWriter, r *http.Request) {
 	data, status, err := s.fetchExternalImage(r.Context(), src)
 	if err != nil {
 		writeErrorFrom(w, status, err)
+		return
+	}
+	if req.Download {
+		mime, _, _ := detectMedia(data, "")
+		w.Header().Set("Content-Type", mime)
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
 		return
 	}
 	if m, ok := s.storeMedia(w, userID, docID, data, "", src); ok {

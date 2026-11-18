@@ -556,6 +556,21 @@ type SystemSettings struct {
 	// demo's limit when lower); 0 in an update leaves it unchanged; ViaEnv: fixed by MEDIA_MAX_AUDIO_MB.
 	AudioLimitMB       int  `json:"audioLimitMB,omitempty"`
 	AudioLimitMBViaEnv bool `json:"audioLimitMBConfiguredViaEnv,omitempty"`
+	// Images: new images may go into notes (default on; off: no uploads, copies or MCP images, the
+	// existing ones stay). ExternalImages: images may be copied from other addresses (default on). nil
+	// in an update leaves each unchanged; ViaEnv: fixed by MEDIA_IMAGES / MEDIA_EXTERNAL_IMAGES.
+	Images               *bool `json:"images,omitempty"`
+	ImagesViaEnv         bool  `json:"imagesConfiguredViaEnv,omitempty"`
+	ExternalImages       *bool `json:"externalImages,omitempty"`
+	ExternalImagesViaEnv bool  `json:"externalImagesConfiguredViaEnv,omitempty"`
+	// ImageLimitMB: the largest image (1–1000, default 15; the demo's limit when lower); 0 in an update
+	// leaves it unchanged; ViaEnv: fixed by MEDIA_MAX_IMAGE_MB.
+	ImageLimitMB       int  `json:"imageLimitMB,omitempty"`
+	ImageLimitMBViaEnv bool `json:"imageLimitMBConfiguredViaEnv,omitempty"`
+	// MediaQuotaMB: media storage per person in MB, 0 = unlimited (default). nil in an update leaves it
+	// unchanged; ViaEnv: fixed by MEDIA_QUOTA_MB.
+	MediaQuotaMB       *int `json:"mediaQuotaMB,omitempty"`
+	MediaQuotaMBViaEnv bool `json:"mediaQuotaMBConfiguredViaEnv,omitempty"`
 	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
 	// not speak, and for the demo; empty in an update leaves it unchanged
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`

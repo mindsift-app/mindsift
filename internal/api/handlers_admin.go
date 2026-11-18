@@ -590,6 +590,17 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 	out.AudioBitrate, out.AudioBitrateViaEnv = audio.Bitrate, s.cfg.Media.AudioBitrate > 0
 	out.AudioLimitMB, out.AudioLimitMBViaEnv = audio.LimitMB, s.cfg.Media.MaxAudioMB > 0
 	out.AudioUploads, out.AudioUploadsViaEnv = &audio.Uploads, s.cfg.Media.AudioUploads != nil
+	img := s.imageSettings()
+	out.Images, out.ImagesViaEnv = &img.Enabled, s.cfg.Media.Images != nil
+	// The switch for external images shows its own choice even while images are off (greyed out
+	// there); the environment fixes it, the demo never copies
+	if env := s.cfg.Media.ExternalImages; env != nil || s.cfg.DemoMode {
+		on := env != nil && *env && !s.cfg.DemoMode
+		out.ExternalImages, out.ExternalImagesViaEnv = &on, true
+	}
+	out.ImageLimitMB, out.ImageLimitMBViaEnv = img.LimitMB, s.cfg.Media.MaxImageMB > 0
+	quota := s.mediaQuotaMB()
+	out.MediaQuotaMB, out.MediaQuotaMBViaEnv = &quota, s.cfg.Media.QuotaMB >= 0
 	out.EmailLinksAvailable = s.emailLinksAvailable()
 	out.DefaultLanguage = s.defaultLanguage()
 	out.OIDC = s.oidcStatusForAdmin()
@@ -694,6 +705,19 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	if s.cfg.Media.AudioUploads != nil {
 		settings.AudioUploads = nil // fixed by MEDIA_AUDIO_UPLOADS
 	}
+	if s.cfg.Media.Images != nil {
+		settings.Images = nil // fixed by MEDIA_IMAGES
+	}
+	if s.cfg.Media.ExternalImages != nil || s.cfg.DemoMode {
+		settings.ExternalImages = nil // fixed by MEDIA_EXTERNAL_IMAGES (and off in the demo)
+	}
+	if s.cfg.Media.MaxImageMB > 0 {
+		settings.ImageLimitMB = 0 // fixed by MEDIA_MAX_IMAGE_MB
+	}
+	if s.cfg.Media.QuotaMB >= 0 {
+		settings.MediaQuotaMB = nil // fixed by MEDIA_QUOTA_MB
+	}
+	settings.ImagesViaEnv, settings.ExternalImagesViaEnv, settings.ImageLimitMBViaEnv, settings.MediaQuotaMBViaEnv = false, false, false, false
 	settings.AudioUploadsViaEnv = false
 	settings.PeopleSearchViaEnv, settings.PublicLinksViaEnv, settings.PublicLinkMaxDaysViaEnv, settings.CalendarFeedsViaEnv = false, false, false, false
 	settings.ImageQualityViaEnv, settings.AudioCompressionViaEnv, settings.AudioBitrateViaEnv, settings.AudioLimitMBViaEnv = false, false, false, false
@@ -711,6 +735,14 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	}
 	if settings.AudioBitrate != 0 && !storage.ValidAudioBitrate(settings.AudioBitrate) {
 		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidAudioBitrate)
+		return
+	}
+	if settings.ImageLimitMB < 0 || settings.ImageLimitMB > storage.MaxImageLimitMB {
+		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidImageLimit)
+		return
+	}
+	if q := settings.MediaQuotaMB; q != nil && (*q < 0 || *q > storage.MaxMediaQuotaMB) {
+		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidMediaQuota)
 		return
 	}
 	if settings.AudioLimitMB < 0 || settings.AudioLimitMB > storage.MaxAudioLimitMB {

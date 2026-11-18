@@ -54,7 +54,7 @@ import { DictationBlock } from './DictationBlock';
 import { currentVoiceConfig } from '../../lib/voice';
 import { LinkPreviewCard } from './LinkPreviewCard';
 import { linkCardUrl, hidePreviewContent, linkHost, linkPreviewsEnabled, useLinkPreviewsEnabled } from '../../lib/linkPreview';
-import { mediaContent, parseMediaContent } from '../../lib/media';
+import { imagesAllowed, mediaContent, parseMediaContent } from '../../lib/media';
 import { insertImages, PastedImages, pastedImages } from '../../lib/pasteImages';
 import { codeBlockText } from '../../lib/secretRef';
 import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown';
@@ -676,6 +676,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       if (c.type === 'dictation') {
         return ['server', 'browser'].includes(currentVoiceConfig().mode);
       }
+      // Switched off by the administration: no new images
+      if (c.type === 'image' && !imagesAllowed()) return false;
 
       // /divider, /image, /audio only when rest of block is empty
       if (c.type === 'divider' || c.type === 'image' || c.type === 'audio' || c.type === 'drawing') {
