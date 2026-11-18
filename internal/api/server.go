@@ -103,7 +103,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	var oidcOff string
 	srv.oidc, oidcOff = newOIDCService(cfg)
 	srv.logOIDCSetup(oidcOff)
-	srv.voice = newVoiceService(cfg.Speech.MaxParallel)
+	srv.voice = newVoiceService(srv.speech().MaxParallel)
 	if srv.voiceMode() == "server" {
 		srv.background(srv.startVoiceCheck)
 	}
@@ -550,6 +550,8 @@ func (s *Server) Router() http.Handler {
 			r.Put("/api/v1/admin/settings", s.notInDemo(s.handleAdminUpdateSettings))
 			r.Get("/api/v1/admin/settings/sharing-impact", s.handleAdminSharingImpact)
 			r.Get("/api/v1/admin/voice", s.handleAdminVoiceStatus)
+			r.Get("/api/v1/admin/voice/models", s.handleAdminSpeechModels)
+			r.Post("/api/v1/admin/voice/models/*", s.notInDemo(s.handleAdminSpeechModelDownload))
 			r.Get("/api/v1/admin/update", s.handleAdminUpdate)
 			r.Post("/api/v1/admin/update/dismiss", s.notInDemo(s.handleAdminDismissUpdate))
 			r.Post("/api/v1/admin/smtp/test", s.notInDemo(s.handleAdminTestSMTP))

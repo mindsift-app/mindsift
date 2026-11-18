@@ -277,6 +277,6 @@ func checkTargetHost(ctx context.Context, host string, allowPrivate bool) error 
 }
 
 func (s *Server) allowPrivateWebhooks() bool {
-	sys, _ := s.store.GetSystemSettings()
+	sys := s.effectiveSettings()
 	return sys != nil && sys.AllowPrivateWebhooks
 }

@@ -44,11 +44,7 @@ func (s *Server) runBackupsOnce() (string, error) {
 	defer backupRunMu.Unlock()
 	now := clock.Now() // the file names carry the server's date and time; the scheduler reads them back
 	root := s.backupRoot()
-	sys, _ := s.store.GetSystemSettings()
-	keep := storage.DefaultBackupRetentionDays
-	if sys != nil && sys.BackupRetentionDays > 0 {
-		keep = sys.BackupRetentionDays
-	}
+	keep := s.backupKeepDays()
 
 	name, err := s.store.WriteSystemSnapshot(filepath.Join(root, "system"), now)
 	if err != nil {
@@ -95,8 +91,8 @@ func (s *Server) startBackupScheduler() {
 			return
 		case <-ticker.C:
 		}
-		sys, err := s.store.GetSystemSettings()
-		if err != nil {
+		sys := s.effectiveSettings()
+		if sys == nil {
 			continue
 		}
 		// Read on every tick, so a new time zone from the administration counts from the next minute
@@ -257,7 +253,7 @@ func (s *Server) deletedBackupDir(userID string) string {
 }
 
 func (s *Server) backupKeepDays() int {
-	if sys, _ := s.store.GetSystemSettings(); sys != nil && sys.BackupRetentionDays > 0 {
+	if sys := s.effectiveSettings(); sys != nil && sys.BackupRetentionDays > 0 {
 		return sys.BackupRetentionDays
 	}
 	return storage.DefaultBackupRetentionDays

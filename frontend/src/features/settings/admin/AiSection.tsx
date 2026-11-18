@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { VoiceStatusCard } from '../VoiceStatusCard';
+import { SpeechSettingsCard } from './SpeechSettingsCard';
 import { AdminPage } from './AdminPage';
 import { useAdminSettings } from './useAdminSettings';
 import { useTranslation } from 'react-i18next';
@@ -13,10 +14,24 @@ export function AiSection({
   admin: ReturnType<typeof useAdminSettings>;
 }) {
   const { t } = useTranslation('settings');
-  const { settings, demoMode, handleSaveSystemSettings } = admin;
+  const { settings, demoMode, handleSaveSystemSettings, reloadSettings } = admin;
+  // A new setting or model: the status card checks the Whisper server again
+  const [statusKey, setStatusKey] = useState(0);
+  const changed = () => {
+    void reloadSettings();
+    setStatusKey((k) => k + 1);
+  };
   return (
     <AdminPage title={t('admin.nav.ai')} intro={t('admin.pages.aiIntro')} demoMode={demoMode}>
-      <VoiceStatusCard />
+      <SpeechSettingsCard
+        settings={settings}
+        onSave={async (patch) => {
+          await handleSaveSystemSettings(patch);
+          setStatusKey((k) => k + 1);
+        }}
+        onChanged={changed}
+      />
+      <VoiceStatusCard key={statusKey} />
 
       {/* AI agents over MCP (and claude.ai / ChatGPT over OAuth) */}
       <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">

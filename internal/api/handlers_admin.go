@@ -524,16 +524,24 @@ func (s *Server) handleAdminGetSettings(w http.ResponseWriter, r *http.Request) 
 // settingsForBrowser hides the SMTP password; the admin only sees whether one is stored or comes from
 // SMTP_PASS.
 func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.SystemSettings {
-	out := *settings
+	out := *s.withEnvLocks(settings)
 	out.SMTPPassSet = out.SMTPPass != ""
 	out.SMTPPass = ""
-	if s.envSMTPPass(settings) != "" {
-		out.SMTPPassSet, out.SMTPPassViaEnv, out.SMTPPassUnreadable = true, true, false
-	}
-	if s.cfg.SMTPPass != "" && strings.TrimSpace(s.cfg.SMTPHost) != "" {
-		out.SMTPPassEnvHost, out.SMTPPassEnvUser = strings.TrimSpace(s.cfg.SMTPHost), strings.TrimSpace(s.cfg.SMTPUser)
-	}
+	// The mail server of the environment is shown as in effect (without its password) and locked
 	out.SMTPConfiguredViaEnv = s.smtpViaEnv()
+	out.SMTPDisabledViaEnv = s.cfg.SMTPDisabled
+	legal := s.legal()
+	out.Legal = &legal
+	out.Speech = s.speechForAdmin()
+	if s.smtpViaEnv() {
+		env := s.smtpFromEnv()
+		out.SMTPHost, out.SMTPPort, out.SMTPUser, out.SMTPFrom, out.SMTPFromName = env.Host, env.Port, env.User, env.From, env.FromName
+		out.SMTPTLS, out.SMTPSkipVerify = env.TLS, env.SkipVerify
+		out.SMTPPassSet, out.SMTPPassViaEnv, out.SMTPPassUnreadable = env.Pass != "", env.Pass != "", false
+		if env.Pass != "" {
+			out.SMTPPassEnvHost, out.SMTPPassEnvUser = env.Host, env.User
+		}
+	}
 	// What the environment fixes is shown as in effect and locked in the form
 	if s.cfg.RegistrationMode != "" {
 		out.RegistrationMode = s.cfg.RegistrationMode
@@ -644,15 +652,14 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	// Empty means unchanged (the browser never has it); without SMTP user the password goes too. One that
 	// no longer decrypts (SECRETS_KEY changed) stays stored until a new one is entered.
 	settings.SMTPPassUnreadable = false
-	// While SMTP_PASS applies to the mail server and user being saved, it is the password: one sent along
-	// is not stored (the form locks the field), the stored one stays as it was
-	if settings.SMTPPass != "" && s.envSMTPPass(&settings) != "" {
-		settings.SMTPPass = ""
-	}
 	if settings.SMTPPass == "" && strings.TrimSpace(settings.SMTPUser) != "" {
 		if cur, err := s.store.GetSystemSettings(); err == nil {
 			settings.SMTPPass, settings.SMTPPassUnreadable = cur.SMTPPass, cur.SMTPPassUnreadable
 		}
+	}
+	// Mail server, backups and the network switches the environment fixes keep what is stored
+	if cur, err := s.store.GetSystemSettings(); err == nil {
+		s.keepEnvLocked(&settings, cur)
 	}
 	// Registration fixed by the environment cannot be changed here (the stored value stays as it was)
 	if s.cfg.RegistrationMode != "" || s.cfg.RegistrationDomains != "" {
@@ -737,6 +744,18 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidAudioBitrate)
 		return
 	}
+	if settings.Speech != nil {
+		if err := storage.ValidateSpeech(settings.Speech); err != nil {
+			writeErrorFrom(w, http.StatusBadRequest, err)
+			return
+		}
+	}
+	if settings.Legal != nil {
+		if err := storage.ValidateLegal(settings.Legal); err != nil {
+			writeErrorFrom(w, http.StatusBadRequest, err)
+			return
+		}
+	}
 	if settings.ImageLimitMB < 0 || settings.ImageLimitMB > storage.MaxImageLimitMB {
 		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidImageLimit)
 		return
@@ -775,6 +794,10 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	// A new time zone counts from now on: due dates, alarms, the daily summary and backups read it
 	if settings.TimeZone != nil {
 		s.ApplyTimeZone()
+	}
+	// The Whisper server or its model may be new: check it (and fetch a missing model) in the background
+	if settings.Speech != nil {
+		s.kickVoiceCheck()
 	}
 	// The admin gave an address while no mail could go out (setup wizard): its link follows now
 	if !linksBefore && s.emailLinksAvailable() {

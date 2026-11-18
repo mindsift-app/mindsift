@@ -10,6 +10,7 @@ export function MbLimitField({
   max,
   label,
   disabled,
+  unit,
   onSave,
 }: {
   value: number;
@@ -17,6 +18,8 @@ export function MbLimitField({
   max: number;
   label: string;
   disabled?: boolean;
+  // the unit after the field (default MB)
+  unit?: string;
   onSave: (mb: number) => void;
 }) {
   const { t } = useTranslation('settings');
@@ -50,7 +53,7 @@ export function MbLimitField({
         }}
         className="h-11 sm:h-8 px-2 input-field text-base sm:text-xs w-24"
       />
-      {t('server.mb')}
+      {unit ?? t('server.mb')}
     </label>
   );
 }

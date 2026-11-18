@@ -134,52 +134,54 @@ func TestSMTPPasswordUndecryptable(t *testing.T) {
 	}
 }
 
-// SMTP_PASS stays in the environment: the first start copies host and user, not the password; mail uses
-// it while host and user are those of the environment, and the administration shows that one is set
-func TestSMTPPasswordFromEnvNotStored(t *testing.T) {
+// With SMTP_HOST the environment is the mail server: SMTP_PASS is never stored, the administration
+// shows the environment's server (and that a password is set, not which) and cannot change it; a
+// server saved there does not count while SMTP_HOST is set. SMTP_DISABLED sends no mail at all.
+func TestSMTPFromEnvLocksTheMailServer(t *testing.T) {
 	srv, store, token := setupTestServer(t)
-	srv.cfg.SMTPHost, srv.cfg.SMTPUser, srv.cfg.SMTPPass = "mail.example.com", "bot", "aus-der-umgebung"
+	srv.cfg.SMTPHost, srv.cfg.SMTPPort, srv.cfg.SMTPUser, srv.cfg.SMTPPass = "mail.example.com", "587", "bot", "aus-der-umgebung"
 	store.SeedSMTPDefaultsFromEnv(srv.cfg.SMTPHost, "587", srv.cfg.SMTPUser, srv.cfg.SMTPPass, "bot@example.com", "", true, false)
-	if sys, _ := store.GetSystemSettings(); sys.SMTPHost != "mail.example.com" || sys.SMTPPass != "" {
-		t.Fatalf("seeded host %q, stored password %q", sys.SMTPHost, sys.SMTPPass)
+	if sys, _ := store.GetSystemSettings(); sys.SMTPPass != "" {
+		t.Fatalf("SMTP_PASS must not be stored, got %q", sys.SMTPPass)
 	}
-	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "aus-der-umgebung" {
-		t.Fatalf("mail must use SMTP_PASS, got %q (%v)", cfg.Pass, err)
+	if cfg, err := srv.smtpSettings(); err != nil || cfg.Host != "mail.example.com" || cfg.Pass != "aus-der-umgebung" {
+		t.Fatalf("mail must use the environment, got %+v (%v)", cfg, err)
 	}
 	router := srv.Router()
 	body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String()
-	if !strings.Contains(body, `"smtpPassSet":true`) || !strings.Contains(body, `"smtpPassViaEnv":true`) || strings.Contains(body, "aus-der-umgebung") {
-		t.Fatalf("the administration must show a password from the environment, and nothing of it: %s", body)
+	for _, want := range []string{`"smtpHost":"mail.example.com"`, `"smtpPassSet":true`, `"smtpPassViaEnv":true`, `"smtpConfiguredViaEnv":true`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("admin view, want %s: %s", want, body)
+		}
 	}
-	// Saving the settings with the empty field still stores no password
-	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"mail.example.com","smtpUser":"bot","smtpPass":""}`, "")
-	if sys, _ := store.GetSystemSettings(); sys.SMTPPass != "" {
-		t.Fatalf("saving must not store SMTP_PASS, got %q", sys.SMTPPass)
+	if strings.Contains(body, "aus-der-umgebung") {
+		t.Fatalf("the password must not be shown: %s", body)
 	}
-	// A password sent while SMTP_PASS applies is ignored: not stored, mail keeps using the environment's
-	// (also with the host and user written differently)
-	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"Mail.Example.com","smtpUser":"bot","smtpPass":"eingetippt"}`, "")
-	if sys, _ := store.GetSystemSettings(); sys.SMTPPass != "" {
-		t.Fatalf("a password sent while SMTP_PASS applies must not be stored, got %q", sys.SMTPPass)
+	// Another server saved in the administration is not stored and not used
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"smtp.other.example","smtpUser":"eve","smtpPass":"eigenes"}`, "")
+	if sys, _ := store.GetSystemSettings(); sys.SMTPHost != "mail.example.com" || sys.SMTPPass != "" || sys.SMTPUser != "bot" {
+		t.Fatalf("the mail server must stay as it was: %+v", sys)
 	}
-	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "aus-der-umgebung" {
-		t.Fatalf("mail must keep using SMTP_PASS, got %q (%v)", cfg.Pass, err)
+	if cfg, err := srv.smtpSettings(); err != nil || cfg.Host != "mail.example.com" || cfg.Pass != "aus-der-umgebung" {
+		t.Fatalf("mail must keep using the environment, got %+v (%v)", cfg, err)
 	}
-	// Another mail server set in the administration never gets the password of the environment
-	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"smtp.other.example","smtpUser":"bot","smtpPass":""}`, "")
-	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "" {
-		t.Fatalf("another server must not get SMTP_PASS, got %q (%v)", cfg.Pass, err)
+	// Without SMTP_HOST the administration's server counts again
+	srv.cfg.SMTPHost = ""
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"smtp.other.example","smtpUser":"eve","smtpPass":"eigenes"}`, "")
+	if cfg, err := srv.smtpSettings(); err != nil || cfg.Host != "smtp.other.example" || cfg.Pass != "eigenes" {
+		t.Fatalf("the administration's server, got %+v (%v)", cfg, err)
 	}
-	if body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String(); strings.Contains(body, `"smtpPassViaEnv":true`) {
-		t.Fatalf("another server: no password from the environment: %s", body)
-	} else if !strings.Contains(body, `"smtpPassEnvHost":"mail.example.com"`) || !strings.Contains(body, `"smtpPassEnvUser":"bot"`) {
-		// The form needs to know which server SMTP_PASS belongs to, to lock the field only for that one
-		t.Fatalf("the server SMTP_PASS belongs to is missing: %s", body)
+	// SMTP_DISABLED: no mail, whatever is set, and the form is locked
+	srv.cfg.SMTPDisabled = true
+	if _, err := srv.smtpSettings(); err != errMailDisabled {
+		t.Fatalf("SMTP_DISABLED must stop mail, got %v", err)
 	}
-	// ... and takes a password of its own
-	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"smtp.other.example","smtpUser":"bot","smtpPass":"eigenes"}`, "")
-	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "eigenes" {
-		t.Fatalf("another server must keep its own password, got %q (%v)", cfg.Pass, err)
+	if body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String(); !strings.Contains(body, `"smtpDisabledViaEnv":true`) {
+		t.Fatalf("SMTP_DISABLED not shown: %s", body)
+	}
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"smtp.third.example","smtpUser":"x"}`, "")
+	if sys, _ := store.GetSystemSettings(); sys.SMTPHost != "smtp.other.example" {
+		t.Fatalf("SMTP_DISABLED locks the mail server: %q", sys.SMTPHost)
 	}
 }
 

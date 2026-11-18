@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
@@ -28,12 +29,15 @@ import (
 // browser only gets a short message.
 
 type voiceService struct {
-	slots chan struct{}
+	mu       sync.Mutex
+	slots    chan struct{} // as many places as STT_MAX_PARALLEL / the administration allow (slotsFor)
+	parallel int
+	usage    map[string][]time.Time // userID -> transcriptions within the last hour
+	status   voiceStatus
+	checked  time.Time
 
-	mu      sync.Mutex
-	usage   map[string][]time.Time // userID -> transcriptions within the last hour
-	status  voiceStatus
-	checked time.Time
+	downloads modelDownloads // models the administration had downloaded (speech.go)
+	checking  atomic.Bool    // startVoiceCheck runs
 }
 
 // voiceStatus is what the admin page shows about the Whisper server.
@@ -45,14 +49,27 @@ type voiceStatus struct {
 }
 
 func newVoiceService(parallel int) *voiceService {
+	v := &voiceService{usage: map[string][]time.Time{}}
+	v.slotsFor(parallel)
+	return v
+}
+
+// slotsFor: the places for transcriptions at the same time. A new number gets a new set of places; the
+// transcriptions under way give theirs back to the set they took it from.
+func (v *voiceService) slotsFor(parallel int) chan struct{} {
 	if parallel < 1 {
 		parallel = 1
 	}
-	return &voiceService{slots: make(chan struct{}, parallel), usage: map[string][]time.Time{}}
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.slots == nil || v.parallel != parallel {
+		v.slots, v.parallel = make(chan struct{}, parallel), parallel
+	}
+	return v.slots
 }
 
 func (s *Server) voiceMode() string {
-	return s.cfg.Speech.Mode(s.cfg.DemoMode)
+	return s.speech().Mode(s.cfg.DemoMode)
 }
 
 // allowVoice counts one transcription for the user; false when the hourly budget is used up.
@@ -75,8 +92,8 @@ func (v *voiceService) allowVoice(userID string, perHour int, now time.Time) boo
 
 // sttEndpoint joins the base URL with an API path; a base URL ending in /v1 works as well.
 func (s *Server) sttEndpoint(p string) string {
-	base := strings.TrimSuffix(s.cfg.Speech.URL, "/v1")
-	return base + p
+	url, _ := s.whisperServer()
+	return strings.TrimSuffix(url, "/v1") + p
 }
 
 func (s *Server) sttRequest(ctx context.Context, method, p string, body io.Reader, contentType string) (*http.Response, error) {
@@ -87,8 +104,8 @@ func (s *Server) sttRequest(ctx context.Context, method, p string, body io.Reade
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
-	if s.cfg.Speech.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+s.cfg.Speech.APIKey)
+	if _, key := s.whisperServer(); key != "" {
+		req.Header.Set("Authorization", "Bearer "+key)
 	}
 	return http.DefaultClient.Do(req)
 }
@@ -98,7 +115,7 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "Serverseitige Spracherkennung ist nicht eingerichtet")
 		return
 	}
-	cfg := s.cfg.Speech
+	cfg := s.speech()
 	userID := auth.GetUserID(r.Context())
 	if !s.voice.allowVoice(userID, cfg.PerUserPerHour, time.Now()) {
 		writeError(w, http.StatusTooManyRequests, "Stundenlimit für die Spracherkennung erreicht. Bitte später erneut versuchen.")
@@ -125,9 +142,10 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 	// Wait for a free slot; the request may be cancelled meanwhile (user stopped waiting)
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(cfg.TimeoutSeconds)*time.Second)
 	defer cancel()
+	slots := s.voice.slotsFor(cfg.MaxParallel)
 	select {
-	case s.voice.slots <- struct{}{}:
-		defer func() { <-s.voice.slots }()
+	case slots <- struct{}{}:
+		defer func() { <-slots }()
 	case <-ctx.Done():
 		slog.Warn("Speech recognition: no free capacity within the time limit", "user_id", userID, "parallel", cfg.MaxParallel)
 		writeError(w, http.StatusServiceUnavailable, "Die Spracherkennung ist gerade ausgelastet. Bitte gleich noch einmal versuchen.")
@@ -184,12 +202,13 @@ func (s *Server) transcribe(ctx context.Context, audio []byte, filename, content
 	if _, err := fw.Write(audio); err != nil {
 		return "", err
 	}
-	_ = mw.WriteField("model", s.cfg.Speech.Model)
+	cfg := s.speech()
+	_ = mw.WriteField("model", cfg.Model)
 	if language != "" {
 		_ = mw.WriteField("language", language)
 	}
 	_ = mw.WriteField("response_format", "json")
-	if s.cfg.Speech.VADFilter {
+	if cfg.VADFilter == nil || *cfg.VADFilter {
 		_ = mw.WriteField("vad_filter", "true")
 	}
 	if err := mw.Close(); err != nil {
@@ -289,8 +308,13 @@ func (s *Server) checkVoice(ctx context.Context) voiceStatus {
 		} `json:"data"`
 	}
 	_ = json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&list)
+	model := s.speech().Model
+	// speaches lists a model as soon as its download began: one still coming does not count yet
+	if s.voice.downloads.running(model) {
+		return st
+	}
 	for _, m := range list.Data {
-		if m.ID == s.cfg.Speech.Model {
+		if m.ID == model {
 			st.ModelReady = true
 		}
 	}
@@ -307,17 +331,28 @@ func (s *Server) setVoiceStatus(st voiceStatus) {
 	s.voice.mu.Unlock()
 }
 
-// startVoiceCheck waits for the Whisper server after startup (it may start later than MindSift) and
-// asks it to download the model if it does not have it yet, so the first recording works. A background
-// job: it ends with Close, also while it waits or a check is under way.
-func (s *Server) startVoiceCheck() {
-	cfg := s.cfg.Speech
+// startVoiceCheck waits for the Whisper server (after startup it may start later than MindSift, or the
+// administration just entered it) and asks it to download the model if it does not have it yet, so the
+// first recording works. A background job: it ends with Close, also while it waits or a check is under
+// way; only one runs at a time (kickVoiceCheck). After the administration saved its settings it only
+// checks: the model is then chosen there, and the default must not be fetched on its own.
+func (s *Server) startVoiceCheck() { s.voiceCheck(true) }
+
+func (s *Server) voiceCheck(fetchModel bool) {
+	if !s.voice.checking.CompareAndSwap(false, true) {
+		return
+	}
+	defer s.voice.checking.Store(false)
+	cfg := s.speech()
 	slog.Info("Speech recognition: server mode", "url", cfg.URL, "model", cfg.Model,
 		"max_parallel", cfg.MaxParallel, "per_user_per_hour", cfg.PerUserPerHour, "max_upload_mb", cfg.MaxUploadMB)
 	stopCtx, stopCancel := s.stopContext()
 	defer stopCancel()
 	downloadRequested := false
 	for attempt := 0; ; attempt++ {
+		if s.voiceMode() != "server" {
+			return // switched to the browser or off meanwhile
+		}
 		ctx, cancel := context.WithTimeout(stopCtx, 10*time.Second)
 		st := s.checkVoice(ctx)
 		cancel()
@@ -325,14 +360,16 @@ func (s *Server) startVoiceCheck() {
 			return
 		}
 		s.setVoiceStatus(st)
+		cfg = s.speech()
 		switch {
 		case st.ModelReady:
 			slog.Info("Speech recognition ready", "url", cfg.URL, "model", cfg.Model)
 			return
-		case st.Reachable && !downloadRequested:
+		case st.Reachable && fetchModel && !downloadRequested:
 			downloadRequested = true
-			slog.Info("Speech recognition: downloading the model (can take a few minutes)", "model", cfg.Model)
-			s.background(s.requestModelDownload)
+			s.startModelDownload(cfg.Model, false)
+		case st.Reachable && !fetchModel:
+			return // the administration chooses (and downloads) the model
 		case !st.Reachable && attempt%6 == 0:
 			slog.Warn("Speech recognition: Whisper server not reachable, will retry", "url", cfg.URL, "error", st.Error)
 		}
@@ -342,35 +379,20 @@ func (s *Server) startVoiceCheck() {
 	}
 }
 
-// voiceCheckInterval: how often startVoiceCheck asks the Whisper server until the model is ready
-const voiceCheckInterval = 10 * time.Second
-
-func (s *Server) requestModelDownload() {
-	// A background job of its own (the check goes on while the download runs); Close cancels it
-	stopCtx, stopCancel := s.stopContext()
-	defer stopCancel()
-	ctx, cancel := context.WithTimeout(stopCtx, 2*time.Hour)
-	defer cancel()
-	// Model IDs contain a slash (owner/name); speaches takes them as a path
-	resp, err := s.sttRequest(ctx, http.MethodPost, "/v1/models/"+s.cfg.Speech.Model, nil, "")
-	if err != nil {
-		if stopCtx.Err() != nil {
-			return // the server is stopping
-		}
-		slog.Warn("Speech recognition: model download failed", "model", s.cfg.Speech.Model, "error", err)
-		return
-	}
-	defer resp.Body.Close()
-	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-	if resp.StatusCode >= 300 {
-		slog.Warn("Speech recognition: model download refused", "model", s.cfg.Speech.Model, "status", resp.StatusCode, "body", strings.TrimSpace(string(raw)))
+// kickVoiceCheck starts startVoiceCheck when the server mode applies (after saving the settings).
+func (s *Server) kickVoiceCheck() {
+	if s.voiceMode() == "server" && !s.voice.checking.Load() {
+		s.background(func() { s.voiceCheck(false) })
 	}
 }
 
-// handleAdminVoiceStatus shows the admin which speech recognition is active (configured by
-// environment only) and checks the Whisper server right now.
+// voiceCheckInterval: how often startVoiceCheck asks the Whisper server until the model is ready
+const voiceCheckInterval = 10 * time.Second
+
+// handleAdminVoiceStatus shows the admin which speech recognition is active and checks the Whisper
+// server right now.
 func (s *Server) handleAdminVoiceStatus(w http.ResponseWriter, r *http.Request) {
-	cfg := s.cfg.Speech
+	cfg := s.speech()
 	out := map[string]any{
 		"mode":           s.voiceMode(),
 		"demo":           s.cfg.DemoMode,

@@ -161,6 +161,22 @@ func cloneSystemSettings(in *domain.SystemSettings) *domain.SystemSettings {
 			*p = &v
 		}
 	}
+	if out.Speech != nil {
+		v := *out.Speech
+		v.ConfiguredViaEnv = append([]string(nil), v.ConfiguredViaEnv...)
+		for _, p := range []**bool{&v.AllowBrowser, &v.VADFilter} {
+			if *p != nil {
+				b := **p
+				*p = &b
+			}
+		}
+		out.Speech = &v
+	}
+	if out.Legal != nil {
+		v := *out.Legal
+		v.ConfiguredViaEnv = append([]string(nil), v.ConfiguredViaEnv...)
+		out.Legal = &v
+	}
 	if out.MediaQuotaMB != nil {
 		v := *out.MediaQuotaMB
 		out.MediaQuotaMB = &v
@@ -182,7 +198,7 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	settings := &domain.SystemSettings{
 		SharingMode:         SharingOrganizations,
 		AllowRegistration:   false,
-		InstanceName:        "MindSift",
+		InstanceName:        s.instanceNameDefault(),
 		SMTPPort:            "587",
 		SMTPTLS:             true,
 		BackupTime:          DefaultBackupTime,
@@ -210,7 +226,11 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 			case "registration_verify_email":
 				settings.RegistrationVerifyEmail = v == "true"
 			case "instance_name":
-				settings.InstanceName = v
+				// "MindSift" is what every installation started with: INSTANCE_NAME takes its place until
+				// the administration chooses a name of its own
+				if v != "" && v != "MindSift" {
+					settings.InstanceName = v
+				}
 			case "smtp_host":
 				settings.SMTPHost = v
 			case "smtp_port":
@@ -301,6 +321,17 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 				if n, err := strconv.Atoi(v); err == nil && n >= 0 && n <= MaxMediaQuotaMB {
 					settings.MediaQuotaMB = &n
 				}
+			case "speech_mode", "speech_allow_browser", "speech_url", "speech_api_key", "speech_model", "speech_max_seconds",
+				"speech_max_upload_mb", "speech_max_parallel", "speech_per_user_per_hour", "speech_timeout_seconds", "speech_vad_filter":
+				if settings.Speech == nil {
+					settings.Speech = &domain.SpeechSettings{}
+				}
+				s.readSpeechSetting(settings.Speech, k, v)
+			case "legal_imprint_url", "legal_imprint_content", "legal_privacy_url", "legal_privacy_content", "legal_custom_link_label", "legal_custom_link_url":
+				if settings.Legal == nil {
+					settings.Legal = &domain.LegalSettings{}
+				}
+				*legalField(settings.Legal, k) = v
 			case "audio_uploads":
 				on := v != "false"
 				settings.AudioUploads = &on
@@ -373,6 +404,12 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 		on := true
 		settings.AudioUploads = &on
 	}
+	if settings.Legal == nil {
+		settings.Legal = &domain.LegalSettings{}
+	}
+	if settings.Speech == nil {
+		settings.Speech = &domain.SpeechSettings{}
+	}
 	if settings.Images == nil {
 		on := true
 		settings.Images = &on
@@ -431,7 +468,7 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 	}
 	settings.SharingMode = NormalizeSharingMode(settings.SharingMode)
 	if settings.InstanceName == "" {
-		settings.InstanceName = "MindSift"
+		settings.InstanceName = s.instanceNameDefault()
 	}
 	if !ValidBackupTime(settings.BackupTime) {
 		settings.BackupTime = DefaultBackupTime
@@ -542,6 +579,20 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		}
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_bitrate', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(settings.AudioBitrate))
+	}
+	if err == nil && settings.Speech != nil {
+		err = s.writeSpeechSettings(settings.Speech)
+	}
+	if err == nil && settings.Legal != nil {
+		if verr := ValidateLegal(settings.Legal); verr != nil {
+			return verr
+		}
+		for _, key := range legalKeys {
+			if err == nil {
+				_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES (?, ?)
+					ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, strings.TrimSpace(*legalField(settings.Legal, key)))
+			}
+		}
 	}
 	for key, on := range map[string]*bool{"images": settings.Images, "external_images": settings.ExternalImages} {
 		if err == nil && on != nil {
@@ -662,6 +713,53 @@ func ValidAudioCompression(v string) bool {
 }
 
 func ValidAudioBitrate(kbps int) bool { return kbps >= MinAudioBitrate && kbps <= MaxAudioBitrate }
+
+// Imprint and privacy notice (domain.LegalSettings) in system_settings
+var legalKeys = []string{"legal_imprint_url", "legal_imprint_content", "legal_privacy_url", "legal_privacy_content", "legal_custom_link_label", "legal_custom_link_url"}
+
+func legalField(l *domain.LegalSettings, key string) *string {
+	switch key {
+	case "legal_imprint_url":
+		return &l.ImprintURL
+	case "legal_imprint_content":
+		return &l.ImprintContent
+	case "legal_privacy_url":
+		return &l.PrivacyURL
+	case "legal_privacy_content":
+		return &l.PrivacyContent
+	case "legal_custom_link_label":
+		return &l.CustomLinkLabel
+	}
+	return &l.CustomLinkURL
+}
+
+// MaxLegalContentLength: the longest imprint or privacy text (Markdown) in bytes.
+const MaxLegalContentLength = 100000
+
+var (
+	ErrLegalURL        = i18n.NewError("Links zu Impressum und Datenschutz müssen mit https:// oder http:// beginnen")
+	ErrLegalCustomLink = i18n.NewError("Der eigene Link braucht eine Beschriftung (höchstens 60 Zeichen) und eine Adresse mit https://")
+	ErrLegalContent    = i18n.NewError("Texte für Impressum und Datenschutz: höchstens 100.000 Zeichen")
+)
+
+// ValidateLegal: links only http(s) (the footer link https), a label for the footer link, texts within
+// MaxLegalContentLength. Empty fields are fine.
+func ValidateLegal(l *domain.LegalSettings) error {
+	for _, u := range []string{l.ImprintURL, l.PrivacyURL} {
+		u = strings.TrimSpace(u)
+		if u != "" && !strings.HasPrefix(u, "https://") && !strings.HasPrefix(u, "http://") {
+			return ErrLegalURL
+		}
+	}
+	label, link := strings.TrimSpace(l.CustomLinkLabel), strings.TrimSpace(l.CustomLinkURL)
+	if (label != "" || link != "") && (label == "" || len([]rune(label)) > 60 || !strings.HasPrefix(link, "https://")) {
+		return ErrLegalCustomLink
+	}
+	if len(l.ImprintContent) > MaxLegalContentLength || len(l.PrivacyContent) > MaxLegalContentLength {
+		return ErrLegalContent
+	}
+	return nil
+}
 
 // MaxPublicLinkDays: no public link lives longer than this (there is no link for good).
 const MaxPublicLinkDays = 14

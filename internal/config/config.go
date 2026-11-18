@@ -15,6 +15,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
@@ -70,6 +71,21 @@ type Config struct {
 	SMTPTLS      bool
 	// SMTPSkipVerify accepts self-signed or mismatching certificates (internal mail servers)
 	SMTPSkipVerify bool
+	// SMTPDisabled: SMTP_DISABLED=true sends no mail at all and locks the mail server in the
+	// administration. With SMTP_HOST set, the SMTP_* variables are the mail server and lock it too.
+	SMTPDisabled bool
+	// InstanceName: INSTANCE_NAME, the name of the instance until the administration sets one
+	InstanceName string
+	// LinkPreviews, PushKnownServicesOnly, AllowPrivateWebhooks, BackupEnabled: LINK_PREVIEWS,
+	// PUSH_KNOWN_SERVICES_ONLY, ALLOW_PRIVATE_WEBHOOKS, BACKUP_ENABLED=true/false fix the switch in the
+	// administration; BackupTime (BACKUP_TIME, HH:MM) and BackupRetentionDays (BACKUP_RETENTION_DAYS,
+	// 1–365) fix the time and how long backups are kept. Unset (nil, "", 0) leaves each to the settings.
+	LinkPreviews          *bool
+	PushKnownServicesOnly *bool
+	AllowPrivateWebhooks  *bool
+	BackupEnabled         *bool
+	BackupTime            string
+	BackupRetentionDays   int
 
 	// Legal notices (Impressum, Datenschutz): an external URL and/or Markdown text, shown even before login
 	Legal LegalTexts
@@ -320,21 +336,37 @@ type MediaConfig struct {
 	ExternalImages *bool
 }
 
-// SpeechConfig: with STT_URL set, voice input is transcribed by a self-hosted, OpenAI-compatible
-// Whisper server (e.g. speaches); otherwise the browser's own speech recognition is used.
+// SpeechConfig: with URL set, voice input is transcribed by a self-hosted, OpenAI-compatible Whisper
+// server (e.g. speaches); otherwise the browser's own speech recognition is used. Config.Speech holds
+// what the STT_* variables set (empty, 0 or nil: not set, the administration decides; each set value
+// fixes its field there); the server works with the merged values (api.Server.speech).
 type SpeechConfig struct {
 	URL            string // base URL, e.g. http://whisper:8000
 	Model          string
 	APIKey         string
 	Disabled       bool // STT_DISABLED=true hides voice input everywhere
 	NoBrowser      bool // STT_ALLOW_BROWSER=false forbids the browser's recognition (it sends audio to Google/Microsoft)
+	BrowserAllowed bool // STT_ALLOW_BROWSER=true: allowed, and the administration cannot forbid it
 	MaxSeconds     int  // recordings stop after this long (enforced in the browser)
 	MaxUploadMB    int
 	MaxParallel    int // transcriptions running at the same time; more wait in line
 	PerUserPerHour int
 	TimeoutSeconds int
-	VADFilter      bool // ask the Whisper server to skip silence (fewer made-up repetitions); speaches understands it
+	VADFilter      *bool // ask the Whisper server to skip silence (fewer made-up repetitions); speaches understands it
+	// DefaultModel: STT_DEFAULT_MODEL, the model until the administration chooses one (does not fix it,
+	// unlike STT_MODEL); the install script writes it
+	DefaultModel string
 }
+
+// Defaults of voice input where neither STT_* nor the administration says anything
+const (
+	DefaultSTTModel          = "deepdml/faster-whisper-large-v3-turbo-ct2"
+	DefaultSTTMaxSeconds     = 600
+	DefaultSTTMaxUploadMB    = 25
+	DefaultSTTMaxParallel    = 1
+	DefaultSTTPerUserPerHour = 60
+	DefaultSTTTimeoutSeconds = 120
+)
 
 // Mode is "server", "browser" or "off". The demo never uses the server, so visitors cannot keep
 // its CPU busy.
@@ -608,18 +640,28 @@ func Load() *Config {
 		SMTPFromName:            getEnv("SMTP_FROM_NAME", "MindSift"),
 		SMTPTLS:                 smtpTLS,
 		SMTPSkipVerify:          smtpSkipVerify,
+		SMTPDisabled:            envBoolPtr("SMTP_DISABLED") != nil && *envBoolPtr("SMTP_DISABLED"),
+		InstanceName:            strings.TrimSpace(getEnv("INSTANCE_NAME", "")),
+		LinkPreviews:            envBoolPtr("LINK_PREVIEWS"),
+		PushKnownServicesOnly:   envBoolPtr("PUSH_KNOWN_SERVICES_ONLY"),
+		AllowPrivateWebhooks:    envBoolPtr("ALLOW_PRIVATE_WEBHOOKS"),
+		BackupEnabled:           envBoolPtr("BACKUP_ENABLED"),
+		BackupTime:              backupTimeFromEnv(),
+		BackupRetentionDays:     envInt("BACKUP_RETENTION_DAYS", 0, 1, 365),
 		Speech: SpeechConfig{
 			URL:            strings.TrimRight(getEnv("STT_URL", ""), "/"),
-			Model:          getEnv("STT_MODEL", "deepdml/faster-whisper-large-v3-turbo-ct2"),
+			Model:          strings.TrimSpace(getEnv("STT_MODEL", "")),
 			APIKey:         getEnv("STT_API_KEY", ""),
 			Disabled:       strings.ToLower(getEnv("STT_DISABLED", "false")) == "true",
-			NoBrowser:      strings.ToLower(getEnv("STT_ALLOW_BROWSER", "true")) == "false",
-			MaxSeconds:     envInt("STT_MAX_SECONDS", 600, 5, 3600),
-			MaxUploadMB:    envInt("STT_MAX_UPLOAD_MB", 25, 1, 500),
-			MaxParallel:    envInt("STT_MAX_PARALLEL", 1, 1, 32),
-			PerUserPerHour: envInt("STT_PER_USER_PER_HOUR", 60, 1, 100000),
-			TimeoutSeconds: envInt("STT_TIMEOUT_SECONDS", 120, 5, 3600),
-			VADFilter:      strings.ToLower(getEnv("STT_VAD_FILTER", "true")) != "false",
+			NoBrowser:      strings.ToLower(getEnv("STT_ALLOW_BROWSER", "")) == "false",
+			BrowserAllowed: strings.ToLower(getEnv("STT_ALLOW_BROWSER", "")) == "true",
+			MaxSeconds:     envInt("STT_MAX_SECONDS", 0, 5, 3600),
+			MaxUploadMB:    envInt("STT_MAX_UPLOAD_MB", 0, 1, 500),
+			MaxParallel:    envInt("STT_MAX_PARALLEL", 0, 1, 32),
+			PerUserPerHour: envInt("STT_PER_USER_PER_HOUR", 0, 1, 100000),
+			TimeoutSeconds: envInt("STT_TIMEOUT_SECONDS", 0, 5, 3600),
+			VADFilter:      envBoolPtr("STT_VAD_FILTER"),
+			DefaultModel:   strings.TrimSpace(getEnv("STT_DEFAULT_MODEL", "")),
 		},
 		NotifyDigestMinutes: envInt("NOTIFY_DIGEST_MINUTES", 5, 1, 1440),
 		DrawLiveMaxMB:       envInt("DRAW_LIVE_MAX_MB", drawLiveDefaultMB(memoryLimit()), 1, 4096),
@@ -818,6 +860,19 @@ func audioCompressionFromEnv() string {
 	}
 	slog.Warn("MEDIA_AUDIO_COMPRESSION ignored: allowed are recordings and off", "value", v)
 	return ""
+}
+
+// backupTimeFromEnv reads BACKUP_TIME (HH:MM, 24 hours); anything else is ignored with a warning.
+func backupTimeFromEnv() string {
+	v := strings.TrimSpace(os.Getenv("BACKUP_TIME"))
+	if v == "" {
+		return ""
+	}
+	if t, err := time.Parse("15:04", v); err != nil || t.Format("15:04") != v {
+		slog.Warn("BACKUP_TIME ignored: expected HH:MM (24 hours)", "value", v)
+		return ""
+	}
+	return v
 }
 
 // MaxPublicLinkDays is the hard limit for public links (storage.MaxPublicLinkDays): there is no link

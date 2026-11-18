@@ -76,6 +76,20 @@ func WithSecretsKey(key []byte) StoreOption {
 	return func(s *Store) { s.secretsKey = key }
 }
 
+// WithDefaultInstanceName gives the name an instance has until the administration sets one
+// (INSTANCE_NAME); the administration may change it.
+func WithDefaultInstanceName(name string) StoreOption {
+	return func(s *Store) { s.defaultInstanceName = strings.TrimSpace(name) }
+}
+
+// instanceNameDefault: INSTANCE_NAME, else "MindSift"
+func (s *Store) instanceNameDefault() string {
+	if s.defaultInstanceName != "" {
+		return s.defaultInstanceName
+	}
+	return "MindSift"
+}
+
 // storedSMTPPass is the value written to system_settings for the SMTP password.
 func (s *Store) storedSMTPPass(pass string) (string, error) {
 	if pass == "" || len(s.secretsKey) == 0 {

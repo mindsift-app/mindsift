@@ -63,7 +63,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	storeOpts := []storage.StoreOption{storage.WithSecretsKey(cfg.SecretsKey)}
+	storeOpts := []storage.StoreOption{storage.WithSecretsKey(cfg.SecretsKey), storage.WithDefaultInstanceName(cfg.InstanceName)}
 	if cfg.DemoMode {
 		storeOpts = append(storeOpts, storage.WithDemoMode())
 	}

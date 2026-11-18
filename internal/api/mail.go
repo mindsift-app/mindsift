@@ -17,9 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
-	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 // smtpSettings is the effective mail server configuration (admin settings, else environment).
@@ -48,30 +46,29 @@ func (e *smtpStepError) Unwrap() error { return e.Err }
 
 const smtpTimeout = 30 * time.Second
 
+// errMailDisabled: SMTP_DISABLED=true, the provider sends no mail from this server
+var errMailDisabled = i18n.NewError("Der Mailversand ist auf diesem Server abgeschaltet")
+
 var errSMTPPassUnreadable = i18n.NewError("Das gespeicherte SMTP-Passwort lässt sich nicht entschlüsseln (SECRETS_KEY oder secrets.key geändert?); bitte in der Administration unter E-Mail neu eingeben")
 
 func (s *Server) smtpSettings() (smtpSettings, error) {
+	if s.cfg.SMTPDisabled {
+		return smtpSettings{}, errMailDisabled
+	}
 	cfg := smtpSettings{Port: "587", TLS: true}
-	if sys, _ := s.store.GetSystemSettings(); sys != nil && strings.TrimSpace(sys.SMTPHost) != "" {
-		pass := sys.SMTPPass
-		if envPass := s.envSMTPPass(sys); envPass != "" {
-			pass = envPass
-		} else if sys.SMTPPassUnreadable {
+	if s.smtpViaEnv() {
+		// The environment names the mail server: the administration's own settings do not count then
+		cfg = s.smtpFromEnv()
+	} else if sys, _ := s.store.GetSystemSettings(); sys != nil && strings.TrimSpace(sys.SMTPHost) != "" {
+		if sys.SMTPPassUnreadable {
 			// The stored password does not decrypt (logged when it was read): no attempt without it
 			return cfg, errSMTPPassUnreadable
 		}
 		cfg = smtpSettings{
 			Host: strings.TrimSpace(sys.SMTPHost), Port: strings.TrimSpace(sys.SMTPPort),
-			User: strings.TrimSpace(sys.SMTPUser), Pass: pass, From: strings.TrimSpace(sys.SMTPFrom),
+			User: strings.TrimSpace(sys.SMTPUser), Pass: sys.SMTPPass, From: strings.TrimSpace(sys.SMTPFrom),
 			FromName: strings.TrimSpace(sys.SMTPFromName),
 			TLS:      sys.SMTPTLS, SkipVerify: sys.SMTPSkipVerify,
-		}
-	} else if strings.TrimSpace(s.cfg.SMTPHost) != "" {
-		cfg = smtpSettings{
-			Host: strings.TrimSpace(s.cfg.SMTPHost), Port: strings.TrimSpace(s.cfg.SMTPPort),
-			User: strings.TrimSpace(s.cfg.SMTPUser), Pass: s.cfg.SMTPPass, From: strings.TrimSpace(s.cfg.SMTPFrom),
-			FromName: strings.TrimSpace(s.cfg.SMTPFromName),
-			TLS:      s.cfg.SMTPTLS, SkipVerify: s.cfg.SMTPSkipVerify,
 		}
 	}
 	if cfg.Host == "" {
@@ -80,17 +77,7 @@ func (s *Server) smtpSettings() (smtpSettings, error) {
 	return cfg.withDefaults(), nil
 }
 
-// envSMTPPass is SMTP_PASS while the admin settings name the mail server and user of SMTP_HOST and
-// SMTP_USER, else "". It is never stored (storage.SeedSMTPDefaultsFromEnv) and takes precedence over a
-// password stored for the same server; another server set in the administration never gets it.
-func (s *Server) envSMTPPass(sys *domain.SystemSettings) string {
-	if s.cfg.SMTPPass == "" || !storage.SMTPMatchesEnv(sys.SMTPHost, sys.SMTPUser, s.cfg.SMTPHost, s.cfg.SMTPUser) {
-		return ""
-	}
-	return s.cfg.SMTPPass
-}
-
-// smtpViaEnv: SMTP_HOST is set. Admin settings with a host of their own still take precedence.
+// smtpViaEnv: SMTP_HOST is set: the SMTP_* variables are the mail server, the administration cannot change it.
 func (s *Server) smtpViaEnv() bool { return strings.TrimSpace(s.cfg.SMTPHost) != "" }
 
 // withDefaults fills what may be left out: port 587, the sender name MindSift, the sender address from

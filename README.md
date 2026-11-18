@@ -206,7 +206,10 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `DEFAULT_LANGUAGE` | `de` (demo: `en`) | `de`, `en`, `es`, `fr` or `it`, see "Language" below |
 | `TZ` | `UTC` | Time zone of the server for due dates, alarms, the daily summary and backups; the admin center can set it instead (its setting wins) |
 | `REGISTRATION_MODE` | admin UI decides | `closed`, `approval`, `domain`, `domain+approval` or `open` |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | empty | Mail for alarms, invites and password reset (also in the admin UI) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | admin UI decides | Mail for alarms, invites and password reset; with `SMTP_HOST` set the mail server is fixed and locked in the admin UI. `SMTP_DISABLED=true` sends no mail at all |
+| `INSTANCE_NAME` | `MindSift` | Name of the instance until an admin sets another |
+| `LINK_PREVIEWS`, `PUSH_KNOWN_SERVICES_ONLY`, `ALLOW_PRIVATE_WEBHOOKS` | admin UI decides | `true`/`false` fixes the switch and locks it in the admin UI |
+| `BACKUP_ENABLED`, `BACKUP_TIME`, `BACKUP_RETENTION_DAYS` | admin UI decides | Fix the automatic backups (on/off, `HH:MM`, days to keep) |
 | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | empty | Sign-in through an OpenID Connect provider, see [single sign-on](#single-sign-on-oidc) below; more options in [Doku/oidc.md](Doku/oidc.md#setup) |
 | `TRUSTED_PROXIES` | `private` | Whose `X-Forwarded-For` to trust, see [reverse proxy](Doku/reverse-proxy.md) |
 | `MCP_ENABLED` | admin UI decides | `false` switches off the endpoint for AI agents |
@@ -222,7 +225,7 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | empty | Outgoing proxy for OIDC, the update check, webhooks, push, link previews and image copies; MindSift still checks each target's addresses itself before handing it over, and needs DNS for that ([limits](Doku/security.md#nothing-reaches-into-your-network)) |
 | `DRAW_LIVE_MAX_MB` | a twelfth of the server's memory, 16–128 | Memory all live drawings on the server may hold together, in MB (each up to 1 MB; the server needs about three times that). Without the variable it follows `GOMEMLIMIT`, else the machine's memory |
 | `METRICS_TOKEN` | empty | Switches on `/metrics` for Prometheus, see [monitoring](Doku/operations.md#monitoring) |
-| `STT_*` | empty | Your own Whisper server for voice input |
+| `STT_*` | admin UI decides | Your own Whisper server for voice input (address, key, model, limits); each one set fixes its field in the admin UI. `STT_DEFAULT_MODEL` only presets the model |
 | `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a server with real data!** |
 
 * **First admin:** with `ADMIN_USER` and `ADMIN_PASSWORD` (at least 8 characters, or `ADMIN_PASSWORD_FILE`), the admin exists before the server accepts connections; unusable values stop the start with a reason in the log. They act only while the database has no account ([details](Doku/operations.md#first-admin)).

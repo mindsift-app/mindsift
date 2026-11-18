@@ -41,13 +41,22 @@ export function SmtpSection({
             </p>
           </div>
 
-          {settings.smtpConfiguredViaEnv && (
+          {(settings.smtpConfiguredViaEnv || settings.smtpDisabledViaEnv) && (
             <span className="badge-ok text-[11px] shrink-0">
               {t('smtp.envDetected')}
             </span>
           )}
         </div>
 
+        {/* The environment names the mail server (SMTP_HOST) or switches mail off (SMTP_DISABLED): the
+            form only shows it */}
+        {(settings.smtpConfiguredViaEnv || settings.smtpDisabledViaEnv) && (
+          <p className="text-[11px] text-muted" data-smtp-locked>
+            {settings.smtpDisabledViaEnv ? t('smtp.disabledByEnv') : t('smtp.lockedByEnv')}
+          </p>
+        )}
+
+        <fieldset disabled={Boolean(settings.smtpConfiguredViaEnv || settings.smtpDisabledViaEnv)} className="min-w-0 border-0 p-0 m-0 space-y-6 disabled:opacity-60">
         <SmtpFields
           value={settings}
           passwordSet={passwordViaEnv || (settings.smtpPassSet && !settings.smtpPassViaEnv)}
@@ -71,8 +80,10 @@ export function SmtpSection({
             {t('settings:smtp.save')}
           </button>
         </div>
+        </fieldset>
 
-        {/* Test SMTP Delivery */}
+        {/* Test SMTP Delivery (not while mail is switched off) */}
+        <fieldset disabled={Boolean(settings.smtpDisabledViaEnv)} className="min-w-0 border-0 p-0 m-0">
         <div className="p-4 bg-canvas border border-border rounded-card space-y-2">
           <h3 className="font-bold text-main">{t('smtp.test')}</h3>
           <p className="text-[11px] text-muted">
@@ -98,6 +109,7 @@ export function SmtpSection({
             </button>
           </div>
         </div>
+        </fieldset>
       </div>
     </fieldset>
   );

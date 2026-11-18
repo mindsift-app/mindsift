@@ -110,6 +110,57 @@ export interface OidcAdminStatus {
 }
 
 // Admin view of the speech recognition (read-only, configured by environment)
+// Imprint, privacy notice and the footer's own link (Administration → Server); configuredViaEnv names
+// the fields LEGAL_* fixes: imprintUrl, imprintContent, privacyUrl, privacyContent, customLink
+export interface LegalSettings {
+  imprintUrl: string;
+  imprintContent: string;
+  privacyUrl: string;
+  privacyContent: string;
+  customLinkLabel: string;
+  customLinkUrl: string;
+  configuredViaEnv?: string[];
+}
+
+// Voice input (Administration → Voice input & AI). apiKey is only ever sent, never received (apiKeySet);
+// configuredViaEnv names the fields STT_* fixes (mode, allowBrowser, url, apiKey, model, maxSeconds,
+// maxUploadMb, maxParallel, perUserPerHour, timeoutSeconds, vadFilter)
+export interface SpeechSettings {
+  mode: '' | 'server' | 'browser' | 'off';
+  allowBrowser?: boolean;
+  url: string;
+  apiKey?: string;
+  apiKeySet?: boolean;
+  apiKeyUnreadable?: boolean;
+  clearApiKey?: boolean;
+  model: string;
+  maxSeconds?: number;
+  maxUploadMb?: number;
+  maxParallel?: number;
+  perUserPerHour?: number;
+  timeoutSeconds?: number;
+  vadFilter?: boolean;
+  configuredViaEnv?: string[];
+}
+
+// The models of the Whisper server (GET /admin/voice/models): known and downloaded ones, the one in use,
+// downloads under way (speaches tells no progress: running, done or the error)
+export interface SpeechModelDownload {
+  model: string;
+  startedAt: string;
+  finishedAt?: string;
+  running: boolean;
+  error?: string;
+}
+
+export interface SpeechModelsInfo {
+  model: string;
+  reachable: boolean;
+  error?: string;
+  models: { id: string; sizeMb?: number; downloaded: boolean }[];
+  downloads: SpeechModelDownload[];
+}
+
 export interface VoiceAdminStatus {
   mode: VoiceMode;
   demo: boolean;
@@ -484,6 +535,15 @@ export interface SystemSettings {
   smtpPassUnreadable?: boolean;
   // The password comes from SMTP_PASS (not stored) and takes precedence over one entered here
   smtpPassViaEnv?: boolean;
+  // SMTP_DISABLED=true: no mail at all, the mail server is locked
+  smtpDisabledViaEnv?: boolean;
+  // Fixed by ALLOW_PRIVATE_WEBHOOKS / PUSH_KNOWN_SERVICES_ONLY / LINK_PREVIEWS / BACKUP_* (read only)
+  allowPrivateWebhooksConfiguredViaEnv?: boolean;
+  pushKnownServicesOnlyConfiguredViaEnv?: boolean;
+  linkPreviewsConfiguredViaEnv?: boolean;
+  backupEnabledConfiguredViaEnv?: boolean;
+  backupTimeConfiguredViaEnv?: boolean;
+  backupRetentionDaysConfiguredViaEnv?: boolean;
   // The mail server and user SMTP_PASS belongs to (only with SMTP_PASS): the password field is locked while
   // the form names them
   smtpPassEnvHost?: string;
@@ -544,6 +604,8 @@ export interface SystemSettings {
   audioLimitMBConfiguredViaEnv?: boolean;
   audioUploads?: boolean;
   audioUploadsConfiguredViaEnv?: boolean;
+  legal?: LegalSettings;
+  speech?: SpeechSettings;
   // Images in notes (off: no new ones), copies from other addresses, the largest image in MB, and the
   // media storage per person (0 = unlimited). Fixed when set via MEDIA_IMAGES / MEDIA_EXTERNAL_IMAGES /
   // MEDIA_MAX_IMAGE_MB / MEDIA_QUOTA_MB (external images also in the demo)

@@ -260,6 +260,6 @@ func knownPushService(host string) bool {
 }
 
 func (s *Server) pushKnownServicesOnly() bool {
-	sys, _ := s.store.GetSystemSettings()
+	sys := s.effectiveSettings()
 	return sys != nil && sys.PushKnownServicesOnly != nil && *sys.PushKnownServicesOnly
 }

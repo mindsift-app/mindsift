@@ -44,6 +44,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
+	legal := s.legal() // imprint and privacy notice: LEGAL_*, else the administration
 	count, _ := s.store.CountUsers()
 	sys, _ := s.store.GetSystemSettings()
 	policy := s.registrationPolicy()
@@ -100,15 +101,18 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		}(),
 		// How voice input works: "server" (own Whisper), "browser" or "off"; set by STT_* only
 		// browserAllowed: whether people may pick the browser's recognition instead of the Whisper server
-		"voice": map[string]any{"mode": s.voiceMode(), "maxSeconds": s.cfg.Speech.MaxSeconds, "browserAllowed": !s.cfg.Speech.NoBrowser},
+		"voice": func() map[string]any {
+			sp := s.speech()
+			return map[string]any{"mode": sp.Mode(s.cfg.DemoMode), "maxSeconds": sp.MaxSeconds, "browserAllowed": !sp.NoBrowser}
+		}(),
 		// Public so the login screen can link Impressum and Datenschutz
 		"legal": map[string]any{
-			"imprintUrl":        s.cfg.Legal.ImprintURL,
-			"hasImprintContent": s.cfg.Legal.ImprintContent != "",
-			"privacyUrl":        s.cfg.Legal.PrivacyURL,
-			"hasPrivacyContent": s.cfg.Legal.PrivacyContent != "",
-			"customLinkLabel":   s.cfg.Legal.CustomLinkLabel,
-			"customLinkUrl":     s.cfg.Legal.CustomLinkURL,
+			"imprintUrl":        legal.ImprintURL,
+			"hasImprintContent": legal.ImprintContent != "",
+			"privacyUrl":        legal.PrivacyURL,
+			"hasPrivacyContent": legal.PrivacyContent != "",
+			"customLinkLabel":   legal.CustomLinkLabel,
+			"customLinkUrl":     legal.CustomLinkURL,
 		},
 	}
 	// What the first-boot wizard tells beside its questions (mail server, BASE_URL, backup folder); only
@@ -130,9 +134,9 @@ func (s *Server) handleLegalText(w http.ResponseWriter, r *http.Request) {
 	content := ""
 	switch chi.URLParam(r, "type") {
 	case "imprint":
-		content = s.cfg.Legal.ImprintContent
+		content = s.legal().ImprintContent
 	case "privacy":
-		content = s.cfg.Legal.PrivacyContent
+		content = s.legal().PrivacyContent
 	}
 	if content == "" {
 		writeError(w, http.StatusNotFound, "Kein Text hinterlegt")
@@ -306,6 +310,7 @@ func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupCh
 			c.SMTP.store(sys)
 		}
 		before, _ := s.store.GetSystemSettings()
+		s.keepEnvLocked(sys, before) // what the environment fixes stays as it is
 		if err := s.store.UpdateSystemSettings(sys); err != nil {
 			return err
 		}

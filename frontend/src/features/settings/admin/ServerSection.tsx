@@ -5,6 +5,7 @@ import { TimeZoneSetting } from './TimeZoneSetting';
 import { LinkPreviewSetting } from './LinkPreviewSetting';
 import { AdminPage } from './AdminPage';
 import { useAdminSettings } from './useAdminSettings';
+import { LegalSettingsCard } from './LegalSettingsCard';
 import { useTranslation } from 'react-i18next';
 import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
@@ -70,6 +71,9 @@ export function ServerSection({
         <TimeZoneSetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
       </div>
 
+      {/* Imprint, privacy notice and the footer's own link */}
+      <LegalSettingsCard settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
+
       {/* Link previews for the whole server: off, nothing is fetched and the app shows no cards */}
       <LinkPreviewSetting settings={settings} demoMode={demoMode} onSave={(patch) => handleSaveSystemSettings(patch)} />
 
@@ -79,10 +83,12 @@ export function ServerSection({
           <p className="font-bold text-main">{t('server.privateWebhooks')}</p>
           <p className="text-[11px] text-muted mt-0.5">
             {t('server.privateWebhooksHint')}
+            {settings.allowPrivateWebhooksConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'ALLOW_PRIVATE_WEBHOOKS' })}`}
           </p>
         </div>
         <ToggleSwitch
           checked={Boolean(settings.allowPrivateWebhooks)}
+          disabled={Boolean(settings.allowPrivateWebhooksConfiguredViaEnv)}
           onChange={(allowPrivateWebhooks) => handleSaveSystemSettings({ allowPrivateWebhooks })}
         />
       </div>
@@ -93,10 +99,12 @@ export function ServerSection({
           <p className="font-bold text-main">{t('server.pushKnownOnly')}</p>
           <p className="text-[11px] text-muted mt-0.5">
             {t('server.pushKnownOnlyHint')}
+            {settings.pushKnownServicesOnlyConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'PUSH_KNOWN_SERVICES_ONLY' })}`}
           </p>
         </div>
         <ToggleSwitch
           checked={Boolean(settings.pushKnownServicesOnly)}
+          disabled={Boolean(settings.pushKnownServicesOnlyConfiguredViaEnv)}
           onChange={(pushKnownServicesOnly) => handleSaveSystemSettings({ pushKnownServicesOnly })}
         />
       </div>

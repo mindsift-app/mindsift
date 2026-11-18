@@ -278,7 +278,7 @@ func (s *Server) linkPreviewsEnabled() bool {
 	if s.cfg.DemoMode {
 		return false
 	}
-	sys, _ := s.store.GetSystemSettings()
+	sys := s.effectiveSettings()
 	return sys == nil || sys.LinkPreviews == nil || *sys.LinkPreviews
 }
 
