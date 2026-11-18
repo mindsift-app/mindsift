@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
+import { guideCounts } from './outlineGuides';
 import type { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { OutlinerBlock, BlockLock, PastingImagesNotice } from './OutlinerBlock';
@@ -135,6 +136,7 @@ function focusTarget(el: HTMLTextAreaElement, cursor: 'start' | 'end' | 'select'
 // The bullets' elements with the values each was made from (rowElements in OutlinerTree)
 type RowCache = { treeValues: unknown[]; rows: Map<string, { values: unknown[]; element: React.ReactElement }> };
 const sameValues = (a: unknown[], b: unknown[]) => a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
+
 
 export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   docId,
@@ -1519,6 +1521,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     Boolean(onCopyBlockLink),
     offersTemplates,
   ];
+  const guides = guideCounts(visibleEntries, levelOffset || 0, focusedBlockId);
   const rowCache = rowCacheRef.current;
   const prevRows = sameValues(rowCache.treeValues, treeValues) ? rowCache.rows : null;
   const nextRows: RowCache['rows'] = new Map();
@@ -1535,7 +1538,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
         : null;
     const isTargeted = highlightedBlockId === block.id;
     const inRangeSelection = rangeRowIds?.has(block.id) || wholeRowIds?.has(block.id);
-    const values = [block, isLast, siblingFollows, maxAllowedLevel, hasChildren, isFocused, rowCanEdit, lockedBy, originalLockedBy, listMarker, dropIndent, isTargeted, inRangeSelection];
+    const values = [block, isLast, siblingFollows, maxAllowedLevel, hasChildren, isFocused, rowCanEdit, lockedBy, originalLockedBy, listMarker, dropIndent, isTargeted, inRangeSelection, guides[entryIdx]];
     const cached = prevRows?.get(block.id);
     const element =
       cached && sameValues(cached.values, values) ? cached.element : (
@@ -1545,6 +1548,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           block={block}
           isLast={isLast}
           siblingFollows={siblingFollows}
+          guides={guides[entryIdx]}
           maxAllowedLevel={maxAllowedLevel}
           hasChildren={hasChildren}
           isFocused={isFocused}
