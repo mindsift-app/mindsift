@@ -208,6 +208,8 @@ export interface OutlinerBlockProps {
   listMarker?: string;
   /** Another bullet on the same level follows: Enter in this empty bullet adds a bullet instead of outdenting */
   siblingFollows?: boolean;
+  /** How many indent guide lines the row shows (OutlinerTree.guideCounts); default: one per level */
+  guides?: number;
   lockedBy?: BlockLock; // someone else is editing this block
   /** A double-click on a drawing someone else is editing: tell the user why it does not open */
   onLockedDrawing?: (lock: BlockLock) => void;
@@ -261,6 +263,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   onPasteImages,
   listMarker,
   siblingFollows = false,
+  guides,
   lockedBy: heldBy,
   onLockedDrawing,
   originalLockedBy,
@@ -1500,7 +1503,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         }
       }}
     >
-      {Array.from({ length: visualLevel }, (_, k) => (
+      {Array.from({ length: Math.min(visualLevel, guides ?? visualLevel) }, (_, k) => (
         <span key={k} aria-hidden="true" className="bullet-guide" style={{ left: `calc(var(--outline-indent) * ${k} + 28px)` }} />
       ))}
       {/* Where a dragged bullet lands: a line with a dot under the place its bullet would take (the dot of a
