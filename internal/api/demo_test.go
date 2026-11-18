@@ -179,8 +179,12 @@ func TestDemoResetAnnouncesNextDeadlineBeforeGateOpens(t *testing.T) {
 	if err := store.ResetAndSeedDemo(); err != nil {
 		t.Fatal(err)
 	}
-	srv := NewServer(&config.Config{DatabasePath: dbPath, JWTSecret: "demo-secret", DemoMode: true, DemoResetMinutes: 20}, store, ws.NewHub(), nil)
+	// Without the periodic reset at start: its ticker sets the first deadline from its own goroutine and
+	// could overwrite the passed one set below (or fire a reset on it); the interval is only needed by
+	// resetDemo for the following deadline
+	srv := NewServer(&config.Config{DatabasePath: dbPath, JWTSecret: "demo-secret", DemoMode: true}, store, ws.NewHub(), nil)
 	t.Cleanup(srv.Close)
+	srv.cfg.DemoResetMinutes = 20
 	router := srv.Router()
 	status := func() int {
 		rec := httptest.NewRecorder()
