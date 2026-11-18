@@ -27,6 +27,7 @@ Versions without a git tag were development states and were never published as a
 - Quick Dump on the desktop: with your own Whisper server you can hold the + in the left rail again right away while earlier dictations are still being recognised; they are saved in the order you spoke them, a counter on the + shows how many are waiting, and one that fails keeps its recording until a reload and offers "Try again".
 - Dictation on the + (desktop rail and phone) locks like in WhatsApp: slide away while holding and the recording keeps running; the red stop button finishes it, a small × discards it (Escape too on the desktop). The phone's + is free again right after a dictation, like the desktop's.
 - **Custom themes in the app:** each custom theme is a row under "Custom themes": rename it in place, change its colours with the colour picker (applied live), export it as a CSS file to share, and add a new one from the template with the + below the list.
+- **Media settings for administrators:** a new "Media" page in the administration. Image compression can now be switched off, voice notes recorded in notes are compressed to 32 kbit/s by default (bitrate adjustable, or off), and audio files uploaded from the device are limited to 7 MB by default (adjustable). Each setting can be fixed through `MEDIA_IMAGE_QUALITY`, `MEDIA_AUDIO_COMPRESSION`, `MEDIA_AUDIO_BITRATE` and `MEDIA_AUDIO_UPLOAD_MAX_MB`.
 
 ### Changed
 - **Attention:** the server runs on UTC without `TZ`; set your time zone under Administration → Server.

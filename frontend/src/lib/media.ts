@@ -104,8 +104,11 @@ async function mediaRequest(path: string, init: RequestInit): Promise<UploadedMe
   return data as UploadedMedia;
 }
 
-export function uploadMedia(docId: string, file: Blob, filename: string): Promise<UploadedMedia> {
+/** Uploads a file into a note; `recording` marks audio recorded in the app (the server's limit for
+ * uploaded audio files does not apply to it). */
+export function uploadMedia(docId: string, file: Blob, filename: string, source?: 'recording'): Promise<UploadedMedia> {
   const form = new FormData();
+  if (source) form.append('source', source);
   form.append('file', file, filename);
   return mediaRequest(`/api/v1/documents/${encodeURIComponent(docId)}/media`, { method: 'POST', body: form });
 }
@@ -121,12 +124,13 @@ export function copyExternalImage(docId: string, url: string): Promise<UploadedM
 
 const MAX_EDGE = 2048;
 
-/** How strongly pictures are compressed before upload: the administration's choice (`imageQuality`). */
-export type ImageQuality = 'high' | 'medium' | 'low';
+/** How strongly pictures are compressed before upload: the administration's choice (`imageQuality`);
+ * `off` uploads the file as it is. */
+export type ImageQuality = 'high' | 'medium' | 'low' | 'off';
 
 // Encoder quality per level. The size stays at MAX_EDGE for every level, so text in screenshots and
 // diagrams stays readable; only the compression changes. JPEG (no WebP encoder) a little higher.
-export const IMAGE_QUALITY: Record<ImageQuality, { webp: number; jpeg: number }> = {
+export const IMAGE_QUALITY: Record<Exclude<ImageQuality, 'off'>, { webp: number; jpeg: number }> = {
   high: { webp: 0.82, jpeg: 0.85 },
   medium: { webp: 0.65, jpeg: 0.7 },
   low: { webp: 0.5, jpeg: 0.55 },
@@ -136,7 +140,7 @@ export const IMAGE_QUALITY: Record<ImageQuality, { webp: number; jpeg: number }>
 let serverQuality: ImageQuality = 'high';
 
 export function isImageQuality(v: unknown): v is ImageQuality {
-  return v === 'high' || v === 'medium' || v === 'low';
+  return v === 'high' || v === 'medium' || v === 'low' || v === 'off';
 }
 
 /** What the server says about the image quality; anything unknown counts as high. */
@@ -148,6 +152,35 @@ export function serverImageQuality(): ImageQuality {
   return serverQuality;
 }
 
+/** Audio in notes as the server says (`audio` in /auth/status): recordings at `bitrate` kbit/s unless
+ * compression is off; files chosen from the device up to `uploadMaxMB`. */
+export interface AudioSettings {
+  compression: 'recordings' | 'off';
+  bitrate: number;
+  uploadMaxMB: number;
+}
+
+const DEFAULT_AUDIO: AudioSettings = { compression: 'recordings', bitrate: 32, uploadMaxMB: 7 };
+let serverAudio: AudioSettings = DEFAULT_AUDIO;
+
+export function setServerAudioSettings(v: Partial<AudioSettings> | undefined | null): void {
+  serverAudio = {
+    compression: v?.compression === 'off' ? 'off' : 'recordings',
+    bitrate: typeof v?.bitrate === 'number' && v.bitrate > 0 ? v.bitrate : DEFAULT_AUDIO.bitrate,
+    uploadMaxMB: typeof v?.uploadMaxMB === 'number' && v.uploadMaxMB > 0 ? v.uploadMaxMB : DEFAULT_AUDIO.uploadMaxMB,
+  };
+}
+
+/** Bitrate for recordings in bit/s, undefined when compression is off (the browser's own choice). */
+export function audioRecordingBitrate(): number | undefined {
+  return serverAudio.compression === 'off' ? undefined : serverAudio.bitrate * 1000;
+}
+
+/** The largest audio file that may be uploaded from the device, in MB. */
+export function audioUploadMaxMB(): number {
+  return serverAudio.uploadMaxMB;
+}
+
 function canvasBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b), type, quality));
 }
@@ -156,9 +189,10 @@ function canvasBlob(canvas: HTMLCanvasElement, type: string, quality: number): P
  * Shrinks photos to at most 2048 px and stores them as WebP (JPEG where the browser cannot write WebP),
  * compressed as the server's image quality says. Re-encoding also drops EXIF data such as the location.
  * GIFs stay as they are (animation); anything the browser cannot decode is sent unchanged and checked by
- * the server.
+ * the server. With the quality `off` every picture is sent as it is (size, EXIF data and all).
  */
 export async function prepareImage(file: Blob, quality: ImageQuality = serverQuality): Promise<{ blob: Blob; name: string }> {
+  if (quality === 'off') return { blob: file, name: 'bild' };
   const q = IMAGE_QUALITY[quality] ?? IMAGE_QUALITY.high;
   if (file.type === 'image/gif' || typeof createImageBitmap === 'undefined') return { blob: file, name: 'bild' };
   let bitmap: ImageBitmap;

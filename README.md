@@ -211,7 +211,9 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `TRUSTED_PROXIES` | `private` | Whose `X-Forwarded-For` to trust, see [reverse proxy](Doku/reverse-proxy.md) |
 | `MCP_ENABLED` | admin UI decides | `false` switches off the endpoint for AI agents |
 | `API_KEYS_ENABLED` | `true` | `false` refuses API keys on the REST API; they keep working for MCP |
-| `MEDIA_IMAGE_QUALITY` | admin UI decides (`high`) | `high`, `medium` or `low`: how strongly the app compresses new pictures before upload (always at most 2048 px, so text stays readable) |
+| `MEDIA_IMAGE_QUALITY` | admin UI decides (`high`) | `high`, `medium` or `low`: how strongly the app compresses new pictures before upload (always at most 2048 px, so text stays readable); `off` uploads them as they are |
+| `MEDIA_AUDIO_COMPRESSION`, `MEDIA_AUDIO_BITRATE` | admin UI decides (`recordings`, `32`) | `recordings` records voice notes at `MEDIA_AUDIO_BITRATE` kbit/s (8–320), `off` leaves the bitrate to the browser; uploaded audio files are never re-encoded |
+| `MEDIA_AUDIO_UPLOAD_MAX_MB` | admin UI decides (`7`) | Largest audio file that may be uploaded from the device, at most `MEDIA_MAX_AUDIO_MB` (`50`, which also limits recordings) |
 | `UPDATE_CHECK` | `true` | `false` stops the daily look for a new MindSift release (admins get a hint); no request goes out then |
 | `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | empty | Outgoing proxy for OIDC, the update check, webhooks, push, link previews and image copies; MindSift still checks each target's addresses itself before handing it over, and needs DNS for that ([limits](Doku/security.md#nothing-reaches-into-your-network)) |
 | `DRAW_LIVE_MAX_MB` | a twelfth of the server's memory, 16–128 | Memory all live drawings on the server may hold together, in MB (each up to 1 MB; the server needs about three times that). Without the variable it follows `GOMEMLIMIT`, else the machine's memory |

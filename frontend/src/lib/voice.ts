@@ -190,6 +190,9 @@ export class VoiceRecorder {
   private samples: Uint8Array | null = null;
   private done: ((blob: Blob | null) => void) | null = null;
 
+  /** bitsPerSecond: the audio bitrate asked of the browser (undefined: its own choice). */
+  constructor(private readonly bitsPerSecond?: number) {}
+
   async start(): Promise<void> {
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -213,7 +216,10 @@ export class VoiceRecorder {
   private startSegmentRecorder(): void {
     if (!this.stream) return;
     const type = recordingType();
-    const rec = new MediaRecorder(this.stream, type ? { mimeType: type } : undefined);
+    const options: MediaRecorderOptions = {};
+    if (type) options.mimeType = type;
+    if (this.bitsPerSecond) options.audioBitsPerSecond = this.bitsPerSecond;
+    const rec = new MediaRecorder(this.stream, Object.keys(options).length ? options : undefined);
     const chunks: Blob[] = [];
     rec.ondataavailable = (e) => {
       if (e.data.size > 0) chunks.push(e.data);

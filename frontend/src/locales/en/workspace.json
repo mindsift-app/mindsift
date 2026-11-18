@@ -358,6 +358,7 @@
     "stopSave": "Stop and save the recording",
     "start": "Start recording",
     "uploadAudio": "Upload audio file",
+    "audioTooLarge": "The audio file is too large (at most {{mb}} MB)",
     "file": "File",
     "cancelEsc": "Cancel (Esc)",
     "chooseImage": "Please choose an image file",

@@ -358,6 +358,7 @@
     "stopSave": "Interrompi e salva registrazione",
     "start": "Avvia registrazione",
     "uploadAudio": "Carica file audio",
+    "audioTooLarge": "Il file audio è troppo grande (al massimo {{mb}} MB)",
     "file": "File",
     "cancelEsc": "Annulla (Esc)",
     "chooseImage": "Seleziona un file immagine",

@@ -669,10 +669,22 @@
     "linkPreviews": "Aperçus de liens",
     "linkPreviewsHint": "Quand une puce ne contient qu'une adresse web, le serveur MindSift récupère la page et affiche son titre, sa description et son image sous forme de carte. Désactivé, le serveur ne récupère plus aucune page, et l'app n'affiche ni cartes d'aperçu ni l'interrupteur par appareil.",
     "imageQuality": "Qualité d'image",
-    "imageQualityHint": "Avant l'envoi, les images sont réduites à 2048 pixels au plus et compressées dans le navigateur. La taille reste la même à chaque niveau, pour que le texte des captures d'écran et des diagrammes reste lisible ; les niveaux inférieurs compressent davantage et économisent de l'espace. S'applique uniquement aux nouvelles images ; les GIF restent inchangés.",
+    "imageQualityHint": "Avant l'envoi, les images sont réduites à 2048 pixels au plus et compressées dans le navigateur. La taille reste la même à chaque niveau, pour que le texte des captures d'écran et des diagrammes reste lisible ; les niveaux inférieurs compressent davantage et économisent de l'espace. « Désactivée » envoie les images en taille originale, métadonnées comprises (comme le lieu de prise de vue). S'applique uniquement aux nouvelles images ; les GIF restent inchangés.",
     "imageQualityHigh": "Haute (par défaut)",
     "imageQualityMedium": "Moyenne",
     "imageQualityLow": "Économe – fichiers plus petits, texte lisible",
+    "imageQualityOff": "Désactivée – envoyer les images telles quelles",
+    "audioCompression": "Compression audio",
+    "audioCompressionHint": "Les enregistrements vocaux dans les notes sont enregistrés au débit choisi. Les fichiers audio envoyés restent toujours inchangés. « Désactivée » laisse le débit au navigateur (souvent environ 128 kbit/s, soit près de 1 Mo par minute).",
+    "audioCompressionRecordings": "Enregistrements uniquement (par défaut)",
+    "audioCompressionOff": "Désactivée",
+    "audioBitrate": "Débit des enregistrements",
+    "audioBitrateHint": "32 kbit/s suffisent largement pour la voix ; 30 minutes font alors environ 7 Mo. Des valeurs plus élevées sont utiles pour la musique. S'applique aux nouveaux enregistrements.",
+    "audioBitrateOption": "{{kbps}} kbit/s",
+    "audioBitrateDefault": "{{kbps}} kbit/s (par défaut)",
+    "audioUploadMax": "Fichier audio envoyé le plus grand",
+    "audioUploadMaxHint": "S'applique aux fichiers audio envoyés depuis l'appareil, pas aux enregistrements faits dans l'app. {{max}} Mo au maximum (MEDIA_MAX_AUDIO_MB).",
+    "mb": "Mo",
     "publicLinkMaxDays": "Durée maximale d’un lien",
     "days_one": "{{count}} jour",
     "days_other": "{{count}} jours",
@@ -725,7 +737,9 @@
       "server": "Serveur",
       "serverHint": "Nom, fuseau horaire, version & réseau",
       "data": "Données",
-      "dataHint": "Sauvegardes, rétention & images",
+      "dataHint": "Sauvegardes et conservation",
+      "media": "Médias",
+      "mediaHint": "Images et audio",
       "ai": "Saisie vocale & IA",
       "aiHint": "Whisper & agents IA (MCP)",
       "smtp": "E-mail / Serveur SMTP",
@@ -737,7 +751,8 @@
       "signinIntro": "Qui peut s’inscrire sans invitation, qui a besoin d’un second facteur, et la connexion via un fournisseur (authentification unique).",
       "sharingIntro": "Qui peut partager avec qui, si des noms sont suggérés pendant la saisie, les liens publics vers les notes et les abonnements de calendrier.",
       "serverIntro": "Le nom, la langue par défaut et le fuseau horaire de cette instance, la version installée et ce que le serveur peut joindre sur le réseau.",
-      "dataIntro": "Les sauvegardes quotidiennes, si les éléments terminés et supprimés peuvent être gardés pour toujours, et la compression des images.",
+      "dataIntro": "Sauvegardes quotidiennes, et si les éléments terminés et supprimés peuvent être conservés pour toujours.",
+      "mediaIntro": "La compression des images et des enregistrements vocaux, et la taille maximale des fichiers audio envoyés.",
       "aiIntro": "La reconnaissance vocale de ce serveur et si des agents IA peuvent se connecter via MCP."
     },
     "demo": "Désactivé dans la démo : les paramètres du serveur, les e-mails et les comptes ne peuvent être consultés qu'ici.",
@@ -1223,7 +1238,12 @@
       "imageQuality": {
         "high": "Haute",
         "medium": "Moyenne",
-        "low": "Économe"
+        "low": "Économe",
+        "off": "Désactivée"
+      },
+      "audioCompression": {
+        "recordings": "Enregistrements uniquement",
+        "off": "Désactivée"
       }
     },
     "field": {
@@ -1254,6 +1274,9 @@
       "calendarFeeds": "Abonnements calendrier",
       "linkPreviews": "Aperçus de liens",
       "imageQuality": "Qualité d'image",
+      "audioCompression": "Compression audio",
+      "audioBitrate": "Débit des enregistrements",
+      "audioUploadMaxMB": "Fichier audio envoyé le plus grand (Mo)",
       "defaultLanguage": "Langue par défaut",
       "timeZone": "Fuseau horaire",
       "displayName": "Nom d'affichage",

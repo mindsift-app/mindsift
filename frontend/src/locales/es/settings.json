@@ -83,7 +83,9 @@
       "server": "Servidor",
       "serverHint": "Nombre, zona horaria, versión y red",
       "data": "Datos",
-      "dataHint": "Copias de seguridad, retención e imágenes",
+      "dataHint": "Copias y conservación",
+      "media": "Multimedia",
+      "mediaHint": "Imágenes y audio",
       "ai": "Entrada de voz e IA",
       "aiHint": "Whisper y agentes de IA (MCP)",
       "smtp": "Correo / Servidor SMTP",
@@ -95,7 +97,8 @@
       "signinIntro": "Quién puede registrarse sin invitación, quién necesita un segundo factor y el inicio de sesión a través de un proveedor (inicio de sesión único).",
       "sharingIntro": "Quién puede compartir con quién, si se sugieren nombres al escribir, los enlaces públicos a notas y las suscripciones de calendario.",
       "serverIntro": "Nombre, idioma predeterminado y zona horaria de esta instancia, la versión instalada y a qué puede acceder el servidor en la red.",
-      "dataIntro": "Copias de seguridad diarias, si lo completado y lo eliminado puede conservarse para siempre y cuánto se comprimen las imágenes.",
+      "dataIntro": "Copias de seguridad diarias y si lo terminado y lo eliminado puede conservarse para siempre.",
+      "mediaIntro": "Cuánto se comprimen las imágenes y las grabaciones de voz, y qué tamaño pueden tener los archivos de audio subidos.",
       "aiIntro": "El reconocimiento de voz de este servidor y si los agentes de IA pueden conectarse por MCP."
     },
     "demo": "Desactivado en la demo: los ajustes del servidor, el correo y las cuentas solo se pueden consultar aquí.",
@@ -786,10 +789,22 @@
     "linkPreviews": "Vistas previas de enlaces",
     "linkPreviewsHint": "Cuando un punto contiene solo una dirección web, el servidor de MindSift obtiene la página y muestra su título, descripción e imagen como tarjeta. Desactivado, el servidor no obtiene ninguna página y la app no muestra tarjetas de vista previa ni el interruptor por dispositivo.",
     "imageQuality": "Calidad de imagen",
-    "imageQualityHint": "Antes de subirlas, las imágenes se reducen a 2048 píxeles como máximo y se comprimen en el navegador. El tamaño es el mismo en todos los niveles, para que el texto de capturas de pantalla y diagramas siga siendo legible; los niveles más bajos comprimen más y ahorran espacio. Solo se aplica a las imágenes nuevas; los GIF no cambian.",
+    "imageQualityHint": "Antes de subirlas, las imágenes se reducen a 2048 píxeles como máximo y se comprimen en el navegador. El tamaño es el mismo en todos los niveles, para que el texto de capturas de pantalla y diagramas siga siendo legible; los niveles más bajos comprimen más y ahorran espacio. «Desactivada» sube las imágenes en su tamaño original, con metadatos como la ubicación. Solo se aplica a las imágenes nuevas; los GIF no cambian.",
     "imageQualityHigh": "Alta (predeterminada)",
     "imageQualityMedium": "Media",
     "imageQualityLow": "Ahorro – archivos más pequeños, el texto sigue legible",
+    "imageQualityOff": "Desactivada – subir las imágenes sin cambios",
+    "audioCompression": "Compresión de audio",
+    "audioCompressionHint": "Las grabaciones de voz en las notas se graban con la tasa de bits elegida. Los archivos de audio subidos siempre quedan sin cambios. «Desactivada» deja la tasa de bits al navegador (normalmente unos 128 kbit/s, cerca de 1 MB por minuto).",
+    "audioCompressionRecordings": "Solo grabaciones (predeterminada)",
+    "audioCompressionOff": "Desactivada",
+    "audioBitrate": "Tasa de bits de las grabaciones",
+    "audioBitrateHint": "32 kbit/s bastan para la voz; 30 minutos ocupan unos 7 MB. Los valores más altos merecen la pena para música. Se aplica a las grabaciones nuevas.",
+    "audioBitrateOption": "{{kbps}} kbit/s",
+    "audioBitrateDefault": "{{kbps}} kbit/s (predeterminada)",
+    "audioUploadMax": "Archivo de audio subido más grande",
+    "audioUploadMaxHint": "Se aplica a los archivos de audio subidos desde el dispositivo, no a las grabaciones hechas en la app. Como máximo {{max}} MB (MEDIA_MAX_AUDIO_MB).",
+    "mb": "MB",
     "publicLinkMaxDays": "Duración máxima de un enlace",
     "days_one": "{{count}} día",
     "days_other": "{{count}} días",
@@ -1223,7 +1238,12 @@
       "imageQuality": {
         "high": "Alta",
         "medium": "Media",
-        "low": "Ahorro"
+        "low": "Ahorro",
+        "off": "Desactivada"
+      },
+      "audioCompression": {
+        "recordings": "Solo grabaciones",
+        "off": "Desactivada"
       }
     },
     "field": {
@@ -1254,6 +1274,9 @@
       "calendarFeeds": "Suscripciones de calendario",
       "linkPreviews": "Vistas previas de enlaces",
       "imageQuality": "Calidad de imagen",
+      "audioCompression": "Compresión de audio",
+      "audioBitrate": "Tasa de bits de las grabaciones",
+      "audioUploadMaxMB": "Archivo de audio subido más grande (MB)",
       "defaultLanguage": "Idioma predeterminado",
       "timeZone": "Zona horaria",
       "displayName": "Nombre visible",

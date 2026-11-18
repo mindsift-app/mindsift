@@ -7,7 +7,7 @@ import { DEFAULT_BACKUP_RETENTION_DAYS, DEFAULT_BACKUP_TIME } from '../../../lib
 import { askConfirm } from '../../../components/askConfirm';
 import { errorMessage } from '../../../lib/errorMessage';
 import { setServerLinkPreviews } from '../../../lib/linkPreview';
-import { setServerImageQuality } from '../../../lib/media';
+import { setServerAudioSettings, setServerImageQuality } from '../../../lib/media';
 
 // The three sharing modes, stricter first; texts in settings:sharing.<id> in the language shown when read
 const sharingMode = (id: SharingMode) => ({
@@ -148,6 +148,13 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           linkPreviews: sys.linkPreviews ?? true,
           imageQuality: sys.imageQuality || 'high',
           imageQualityConfiguredViaEnv: Boolean(sys.imageQualityConfiguredViaEnv),
+          audioCompression: sys.audioCompression || 'recordings',
+          audioCompressionConfiguredViaEnv: Boolean(sys.audioCompressionConfiguredViaEnv),
+          audioBitrate: sys.audioBitrate || 32,
+          audioBitrateConfiguredViaEnv: Boolean(sys.audioBitrateConfiguredViaEnv),
+          audioUploadMaxMB: sys.audioUploadMaxMB || 7,
+          audioUploadMaxMBConfiguredViaEnv: Boolean(sys.audioUploadMaxMBConfiguredViaEnv),
+          audioMaxMB: sys.audioMaxMB,
           calendarFeeds: sys.calendarFeeds ?? true,
           calendarFeedsConfiguredViaEnv: Boolean(sys.calendarFeedsConfiguredViaEnv),
           // Shown only (OIDC_* environment)
@@ -524,6 +531,9 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       // This app follows the server's switch at once (others at their next start or preview request)
       if (saved.linkPreviews !== undefined) setServerLinkPreviews(saved.linkPreviews);
       if (saved.imageQuality) setServerImageQuality(saved.imageQuality);
+      if (saved.audioCompression) {
+        setServerAudioSettings({ compression: saved.audioCompression, bitrate: saved.audioBitrate, uploadMaxMB: saved.audioUploadMaxMB });
+      }
       setStatusMsg({ type: 'ok', text: i18n.t('settings:server.saved') });
     } catch (err) {
       setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:profile.saveFailed')) });

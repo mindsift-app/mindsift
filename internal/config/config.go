@@ -304,9 +304,14 @@ type MediaConfig struct {
 	MaxAudioMB int
 	QuotaMB    int
 	DemoMaxMB  int
-	// ImageQuality: MEDIA_IMAGE_QUALITY=high|medium|low fixes how strongly the app compresses pictures
+	// ImageQuality: MEDIA_IMAGE_QUALITY=high|medium|low|off fixes how strongly the app compresses pictures
 	// before uploading them; empty leaves it to the system settings.
 	ImageQuality string
+	// AudioCompression: MEDIA_AUDIO_COMPRESSION=recordings|off; AudioBitrate: MEDIA_AUDIO_BITRATE in
+	// kbit/s; AudioUploadMaxMB: MEDIA_AUDIO_UPLOAD_MAX_MB. Empty or 0 leaves each to the system settings.
+	AudioCompression string
+	AudioBitrate     int
+	AudioUploadMaxMB int
 }
 
 // SpeechConfig: with STT_URL set, voice input is transcribed by a self-hosted, OpenAI-compatible
@@ -623,11 +628,14 @@ func Load() *Config {
 		},
 		OIDC: loadOIDC(),
 		Media: MediaConfig{
-			MaxImageMB:   envInt("MEDIA_MAX_IMAGE_MB", 15, 1, 1000),
-			MaxAudioMB:   envInt("MEDIA_MAX_AUDIO_MB", 50, 1, 2000),
-			QuotaMB:      envInt("MEDIA_QUOTA_MB", 0, 0, 10000000),
-			DemoMaxMB:    envInt("MEDIA_DEMO_MAX_MB", 3, 1, 100),
-			ImageQuality: imageQualityFromEnv(),
+			MaxImageMB:       envInt("MEDIA_MAX_IMAGE_MB", 15, 1, 1000),
+			MaxAudioMB:       envInt("MEDIA_MAX_AUDIO_MB", 50, 1, 2000),
+			QuotaMB:          envInt("MEDIA_QUOTA_MB", 0, 0, 10000000),
+			DemoMaxMB:        envInt("MEDIA_DEMO_MAX_MB", 3, 1, 100),
+			ImageQuality:     imageQualityFromEnv(),
+			AudioCompression: audioCompressionFromEnv(),
+			AudioBitrate:     envInt("MEDIA_AUDIO_BITRATE", 0, 8, 320),
+			AudioUploadMaxMB: envInt("MEDIA_AUDIO_UPLOAD_MAX_MB", 0, 1, 2000),
 		},
 		Legal: func() LegalTexts {
 			customLabel, customURL := legalCustomLink("LEGAL_CUSTOM_LINK_LABEL", "LEGAL_CUSTOM_LINK_URL")
@@ -785,10 +793,22 @@ func publicLinkMaxDaysFromEnv() int {
 func imageQualityFromEnv() string {
 	v := strings.ToLower(strings.TrimSpace(os.Getenv("MEDIA_IMAGE_QUALITY")))
 	switch v {
-	case "", "high", "medium", "low":
+	case "", "high", "medium", "low", "off":
 		return v
 	}
-	slog.Warn("MEDIA_IMAGE_QUALITY ignored: allowed are high, medium and low", "value", v)
+	slog.Warn("MEDIA_IMAGE_QUALITY ignored: allowed are high, medium, low and off", "value", v)
+	return ""
+}
+
+// audioCompressionFromEnv reads MEDIA_AUDIO_COMPRESSION (recordings or off); anything else is ignored
+// with a warning and leaves it to the system settings.
+func audioCompressionFromEnv() string {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv("MEDIA_AUDIO_COMPRESSION")))
+	switch v {
+	case "", "recordings", "off":
+		return v
+	}
+	slog.Warn("MEDIA_AUDIO_COMPRESSION ignored: allowed are recordings and off", "value", v)
 	return ""
 }
 

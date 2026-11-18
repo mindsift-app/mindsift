@@ -12,7 +12,7 @@ describe('ImageQualitySetting (compression of new pictures for the whole server)
     const button = screen.getByRole('button', { name: 'Bildqualität' });
     expect(button.textContent).toContain('Hoch (Standard)');
     fireEvent.click(button);
-    expect(screen.getAllByRole('option')).toHaveLength(3);
+    expect(screen.getAllByRole('option')).toHaveLength(4);
     fireEvent.click(screen.getByRole('option', { name: /Sparsam/ }));
     expect(onSave).toHaveBeenCalledWith({ imageQuality: 'low' });
   });

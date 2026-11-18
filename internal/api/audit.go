@@ -91,7 +91,7 @@ var ignoredSettings = map[string]bool{
 	"allowRegistration": true, // mirrors registrationMode
 	"smtpPassSet":       true, "smtpPassUnreadable": true, "smtpPassViaEnv": true,
 	"smtpPassEnvHost": true, "smtpPassEnvUser": true, "smtpConfiguredViaEnv": true,
-	"emailLinksAvailable": true, "oidc": true, "serverTime": true,
+	"emailLinksAvailable": true, "oidc": true, "serverTime": true, "audioMaxMB": true,
 }
 
 // settingsChanges compares the stored settings before and after a save, key by key (the JSON names the

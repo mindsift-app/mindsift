@@ -3,9 +3,9 @@ import { SelectMenu } from '../../../components/SelectMenu';
 import { SystemSettings } from '../../../lib/types';
 import { ImageQuality } from '../../../lib/media';
 
-// Administration → Server: how strongly the app compresses pictures before upload. The size stays at
-// 2048 px for every level (text in screenshots stays readable); applies to new pictures only. Locked
-// when MEDIA_IMAGE_QUALITY fixes it.
+// Administration → Media: how strongly the app compresses pictures before upload. The size stays at
+// 2048 px for every level (text in screenshots stays readable); "off" uploads pictures as they are.
+// Applies to new pictures only. Locked when MEDIA_IMAGE_QUALITY fixes it.
 export function ImageQualitySetting({
   settings,
   onSave,
@@ -34,6 +34,7 @@ export function ImageQualitySetting({
           { value: 'high', label: t('server.imageQualityHigh') },
           { value: 'medium', label: t('server.imageQualityMedium') },
           { value: 'low', label: t('server.imageQualityLow') },
+          { value: 'off', label: t('server.imageQualityOff') },
         ]}
       />
     </div>

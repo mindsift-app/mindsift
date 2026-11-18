@@ -1,13 +1,12 @@
 import React from 'react';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { BackupAdminCard } from '../BackupAdminCard';
-import { ImageQualitySetting } from './ImageQualitySetting';
 import { AdminPage } from './AdminPage';
 import { useAdminSettings } from './useAdminSettings';
 import { useTranslation } from 'react-i18next';
 
-// Administration → Data: backups, whether things may be kept for good, and how pictures are stored
-// (state in useAdminSettings)
+// Administration → Data: backups and whether things may be kept for good (state in useAdminSettings);
+// pictures and audio are under Media
 export function DataSettingsSection({
   admin,
 }: {
@@ -34,9 +33,6 @@ export function DataSettingsSection({
           onChange={(retentionAllowNever) => handleSaveSystemSettings({ retentionAllowNever })}
         />
       </div>
-
-      {/* How strongly pictures are compressed before upload (new pictures only) */}
-      <ImageQualitySetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
     </AdminPage>
   );
 }
