@@ -122,6 +122,13 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           smtpPassSet: Boolean(sys.smtpPassSet),
           smtpPassUnreadable: Boolean(sys.smtpPassUnreadable),
           smtpPassViaEnv: Boolean(sys.smtpPassViaEnv),
+          smtpDisabledViaEnv: Boolean(sys.smtpDisabledViaEnv),
+          allowPrivateWebhooksConfiguredViaEnv: Boolean(sys.allowPrivateWebhooksConfiguredViaEnv),
+          pushKnownServicesOnlyConfiguredViaEnv: Boolean(sys.pushKnownServicesOnlyConfiguredViaEnv),
+          linkPreviewsConfiguredViaEnv: Boolean(sys.linkPreviewsConfiguredViaEnv),
+          backupEnabledConfiguredViaEnv: Boolean(sys.backupEnabledConfiguredViaEnv),
+          backupTimeConfiguredViaEnv: Boolean(sys.backupTimeConfiguredViaEnv),
+          backupRetentionDaysConfiguredViaEnv: Boolean(sys.backupRetentionDaysConfiguredViaEnv),
           smtpPassEnvHost: sys.smtpPassEnvHost || '',
           smtpPassEnvUser: sys.smtpPassEnvUser || '',
           smtpFrom: sys.smtpFrom || '',
@@ -163,6 +170,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           mediaQuotaMB: sys.mediaQuotaMB ?? 0,
           mediaQuotaMBConfiguredViaEnv: Boolean(sys.mediaQuotaMBConfiguredViaEnv),
           audioUploads: sys.audioUploads ?? true,
+          legal: sys.legal,
+          speech: sys.speech,
           audioUploadsConfiguredViaEnv: Boolean(sys.audioUploadsConfiguredViaEnv),
           calendarFeeds: sys.calendarFeeds ?? true,
           calendarFeedsConfiguredViaEnv: Boolean(sys.calendarFeedsConfiguredViaEnv),
@@ -568,6 +577,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
   };
 
   return {
+    reloadSettings: loadAll,
     users,
     invites,
     newUserName,

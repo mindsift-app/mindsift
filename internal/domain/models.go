@@ -493,6 +493,16 @@ type SystemSettings struct {
 	// AllowPrivateWebhooks lets alarm webhooks reach LAN addresses (and plain http); localhost and cloud
 	// metadata stay blocked
 	AllowPrivateWebhooks bool `json:"allowPrivateWebhooks"`
+	// ViaEnv (read only) for the switches the environment can fix: ALLOW_PRIVATE_WEBHOOKS,
+	// PUSH_KNOWN_SERVICES_ONLY, LINK_PREVIEWS, BACKUP_ENABLED / BACKUP_TIME / BACKUP_RETENTION_DAYS;
+	// SMTPDisabledViaEnv: SMTP_DISABLED=true, no mail goes out
+	AllowPrivateWebhooksViaEnv  bool `json:"allowPrivateWebhooksConfiguredViaEnv,omitempty"`
+	PushKnownServicesOnlyViaEnv bool `json:"pushKnownServicesOnlyConfiguredViaEnv,omitempty"`
+	LinkPreviewsViaEnv          bool `json:"linkPreviewsConfiguredViaEnv,omitempty"`
+	BackupEnabledViaEnv         bool `json:"backupEnabledConfiguredViaEnv,omitempty"`
+	BackupTimeViaEnv            bool `json:"backupTimeConfiguredViaEnv,omitempty"`
+	BackupRetentionDaysViaEnv   bool `json:"backupRetentionDaysConfiguredViaEnv,omitempty"`
+	SMTPDisabledViaEnv          bool `json:"smtpDisabledViaEnv,omitempty"`
 	// PushKnownServicesOnly: web push only to the push services of the big browsers (Google, Mozilla,
 	// Apple, Microsoft) instead of any https address a browser names. Off by default.
 	PushKnownServicesOnly *bool `json:"pushKnownServicesOnly,omitempty"`
@@ -571,6 +581,10 @@ type SystemSettings struct {
 	// unchanged; ViaEnv: fixed by MEDIA_QUOTA_MB.
 	MediaQuotaMB       *int `json:"mediaQuotaMB,omitempty"`
 	MediaQuotaMBViaEnv bool `json:"mediaQuotaMBConfiguredViaEnv,omitempty"`
+	// Speech: voice input (mode, Whisper server, model, limits); nil in an update leaves it unchanged
+	Speech *SpeechSettings `json:"speech,omitempty"`
+	// Legal: imprint, privacy notice and the footer's own link; nil in an update leaves them unchanged
+	Legal *LegalSettings `json:"legal,omitempty"`
 	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
 	// not speak, and for the demo; empty in an update leaves it unchanged
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`
@@ -578,6 +592,44 @@ type SystemSettings struct {
 	// nil in an update leaves it unchanged. ServerTime: the zone in effect right now (read only).
 	TimeZone   *string     `json:"timeZone,omitempty"`
 	ServerTime *ServerTime `json:"serverTime,omitempty"`
+}
+
+// LegalSettings: imprint and privacy notice (a link and/or Markdown text each) and a link of one's own in
+// the footer, shown even before login. ConfiguredViaEnv names the fields the environment fixes
+// (LEGAL_*: imprintUrl, imprintContent, privacyUrl, privacyContent, customLink); read only.
+type LegalSettings struct {
+	ImprintURL       string   `json:"imprintUrl"`
+	ImprintContent   string   `json:"imprintContent"`
+	PrivacyURL       string   `json:"privacyUrl"`
+	PrivacyContent   string   `json:"privacyContent"`
+	CustomLinkLabel  string   `json:"customLinkLabel"`
+	CustomLinkURL    string   `json:"customLinkUrl"`
+	ConfiguredViaEnv []string `json:"configuredViaEnv,omitempty"`
+}
+
+// SpeechSettings: voice input as the administration sets it. Mode: "server" (own Whisper server),
+// "browser" (the browser's recognition) or "off"; "" = server when an address is known, else browser.
+// AllowBrowser: in server mode people may pick the browser's recognition instead. APIKey is never
+// sent to the browser (APIKeySet says whether one is stored, APIKeyUnreadable that it no longer
+// decrypts); empty in an update keeps it, ClearAPIKey removes it. Numbers 0 = the default.
+// ConfiguredViaEnv names the fields STT_* fixes (mode, allowBrowser, url, apiKey, model, maxSeconds,
+// maxUploadMb, maxParallel, perUserPerHour, timeoutSeconds, vadFilter); read only.
+type SpeechSettings struct {
+	Mode             string   `json:"mode"`
+	AllowBrowser     *bool    `json:"allowBrowser,omitempty"`
+	URL              string   `json:"url"`
+	APIKey           string   `json:"apiKey,omitempty"`
+	APIKeySet        bool     `json:"apiKeySet,omitempty"`
+	APIKeyUnreadable bool     `json:"apiKeyUnreadable,omitempty"`
+	ClearAPIKey      bool     `json:"clearApiKey,omitempty"`
+	Model            string   `json:"model"`
+	MaxSeconds       int      `json:"maxSeconds,omitempty"`
+	MaxUploadMB      int      `json:"maxUploadMb,omitempty"`
+	MaxParallel      int      `json:"maxParallel,omitempty"`
+	PerUserPerHour   int      `json:"perUserPerHour,omitempty"`
+	TimeoutSeconds   int      `json:"timeoutSeconds,omitempty"`
+	VADFilter        *bool    `json:"vadFilter,omitempty"`
+	ConfiguredViaEnv []string `json:"configuredViaEnv,omitempty"`
 }
 
 // ServerTime is the time zone the server works in and its time now, for the administration.

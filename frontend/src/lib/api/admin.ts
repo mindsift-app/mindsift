@@ -1,5 +1,5 @@
 // REST calls: Administration: users, invites, server settings, voice, organizations
-import { AuditPage, Organization, SetupInfo, SmtpForm, SystemSettings, SharingMode, UpdateStatus, User, UserInvite, VoiceAdminStatus } from '../types';
+import { AuditPage, Organization, SetupInfo, SmtpForm, SpeechModelsInfo, SystemSettings, SharingMode, UpdateStatus, User, UserInvite, VoiceAdminStatus } from '../types';
 import { authHeaders, ensureArray, request } from './client';
 import i18n from '../../i18n';
 
@@ -110,6 +110,19 @@ export const adminApi = {
 
   async adminVoiceStatus(): Promise<VoiceAdminStatus> {
     return request<VoiceAdminStatus>('/api/v1/admin/voice');
+  },
+
+  // The models of the Whisper server: which are downloaded, the one in use, downloads under way
+  async adminSpeechModels(): Promise<SpeechModelsInfo> {
+    return request<SpeechModelsInfo>('/api/v1/admin/voice/models');
+  },
+
+  // Lets the Whisper server download a model; select makes it the one in use once it is there
+  async adminDownloadSpeechModel(model: string, select: boolean): Promise<{ downloaded: boolean }> {
+    return request<{ downloaded: boolean }>(`/api/v1/admin/voice/models/${model.split('/').map(encodeURIComponent).join('/')}`, {
+      method: 'POST',
+      body: JSON.stringify({ select }),
+    });
   },
 
   // Sends a recording to the own Whisper server (voice mode "server") and returns the text

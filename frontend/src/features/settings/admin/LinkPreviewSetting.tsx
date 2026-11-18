@@ -20,12 +20,14 @@ export function LinkPreviewSetting({
         <p className="font-bold text-main">{t('server.linkPreviews')}</p>
         <p className="text-[11px] text-muted mt-0.5">
           {t('server.linkPreviewsHint')}
-          {demoMode && ` ${t('server.fixedBy', { env: 'MINDSIFT_DEMO' })}`}
+          {demoMode
+            ? ` ${t('server.fixedBy', { env: 'MINDSIFT_DEMO' })}`
+            : settings.linkPreviewsConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'LINK_PREVIEWS' })}`}
         </p>
       </div>
       <ToggleSwitch
         checked={!demoMode && settings.linkPreviews !== false}
-        disabled={demoMode}
+        disabled={demoMode || Boolean(settings.linkPreviewsConfiguredViaEnv)}
         onChange={(linkPreviews) => onSave({ linkPreviews })}
         title={t('server.linkPreviews')}
       />

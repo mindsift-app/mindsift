@@ -210,7 +210,8 @@ else
 
   if [ "${WHISPER}" = "1" ]; then
     set_env STT_URL "http://whisper:8000"
-    set_env STT_MODEL "${STT_MODEL}"
+    # A default only: the model can be changed later under Administration → Voice input & AI
+    set_env STT_DEFAULT_MODEL "${STT_MODEL}"
   fi
 
   # Additions to docker-compose.yml; that file is replaced on updates, this one stays

@@ -73,6 +73,13 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
     }
   };
 
+  // What a provider fixes through the environment (BACKUP_*) stays as it is here
+  const lockedBy = [
+    settings.backupEnabledConfiguredViaEnv && 'BACKUP_ENABLED',
+    settings.backupTimeConfiguredViaEnv && 'BACKUP_TIME',
+    settings.backupRetentionDaysConfiguredViaEnv && 'BACKUP_RETENTION_DAYS',
+  ].filter(Boolean) as string[];
+
   return (
     <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
       <div className="flex items-center justify-between gap-4">
@@ -83,10 +90,12 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           </p>
           <p className="text-[11px] text-muted mt-0.5">
             <Trans t={t} i18nKey="backups.autoHint" components={{ c: <code className="font-mono" /> }} />
+            {lockedBy.length > 0 && ` ${t('settings:server.fixedBy', { env: lockedBy.join(', ') })}`}
           </p>
         </div>
         <ToggleSwitch
           checked={Boolean(settings.backupEnabled)}
+          disabled={Boolean(settings.backupEnabledConfiguredViaEnv)}
           onChange={(backupEnabled) => onSave({ backupEnabled })}
           title={settings.backupEnabled ? t('backups.autoOff') : t('backups.autoOn')}
         />
@@ -98,6 +107,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           <TimeField
             ariaLabel={t('backups.time')}
             value={settings.backupTime || DEFAULT_BACKUP_TIME}
+            disabled={Boolean(settings.backupTimeConfiguredViaEnv)}
             onChange={(time) => time && onSave({ backupTime: time })}
             // block: on touch the field is the bare system input, which would sit beside the label
             className="block mt-1 w-36 sm:w-28"
@@ -111,6 +121,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
             min={1}
             max={MAX_BACKUP_RETENTION_DAYS}
             value={settings.backupRetentionDays || DEFAULT_BACKUP_RETENTION_DAYS}
+            disabled={Boolean(settings.backupRetentionDaysConfiguredViaEnv)}
             onChange={(e) => {
               const n = parseInt(e.target.value, 10);
               if (validBackupRetentionDays(n)) onSave({ backupRetentionDays: n });

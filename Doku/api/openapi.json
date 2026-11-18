@@ -613,9 +613,48 @@
     "/api/v1/admin/voice": {
       "get": {
         "summary": "Active voice recognition and its settings",
-        "description": "Active voice recognition (mode: server/browser/off), settings from STT_* without secrets, limits, and in server mode fresh health status (status.reachable, status.modelReady)",
+        "description": "Active voice recognition (mode: server/browser/off), the settings in effect without secrets, limits, and in server mode fresh health status (status.reachable, status.modelReady)",
         "tags": [
           "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/voice/models": {
+      "get": {
+        "summary": "Models of the Whisper server",
+        "description": "The known models (with their rough size) and those the Whisper server has downloaded: models (id, sizeMb, downloaded), model (in use), reachable, downloads (model, startedAt, finishedAt, running, error; speaches reports no progress)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/voice/models/{path}": {
+      "post": {
+        "summary": "Download a model on the Whisper server",
+        "description": "{select}: the Whisper server downloads the model in the background (202), or 200 when it is there already; select makes it the model in use once it is there. 409 while STT_MODEL fixes the model; disabled in demo mode",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Model id, e.g. Systran/faster-whisper-small"
+          }
         ],
         "responses": {
           "default": {

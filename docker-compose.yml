@@ -96,17 +96,20 @@ services:
       - MEDIA_QUOTA_MB=${MEDIA_QUOTA_MB:-}
       - MEDIA_DEMO_MAX_MB=${MEDIA_DEMO_MAX_MB:-3}
       # Speech recognition
+      # Speech recognition: each STT_* that is set fixes its field in Administration → Voice input & AI;
+      # unset, the administration decides
       - STT_URL=${STT_URL:-}
-      - STT_MODEL=${STT_MODEL:-deepdml/faster-whisper-large-v3-turbo-ct2}
+      - STT_MODEL=${STT_MODEL:-}
+      - STT_DEFAULT_MODEL=${STT_DEFAULT_MODEL:-}
       - STT_API_KEY=${STT_API_KEY:-}
-      - STT_DISABLED=${STT_DISABLED:-false}
-      - STT_ALLOW_BROWSER=${STT_ALLOW_BROWSER:-true}
-      - STT_MAX_SECONDS=${STT_MAX_SECONDS:-600}
-      - STT_MAX_UPLOAD_MB=${STT_MAX_UPLOAD_MB:-25}
-      - STT_MAX_PARALLEL=${STT_MAX_PARALLEL:-1}
-      - STT_PER_USER_PER_HOUR=${STT_PER_USER_PER_HOUR:-60}
-      - STT_TIMEOUT_SECONDS=${STT_TIMEOUT_SECONDS:-120}
-      - STT_VAD_FILTER=${STT_VAD_FILTER:-true}
+      - STT_DISABLED=${STT_DISABLED:-}
+      - STT_ALLOW_BROWSER=${STT_ALLOW_BROWSER:-}
+      - STT_MAX_SECONDS=${STT_MAX_SECONDS:-}
+      - STT_MAX_UPLOAD_MB=${STT_MAX_UPLOAD_MB:-}
+      - STT_MAX_PARALLEL=${STT_MAX_PARALLEL:-}
+      - STT_PER_USER_PER_HOUR=${STT_PER_USER_PER_HOUR:-}
+      - STT_TIMEOUT_SECONDS=${STT_TIMEOUT_SECONDS:-}
+      - STT_VAD_FILTER=${STT_VAD_FILTER:-}
 
   # Optional: your own speech recognition (Whisper). install.sh sets it up when asked. By hand:
   #   1. remove the hashes in front of the "whisper" block below

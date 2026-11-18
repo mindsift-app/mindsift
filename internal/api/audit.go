@@ -83,7 +83,7 @@ func (s *Server) recordAudit(e storage.AuditEntry, details any) {
 }
 
 // secretSettings are recorded as changed, never with their values.
-var secretSettings = map[string]bool{"smtpPass": true}
+var secretSettings = map[string]bool{"smtpPass": true, "legal": true} // legal: long texts, recorded as changed
 
 // ignoredSettings are not settings of their own: read-only state, mirrors of another key, or what the
 // environment fixes.
@@ -131,6 +131,19 @@ func settingsMap(s *domain.SystemSettings) map[string]any {
 	m := map[string]any{}
 	if b, err := json.Marshal(s); err == nil {
 		_ = json.Unmarshal(b, &m)
+	}
+	// Voice input: one entry per field ("speech.model"), never the key of the Whisper server
+	if sp, ok := m["speech"].(map[string]any); ok {
+		delete(m, "speech")
+		for k, v := range sp {
+			switch k {
+			case "apiKey":
+				m["speech.apiKey"] = v != "" // changed or not; the value is never recorded
+			case "apiKeySet", "apiKeyUnreadable", "clearApiKey", "configuredViaEnv":
+			default:
+				m["speech."+k] = v
+			}
+		}
 	}
 	return m
 }
