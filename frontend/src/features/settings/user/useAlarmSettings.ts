@@ -260,6 +260,7 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     notifyBeforeMinutes,
     setNotifyBeforeMinutes,
     alarmMsg,
+    setAlarmMsg,
     savingAlarms,
     testingChannel,
     pushDevices,

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { CircleAlert, Check, Trash, Upload } from 'lucide-react';
+import { CircleAlert, Trash, Upload } from 'lucide-react';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { FormSheet } from '../../../components/FormSheet';
+import { StatusToast } from '../../../components/StatusToast';
 import { useProfileSettings } from './useProfileSettings';
 import { PendingEmailNote } from './PendingEmailNote';
 import { getCurrentOidc } from '../../../lib/api';
@@ -28,6 +29,7 @@ export function ProfileSection({
     avatarUrl,
     currentPassword,
     profileMsg,
+    setProfileMsg,
     savingProfile,
     isProcessingAvatar,
     fileInputRef,
@@ -54,20 +56,7 @@ export function ProfileSection({
         </p>
       </div>
 
-      {profileMsg && (
-        <div
-          className={`flex items-center gap-2 ${
-            profileMsg.type === 'ok' ? 'alert-ok' : 'alert-err'
-          }`}
-        >
-          {profileMsg.type === 'ok' ? (
-            <Check className="w-4 h-4 text-status-ok shrink-0" />
-          ) : (
-            <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
-          )}
-          <span>{profileMsg.text}</span>
-        </div>
-      )}
+      <StatusToast msg={profileMsg} onClose={() => setProfileMsg(null)} />
 
       <form onSubmit={handleSaveProfile} className="space-y-5">
         {/* Avatar Management */}

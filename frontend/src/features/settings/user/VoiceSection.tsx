@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../../../lib/types';
 import { api } from '../../../lib/api';
-import { languageName } from '../../../i18n';
+import { errorMessage } from '../../../lib/errorMessage';
+import { showError } from '../../../components/ErrorNotice';
+import i18n, { languageName } from '../../../i18n';
 import type { EffectiveVoiceMode } from '../../../lib/voice';
 import { voiceLanguageOptions } from '../../../lib/voiceLanguages';
 import { SelectMenu } from '../../../components/SelectMenu';
@@ -16,6 +18,8 @@ export function useVoiceSetting(onUserUpdated: (u: User) => void) {
     setVoiceSaving(true);
     try {
       onUserUpdated(await api.updateSettings(settings));
+    } catch (err) {
+      showError(errorMessage(err, i18n.t('settings:api.saveFailed')));
     } finally {
       setVoiceSaving(false);
     }
@@ -39,7 +43,7 @@ export function VoiceSection({
   choice: boolean;
   mode?: EffectiveVoiceMode;
 }) {
-  const { t, i18n } = useTranslation('settings');
+  const { t } = useTranslation('settings');
   const { voiceSaving, handleChangeVoiceInput, handleChangeVoiceLanguage } = voice;
   // Whisper does the recognition (only then "automatic" works)
   const whisper = choice ? (currentUser.voiceInput || '') === '' : mode === 'server';

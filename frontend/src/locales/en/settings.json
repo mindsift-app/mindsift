@@ -751,7 +751,6 @@
     "title": "Server administration",
     "subtitle": "Users, invites, organizations, sharing & mail server",
     "badge": "Server administrator",
-    "close": "Close",
     "nav": {
       "users": "Users & invitations",
       "usersHint": "Accounts, roles & invite codes",

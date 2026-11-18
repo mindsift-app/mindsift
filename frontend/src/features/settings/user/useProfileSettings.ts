@@ -184,6 +184,7 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     avatarUrl,
     currentPassword,
     profileMsg,
+    setProfileMsg,
     savingProfile,
     isProcessingAvatar,
     fileInputRef,

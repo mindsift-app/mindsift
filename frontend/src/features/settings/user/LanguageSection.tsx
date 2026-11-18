@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../../../lib/types';
 import { api } from '../../../lib/api';
-import { LANGUAGES, languageName } from '../../../i18n';
+import { errorMessage } from '../../../lib/errorMessage';
+import { showError } from '../../../components/ErrorNotice';
+import i18n, { LANGUAGES, languageName } from '../../../i18n';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 
 // Language of the app: own choice or the browser's ('' = browser, then the server's default); dates and
@@ -14,6 +16,8 @@ export function useLanguageSetting(onUserUpdated: (u: User) => void) {
     setLanguageSaving(true);
     try {
       onUserUpdated(await api.updateSettings(settings));
+    } catch (err) {
+      showError(errorMessage(err, i18n.t('settings:api.saveFailed')));
     } finally {
       setLanguageSaving(false);
     }

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
-import { CircleAlert, Check, KeyRound, MonitorSmartphone, ShieldCheck } from 'lucide-react';
+import { CircleAlert, KeyRound, MonitorSmartphone, ShieldCheck } from 'lucide-react';
 import { api, getCurrentOidc, triggerHaptic } from '../../../lib/api';
 import { startOidcConfirm } from '../../../lib/oidc';
 import { passwordProblem } from '../../../lib/password';
 import { User } from '../../../lib/types';
 import { askConfirm } from '../../../components/askConfirm';
+import { StatusToast } from '../../../components/StatusToast';
 import { SessionsPanel } from '../SessionsPanel';
 import { TwoFactorCard } from './TwoFactorCard';
 import { PasskeyCard } from './PasskeyCard';
@@ -178,12 +179,7 @@ function PasswordCard({ currentUser, onUserUpdated, demoMode }: { currentUser: U
             : t('security.password.hint')}
         </p>
       </div>
-      {msg && (
-        <div role={msg.type === 'ok' ? 'status' : 'alert'} className={`flex items-center gap-2 ${msg.type === 'ok' ? 'alert-ok' : 'alert-err'}`}>
-          {msg.type === 'ok' ? <Check className="w-4 h-4 text-status-ok shrink-0" /> : <CircleAlert className="w-4 h-4 text-status-err shrink-0" />}
-          <span>{msg.text}</span>
-        </div>
-      )}
+      <StatusToast msg={msg} onClose={() => setMsg(null)} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="block text-muted font-medium">
           {t('security.password.new')}

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
-import { CircleAlert } from 'lucide-react';
 import { Retention, User } from '../../../lib/types';
 import { api } from '../../../lib/api';
 import { SelectMenu } from '../../../components/SelectMenu';
+import { StatusToast } from '../../../components/StatusToast';
 import { errorMessage } from '../../../lib/errorMessage';
 
 // Kontoeinstellungen → Aufbewahrung: the areas and the delays offered (storage.RetentionChoices); texts in
@@ -29,7 +29,7 @@ export function useRetentionSettings(currentUser: User, onUserUpdated: (u: User)
     }
   };
 
-  return { retentionSaving, retentionError, handleChangeRetention };
+  return { retentionSaving, retentionError, setRetentionError, handleChangeRetention };
 }
 
 // Kontoeinstellungen → Aufbewahrung
@@ -41,7 +41,7 @@ export function RetentionSection({
   currentUser: User;
 }) {
   const { t } = useTranslation('settings');
-  const { retentionSaving, retentionError, handleChangeRetention } = retention;
+  const { retentionSaving, retentionError, setRetentionError, handleChangeRetention } = retention;
   return (
     <div className="space-y-5">
       <div className="border-b border-border pb-3">
@@ -50,12 +50,7 @@ export function RetentionSection({
           {t('retention.intro')}
         </p>
       </div>
-      {retentionError && (
-        <div className="alert-err flex items-center gap-2">
-          <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
-          <span>{retentionError}</span>
-        </div>
-      )}
+      <StatusToast msg={retentionError ? { type: 'err', text: retentionError } : null} onClose={() => setRetentionError(null)} />
       {currentUser.retention && (
         <div className="divide-y divide-border">
           {RETENTION_AREAS.map((key) => {

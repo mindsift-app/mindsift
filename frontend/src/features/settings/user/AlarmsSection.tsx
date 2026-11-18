@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CircleAlert, Bell, Check, Globe, Mail, MessageSquare, Send, X } from 'lucide-react';
+import { CircleAlert, Bell, Globe, Mail, MessageSquare, Send, X } from 'lucide-react';
 import { NotificationEvents, User } from '../../../lib/types';
 import { pushSupported } from '../../../lib/push';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
+import { StatusToast } from '../../../components/StatusToast';
 import { useAlarmSettings } from './useAlarmSettings';
 import { formatDate } from '../../../lib/format';
 import { TimeField } from '../../../components/TimeField';
@@ -39,6 +40,7 @@ export function AlarmsSection({
     notifyBeforeMinutes,
     setNotifyBeforeMinutes,
     alarmMsg,
+    setAlarmMsg,
     savingAlarms,
     testingChannel,
     pushDevices,
@@ -70,20 +72,7 @@ export function AlarmsSection({
         </div>
       )}
 
-      {alarmMsg && (
-        <div
-          className={`flex items-center gap-2 ${
-            alarmMsg.type === 'ok' ? 'alert-ok' : 'alert-err'
-          }`}
-        >
-          {alarmMsg.type === 'ok' ? (
-            <Check className="w-4 h-4 text-status-ok shrink-0" />
-          ) : (
-            <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
-          )}
-          <span>{alarmMsg.text}</span>
-        </div>
-      )}
+      <StatusToast msg={alarmMsg} onClose={() => setAlarmMsg(null)} />
 
       <form onSubmit={handleSaveAlarms} className="space-y-4">
         {/* Global Pause & Own Watched Toggles */}

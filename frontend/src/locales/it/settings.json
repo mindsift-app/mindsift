@@ -751,7 +751,6 @@
     "title": "Amministrazione del server",
     "subtitle": "Utenti, inviti, organizzazioni, condivisione e server di posta",
     "badge": "Amministratore server",
-    "close": "Chiudi",
     "nav": {
       "users": "Utenti e inviti",
       "usersHint": "Account, ruoli e codici invito",
