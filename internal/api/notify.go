@@ -597,8 +597,9 @@ func (s *Server) flushNotifications(now time.Time) {
 		}
 		set := s.store.NotificationSettingsOf(uid)
 		var out channelItems
-		ids := make([]int64, 0, len(queued))
-		maxAttempts := 0
+		// The channels each event goes out on in this run: those chosen for its kind but the ones that
+		// got it in an earlier run while another failed
+		pending := make([]domain.ChannelChoice, len(queued))
 		// Events with the same key (the same change to the same task) go out once, as the latest
 		last := map[string]int{}
 		for i, q := range queued {
@@ -607,31 +608,75 @@ func (s *Server) flushNotifications(now time.Time) {
 			}
 		}
 		for i, q := range queued {
-			ids = append(ids, q.ID)
-			if q.Attempts > maxAttempts {
-				maxAttempts = q.Attempts
-			}
 			if set.Paused {
 				continue
 			}
 			if k := q.Payload["key"]; k != "" && last[q.Kind+"|"+k] != i {
 				continue
 			}
+			pending[i] = withoutChannels(set.Channels(q.Kind), q.Delivered)
 			item := notifyItem{kind: q.Kind, title: q.Payload["title"], text: q.Payload["text"]}
-			out.add(set.Channels(q.Kind), item)
+			out.add(pending[i], item)
 		}
-		if err := s.deliver(uid, headingNews, out, false, now); err != nil {
-			if maxAttempts+1 >= notifyMaxAttempts {
-				slog.Warn("Notifications dropped after several failed attempts", "user_id", uid, "count", len(ids), "error", err)
-				logFailed("Removing dropped notifications from the queue", s.store.DeleteQueuedNotifications(ids), "user_id", uid)
-			} else {
-				logFailed("Counting a failed attempt to notify", s.store.BumpQueuedNotifications(ids), "user_id", uid)
+		failed := s.deliver(uid, headingNews, out, false, now)
+		// An event is done once every channel it went out on got it (or has nothing to deliver to); one
+		// with a failed channel stays queued for that channel alone, up to notifyMaxAttempts runs
+		var done, dropped []int64
+		retry := map[int64][]string{}
+		for i, q := range queued {
+			delivered := slices.Clone(q.Delivered)
+			missing := false
+			for _, c := range channelNames(pending[i]) {
+				if failed[c] != nil {
+					missing = true
+				} else {
+					delivered = append(delivered, c)
+				}
 			}
-			continue
+			switch {
+			case !missing:
+				done = append(done, q.ID)
+			case q.Attempts+1 >= notifyMaxAttempts:
+				dropped = append(dropped, q.ID)
+			default:
+				retry[q.ID] = delivered
+			}
+		}
+		for c, err := range failed {
+			slog.Warn("Notifications not delivered", "channel", c, "user_id", uid, "retry", len(retry), "dropped", len(dropped), "error", err)
+		}
+		if len(dropped) > 0 {
+			slog.Warn("Notifications dropped after several failed attempts", "user_id", uid, "count", len(dropped))
 		}
 		// Left in the queue they would go out a second time
-		logFailed("Removing delivered notifications from the queue", s.store.DeleteQueuedNotifications(ids), "user_id", uid)
+		logFailed("Removing delivered notifications from the queue", s.store.DeleteQueuedNotifications(append(done, dropped...)), "user_id", uid)
+		if len(retry) > 0 {
+			logFailed("Counting a failed attempt to notify", s.store.RetryQueuedNotifications(retry), "user_id", uid)
+		}
 	}
+}
+
+// channelNames lists the chosen channels by the names the queue and the logs use.
+func channelNames(ch domain.ChannelChoice) []string {
+	var out []string
+	for _, c := range []struct {
+		on   bool
+		name string
+	}{{ch.Email, "email"}, {ch.Discord, "discord"}, {ch.Webhook, "webhook"}, {ch.Push, "push"}} {
+		if c.on {
+			out = append(out, c.name)
+		}
+	}
+	return out
+}
+
+// withoutChannels is the choice without the named channels (those that got an event already).
+func withoutChannels(ch domain.ChannelChoice, names []string) domain.ChannelChoice {
+	ch.Email = ch.Email && !slices.Contains(names, "email")
+	ch.Discord = ch.Discord && !slices.Contains(names, "discord")
+	ch.Webhook = ch.Webhook && !slices.Contains(names, "webhook")
+	ch.Push = ch.Push && !slices.Contains(names, "push")
+	return ch
 }
 
 // channelItems collects what goes out on each channel.
@@ -660,9 +705,11 @@ const (
 	headingSummary = "Deine Aufgaben für heute"
 )
 
-// deliver sends the items to the user's mail address, Discord webhook and/or own webhook.
+// deliver sends the items to the user's mail address, Discord webhook, own webhook and/or devices
+// (push) and returns the channels that failed, with their error (none: every channel got through). A
+// channel with nothing to deliver to (no address, no webhook, no push device) is skipped, not failed.
 // now is the time the run is for (greeting "Guten Morgen" follows the summary time, not the clock).
-func (s *Server) deliver(userID, heading string, out channelItems, summary bool, now time.Time) error {
+func (s *Server) deliver(userID, heading string, out channelItems, summary bool, now time.Time) map[string]error {
 	emailItems, discordItems := out.email, out.discord
 	u, err := s.store.GetUserByID(userID)
 	if err != nil || u == nil || !u.IsActive {
@@ -670,7 +717,12 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 	}
 	lang := s.userLanguage(userID)
 	heading = i18n.T(lang, heading)
-	var firstErr error
+	failed := map[string]error{}
+	fail := func(channel string, err error) {
+		if err != nil {
+			failed[channel] = err
+		}
+	}
 	// An account without an address (first admin from ADMIN_USER without ADMIN_EMAIL) gets no mails
 	if len(emailItems) > 0 && u.Email != "" {
 		to := u.Email // the confirmed login address
@@ -683,27 +735,21 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 			c = s.summaryMail(lang, u.DisplayName, emailItems, now)
 		}
 		text, htmlBody := renderMail(c)
-		if err := s.sendNotifyEmail(to, subject, text, htmlBody); err != nil {
-			firstErr = err
-		}
+		fail("email", s.sendNotifyEmail(to, subject, text, htmlBody))
 	}
 	if len(discordItems) > 0 && u.DiscordWebhookURL != "" {
-		if err := s.sendNotifyDiscord(lang, u.DiscordWebhookURL, heading, discordItems); err != nil && firstErr == nil {
-			firstErr = err
-		}
+		fail("discord", s.sendNotifyDiscord(lang, u.DiscordWebhookURL, heading, discordItems))
 	}
 	if len(out.webhook) > 0 && u.CustomWebhookURL != "" {
-		if err := s.sendNotifyWebhook(u.CustomWebhookURL, heading, out.webhook); err != nil && firstErr == nil {
-			firstErr = err
-		}
+		fail("webhook", s.sendNotifyWebhook(u.CustomWebhookURL, heading, out.webhook))
 	}
 	if len(out.push) > 0 {
 		// Without a device there is nothing to deliver, and nothing to try again
-		if err := s.sendPush(userID, pushDigest(lang, heading, out.push, s.notifyLink())); err != nil && !errors.Is(err, errNoPushDevice) && firstErr == nil {
-			firstErr = err
+		if err := s.sendPush(userID, pushDigest(lang, heading, out.push, s.notifyLink())); !errors.Is(err, errNoPushDevice) {
+			fail("push", err)
 		}
 	}
-	return firstErr
+	return failed
 }
 
 // sendNotifyEmail / sendNotifyDiscord are replaced in tests.
@@ -932,8 +978,9 @@ func (s *Server) sendDailySummaries(now time.Time) {
 		}
 		var out channelItems
 		out.add(domain.ChannelChoice{Email: ds.Email, Discord: ds.Discord, Webhook: ds.Webhook, Push: ds.Push}, items...)
-		if err := s.deliver(uid, headingSummary, out, true, now); err != nil {
-			slog.Warn("Sending the daily summary failed", "user_id", uid, "error", err)
+		// Claimed before it goes out: a failed channel is not tried again, so no channel gets it twice
+		for c, err := range s.deliver(uid, headingSummary, out, true, now) {
+			slog.Warn("Sending the daily summary failed", "channel", c, "user_id", uid, "error", err)
 		}
 	}
 }

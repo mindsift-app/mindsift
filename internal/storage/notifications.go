@@ -101,6 +101,9 @@ type QueuedNotification struct {
 	Payload   map[string]string
 	CreatedAt string
 	Attempts  int
+	// Channels (email, discord, webhook, push) that already got it in an earlier run while another
+	// failed: a retry leaves them out
+	Delivered []string
 }
 
 func (s *Store) QueueNotification(userID, kind string, payload map[string]string) error {
@@ -130,7 +133,7 @@ func (s *Store) DueNotificationUsers(olderThan time.Time) ([]string, error) {
 }
 
 func (s *Store) QueuedNotifications(userID string) ([]QueuedNotification, error) {
-	rows, err := s.db.Query(`SELECT id, user_id, kind, payload, created_at, attempts FROM notification_queue WHERE user_id = ? ORDER BY id`, userID)
+	rows, err := s.db.Query(`SELECT id, user_id, kind, payload, created_at, attempts, delivered FROM notification_queue WHERE user_id = ? ORDER BY id`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -138,11 +141,14 @@ func (s *Store) QueuedNotifications(userID string) ([]QueuedNotification, error)
 	var out []QueuedNotification
 	for rows.Next() {
 		var q QueuedNotification
-		var raw string
-		if err := rows.Scan(&q.ID, &q.UserID, &q.Kind, &raw, &q.CreatedAt, &q.Attempts); err != nil {
+		var raw, delivered string
+		if err := rows.Scan(&q.ID, &q.UserID, &q.Kind, &raw, &q.CreatedAt, &q.Attempts, &delivered); err != nil {
 			return nil, err
 		}
 		_ = json.Unmarshal([]byte(raw), &q.Payload)
+		if delivered != "" {
+			q.Delivered = strings.Split(delivered, ",")
+		}
 		out = append(out, q)
 	}
 	return out, rows.Err()
@@ -157,13 +163,19 @@ func (s *Store) DeleteQueuedNotifications(ids []int64) error {
 	return nil
 }
 
-func (s *Store) BumpQueuedNotifications(ids []int64) error {
-	for _, id := range ids {
-		if _, err := s.db.Exec(`UPDATE notification_queue SET attempts = attempts + 1 WHERE id = ?`, id); err != nil {
-			return err
-		}
+// RetryQueuedNotifications counts a failed attempt for queued events and records, per event, every
+// channel that got it so far (delivered: event id → channels), in one transaction.
+func (s *Store) RetryQueuedNotifications(delivered map[int64][]string) error {
+	stmts := make([]sqlStmt, 0, len(delivered))
+	for id, channels := range delivered {
+		stmts = append(stmts, stmt(`UPDATE notification_queue SET attempts = attempts + 1, delivered = ? WHERE id = ?`, strings.Join(channels, ","), id))
 	}
-	return nil
+	return s.execInTx(stmts...)
+}
+
+// migrateQueueDelivered (migration 69): which channels got a queued event while another failed.
+func (s *Store) migrateQueueDelivered() error {
+	return s.execSchemaStatement(`ALTER TABLE notification_queue ADD COLUMN delivered TEXT NOT NULL DEFAULT ''`)
 }
 
 // --- Task watchers ---
