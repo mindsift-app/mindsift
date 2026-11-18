@@ -661,6 +661,29 @@
             "description": "JSON; errors as {\"error\": \"…\"}"
           }
         }
+      },
+      "delete": {
+        "summary": "Delete a model on the Whisper server",
+        "description": "Removes a downloaded model from the Whisper server (DELETE /v1/models/{id} on speaches) to free its space: {deleted: true}. 404 when the Whisper server does not have it; 409 for the model in use, one still downloading, and while STT_MODEL fixes the model; disabled in demo mode",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Model id, e.g. Systran/faster-whisper-small"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
       }
     },
     "/api/v1/admin/update": {

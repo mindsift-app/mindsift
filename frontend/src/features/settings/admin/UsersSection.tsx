@@ -21,6 +21,7 @@ import { OrganizationPicker } from './OrganizationPicker';
 import { MASKED, NO_AUTOFILL } from '../../../lib/noAutofill';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { CountBadge } from '../../../components/CountBadge';
+import { NumberField } from '../../../components/NumberField';
 import { ShowMoreButton, UserList } from './UserList';
 import { USER_PAGE_SIZE } from './userListView';
 
@@ -225,14 +226,13 @@ export function UsersSection({
           </label>
           <label className="block">
             <span className="block text-muted mb-1">{t('users.invite.uses')}</span>
-            <input
-              {...NO_AUTOFILL}
-              type="number"
+            <NumberField
+              value={inviteMaxUses}
               min={1}
               max={1000}
-              value={inviteMaxUses}
-              onChange={(e) => setInviteMaxUses(Math.max(1, Math.min(1000, parseInt(e.target.value, 10) || 1)))}
-              className="w-28 h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
+              unit={t('users.invite.usesUnit', { count: inviteMaxUses })}
+              label={t('users.invite.uses')}
+              onCommit={setInviteMaxUses}
             />
             <span className="block text-[11px] text-faint mt-1">{t('users.invite.usesHint')}</span>
           </label>

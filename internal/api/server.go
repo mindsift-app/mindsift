@@ -552,6 +552,7 @@ func (s *Server) Router() http.Handler {
 			r.Get("/api/v1/admin/voice", s.handleAdminVoiceStatus)
 			r.Get("/api/v1/admin/voice/models", s.handleAdminSpeechModels)
 			r.Post("/api/v1/admin/voice/models/*", s.notInDemo(s.handleAdminSpeechModelDownload))
+			r.Delete("/api/v1/admin/voice/models/*", s.notInDemo(s.handleAdminSpeechModelDelete))
 			r.Get("/api/v1/admin/update", s.handleAdminUpdate)
 			r.Post("/api/v1/admin/update/dismiss", s.notInDemo(s.handleAdminDismissUpdate))
 			r.Post("/api/v1/admin/smtp/test", s.notInDemo(s.handleAdminTestSMTP))

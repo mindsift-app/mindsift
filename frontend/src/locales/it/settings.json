@@ -542,7 +542,9 @@
       "linkCreated_one": "Link di invito per {{count}} persona creato ({{code}}).",
       "linkCreated_other": "Link di invito per {{count}} persone creato ({{code}}).",
       "codeCreated": "Codice invito {{code}} creato.",
-      "alwaysMember": "Con un invito tutti entrano come membri; i ruoli si assegnano poi nell’elenco."
+      "alwaysMember": "Con un invito tutti entrano come membri; i ruoli si assegnano poi nell’elenco.",
+      "usesUnit_one": "volta",
+      "usesUnit_other": "volte"
     },
     "roleMember": "Membro",
     "roleAdmin": "Amministratore server",
@@ -910,7 +912,7 @@
     "autoTitle": "Backup automatici",
     "autoOff": "Disattiva backup automatici",
     "autoOn": "Attiva backup automatici",
-    "keepDays": "Conserva per (giorni)",
+    "keepDays": "Conserva per",
     "running": "Creazione backup in corso…",
     "runNow": "Esegui backup ora",
     "delete": "Elimina backup",
@@ -922,7 +924,9 @@
     "restored": "Ripristinati: {{notes}} note, {{tasks}} attività, {{lists}} liste, {{inbox}} pensieri, {{themes}} temi.",
     "deletedTitle": "Backup degli account eliminati",
     "deletedHint": "Quando un amministratore o la gestione utenti elimina un account, i suoi backup restano qui fino alla fine del periodo di conservazione. Così chi è stato eliminato per errore riavrà i suoi dati: scarica un backup e importalo nel nuovo account in Impostazioni account → Esportazione e importazione. Se qualcuno elimina il proprio account, i suoi backup spariscono subito.",
-    "deletedOn": "Eliminato il {{deleted}} · verrà rimosso il {{remove}}"
+    "deletedOn": "Eliminato il {{deleted}} · verrà rimosso il {{remove}}",
+    "days_one": "giorno",
+    "days_other": "giorni"
   },
   "voiceStatus": {
     "loadFailed": "Impossibile caricare lo stato",
@@ -1360,14 +1364,14 @@
     "keyUnreadable": "La chiave salvata non si può più decifrare (SECRETS_KEY cambiata?). Inseriscila di nuovo.",
     "keyRemove": "Rimuovi la chiave",
     "model": "Modello",
-    "modelHint": "Scegli un modello scaricato con un clic. Quelli grigi non sono ancora sul server Whisper: un clic li scarica (può richiedere qualche minuto) e poi li usa. large-v3-turbo riconosce meglio, small è molto più veloce.",
+    "modelHint": "Scegli un modello scaricato con un clic. Quelli grigi non sono ancora sul server Whisper: un clic li scarica (può richiedere alcuni minuti) e poi li usa. large-v3-turbo riconosce meglio, small è molto più veloce. Elimina con il cestino i modelli che non usi per risparmiare spazio.",
     "limits": "Limiti",
-    "vadFilter": "Salta i silenzi (meno ripetizioni inventate; disattiva se il server rifiuta il campo)",
+    "vadFilter": "Salta il silenzio",
     "limit": {
       "maxSeconds": "Registrazione più lunga",
       "maxUploadMb": "Registrazione più grande",
-      "maxParallel": "Riconoscimenti contemporanei",
-      "perUserPerHour": "Riconoscimenti per persona e ora",
+      "maxParallel": "Riconoscimenti sul server (gli altri attendono)",
+      "perUserPerHour": "Riconoscimenti per persona",
       "timeoutSeconds": "Tempo massimo di un riconoscimento (attesa inclusa)"
     },
     "modelsFailed": "Impossibile caricare i modelli",
@@ -1382,6 +1386,24 @@
     "download": "Scarica",
     "custom": "Altro modello",
     "customPlaceholder": "Altro modello, ad es. Systran/faster-whisper-tiny",
-    "customUse": "Scarica e usa"
+    "customUse": "Scarica e usa",
+    "unit": {
+      "seconds_one": "secondo",
+      "seconds_other": "secondi",
+      "mb": "MB",
+      "parallel": "alla volta",
+      "perHour": "all'ora"
+    },
+    "recognition": "Riconoscimento",
+    "chunked": "Testo mentre si parla",
+    "chunkedHint": "L'app invia la registrazione al server Whisper a pezzi mentre qualcuno parla, così il testo arriva già durante. Disattivato: l'intera registrazione solo dopo l'arresto (la dettatura dal vivo resta a pezzi).",
+    "chunkSeconds": "Durata di un pezzo",
+    "chunkSecondsHint": "Al massimo questa durata, prima in caso di breve pausa (2–30 secondi). Più breve: il testo arriva prima, ma il server riceve più richieste.",
+    "vadFilterHint": "Meno ripetizioni inventate; disattiva se il server rifiuta il campo.",
+    "delete": "Elimina",
+    "deleteModel": "Elimina modello",
+    "deleteModelOf": "Elimina il modello {{model}}",
+    "deleteConfirm": "Eliminare {{model}} dal server Whisper? Potrà essere scaricato di nuovo in seguito.",
+    "deleteFailed": "Impossibile eliminare il modello"
   }
 }

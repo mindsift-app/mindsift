@@ -645,7 +645,9 @@
       "linkCreated_one": "Enlace de invitación para {{count}} persona creado ({{code}}).",
       "linkCreated_other": "Enlace de invitación para {{count}} personas creado ({{code}}).",
       "codeCreated": "Código de invitación {{code}} creado.",
-      "alwaysMember": "Con una invitación todos entran como miembros; los roles se asignan después en la lista."
+      "alwaysMember": "Con una invitación todos entran como miembros; los roles se asignan después en la lista.",
+      "usesUnit_one": "vez",
+      "usesUnit_other": "veces"
     },
     "roleMember": "Miembro",
     "roleAdmin": "Administrador del servidor",
@@ -910,7 +912,7 @@
     "autoTitle": "Copias de seguridad automáticas",
     "autoOff": "Desactivar copias de seguridad automáticas",
     "autoOn": "Activar copias de seguridad automáticas",
-    "keepDays": "Conservar (días)",
+    "keepDays": "Conservar",
     "running": "Creando copia de seguridad…",
     "runNow": "Crear copia ahora",
     "delete": "Eliminar copia de seguridad",
@@ -922,7 +924,9 @@
     "restored": "Restaurado: {{notes}} notas, {{tasks}} tareas, {{lists}} listas, {{inbox}} pensamientos, {{themes}} temas.",
     "deletedTitle": "Copias de cuentas eliminadas",
     "deletedHint": "Cuando la administración o la gestión de usuarios elimina una cuenta, sus copias se quedan aquí hasta que termine el periodo de conservación. Así, quien fue eliminado por error recupera sus datos: descarga una copia e impórtala en la nueva cuenta en Ajustes de la cuenta → Exportar e importar. Si alguien elimina su propia cuenta, sus copias desaparecen al instante.",
-    "deletedOn": "Eliminada el {{deleted}} · se quitará el {{remove}}"
+    "deletedOn": "Eliminada el {{deleted}} · se quitará el {{remove}}",
+    "days_one": "día",
+    "days_other": "días"
   },
   "voiceStatus": {
     "loadFailed": "No se pudo cargar el estado",
@@ -1360,14 +1364,14 @@
     "keyUnreadable": "La clave guardada ya no se puede descifrar (¿cambió SECRETS_KEY?). Vuelve a introducirla.",
     "keyRemove": "Quitar la clave",
     "model": "Modelo",
-    "modelHint": "Elige un modelo descargado con un clic. Los grises aún no están en el servidor Whisper: un clic los descarga (puede tardar unos minutos) y después los usa. large-v3-turbo reconoce mejor, small es mucho más rápido.",
+    "modelHint": "Elige un modelo descargado con un clic. Los grises aún no están en el servidor Whisper: un clic los descarga (puede tardar unos minutos) y luego los usa. large-v3-turbo reconoce mejor, small es mucho más rápido. Elimina con la papelera los modelos que no uses para ahorrar espacio.",
     "limits": "Límites",
-    "vadFilter": "Saltar silencios (menos repeticiones inventadas; desactívalo si el servidor rechaza el campo)",
+    "vadFilter": "Saltar silencios",
     "limit": {
       "maxSeconds": "Grabación más larga",
       "maxUploadMb": "Grabación más grande",
-      "maxParallel": "Reconocimientos simultáneos",
-      "perUserPerHour": "Reconocimientos por persona y hora",
+      "maxParallel": "Reconocimientos en el servidor (los demás esperan)",
+      "perUserPerHour": "Reconocimientos por persona",
       "timeoutSeconds": "Tiempo límite de un reconocimiento (con espera)"
     },
     "modelsFailed": "No se pudieron cargar los modelos",
@@ -1382,6 +1386,24 @@
     "download": "Descargar",
     "custom": "Otro modelo",
     "customPlaceholder": "Otro modelo, p. ej. Systran/faster-whisper-tiny",
-    "customUse": "Descargar y usar"
+    "customUse": "Descargar y usar",
+    "unit": {
+      "seconds_one": "segundo",
+      "seconds_other": "segundos",
+      "mb": "MB",
+      "parallel": "a la vez",
+      "perHour": "por hora"
+    },
+    "recognition": "Reconocimiento",
+    "chunked": "Texto mientras se habla",
+    "chunkedHint": "La app envía la grabación al servidor Whisper por partes mientras alguien habla, así el texto llega por el camino. Desactivado: la grabación completa solo después de detenerla (el dictado en vivo sigue por partes).",
+    "chunkSeconds": "Duración de una parte",
+    "chunkSecondsHint": "Como máximo esta duración, antes en una pausa corta (2–30 segundos). Más corta: el texto llega antes, pero el servidor recibe más peticiones.",
+    "vadFilterHint": "Menos repeticiones inventadas; desactívalo si el servidor rechaza el campo.",
+    "delete": "Eliminar",
+    "deleteModel": "Eliminar modelo",
+    "deleteModelOf": "Eliminar el modelo {{model}}",
+    "deleteConfirm": "¿Eliminar {{model}} del servidor Whisper? Se puede volver a descargar más tarde.",
+    "deleteFailed": "No se pudo eliminar el modelo"
   }
 }

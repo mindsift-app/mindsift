@@ -110,6 +110,8 @@ services:
       - STT_PER_USER_PER_HOUR=${STT_PER_USER_PER_HOUR:-}
       - STT_TIMEOUT_SECONDS=${STT_TIMEOUT_SECONDS:-}
       - STT_VAD_FILTER=${STT_VAD_FILTER:-}
+      - STT_CHUNKED=${STT_CHUNKED:-}
+      - STT_CHUNK_SECONDS=${STT_CHUNK_SECONDS:-}
 
   # Optional: your own speech recognition (Whisper). install.sh sets it up when asked. By hand:
   #   1. remove the hashes in front of the "whisper" block below

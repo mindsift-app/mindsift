@@ -14,7 +14,13 @@ export type EffectiveVoiceMode = VoiceMode | 'unsupported';
 export interface VoiceConfig {
   mode: EffectiveVoiceMode;
   maxSeconds: number;
+  // Server mode: send the recording in pieces while speaking, each at most chunkSeconds long
+  chunked: boolean;
+  chunkSeconds: number;
 }
+
+// Until the server said otherwise (STT_MAX_SECONDS, STT_CHUNKED, STT_CHUNK_SECONDS or the administration)
+const DEFAULTS = { maxSeconds: 600, chunked: true, chunkSeconds: 8 };
 
 let configPromise: Promise<VoiceConfig> | null = null;
 let loadedConfig: VoiceConfig | null = null;
@@ -132,12 +138,17 @@ function configFrom(status: Promise<AuthStatus>): Promise<VoiceConfig> {
     .then((st) => {
       serverMode = st.voice?.mode;
       browserAllowed = st.voice?.browserAllowed !== false;
-      loadedConfig = { mode: effectiveMode(applyPreference(serverMode)), maxSeconds: st.voice?.maxSeconds || 600 };
+      loadedConfig = {
+        mode: effectiveMode(applyPreference(serverMode)),
+        maxSeconds: st.voice?.maxSeconds || DEFAULTS.maxSeconds,
+        chunked: st.voice?.chunked !== false,
+        chunkSeconds: st.voice?.chunkSeconds || DEFAULTS.chunkSeconds,
+      };
       return loadedConfig;
     })
     .catch(() => {
       configPromise = null; // offline at start: ask again next time
-      return { mode: effectiveMode('browser'), maxSeconds: 600 };
+      return { ...DEFAULTS, mode: effectiveMode('browser') };
     });
 }
 
@@ -155,7 +166,7 @@ export function loadVoiceConfig(): Promise<VoiceConfig> {
 
 /** The setting if already loaded; until then the browser's recognition (a button must react at once). */
 export function currentVoiceConfig(): VoiceConfig {
-  return loadedConfig ?? { mode: effectiveMode('browser'), maxSeconds: 600 };
+  return loadedConfig ?? { ...DEFAULTS, mode: effectiveMode('browser') };
 }
 
 /** For tests. */

@@ -225,7 +225,7 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | empty | Outgoing proxy for OIDC, the update check, webhooks, push, link previews and image copies; MindSift still checks each target's addresses itself before handing it over, and needs DNS for that ([limits](Doku/security.md#nothing-reaches-into-your-network)) |
 | `DRAW_LIVE_MAX_MB` | a twelfth of the server's memory, 16–128 | Memory all live drawings on the server may hold together, in MB (each up to 1 MB; the server needs about three times that). Without the variable it follows `GOMEMLIMIT`, else the machine's memory |
 | `METRICS_TOKEN` | empty | Switches on `/metrics` for Prometheus, see [monitoring](Doku/operations.md#monitoring) |
-| `STT_*` | admin UI decides | Your own Whisper server for voice input (address, key, model, limits); each one set fixes its field in the admin UI. `STT_DEFAULT_MODEL` only presets the model |
+| `STT_*` | admin UI decides | Your own Whisper server for voice input (address, key, model, limits, and `STT_CHUNKED` / `STT_CHUNK_SECONDS`: send the recording in pieces while speaking, every 8 s by default); each one set fixes its field in the admin UI. `STT_DEFAULT_MODEL` only presets the model |
 | `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a server with real data!** |
 
 * **First admin:** with `ADMIN_USER` and `ADMIN_PASSWORD` (at least 8 characters, or `ADMIN_PASSWORD_FILE`), the admin exists before the server accepts connections; unusable values stop the start with a reason in the log. They act only while the database has no account ([details](Doku/operations.md#first-admin)).

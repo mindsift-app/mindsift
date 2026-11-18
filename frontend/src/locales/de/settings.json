@@ -542,7 +542,9 @@
       "linkCreated_one": "Einladungslink für {{count}} Person erstellt ({{code}}).",
       "linkCreated_other": "Einladungslink für {{count}} Personen erstellt ({{code}}).",
       "codeCreated": "Einladungscode {{code}} erfolgreich erstellt.",
-      "alwaysMember": "Über eine Einladung kommen alle als Mitglied dazu; Rollen vergibst du danach in der Liste."
+      "alwaysMember": "Über eine Einladung kommen alle als Mitglied dazu; Rollen vergibst du danach in der Liste.",
+      "usesUnit_one": "Mal",
+      "usesUnit_other": "Mal"
     },
     "roleMember": "Mitglied",
     "roleAdmin": "Server-Admin",
@@ -909,7 +911,7 @@
     "autoTitle": "Automatische Backups",
     "autoOff": "Automatische Backups ausschalten",
     "autoOn": "Automatische Backups einschalten",
-    "keepDays": "Aufbewahren (Tage)",
+    "keepDays": "Aufbewahren",
     "running": "Sichere…",
     "runNow": "Jetzt sichern",
     "delete": "Backup löschen",
@@ -921,7 +923,9 @@
     "restored": "Wiederhergestellt: {{notes}} Notizen, {{tasks}} Aufgaben, {{lists}} Listen, {{inbox}} Gedanken, {{themes}} Themes.",
     "deletedTitle": "Backups gelöschter Konten",
     "deletedHint": "Löscht ein Admin oder die Benutzerverwaltung ein Konto, bleiben dessen Backups bis zum Ende der Vorhaltezeit hier. So bekommt jemand, der versehentlich gelöscht wurde, seine Daten zurück: Backup herunterladen und im neuen Konto unter Kontoeinstellungen → Export & Import. Wer sein Konto selbst löscht, dessen Backups sind sofort weg.",
-    "deletedOn": "Gelöscht am {{deleted}} · wird am {{remove}} entfernt"
+    "deletedOn": "Gelöscht am {{deleted}} · wird am {{remove}} entfernt",
+    "days_one": "Tag",
+    "days_other": "Tage"
   },
   "voiceStatus": {
     "loadFailed": "Status konnte nicht geladen werden",
@@ -1359,14 +1363,14 @@
     "keyUnreadable": "Der gespeicherte Schlüssel lässt sich nicht mehr entschlüsseln (SECRETS_KEY geändert?). Bitte neu eingeben.",
     "keyRemove": "Schlüssel entfernen",
     "model": "Modell",
-    "modelHint": "Heruntergeladene Modelle wählst du mit einem Klick. Graue sind noch nicht auf dem Whisper-Server: ein Klick lädt sie herunter (kann einige Minuten dauern) und verwendet sie danach. large-v3-turbo erkennt am besten, small ist deutlich schneller.",
+    "modelHint": "Heruntergeladene Modelle wählst du mit einem Klick. Graue sind noch nicht auf dem Whisper-Server: ein Klick lädt sie herunter (kann einige Minuten dauern) und verwendet sie danach. large-v3-turbo erkennt am besten, small ist deutlich schneller. Nicht verwendete Modelle löschst du mit dem Papierkorb, um Platz zu sparen.",
     "limits": "Grenzen",
-    "vadFilter": "Stille überspringen (weniger erfundene Wiederholungen; aus, falls der Server das Feld ablehnt)",
+    "vadFilter": "Stille überspringen",
     "limit": {
       "maxSeconds": "Längste Aufnahme",
       "maxUploadMb": "Größte Aufnahme",
-      "maxParallel": "Erkennungen gleichzeitig",
-      "perUserPerHour": "Erkennungen pro Person und Stunde",
+      "maxParallel": "Erkennungen auf dem Server (weitere warten)",
+      "perUserPerHour": "Erkennungen je Person",
       "timeoutSeconds": "Zeitlimit einer Erkennung (mit Warten)"
     },
     "modelsFailed": "Modelle konnten nicht geladen werden",
@@ -1381,6 +1385,24 @@
     "download": "Herunterladen",
     "custom": "Anderes Modell",
     "customPlaceholder": "Anderes Modell, z. B. Systran/faster-whisper-tiny",
-    "customUse": "Laden und verwenden"
+    "customUse": "Laden und verwenden",
+    "unit": {
+      "seconds_one": "Sekunde",
+      "seconds_other": "Sekunden",
+      "mb": "MB",
+      "parallel": "gleichzeitig",
+      "perHour": "pro Stunde"
+    },
+    "recognition": "Erkennung",
+    "chunked": "Text schon beim Sprechen",
+    "chunkedHint": "Die App schickt die Aufnahme in Stücken an den Whisper-Server, während jemand spricht, so kommt der Text schon unterwegs. Aus: die ganze Aufnahme erst nach dem Stoppen (das Live-Diktat bleibt in Stücken).",
+    "chunkSeconds": "Länge eines Stücks",
+    "chunkSecondsHint": "Höchstens so lang, bei einer kurzen Pause früher (2–30 Sekunden). Kürzer: der Text kommt schneller, der Server bekommt aber mehr Anfragen.",
+    "vadFilterHint": "Weniger erfundene Wiederholungen; aus, falls der Server das Feld ablehnt.",
+    "delete": "Löschen",
+    "deleteModel": "Modell löschen",
+    "deleteModelOf": "Modell {{model}} löschen",
+    "deleteConfirm": "{{model}} vom Whisper-Server löschen? Es lässt sich später wieder herunterladen.",
+    "deleteFailed": "Das Modell konnte nicht gelöscht werden"
   }
 }

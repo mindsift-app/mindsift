@@ -388,6 +388,7 @@ body {
     transition: border-color 120ms ease;
   }
   .input-field:focus,
+  .input-field:focus-within,
   .input-base:focus {
     outline: none;
     border-color: var(--accent-primary);

@@ -15,10 +15,12 @@ export interface VoiceInputOptions {
   onError?: (message: string) => void;
   /** Browser mode: keep listening through pauses (hold-to-record) instead of stopping after a sentence. */
   continuous?: boolean;
-  /** Live dictation mode (/diktat): auto-restart browser speech recognition on pause, and chunk server recordings every ~8s or ~0.8s of silence. */
+  /** Live dictation mode (/diktat): auto-restart browser speech recognition on pause, and chunk server recordings
+   *  every chunkSeconds (STT_CHUNK_SECONDS, default 8) or ~0.8s of silence, whatever the server's chunked setting. */
   live?: boolean;
-  /** Server mode only: send the recording in chunks like live mode (every ~8 s or at a short pause), so the
-   *  text arrives while speaking and a long dictation is not transcribed all at once at the end. Default on. */
+  /** Server mode only: send the recording in chunks like live mode (every chunkSeconds or at a short pause), so the
+   *  text arrives while speaking and a long dictation is not transcribed all at once at the end. Default on; the
+   *  server can switch it off (STT_CHUNKED or the administration). */
   chunked?: boolean;
   /** Server mode only: stop() hands the recording on while it is still being transcribed, and the
    *  microphone is free for the next one at once (the dictation queue on the rail's +). onText then
@@ -26,7 +28,6 @@ export interface VoiceInputOptions {
   onRecorded?: (transcription: SegmentedTranscription) => void;
 }
 
-const LIVE_CHUNK_MS = 8000;
 const LIVE_SILENCE_MS = 800;
 const LIVE_TICK_MS = 200;
 const LIVE_SPEECH_LEVEL = 0.02;
@@ -40,8 +41,11 @@ const BROWSER_SILENCE_STOP_MS = 5000;
  * "unsupported" means: do not show a microphone.
  */
 export function useVoiceInput({ onText, onError, continuous = false, live = false, chunked = true, onRecorded }: VoiceInputOptions) {
-  const chunkServer = live || chunked;
   const [mode, setMode] = useState<EffectiveVoiceMode | null>(null);
+  // The server's setting: recordings in pieces while speaking, and how long a piece is at most
+  const [serverChunked, setServerChunked] = useState(true);
+  const chunkMsRef = useRef(8000);
+  const chunkServer = live || (chunked && serverChunked);
   const [state, setState] = useState<VoiceState>('idle');
   const [pendingChunks, setPendingChunks] = useState(0);
   // A recording or its transcription is under way: the app does not reload for a new version meanwhile
@@ -85,7 +89,9 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
       void loadVoiceConfig().then((cfg) => {
         if (!mountedRef.current) return;
         setMode(cfg.mode);
+        setServerChunked(cfg.chunked);
         maxSecondsRef.current = cfg.maxSeconds;
+        chunkMsRef.current = cfg.chunkSeconds * 1000;
       });
     load();
     // The account setting (Whisper or browser) can change while this button is on screen
@@ -219,7 +225,8 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   const startServer = async () => {
     const rec = new VoiceRecorder();
     recorderRef.current = rec;
-    const handOver: SegmentedTranscription | null = onRecordedRef.current && chunkServer
+    // Handed on at its end in one piece too when the recording is not cut while speaking
+    const handOver: SegmentedTranscription | null = onRecordedRef.current
       ? new SegmentedTranscription((text) => {
           if (handOverRef.current === handOver) onTextRef.current(text, false);
         })
@@ -259,7 +266,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
           }
         }
         segmentMs += LIVE_TICK_MS;
-        if (segmentMs >= LIVE_CHUNK_MS || (hadSpeech && silentMs >= LIVE_SILENCE_MS)) {
+        if (segmentMs >= chunkMsRef.current || (hadSpeech && silentMs >= LIVE_SILENCE_MS)) {
           segmentMs = 0;
           silentMs = 0;
           hadSpeech = false;

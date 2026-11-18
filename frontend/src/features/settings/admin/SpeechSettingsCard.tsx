@@ -4,7 +4,7 @@ import { SelectMenu } from '../../../components/SelectMenu';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { SpeechSettings, SystemSettings } from '../../../lib/types';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
-import { MbLimitField } from './MbLimitField';
+import { NumberField } from '../../../components/NumberField';
 import { SpeechModelPicker } from './SpeechModelPicker';
 
 type Mode = 'server' | 'browser' | 'off';
@@ -22,16 +22,22 @@ const ENV: Record<string, string> = {
   perUserPerHour: 'STT_PER_USER_PER_HOUR',
   timeoutSeconds: 'STT_TIMEOUT_SECONDS',
   vadFilter: 'STT_VAD_FILTER',
+  chunked: 'STT_CHUNKED',
+  chunkSeconds: 'STT_CHUNK_SECONDS',
 };
 
-// The numbers with their range (as the server checks them) and unit
-const LIMITS: { key: 'maxSeconds' | 'maxUploadMb' | 'maxParallel' | 'perUserPerHour' | 'timeoutSeconds'; min: number; max: number; unit: string }[] = [
-  { key: 'maxSeconds', min: 5, max: 3600, unit: 's' },
-  { key: 'maxUploadMb', min: 1, max: 500, unit: 'MB' },
-  { key: 'maxParallel', min: 1, max: 32, unit: '' },
-  { key: 'perUserPerHour', min: 1, max: 100000, unit: '' },
-  { key: 'timeoutSeconds', min: 5, max: 3600, unit: 's' },
+// The limits with their range (as the server checks them) and unit (speech.unit.<unit>)
+type Unit = 'seconds' | 'mb' | 'parallel' | 'perHour';
+const LIMITS: { key: 'maxSeconds' | 'maxUploadMb' | 'maxParallel' | 'perUserPerHour' | 'timeoutSeconds'; min: number; max: number; unit: Unit }[] = [
+  { key: 'maxSeconds', min: 5, max: 3600, unit: 'seconds' },
+  { key: 'maxUploadMb', min: 1, max: 500, unit: 'mb' },
+  { key: 'maxParallel', min: 1, max: 32, unit: 'parallel' },
+  { key: 'perUserPerHour', min: 1, max: 100000, unit: 'perHour' },
+  { key: 'timeoutSeconds', min: 5, max: 3600, unit: 'seconds' },
 ];
+
+// The longest piece of a recording sent while speaking (storage: speech_chunk_seconds)
+const CHUNK_SECONDS = { min: 2, max: 30, default: 8 };
 
 // Administration → Voice input & AI: how voice input works on this server. The mode (own Whisper server,
 // the browser's recognition, off), whether people may pick the browser in server mode, address and key of
@@ -160,31 +166,73 @@ export function SpeechSettingsCard({
         )}
       </div>
 
-      {/* Limits of the Whisper server */}
-      <div className={`space-y-2 pt-3 border-t border-border ${mode === 'server' ? '' : 'opacity-50'}`}>
+      {/* Limits of the Whisper server: two columns, each label above its field */}
+      <div className={`space-y-2 pt-3 border-t border-border ${mode === 'server' ? '' : 'opacity-50'}`} data-speech-limits>
         <p className="text-main font-semibold">{t('speech.limits')}</p>
-        {LIMITS.map((l) => (
-          <div key={l.key} className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-[11px] text-muted">
-              {t(`speech.limit.${l.key}`)}
-              {fixed(l.key)}
-            </span>
-            <MbLimitField
-              value={sp[l.key] ?? 0}
-              min={l.min}
-              max={l.max}
-              unit={l.unit}
-              label={t(`speech.limit.${l.key}`)}
-              disabled={locked(l.key)}
-              onSave={(n) => save({ [l.key]: n })}
-            />
-          </div>
-        ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+          {LIMITS.map((l) => (
+            <label key={l.key} className="block min-w-0">
+              <span className="block text-[11px] text-muted mb-1">{t(`speech.limit.${l.key}`)}</span>
+              <NumberField
+                value={sp[l.key] ?? 0}
+                min={l.min}
+                max={l.max}
+                unit={t(`speech.unit.${l.unit}`, { count: sp[l.key] ?? 0 })}
+                label={t(`speech.limit.${l.key}`)}
+                disabled={locked(l.key)}
+                onCommit={(n) => save({ [l.key]: n })}
+                className="w-full"
+              />
+              {locked(l.key) && <span className="block text-[11px] text-faint mt-1">{fixed(l.key).trim()}</span>}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* How the Whisper server works on a recording */}
+      <div className={`space-y-3 pt-3 border-t border-border ${mode === 'server' ? '' : 'opacity-50'}`} data-speech-recognition>
+        <p className="text-main font-semibold">{t('speech.recognition')}</p>
         <div className="flex items-center justify-between gap-4">
-          <span className="text-[11px] text-muted pr-4">
-            {t('speech.vadFilter')}
-            {fixed('vadFilter')}
-          </span>
+          <div className="pr-4">
+            <p className="text-main">{t('speech.chunked')}</p>
+            <p className="text-[11px] text-muted mt-0.5">
+              {t('speech.chunkedHint')}
+              {fixed('chunked')}
+            </p>
+          </div>
+          <ToggleSwitch
+            checked={sp.chunked !== false}
+            disabled={locked('chunked')}
+            onChange={(chunked) => save({ chunked })}
+            title={t('speech.chunked')}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
+            <p className="text-main">{t('speech.chunkSeconds')}</p>
+            <p className="text-[11px] text-muted mt-0.5">
+              {t('speech.chunkSecondsHint')}
+              {fixed('chunkSeconds')}
+            </p>
+          </div>
+          <NumberField
+            value={sp.chunkSeconds || CHUNK_SECONDS.default}
+            min={CHUNK_SECONDS.min}
+            max={CHUNK_SECONDS.max}
+            unit={t('speech.unit.seconds', { count: sp.chunkSeconds || CHUNK_SECONDS.default })}
+            label={t('speech.chunkSeconds')}
+            disabled={locked('chunkSeconds')}
+            onCommit={(chunkSeconds) => save({ chunkSeconds })}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="pr-4">
+            <p className="text-main">{t('speech.vadFilter')}</p>
+            <p className="text-[11px] text-muted mt-0.5">
+              {t('speech.vadFilterHint')}
+              {fixed('vadFilter')}
+            </p>
+          </div>
           <ToggleSwitch
             checked={sp.vadFilter !== false}
             disabled={locked('vadFilter')}

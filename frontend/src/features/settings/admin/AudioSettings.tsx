@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
-import { MbLimitField } from './MbLimitField';
+import { NumberField } from '../../../components/NumberField';
 import { SystemSettings } from '../../../lib/types';
 
 type AudioCompression = NonNullable<SystemSettings['audioCompression']>;
@@ -83,13 +83,14 @@ export function AudioSettings({
             {settings.audioLimitMBConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_MAX_AUDIO_MB' })}`}
           </p>
         </div>
-        <MbLimitField
+        <NumberField
           value={limit}
           min={1}
           max={MAX_LIMIT_MB}
+          unit={t('server.mb')}
           label={t('server.audioLimit')}
           disabled={Boolean(settings.audioLimitMBConfiguredViaEnv)}
-          onSave={(audioLimitMB) => onSave({ audioLimitMB })}
+          onCommit={(audioLimitMB) => onSave({ audioLimitMB })}
         />
       </div>
 

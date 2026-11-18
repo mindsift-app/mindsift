@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -21,6 +22,7 @@ type modelWhisper struct {
 	release chan struct{}
 	auth    string
 	posts   []string // models asked for
+	deletes []string // models deleted
 }
 
 func (f *modelWhisper) handler() http.Handler {
@@ -48,6 +50,18 @@ func (f *modelWhisper) handler() http.Handler {
 			f.local = append(f.local, strings.TrimPrefix(r.URL.Path, "/v1/models/"))
 			f.mu.Unlock()
 			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/v1/models/"):
+			id := strings.TrimPrefix(r.URL.Path, "/v1/models/")
+			f.mu.Lock()
+			defer f.mu.Unlock()
+			i := slices.Index(f.local, id)
+			if i < 0 {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			f.local = slices.Delete(f.local, i, i+1)
+			f.deletes = append(f.deletes, id)
+			_ = json.NewEncoder(w).Encode(map[string]string{"detail": "Model '" + id + "' deleted"})
 		default:
 			http.NotFound(w, r)
 		}
@@ -76,7 +90,7 @@ func TestSpeechSettingsAndModels(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("save: %d %s", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(status(), `"voice":{"browserAllowed":true,"maxSeconds":120,"mode":"server"}`) {
+	if !strings.Contains(status(), `"voice":{"browserAllowed":true,"chunkSeconds":8,"chunked":true,"maxSeconds":120,"mode":"server"}`) {
 		t.Fatalf("server mode from the administration: %s", status())
 	}
 	body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String()
@@ -95,7 +109,7 @@ func TestSpeechSettingsAndModels(t *testing.T) {
 	if fake.auth != "Bearer geheim-123" {
 		t.Fatalf("key sent to Whisper: %q", fake.auth)
 	}
-	for _, bad := range []string{`{"mode":"radio"}`, `{"url":"ftp://x"}`, `{"model":"../etc"}`, `{"maxSeconds":2}`} {
+	for _, bad := range []string{`{"mode":"radio"}`, `{"url":"ftp://x"}`, `{"model":"../etc"}`, `{"maxSeconds":2}`, `{"chunkSeconds":1}`, `{"chunkSeconds":31}`} {
 		if rec := put(bad); rec.Code != http.StatusBadRequest {
 			t.Fatalf("%s: want 400, got %d", bad, rec.Code)
 		}
@@ -217,5 +231,94 @@ func TestSavingTheWhisperServerFetchesNothing(t *testing.T) {
 	}
 	if st := srv.checkVoice(t.Context()); st.ModelReady {
 		t.Fatal("not ready while the model is still downloading")
+	}
+}
+
+// Pieces while speaking: on with 8 s by default, the administration switches them off or shortens them,
+// STT_CHUNKED and STT_CHUNK_SECONDS fix them; /auth/status tells the app.
+func TestSpeechChunkSettings(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	srv.cfg.Speech = config.SpeechConfig{}
+	router := srv.Router()
+	status := func() string { return sessionCall(router, "GET", "/api/v1/auth/status", "", "", "").Body.String() }
+	put := func(speech string) *httptest.ResponseRecorder {
+		return sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","speech":`+speech+`}`, "")
+	}
+	if !strings.Contains(status(), `"chunkSeconds":8,"chunked":true`) {
+		t.Fatalf("default: in pieces of 8 s: %s", status())
+	}
+	if rec := put(`{"mode":"browser","chunked":false,"chunkSeconds":4}`); rec.Code != http.StatusOK {
+		t.Fatalf("save: %d %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(status(), `"chunkSeconds":4,"chunked":false`) {
+		t.Fatalf("from the administration: %s", status())
+	}
+	if sys, _ := store.GetSystemSettings(); sys.Speech.Chunked == nil || *sys.Speech.Chunked || sys.Speech.ChunkSeconds != 4 {
+		t.Fatalf("stored: %+v", sys.Speech)
+	}
+	on := true
+	srv.cfg.Speech = config.SpeechConfig{Chunked: &on, ChunkSeconds: 3}
+	put(`{"mode":"browser","chunked":false,"chunkSeconds":20}`)
+	body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String()
+	for _, want := range []string{`"chunked":true`, `"chunkSeconds":3`, `"configuredViaEnv":["chunked","chunkSeconds"]`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("env lock, want %s: %s", want, body)
+		}
+	}
+	if sys, _ := store.GetSystemSettings(); *sys.Speech.Chunked || sys.Speech.ChunkSeconds != 4 {
+		t.Fatalf("stored values stay: %+v", sys.Speech)
+	}
+	if !strings.Contains(status(), `"chunkSeconds":3,"chunked":true`) {
+		t.Fatalf("STT_* applies: %s", status())
+	}
+}
+
+// Deleting a downloaded model on the Whisper server: not the one in use, not one downloading, not while
+// STT_MODEL fixes the model; one that is not there answers 404.
+func TestSpeechModelDelete(t *testing.T) {
+	srv, _, token := setupTestServer(t)
+	srv.cfg.Speech = config.SpeechConfig{}
+	router := srv.Router()
+	fake := &modelWhisper{local: []string{"Systran/faster-whisper-small", "Systran/faster-whisper-medium"}}
+	whisper := httptest.NewServer(fake.handler())
+	defer whisper.Close()
+	del := func(model string) *httptest.ResponseRecorder {
+		return sessionCall(router, "DELETE", "/api/v1/admin/voice/models/"+model, token, "", "")
+	}
+	if rec := del("Systran/faster-whisper-medium"); rec.Code != http.StatusBadRequest {
+		t.Fatalf("without a Whisper server: %d", rec.Code)
+	}
+	if rec := sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","speech":{"mode":"server","url":"`+whisper.URL+`","model":"Systran/faster-whisper-small"}}`, ""); rec.Code != http.StatusOK {
+		t.Fatalf("save: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := del("Systran/faster-whisper-small"); rec.Code != http.StatusConflict {
+		t.Fatalf("the model in use stays: %d", rec.Code)
+	}
+	if rec := del("a..b"); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad name: %d", rec.Code)
+	}
+	srv.voice.downloads.list = map[string]*modelDownload{"Systran/faster-whisper-medium": {Model: "Systran/faster-whisper-medium", Running: true}}
+	if rec := del("Systran/faster-whisper-medium"); rec.Code != http.StatusConflict {
+		t.Fatalf("not while downloading: %d", rec.Code)
+	}
+	srv.voice.downloads.list["Systran/faster-whisper-medium"].Running = false
+	if rec := del("Systran/faster-whisper-medium"); rec.Code != http.StatusOK {
+		t.Fatalf("delete: %d %s", rec.Code, rec.Body.String())
+	}
+	fake.mu.Lock()
+	deleted, local := append([]string(nil), fake.deletes...), append([]string(nil), fake.local...)
+	fake.mu.Unlock()
+	if !slices.Equal(deleted, []string{"Systran/faster-whisper-medium"}) || !slices.Equal(local, []string{"Systran/faster-whisper-small"}) {
+		t.Fatalf("asked the Whisper server: deleted %v, left %v", deleted, local)
+	}
+	if len(srv.voice.downloads.snapshot()) != 0 {
+		t.Fatal("the finished download of a deleted model is no longer shown")
+	}
+	if rec := del("Systran/faster-whisper-medium"); rec.Code != http.StatusNotFound {
+		t.Fatalf("not there: %d", rec.Code)
+	}
+	srv.cfg.Speech = config.SpeechConfig{Model: "Systran/faster-whisper-large-v3"}
+	if rec := del("Systran/faster-whisper-small"); rec.Code != http.StatusConflict {
+		t.Fatalf("STT_MODEL fixes the model: %d", rec.Code)
 	}
 }

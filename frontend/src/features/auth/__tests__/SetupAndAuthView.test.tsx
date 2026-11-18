@@ -26,12 +26,6 @@ const submit = () =>
     fireEvent.click(screen.getByRole('button', { name: /Ersteinrichtung abschließen/ }));
   });
 
-// Past the browser's own check of min/max, as when a browser does not stop the form
-const submitForm = () =>
-  act(async () => {
-    fireEvent.submit(screen.getByRole('button', { name: /Ersteinrichtung abschließen/ }).closest('form')!);
-  });
-
 describe('SetupAndAuthView: setup wizard', () => {
   beforeEach(() => completeSetup.mockClear());
 
@@ -56,17 +50,19 @@ describe('SetupAndAuthView: setup wizard', () => {
     expect(completeSetup.mock.calls[0][0]).not.toHaveProperty('backupTime');
   });
 
-  it('refuses a retention outside 1 to 365 days', async () => {
+  it('keeps the retention within 1 to 365 days', async () => {
     render(<SetupAndAuthView authStatus={status} onAuthenticated={() => {}} />);
     fillAccount();
-    fireEvent.change(screen.getByLabelText('Aufbewahren (Tage)'), { target: { value: '400' } });
-    await submitForm();
-    expect(screen.getByText('Backups 1 bis 365 Tage aufbewahren.')).toBeTruthy();
-    // Empty passes the browser's check, not the wizard's
-    fireEvent.change(screen.getByLabelText('Aufbewahren (Tage)'), { target: { value: '' } });
+    const field = screen.getByLabelText('Aufbewahren') as HTMLInputElement;
+    fireEvent.change(field, { target: { value: '400' } });
+    fireEvent.blur(field);
+    expect(field.value).toBe('365');
+    // Empty goes back to the last value
+    fireEvent.change(field, { target: { value: '' } });
+    fireEvent.blur(field);
+    expect(field.value).toBe('365');
     await submit();
-    expect(screen.getByText('Backups 1 bis 365 Tage aufbewahren.')).toBeTruthy();
-    expect(completeSetup).not.toHaveBeenCalled();
+    expect(completeSetup).toHaveBeenCalledWith(expect.objectContaining({ backupRetentionDays: 365 }));
   });
 
   it('asks the mail server when the environment sets none and sends it with the account', async () => {

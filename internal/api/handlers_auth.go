@@ -100,10 +100,12 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 			return ""
 		}(),
 		// How voice input works: "server" (own Whisper), "browser" or "off"; set by STT_* only
-		// browserAllowed: whether people may pick the browser's recognition instead of the Whisper server
+		// browserAllowed: whether people may pick the browser's recognition instead of the Whisper server;
+		// chunked and chunkSeconds: the recording goes to the Whisper server in pieces of at most that long
 		"voice": func() map[string]any {
 			sp := s.speech()
-			return map[string]any{"mode": sp.Mode(s.cfg.DemoMode), "maxSeconds": sp.MaxSeconds, "browserAllowed": !sp.NoBrowser}
+			return map[string]any{"mode": sp.Mode(s.cfg.DemoMode), "maxSeconds": sp.MaxSeconds, "browserAllowed": !sp.NoBrowser,
+				"chunked": *sp.Chunked, "chunkSeconds": sp.ChunkSeconds}
 		}(),
 		// Public so the login screen can link Impressum and Datenschutz
 		"legal": map[string]any{

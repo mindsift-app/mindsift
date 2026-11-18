@@ -613,7 +613,8 @@ type LegalSettings struct {
 // sent to the browser (APIKeySet says whether one is stored, APIKeyUnreadable that it no longer
 // decrypts); empty in an update keeps it, ClearAPIKey removes it. Numbers 0 = the default.
 // ConfiguredViaEnv names the fields STT_* fixes (mode, allowBrowser, url, apiKey, model, maxSeconds,
-// maxUploadMb, maxParallel, perUserPerHour, timeoutSeconds, vadFilter); read only.
+// maxUploadMb, maxParallel, perUserPerHour, timeoutSeconds, vadFilter, chunked, chunkSeconds); read only.
+// Chunked: the app sends recordings in pieces while speaking (nil = on), ChunkSeconds the longest piece.
 type SpeechSettings struct {
 	Mode             string   `json:"mode"`
 	AllowBrowser     *bool    `json:"allowBrowser,omitempty"`
@@ -629,6 +630,8 @@ type SpeechSettings struct {
 	PerUserPerHour   int      `json:"perUserPerHour,omitempty"`
 	TimeoutSeconds   int      `json:"timeoutSeconds,omitempty"`
 	VADFilter        *bool    `json:"vadFilter,omitempty"`
+	Chunked          *bool    `json:"chunked,omitempty"`
+	ChunkSeconds     int      `json:"chunkSeconds,omitempty"`
 	ConfiguredViaEnv []string `json:"configuredViaEnv,omitempty"`
 }
 
