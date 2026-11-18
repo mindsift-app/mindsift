@@ -89,6 +89,37 @@ describe('SelectMenu (dropdown in the app look)', () => {
     expect(onChange).toHaveBeenCalledWith('l7');
   });
 
+  // The field keeps the width of its longest labels while choosing (layout itself is measured in the browser)
+  const reserved = (button: HTMLElement) =>
+    Array.from(button.querySelectorAll('[data-label]')).map((el) => el.getAttribute('data-label'));
+
+  it('reserves the width of the longest labels, whichever option is chosen', () => {
+    const quality = [
+      { value: 'high', label: 'Hoch' },
+      { value: 'off', label: 'Aus (Bilder unverändert hochladen)' },
+    ];
+    const { rerender } = render(<SelectMenu ariaLabel="Bildqualität" value="high" options={quality} onChange={() => {}} />);
+    const button = screen.getByRole('button', { name: 'Bildqualität' });
+    const before = reserved(button);
+    expect(before).toEqual(['Hoch', 'Aus (Bilder unverändert hochladen)']);
+    rerender(<SelectMenu ariaLabel="Bildqualität" value="off" options={quality} onChange={() => {}} />);
+    expect(reserved(button)).toEqual(before);
+    // The reserve is no text of the page; the chosen label is, and a cut-short one shows on hover
+    expect(button.textContent).toBe('Aus (Bilder unverändert hochladen)');
+    expect(button.getAttribute('title')).toBe('Aus (Bilder unverändert hochladen)');
+  });
+
+  it('reserves only a few of the longest labels in long lists, and none with fitLabel', () => {
+    const many = Array.from({ length: 40 }, (_, i) => ({ value: `z${i}`, label: i === 30 ? 'America/Argentina/ComodRivadavia' : `Zone ${i}` }));
+    const { unmount } = render(<SelectMenu ariaLabel="Zeitzone" value="z0" options={many} onChange={() => {}} />);
+    const list = reserved(screen.getByRole('button', { name: 'Zeitzone' }));
+    expect(list.length).toBeLessThanOrEqual(6);
+    expect(list[0]).toBe('America/Argentina/ComodRivadavia');
+    unmount();
+    render(<SelectMenu ariaLabel="Sprache" fitLabel value="z0" options={many} onChange={() => {}} />);
+    expect(reserved(screen.getByRole('button', { name: 'Sprache' }))).toEqual([]);
+  });
+
   it('ticks several options and stays open', () => {
     const onChange = vi.fn();
     const { rerender } = render(<MultiSelectMenu ariaLabel="Erinnerung" values={['todo']} options={options} onChange={onChange} />);

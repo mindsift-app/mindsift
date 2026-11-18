@@ -100,6 +100,14 @@ Component: [ErrorNotice.tsx](../frontend/src/components/ErrorNotice.tsx), `showE
 
 - Red notice centered at the bottom (frame and text in `status-err`, warning icon), above the bottom navigation bar on mobile, with a short shake (none with reduced motion). Gone after 6 s or on a tap; the same error again shakes again.
 
+## Status Notice in the Settings
+
+Component: [StatusToast.tsx](../frontend/src/components/StatusToast.tsx)
+
+- The answer to a save in the account settings and the administration ("Gespeichert", an invite code, what went wrong) floats centered at the bottom (`bg-panel-elevated`, above the bottom navigation bar on mobile) instead of standing above the content, so the page does not move.
+- A confirmation (tick, `role="status"`) goes after 4 s; an error (frame and text in `status-err`, `role="alert"`) stays until it is closed with its ×. Both can be closed; the live regions stay mounted, so screen readers announce each new message.
+- Errors of settings without a message of their own (voice input, language) use the error notice above.
+
 ## Notification with "Undo"
 
 - Brief toast notification centered at the bottom (`role="status"`, surface `bg-panel-elevated`), placed above the bottom navigation bar on mobile; stays for 8–10 s when an action is present, otherwise 3–4 s.
@@ -180,6 +188,7 @@ Component: [SelectMenu.tsx](../frontend/src/components/SelectMenu.tsx) (`SelectM
 
 - Used everywhere instead of the browser's `<select>` (an ESLint rule rejects new ones), on phones too: a field with the chosen option and a chevron. A click opens the options right below it, above when there is no room; the chosen one carries a ✓.
 - Sizes: `md` (default) is a form field in full width, 44 px on phones and 32 px from `sm`; `sm` is as wide as its content (filters, settings rows). `buttonClassName` replaces the look for tiny places such as the status in a task row or a code block's header.
+- **Stable width:** the field is as wide as its longest labels (they lie invisibly under the chosen one, drawn as generated content, at most the six longest), so picking another option moves nothing beside it; with less room the label is cut short and shows in full on hover (`title`). `fitLabel` sizes it to the chosen label instead, only where nothing sits beside it (a code block's language).
 - Each option can have a `lead` in front of its label, on the field and in the list (the colour dot of a Kanban column, the emoji of a list), be `disabled` and carry a `hint` as a second line.
 - Keys as in a `<select>`: arrows, Home, End, Enter or Space pick, typing the first letters jumps to an option, Escape closes only the list (`preventDefault`, so a dialog around it stays open), Tab moves on. From 13 options the list has a search field on top (code block languages, voice languages).
 - `MultiSelectMenu` ticks several options; the list stays open while ticking, the field shows the chosen labels (or a `summary`).

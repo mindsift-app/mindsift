@@ -529,8 +529,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     handleSaveSystemSettings({ sharingMode: mode });
   };
 
+  // The notice of the previous save stays until this one answers, so it does not blink off and on
   const handleSaveSystemSettings = async (patch?: Partial<SystemSettings>) => {
-    setStatusMsg(null);
     const next = { ...settings, ...(patch || {}) };
     setSettings(next);
     try {

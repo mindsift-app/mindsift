@@ -564,6 +564,8 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
             value={selectValue}
             onChange={(lang) => onChangeLang?.(lang)}
             buttonClassName={`${headerControl} px-1 gap-1`}
+            // Alone in its row: as wide as the language shown, not the longest of the list
+            fitLabel
             // A name not in the list is taken as typed: the header shows it, the code stays plain
             extraOption={(typed) => {
               const known = resolveLanguageId(typed);

@@ -31,6 +31,9 @@ interface BaseProps<T extends string> {
 interface SelectMenuProps<T extends string> extends BaseProps<T> {
   value: T;
   onChange: (value: T) => void;
+  // As wide as the chosen label instead of the longest one: only where nothing sits beside the field that
+  // could move (a code block's language)
+  fitLabel?: boolean;
 }
 
 interface MultiSelectMenuProps<T extends string> extends BaseProps<T> {
@@ -56,22 +59,46 @@ const BUTTON_CLASS = {
 // Enter, Escape and typing the first letters work as in a <select>; long lists get a search field. The
 // list is portalled to <body>, so a scrolling dialog does not cut it off; clicks in it still bubble to
 // React parents like the dialog, not to its backdrop.
-export function SelectMenu<T extends string>({ value, onChange, ...rest }: SelectMenuProps<T>) {
+export function SelectMenu<T extends string>({ value, onChange, fitLabel, ...rest }: SelectMenuProps<T>) {
   const selected = rest.options.find((o) => o.value === value) ?? rest.options[0];
+  const widest = fitLabel ? [] : widestLabels(rest.options);
   return (
     <MenuBase
       {...rest}
+      // A label cut short is readable on hover
+      title={rest.title ?? selected?.label}
       isSelected={(v) => v === value}
       onPick={(v) => v !== value && onChange(v)}
       closeOnPick
       display={
         <>
           {selected?.lead && <span className="shrink-0 flex items-center">{selected.lead}</span>}
-          <span className="flex-1 min-w-0 truncate">{selected?.label}</span>
+          {/* The longest labels lie invisibly in the same cell: the field keeps their width whichever option
+              is chosen, so nothing beside it moves; where there is less room the label is cut short. They are
+              drawn as generated content, so they are no text of the page (search, tests, copying). */}
+          <span className="flex-1 min-w-0 grid">
+            {widest.map((label, i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                data-label={label}
+                className="col-start-1 row-start-1 truncate invisible after:content-[attr(data-label)]"
+              />
+            ))}
+            <span className="col-start-1 row-start-1 truncate">{selected?.label}</span>
+          </span>
         </>
       }
     />
   );
+}
+
+// The labels that may be the widest: the longest few by characters (letters differ in width, so not just the
+// one longest); a few spans instead of one per option keeps long lists like the time zones light
+const WIDEST_COUNT = 6;
+function widestLabels(options: { label: string }[]): string[] {
+  const labels = [...new Set(options.map((o) => o.label))];
+  return labels.length <= WIDEST_COUNT ? labels : labels.sort((a, b) => b.length - a.length).slice(0, WIDEST_COUNT);
 }
 
 // The same with ticks: several options at once, the list stays open while ticking

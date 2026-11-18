@@ -71,7 +71,6 @@
     "title": "Administración del servidor",
     "subtitle": "Usuarios, invitaciones, organizaciones, compartir y servidor de correo",
     "badge": "Administrador del servidor",
-    "close": "Cerrar",
     "nav": {
       "users": "Usuarios e invitaciones",
       "usersHint": "Cuentas, roles y códigos de invitación",

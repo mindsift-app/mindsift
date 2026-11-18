@@ -5,7 +5,6 @@ import {
   Users,
   Server,
   Mail,
-  Check,
   ArrowLeft,
   CircleAlert,
   BuildingComplex,
@@ -20,6 +19,7 @@ import {
 import {
   User,
 } from '../../lib/types';
+import { StatusToast } from '../../components/StatusToast';
 import { useAdminSettings } from './admin/useAdminSettings';
 import { UsersSection } from './admin/UsersSection';
 import { OrganizationsSection } from './admin/OrganizationsSection';
@@ -105,28 +105,8 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         <span className="badge-accent">{t(`common:role.${currentUser.role}`)}</span>
       </div>
 
-      {statusMsg && (
-        <div
-          className={`p-3 text-xs flex items-center justify-between gap-2 rounded-card ${
-            statusMsg.type === 'ok' ? 'alert-ok' : 'alert-err'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {statusMsg.type === 'ok' ? (
-              <Check className="w-4 h-4 text-accent shrink-0" />
-            ) : (
-              <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
-            )}
-            <span>{statusMsg.text}</span>
-          </div>
-          <button
-            onClick={() => setStatusMsg(null)}
-            className="text-muted hover:text-main text-[11px]"
-          >
-            {t('admin.close')}
-          </button>
-        </div>
-      )}
+      {/* Answers to saves float above the page, so nothing in it moves */}
+      <StatusToast msg={statusMsg} onClose={() => setStatusMsg(null)} />
 
       {/* Main 2-Column Layout */}
       <div className="grid grid-cols-1 md:grid-cols-[15rem_minmax(0,1fr)] gap-4 items-start">
