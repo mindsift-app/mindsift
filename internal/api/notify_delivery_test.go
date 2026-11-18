@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/mindsift-app/mindsift/internal/clock"
 )
 
 // Bundled notifications on every channel: a channel that got a digest is not sent it again when another
@@ -143,4 +145,86 @@ func itemTexts(items []notifyItem) string {
 		lines = append(lines, it.text)
 	}
 	return strings.Join(lines, "\n")
+}
+
+// The daily summary on every channel: a channel that failed is tried again in the next runs within the
+// summary's window, alone; one that keeps failing is given up at the end of the window, and push without
+// a device is not retried.
+func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
+	srv, _ := notifyServer(t)
+	store := srv.store
+	router := srv.Router()
+	bench := newAlarmBench(srv)
+	srv.notifyDiscordHook = func(url, heading string, items []notifyItem) error {
+		return bench.record("discord", url, heading, itemTexts(items))
+	}
+	srv.notifyWebhookHook = func(url, heading string, items []notifyItem) error {
+		return bench.record("webhook", url, heading, itemTexts(items))
+	}
+	me, token := newTestUser(t, store, "morgen@example.com")
+	body := `{"discordWebhookUrl":"https://discord.com/api/webhooks/1/abc","customWebhookUrl":"https://hooks.example.com/mindsift",` +
+		`"notificationSettings":{"dailySummary":{"enabled":true,"time":"07:00","email":true,"discord":true,"webhook":true,"push":true}}}`
+	if rec := sessionCall(router, "PATCH", "/api/v1/auth/settings", token, body, ""); rec.Code != http.StatusOK {
+		t.Fatalf("saving the settings: %d %s", rec.Code, rec.Body.String())
+	}
+	if ds := store.NotificationSettingsOf(me.ID).DailySummary; !ds.Enabled || !ds.Email || !ds.Discord || !ds.Webhook || !ds.Push {
+		t.Fatalf("stored summary settings: %+v", ds)
+	}
+	th, _ := store.CreateThoughtWithDetails(me.ID, "Steuererklärung abgeben", "normal", "manual", "2026-12-01", "", "todo", "")
+	if _, err := store.UpdateThoughtTriage(me.ID, th.ID, "keep", "task", "", "2026-12-01", ""); err != nil {
+		t.Fatal(err)
+	}
+	at := func(day, hour, min int) time.Time { return time.Date(2026, 12, day, hour, min, 0, 0, clock.Location()) }
+	counts := func(want map[string]int) {
+		t.Helper()
+		for _, ch := range []string{"email", "discord", "webhook", "push"} {
+			if n := bench.count(ch); n != want[ch] {
+				t.Errorf("%s: want %d deliveries, got %d (%+v)", ch, want[ch], n, bench.sent)
+			}
+		}
+	}
+
+	// 1. The mail fails at 07:00 while Discord, webhook and push get through: the next run sends only the
+	// mail, later runs nothing more
+	bench.fail["email"] = errors.New("smtp: connection refused")
+	srv.sendDailySummaries(at(1, 7, 0))
+	counts(map[string]int{"discord": 1, "webhook": 1, "push": 1})
+	delete(bench.fail, "email")
+	srv.sendDailySummaries(at(1, 7, 1))
+	srv.sendDailySummaries(at(1, 7, 2))
+	srv.sendDailySummaries(at(1, 7, 40))
+	counts(map[string]int{"email": 1, "discord": 1, "webhook": 1, "push": 1})
+	for _, s := range bench.sent {
+		if s.channel == "email" && (!strings.Contains(s.text, "Steuererklärung abgeben") || !strings.Contains(s.text, "Guten Morgen")) {
+			t.Fatalf("mail after the retry: %q", s.text)
+		}
+	}
+
+	// 2. The webhook keeps failing: tried in every run within the window, given up after 07:30; the
+	// others went out once
+	bench.reset()
+	bench.fail["webhook"] = errors.New("HTTP Status 500")
+	for m := 0; m < 30; m += 5 {
+		srv.sendDailySummaries(at(2, 7, m))
+	}
+	if retry, claimed := store.DailySummaryRetry(me.ID, "2026-12-02"); !claimed || len(retry) != 1 || retry[0] != "webhook" {
+		t.Fatalf("within the window the webhook waits: %v %v", retry, claimed)
+	}
+	srv.sendDailySummaries(at(2, 7, 30))
+	if retry, _ := store.DailySummaryRetry(me.ID, "2026-12-02"); len(retry) != 0 {
+		t.Fatalf("given up after the window: %v", retry)
+	}
+	delete(bench.fail, "webhook")
+	srv.sendDailySummaries(at(2, 7, 31))
+	counts(map[string]int{"email": 1, "discord": 1, "push": 1})
+
+	// 3. Push chosen but no device: the other channels once, nothing waits for push
+	bench.reset()
+	srv.notifyPushHook = func(string, pushMessage) error { return errNoPushDevice }
+	srv.sendDailySummaries(at(3, 7, 0))
+	if retry, claimed := store.DailySummaryRetry(me.ID, "2026-12-03"); !claimed || len(retry) != 0 {
+		t.Fatalf("nothing to retry without a device: %v %v", retry, claimed)
+	}
+	srv.sendDailySummaries(at(3, 7, 1))
+	counts(map[string]int{"email": 1, "discord": 1, "webhook": 1})
 }

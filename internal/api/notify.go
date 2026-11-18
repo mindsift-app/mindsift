@@ -670,6 +670,15 @@ func channelNames(ch domain.ChannelChoice) []string {
 	return out
 }
 
+// onlyChannels is the choice limited to the named channels (those a daily summary failed on).
+func onlyChannels(ch domain.ChannelChoice, names []string) domain.ChannelChoice {
+	ch.Email = ch.Email && slices.Contains(names, "email")
+	ch.Discord = ch.Discord && slices.Contains(names, "discord")
+	ch.Webhook = ch.Webhook && slices.Contains(names, "webhook")
+	ch.Push = ch.Push && slices.Contains(names, "push")
+	return ch
+}
+
 // withoutChannels is the choice without the named channels (those that got an event already).
 func withoutChannels(ch domain.ChannelChoice, names []string) domain.ChannelChoice {
 	ch.Email = ch.Email && !slices.Contains(names, "email")
@@ -957,6 +966,10 @@ func (s *Server) summaryMail(lang, name string, items []notifyItem, now time.Tim
 
 // --- Daily summary ---
 
+// dailySummaryWindow: the summary goes out in this time after the chosen time, a failed channel is tried
+// again in every run within it.
+const dailySummaryWindow = 30 * time.Minute
+
 // sendDailySummaries sends each user who wants one their summary in the 30 minutes after the chosen
 // time (server time zone), once a day. Nothing due → no message.
 func (s *Server) sendDailySummaries(now time.Time) {
@@ -969,18 +982,47 @@ func (s *Server) sendDailySummaries(now time.Time) {
 			continue
 		}
 		at, err := time.ParseInLocation("2006-01-02 15:04", day+" "+ds.Time, now.Location())
-		if err != nil || now.Before(at) || now.Sub(at) >= 30*time.Minute {
+		if err != nil || now.Before(at) {
 			continue
 		}
+		retry, claimed := s.store.DailySummaryRetry(uid, day)
+		if now.Sub(at) >= dailySummaryWindow {
+			if len(retry) > 0 {
+				slog.Warn("Daily summary given up on channels that kept failing", "channels", strings.Join(retry, ","), "user_id", uid)
+				logFailed("Clearing the channels of a daily summary given up", s.store.SetDailySummaryRetry(uid, day, nil), "user_id", uid)
+			}
+			continue
+		}
+		if claimed && len(retry) == 0 {
+			continue // sent today, every channel got it
+		}
 		items := s.summaryItems(uid, now)
-		if len(items) == 0 || !s.store.ClaimDailySummary(uid, day) {
+		if len(items) == 0 {
+			if claimed { // nothing left to tell (tasks done since): no retry
+				logFailed("Clearing the channels of a daily summary", s.store.SetDailySummaryRetry(uid, day, nil), "user_id", uid)
+			}
+			continue
+		}
+		// Claimed before it goes out, so no channel gets it twice; a retry goes out on the channels that
+		// failed only (and are still chosen)
+		choice := domain.ChannelChoice{Email: ds.Email, Discord: ds.Discord, Webhook: ds.Webhook, Push: ds.Push}
+		if claimed {
+			choice = onlyChannels(choice, retry)
+		} else if !s.store.ClaimDailySummary(uid, day) {
 			continue
 		}
 		var out channelItems
-		out.add(domain.ChannelChoice{Email: ds.Email, Discord: ds.Discord, Webhook: ds.Webhook, Push: ds.Push}, items...)
-		// Claimed before it goes out: a failed channel is not tried again, so no channel gets it twice
-		for c, err := range s.deliver(uid, headingSummary, out, true, now) {
-			slog.Warn("Sending the daily summary failed", "channel", c, "user_id", uid, "error", err)
+		out.add(choice, items...)
+		failed := s.deliver(uid, headingSummary, out, true, now)
+		var again []string
+		for _, c := range channelNames(choice) {
+			if err := failed[c]; err != nil {
+				again = append(again, c)
+				slog.Warn("Sending the daily summary failed, will try again", "channel", c, "user_id", uid, "until", at.Add(dailySummaryWindow).Format("15:04"), "error", err)
+			}
+		}
+		if claimed || len(again) > 0 {
+			logFailed("Recording the channels of a daily summary to try again", s.store.SetDailySummaryRetry(uid, day, again), "user_id", uid)
 		}
 	}
 }
