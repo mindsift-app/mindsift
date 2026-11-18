@@ -158,8 +158,14 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 	srv.notifyDiscordHook = func(url, heading string, items []notifyItem) error {
 		return bench.record("discord", url, heading, itemTexts(items))
 	}
+	tries := map[string]int{} // attempts per channel, failed ones included
 	srv.notifyWebhookHook = func(url, heading string, items []notifyItem) error {
+		tries["webhook"]++
 		return bench.record("webhook", url, heading, itemTexts(items))
+	}
+	srv.notifyEmailHook = func(to, subject, text, html string) error {
+		tries["email"]++
+		return bench.record("email", to, subject, text)
 	}
 	me, token := newTestUser(t, store, "morgen@example.com")
 	body := `{"discordWebhookUrl":"https://discord.com/api/webhooks/1/abc","customWebhookUrl":"https://hooks.example.com/mindsift",` +
@@ -184,14 +190,18 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 		}
 	}
 
-	// 1. The mail fails at 07:00 while Discord, webhook and push get through: the next run sends only the
-	// mail, later runs nothing more
+	// 1. The mail fails at 07:00 while Discord, webhook and push get through: the retry waits 5 minutes,
+	// then sends only the mail, later runs nothing more
 	bench.fail["email"] = errors.New("smtp: connection refused")
 	srv.sendDailySummaries(at(1, 7, 0))
 	counts(map[string]int{"discord": 1, "webhook": 1, "push": 1})
 	delete(bench.fail, "email")
-	srv.sendDailySummaries(at(1, 7, 1))
-	srv.sendDailySummaries(at(1, 7, 2))
+	for m := 1; m < 5; m++ {
+		srv.sendDailySummaries(at(1, 7, m))
+	}
+	counts(map[string]int{"discord": 1, "webhook": 1, "push": 1})
+	srv.sendDailySummaries(at(1, 7, 5))
+	srv.sendDailySummaries(at(1, 7, 10))
 	srv.sendDailySummaries(at(1, 7, 40))
 	counts(map[string]int{"email": 1, "discord": 1, "webhook": 1, "push": 1})
 	for _, s := range bench.sent {
@@ -200,15 +210,19 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 		}
 	}
 
-	// 2. The webhook keeps failing: tried in every run within the window, given up after 07:30; the
-	// others went out once
+	// 2. The webhook keeps failing: with a run every minute it is tried every 5 minutes within the window
+	// (6 times), given up after 07:30; the others went out once
 	bench.reset()
+	clear(tries)
 	bench.fail["webhook"] = errors.New("HTTP Status 500")
-	for m := 0; m < 30; m += 5 {
+	for m := 0; m < 30; m++ {
 		srv.sendDailySummaries(at(2, 7, m))
 	}
 	if retry, claimed := store.DailySummaryRetry(me.ID, "2026-12-02"); !claimed || len(retry) != 1 || retry[0] != "webhook" {
 		t.Fatalf("within the window the webhook waits: %v %v", retry, claimed)
+	}
+	if tries["webhook"] != 6 {
+		t.Errorf("webhook attempts in the window: want 6, got %d", tries["webhook"])
 	}
 	srv.sendDailySummaries(at(2, 7, 30))
 	if retry, _ := store.DailySummaryRetry(me.ID, "2026-12-02"); len(retry) != 0 {
@@ -227,4 +241,90 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 	}
 	srv.sendDailySummaries(at(3, 7, 1))
 	counts(map[string]int{"email": 1, "discord": 1, "webhook": 1})
+
+	// 4. Chosen time 23:50, the window runs past midnight: the retries of the 4th go on after the day
+	// changed, the mail of the 4th arrives at 00:00, and the summary of the 5th still goes out at 23:50
+	body = `{"notificationSettings":{"dailySummary":{"enabled":true,"time":"23:50","email":true}}}`
+	if rec := sessionCall(router, "PATCH", "/api/v1/auth/settings", token, body, ""); rec.Code != http.StatusOK {
+		t.Fatalf("saving the settings: %d %s", rec.Code, rec.Body.String())
+	}
+	bench.reset()
+	clear(tries)
+	bench.fail["email"] = errors.New("smtp: connection refused")
+	srv.sendDailySummaries(at(4, 23, 49))
+	srv.sendDailySummaries(at(4, 23, 50))
+	srv.sendDailySummaries(at(4, 23, 52))
+	srv.sendDailySummaries(at(4, 23, 55))
+	if tries["email"] != 2 {
+		t.Fatalf("attempts before midnight: want 2, got %d", tries["email"])
+	}
+	delete(bench.fail, "email")
+	srv.sendDailySummaries(at(4, 23, 59))
+	srv.sendDailySummaries(at(5, 0, 0))
+	srv.sendDailySummaries(at(5, 0, 5))
+	srv.sendDailySummaries(at(5, 12, 0))
+	counts(map[string]int{"email": 1})
+	if retry, claimed := store.DailySummaryRetry(me.ID, "2026-12-04"); !claimed || len(retry) != 0 {
+		t.Fatalf("the summary of the 4th after midnight: %v %v", retry, claimed)
+	}
+	srv.sendDailySummaries(at(5, 23, 50))
+	counts(map[string]int{"email": 2})
+
+	// 5. The mail keeps failing past midnight: tried every 5 minutes until 00:20, then given up
+	bench.reset()
+	clear(tries)
+	bench.fail["email"] = errors.New("smtp: connection refused")
+	for m := 50; m < 60; m++ {
+		srv.sendDailySummaries(at(6, 23, m))
+	}
+	for m := 0; m < 20; m++ {
+		srv.sendDailySummaries(at(7, 0, m))
+	}
+	if retry, claimed := store.DailySummaryRetry(me.ID, "2026-12-06"); !claimed || len(retry) != 1 || retry[0] != "email" {
+		t.Fatalf("until 00:20 the mail of the 6th waits: %v %v", retry, claimed)
+	}
+	if tries["email"] != 6 {
+		t.Errorf("mail attempts in the window past midnight: want 6, got %d", tries["email"])
+	}
+	srv.sendDailySummaries(at(7, 0, 20))
+	if retry, _ := store.DailySummaryRetry(me.ID, "2026-12-06"); len(retry) != 0 {
+		t.Fatalf("given up at the end of the window past midnight: %v", retry)
+	}
+	delete(bench.fail, "email")
+	srv.sendDailySummaries(at(7, 0, 25))
+	srv.sendDailySummaries(at(7, 23, 49))
+	if tries["email"] != 6 {
+		t.Errorf("nothing more after giving up: %d attempts", tries["email"])
+	}
+}
+
+func TestDailySummarySlotAcrossMidnight(t *testing.T) {
+	loc := clock.Location()
+	cases := []struct {
+		now     time.Time
+		chosen  string
+		wantDay string
+		wantAt  string
+	}{
+		{time.Date(2026, 12, 4, 7, 10, 0, 0, loc), "07:00", "2026-12-04", "07:00"},
+		{time.Date(2026, 12, 4, 6, 59, 0, 0, loc), "07:00", "", ""}, // yesterday's window ended the same day
+		{time.Date(2026, 12, 4, 23, 55, 0, 0, loc), "23:50", "2026-12-04", "23:50"},
+		{time.Date(2026, 12, 5, 0, 10, 0, 0, loc), "23:50", "2026-12-04", "23:50"},
+		{time.Date(2026, 12, 5, 9, 0, 0, 0, loc), "23:50", "2026-12-04", "23:50"},  // over: only gives up leftovers
+		{time.Date(2026, 12, 5, 0, 10, 0, 0, loc), "23:30", "2026-12-04", "23:30"}, // ends at midnight: gives up there
+		{time.Date(2026, 12, 5, 0, 10, 0, 0, loc), "23:29", "", ""},
+		{time.Date(2027, 1, 1, 0, 5, 0, 0, loc), "23:45", "2026-12-31", "23:45"},
+	}
+	for _, c := range cases {
+		day, at, ok := dailySummarySlot(c.now, c.chosen)
+		if c.wantDay == "" {
+			if ok {
+				t.Errorf("%s with %s: want no slot, got %s %s", c.now.Format("2006-01-02 15:04"), c.chosen, day, at)
+			}
+			continue
+		}
+		if !ok || day != c.wantDay || at.Format("15:04") != c.wantAt || at.Format("2006-01-02") != c.wantDay {
+			t.Errorf("%s with %s: want %s %s, got %s %s %v", c.now.Format("2006-01-02 15:04"), c.chosen, c.wantDay, c.wantAt, day, at, ok)
+		}
+	}
 }

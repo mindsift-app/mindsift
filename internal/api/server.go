@@ -74,6 +74,8 @@ type Server struct {
 	alarmOutHook      func(channel, webhookURL string, payload map[string]any) error // tests: Discord and own webhook of alarms
 	pushHTTPClient    *http.Client                                                   // tests: reach a local push service
 	push              pushKeys
+	// summaryRetries: the next attempt of a daily summary's failed channels (notify.go)
+	summaryRetries summaryRetries
 
 	// Background jobs (tickers, compaction, backups); Close stops them
 	stop     chan struct{}

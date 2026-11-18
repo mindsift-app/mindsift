@@ -303,9 +303,10 @@ func (s *Store) OpenTasksDueBefore(userID, beforeDay string) ([]SummaryTask, err
 	return out, err
 }
 
-// ClaimDailySummary marks today's summary as sent; false when it was already sent today.
+// ClaimDailySummary marks the summary of day as sent; false when it or a later day's was sent already (a
+// window past midnight claims yesterday's, which must not come back after today's went out).
 func (s *Store) ClaimDailySummary(userID, day string) bool {
-	res, err := s.db.Exec(`UPDATE users SET last_daily_summary = ?, daily_summary_retry = '' WHERE id = ? AND last_daily_summary != ?`, day, userID, day)
+	res, err := s.db.Exec(`UPDATE users SET last_daily_summary = ?, daily_summary_retry = '' WHERE id = ? AND last_daily_summary < ?`, day, userID, day)
 	if dbFailed(err) {
 		return false
 	}
