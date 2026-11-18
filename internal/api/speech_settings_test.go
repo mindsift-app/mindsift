@@ -167,6 +167,11 @@ func TestSpeechSettingsAndModels(t *testing.T) {
 	if models.Model != "Systran/faster-whisper-medium" || models.Downloads[0].Error != "" {
 		t.Fatalf("after the download the model is in use: %+v", models)
 	}
+	// The switch after the download counts as a change by the admin who asked for it
+	admin, _ := store.GetFirstUser()
+	if e := lastAudit(t, store, storage.AuditSettingsChanged); e.ActorID != admin.ID || string(e.Details) != `{"changes":[{"key":"speech.model","from":"Systran/faster-whisper-small","to":"Systran/faster-whisper-medium"}]}` {
+		t.Fatalf("model in use after the download in the audit log: %+v %s", e, e.Details)
+	}
 	// An already downloaded one is chosen at once
 	if rec := sessionCall(router, "POST", "/api/v1/admin/voice/models/Systran/faster-whisper-small", token, `{"select":true}`, ""); rec.Code != http.StatusOK {
 		t.Fatalf("choose a downloaded model: %d", rec.Code)
