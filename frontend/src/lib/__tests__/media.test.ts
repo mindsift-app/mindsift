@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { audioRecordingBitrate, audioLimitMB, audioUploadsAllowed, IMAGE_QUALITY, mediaContent, parseMediaContent, prepareImage, serverImageQuality, setServerAudioSettings, setServerImageQuality } from '../media';
+import { audioRecordingBitrate, copyExternalImage, audioLimitMB, audioUploadsAllowed, IMAGE_QUALITY, mediaContent, parseMediaContent, prepareImage, serverImageQuality, setServerAudioSettings, setServerImageQuality } from '../media';
 
 describe('media content format', () => {
   it('round-trips captions, also with brackets and backslashes', () => {
@@ -139,5 +139,36 @@ describe('audio settings of the server', () => {
     setServerAudioSettings({ compression: 'off', bitrate: 64, limitMB: 20, uploads: false });
     expect(audioRecordingBitrate()).toBeUndefined();
     expect(audioUploadsAllowed()).toBe(false);
+  });
+});
+
+describe('copyExternalImage (an image from another address)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    setServerImageQuality('high');
+  });
+
+  it('lets the server hand the image over and uploads it compressed like a picture of its own', async () => {
+    const calls: { url: string; body: unknown }[] = [];
+    vi.stubGlobal('createImageBitmap', undefined); // prepareImage then sends the blob as it is
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
+      calls.push({ url, body: init.body });
+      if (String(url).endsWith('/media/fetch')) return new Response(new Blob(['png'], { type: 'image/png' }), { status: 200 });
+      return new Response(JSON.stringify({ id: 'med_1', kind: 'image', mime: 'image/png', size: 3, url: '/api/v1/media/med_1' }), { status: 201 });
+    }));
+    const media = await copyExternalImage('doc_1', 'https://example.com/a.png');
+    expect(media.id).toBe('med_1');
+    expect(calls[0].body).toBe(JSON.stringify({ url: 'https://example.com/a.png', download: true }));
+    expect(calls[1].url).toBe('/api/v1/documents/doc_1/media');
+    expect(calls[1].body).toBeInstanceOf(FormData);
+  });
+
+  it('lets the server store its copy as it is while compression is off', async () => {
+    setServerImageQuality('off');
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: 'med_2' }), { status: 201 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await copyExternalImage('doc_1', 'https://example.com/a.png');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body).toBe(JSON.stringify({ url: 'https://example.com/a.png' }));
   });
 });

@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
+import { MbLimitField } from './MbLimitField';
 import { SystemSettings } from '../../../lib/types';
 
 type AudioCompression = NonNullable<SystemSettings['audioCompression']>;
@@ -27,23 +27,6 @@ export function AudioSettings({
   const bitrate = settings.audioBitrate || 32;
   const limit = settings.audioLimitMB || 7;
   const bitrates = BITRATES.includes(bitrate) ? BITRATES : [...BITRATES, bitrate].sort((a, b) => a - b);
-
-  // The limit is typed, so it is saved when the field is left (or with Enter), not on every keystroke
-  // (a new value from the server replaces the draft)
-  const [draft, setDraft] = useState(String(limit));
-  const [shown, setShown] = useState(limit);
-  if (shown !== limit) {
-    setShown(limit);
-    setDraft(String(limit));
-  }
-  const commitLimit = () => {
-    const n = parseInt(draft, 10);
-    if (Number.isInteger(n) && n >= 1 && n <= MAX_LIMIT_MB) {
-      if (n !== limit) onSave({ audioLimitMB: n });
-    } else {
-      setDraft(String(limit));
-    }
-  };
 
   return (
     <div className="p-4 bg-canvas border border-border rounded-card space-y-3" data-admin-audio>
@@ -100,23 +83,14 @@ export function AudioSettings({
             {settings.audioLimitMBConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_MAX_AUDIO_MB' })}`}
           </p>
         </div>
-        <label className="flex items-center gap-2 text-[11px] text-muted">
-          <input
-            type="number"
-            min={1}
-            max={MAX_LIMIT_MB}
-            value={draft}
-            disabled={Boolean(settings.audioLimitMBConfiguredViaEnv)}
-            aria-label={t('server.audioLimit')}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commitLimit}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-            }}
-            className="h-11 sm:h-8 px-2 input-field text-base sm:text-xs w-24"
-          />
-          {t('server.mb')}
-        </label>
+        <MbLimitField
+          value={limit}
+          min={1}
+          max={MAX_LIMIT_MB}
+          label={t('server.audioLimit')}
+          disabled={Boolean(settings.audioLimitMBConfiguredViaEnv)}
+          onSave={(audioLimitMB) => onSave({ audioLimitMB })}
+        />
       </div>
 
       <div className="flex items-center justify-between gap-4 pt-3 border-t border-border">

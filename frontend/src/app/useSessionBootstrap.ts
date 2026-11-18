@@ -8,7 +8,7 @@ import { voiceConfigFromStatus } from '../lib/voice';
 import i18n from '../i18n';
 import { useLatestRef } from '../lib/useLatestRef';
 import { setServerLinkPreviews } from '../lib/linkPreview';
-import { setServerAudioSettings, setServerImageQuality } from '../lib/media';
+import { setServerAudioSettings, setServerImageQuality, setServerImageSettings } from '../lib/media';
 import { OWN_ECHO_WINDOW_MS, createStatsScheduler, eventChangesDeck, eventChangesStats } from './realtimeCounters';
 import { createDemoResetWatch } from './demoResetWatch';
 
@@ -226,6 +226,11 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   useEffect(() => {
     setServerAudioSettings(authStatus.audio);
   }, [authStatus.audio]);
+
+  // Whether images may go into notes at all and be copied from other addresses, and how large
+  useEffect(() => {
+    setServerImageSettings(authStatus.images);
+  }, [authStatus.images]);
 
   // The demo database was reset: drop cached answers of the old data, remount the views (they load
   // fresh data), refresh counters and the countdown (unless the reset was noticed through the new deadline,

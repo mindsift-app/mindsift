@@ -113,13 +113,27 @@ export function uploadMedia(docId: string, file: Blob, filename: string, source?
   return mediaRequest(`/api/v1/documents/${encodeURIComponent(docId)}/media`, { method: 'POST', body: form });
 }
 
-/** Lets the server copy an external image (https). */
-export function copyExternalImage(docId: string, url: string): Promise<UploadedMedia> {
-  return mediaRequest(`/api/v1/documents/${encodeURIComponent(docId)}/media/fetch`, {
+/**
+ * An image from another address (https) into a note. The browser may not read other sites' images, so
+ * the server fetches it and hands it over (nothing stored); the app compresses it like a picture of its
+ * own and uploads it. With the image quality off the server stores its copy as it is.
+ */
+export async function copyExternalImage(docId: string, url: string): Promise<UploadedMedia> {
+  const path = `/api/v1/documents/${encodeURIComponent(docId)}/media/fetch`;
+  if (serverQuality === 'off') {
+    return mediaRequest(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+  }
+  const res = await fetch(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ url, download: true }),
   });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || i18n.t('common:errors.uploadFailed', { status: res.status }));
+  }
+  const { blob, name } = await prepareImage(await res.blob());
+  return uploadMedia(docId, blob, name);
 }
 
 const MAX_EDGE = 2048;
@@ -150,6 +164,35 @@ export function setServerImageQuality(level: unknown): void {
 
 export function serverImageQuality(): ImageQuality {
   return serverQuality;
+}
+
+/** Images in notes as the server says (`images` in /auth/status): new images allowed at all, copies
+ * from other addresses, the largest one in MB. */
+export interface ImageSettings {
+  enabled: boolean;
+  external: boolean;
+  limitMB: number;
+}
+
+let serverImages: ImageSettings = { enabled: true, external: true, limitMB: 15 };
+
+export function setServerImageSettings(v: Partial<ImageSettings> | undefined | null): void {
+  const enabled = v?.enabled !== false;
+  serverImages = {
+    enabled,
+    external: enabled && v?.external !== false,
+    limitMB: typeof v?.limitMB === 'number' && v.limitMB > 0 ? v.limitMB : 15,
+  };
+}
+
+/** Whether new images may go into notes (else /image is not offered and uploads are refused). */
+export function imagesAllowed(): boolean {
+  return serverImages.enabled;
+}
+
+/** Whether images may be copied from other addresses. */
+export function externalImagesAllowed(): boolean {
+  return serverImages.external;
 }
 
 /** Audio in notes as the server says (`audio` in /auth/status): recordings at `bitrate` kbit/s unless

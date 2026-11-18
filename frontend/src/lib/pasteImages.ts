@@ -7,8 +7,10 @@
 //   text next to it, so the text wins and the picture is dropped. Only when the HTML shows images as part of
 //   the selection (a copied part of a page or document) are the files added as image bullets after the text.
 //   Where they stood within the text is unknown (the clipboard has no position for them), so they follow it.
-// - HTML with only images and no file (some browsers and apps): https images are copied by the server
-//   (POST /documents/{id}/media/fetch, same protection as the /image link), data: images are uploaded.
+// - HTML with only images and no file (some browsers and apps): https images are fetched by the server
+//   (POST /documents/{id}/media/fetch, same protection as the /image link) and compressed like any other
+//   picture, data: images are uploaded. While the administration has switched off images from other
+//   addresses, https images are left out (the paste stays text when nothing else is left).
 // - HTML with text and images but no file (a part of a web page): only the text, as before; fetching every
 //   image of a page selection would pull in tracking pixels and icons nobody meant to paste.
 //
@@ -19,7 +21,7 @@
 import i18n from '../i18n';
 import { showError } from '../components/ErrorNotice';
 import { errorMessage } from './errorMessage';
-import { copyExternalImage, mediaContent, prepareImage, uploadMedia } from './media';
+import { copyExternalImage, externalImagesAllowed, mediaContent, prepareImage, uploadMedia } from './media';
 
 /** At most this many images per paste; more are reported, not uploaded. */
 export const MAX_PASTED_IMAGES = 10;
@@ -59,6 +61,12 @@ function parseHtml(html: string): { srcs: string[]; text: string } {
   return { srcs, text: (doc.body?.textContent || '').trim() };
 }
 
+// Addresses of images that may become bullets: data: always (uploaded), https only while the server may
+// copy images from other addresses
+function usableUrls(urls: string[]): string[] {
+  return externalImagesAllowed() ? urls : urls.filter((u) => /^data:/i.test(u));
+}
+
 function pick(all: Blob[] | string[], keepText: boolean): PastedImages {
   const dropped = Math.max(0, all.length - MAX_PASTED_IMAGES);
   const kept = all.slice(0, MAX_PASTED_IMAGES);
@@ -81,7 +89,8 @@ export function pastedImages(data: DataTransfer | null | undefined): PastedImage
     if (imageOnly) return pick(files, false);
     return html.srcs.length > 0 ? pick(files, true) : null;
   }
-  if (html.srcs.length > 0 && imageOnly) return pick(html.srcs, false);
+  const urls = usableUrls(html.srcs);
+  if (urls.length > 0 && imageOnly) return pick(urls, false);
   return null;
 }
 
@@ -118,7 +127,7 @@ export function droppedImages(data: DataTransfer | null | undefined): { images: 
     .split(/\r?\n/)
     .map((u) => u.trim())
     .filter((u) => u && !u.startsWith('#'));
-  if (uris.length > 0 && !data.getData('text/html') && uris.every((u) => /^https:\/\/\S+\.(png|jpe?g|gif|webp|avif)(\?\S*)?$/i.test(u))) {
+  if (uris.length > 0 && !data.getData('text/html') && uris.every((u) => /^https:\/\/\S+\.(png|jpe?g|gif|webp|avif)(\?\S*)?$/i.test(u)) && externalImagesAllowed()) {
     return { images: pick(uris, false), otherFiles: 0 };
   }
   return { images: null, otherFiles: 0 };

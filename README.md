@@ -213,6 +213,9 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `API_KEYS_ENABLED` | `true` | `false` refuses API keys on the REST API; they keep working for MCP |
 | `MEDIA_IMAGE_QUALITY` | admin UI decides (`high`) | `high`, `medium` or `low`: how strongly the app compresses new pictures before upload (always at most 2048 px, so text stays readable); `off` uploads them as they are |
 | `MEDIA_AUDIO_COMPRESSION`, `MEDIA_AUDIO_BITRATE` | admin UI decides (`recordings`, `32`) | `recordings` records voice notes at `MEDIA_AUDIO_BITRATE` kbit/s (8–320), `off` leaves the bitrate to the browser; uploaded audio files are never re-encoded |
+| `MEDIA_MAX_IMAGE_MB` | admin UI decides (`15`) | Largest image in a note in MB; set, it locks the admin setting |
+| `MEDIA_IMAGES`, `MEDIA_EXTERNAL_IMAGES` | admin UI decides (`true`) | `false` refuses new images in notes, or only images from other addresses (the server then calls none) |
+| `MEDIA_QUOTA_MB` | admin UI decides (`0`) | Media storage per person in MB, `0` = unlimited |
 | `MEDIA_MAX_AUDIO_MB` | admin UI decides (`7`) | Largest audio file in a note in MB, recorded or uploaded (a recording ends on its own before the limit); set, it locks the admin setting |
 | `MEDIA_AUDIO_UPLOADS` | admin UI decides (`true`) | `false` refuses audio files from the device; notes then only take recordings made in the app |
 | `UPDATE_CHECK` | `true` | `false` stops the daily look for a new MindSift release (admins get a hint); no request goes out then |
