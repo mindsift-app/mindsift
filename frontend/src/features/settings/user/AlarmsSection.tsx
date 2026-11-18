@@ -47,7 +47,6 @@ export function AlarmsSection({
     pushHere,
     pushEndpointHere,
     pushBusy,
-    pushMsg,
     removeDevice,
     togglePushHere,
     sendTestPush,
@@ -496,9 +495,6 @@ export function AlarmsSection({
                 ))}
               </ul>
             </div>
-          )}
-          {pushMsg && (
-            <p className={`pl-6 text-[11px] ${pushMsg.type === 'ok' ? 'text-status-ok' : 'text-status-err'}`}>{pushMsg.text}</p>
           )}
         </div>
 

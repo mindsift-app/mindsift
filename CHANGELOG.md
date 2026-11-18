@@ -30,7 +30,7 @@ Versions without a git tag were development states and were never published as a
 - **Media settings for administrators:** a new "Media" page in the administration. Image compression can now be switched off, voice notes recorded in notes are compressed to 32 kbit/s by default (bitrate adjustable, or off), audio files are limited to 7 MB by default (adjustable; a recording ends on its own before the limit), and uploading audio files from the device can be switched off. Images can be switched off altogether, or only those from other addresses; images copied from a link are now compressed like your own. The largest image and the storage per person are set there too. Each setting can be fixed through its variable (`MEDIA_IMAGES`, `MEDIA_IMAGE_QUALITY`, `MEDIA_MAX_IMAGE_MB`, `MEDIA_EXTERNAL_IMAGES`, `MEDIA_AUDIO_COMPRESSION`, `MEDIA_AUDIO_BITRATE`, `MEDIA_MAX_AUDIO_MB`, `MEDIA_AUDIO_UPLOADS`, `MEDIA_QUOTA_MB`).
 - **More settings in the administration:** imprint and privacy notice (links and texts) under Server, and voice input under Voice input & AI: mode (own Whisper server, browser, off), the Whisper server's address and key, the limits, and the model, chosen from a list that shows which models are downloaded; a click on another one lets the Whisper server download it and uses it once it is there.
 - Voice input in the administration: downloaded models other than the one in use can be deleted from the Whisper server to free its space, after a short confirmation.
-- Voice input in the administration: how often a recording goes to the Whisper server while you speak (every 8 s by default, 2–30 s) can be set, or switched off so a recording is sent as a whole after stopping; `STT_CHUNKED` and `STT_CHUNK_SECONDS` fix both.
+- Voice input in the administration: how often a recording goes to the Whisper server while you speak (every 8 s by default, 2–30 s) can be set, or switched off so a recording is sent as a whole after stopping (live dictation with `/diktat` too); `STT_CHUNKED` and `STT_CHUNK_SECONDS` fix both.
 - **For providers:** `SMTP_DISABLED`, `LINK_PREVIEWS`, `PUSH_KNOWN_SERVICES_ONLY`, `ALLOW_PRIVATE_WEBHOOKS`, `BACKUP_ENABLED`, `BACKUP_TIME` and `BACKUP_RETENTION_DAYS` fix their setting and lock it in the administration; `INSTANCE_NAME` and `STT_DEFAULT_MODEL` only preset the name and the model.
 
 ### Changed
@@ -93,6 +93,11 @@ Versions without a git tag were development states and were never published as a
 - Opening a note no longer slows down for its backlinks in accounts with many notes, and the backlinks show at once; following a plain link no longer claims the linked bullet is gone.
 - Demo: the reset countdown no longer gets stuck at "resetting"; it picks up the next reset time again, also after a lost connection or when the tab comes back.
 - Demo: the reset countdown shows up right after the demo server started, instead of only after the app asked again.
+- Voice input in the administration: entering the Whisper server's address on a server where no mode was chosen yet now switches to "Own Whisper server" instead of staying on "Browser"; a mode chosen on purpose stays as it is.
+- Voice input in the administration: downloading and deleting a model of the Whisper server now show in the audit log, and so does choosing a model that is already downloaded.
+- Alarm settings: the messages after switching push on or off and after a test push appear as a notice at the bottom of the screen like the other settings' messages, instead of pushing the page down.
+- Settings: a "Saved" message no longer shows up again when you leave a section within a few seconds and come back.
+- Custom themes from an import or a restored backup appear right away instead of only after reloading the page.
 - Many smaller fixes in live drawing, linked to-dos, sharing, reconnecting and translations.
 
 ## [0.95.0] - 2026-11-12

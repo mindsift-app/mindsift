@@ -1202,7 +1202,8 @@
       "settings": "Impostazioni del server",
       "inviteLink": "Link di invito",
       "organization": "Organizzazione",
-      "backup": "Backup del server"
+      "backup": "Backup del server",
+      "speechModel": "Modello vocale"
     },
     "action": {
       "account_created": "Account creato",
@@ -1227,6 +1228,8 @@
       "backup_created": "Backup creato",
       "backup_deleted": "Backup eliminato",
       "backup_downloaded": "Backup scaricato",
+      "speech_model_download": "Modello vocale richiesto",
+      "speech_model_deleted": "Modello vocale eliminato",
       "account_registered": "Registrazione autonoma",
       "account_unconfirmed_deleted": "Account non confermato eliminato",
       "invite_redeemed": "Invito riscattato"
@@ -1245,7 +1248,8 @@
       "unconfirmedDeleted": "Indirizzo e-mail non confermato entro 48 ore",
       "mustChange": "Nuova password richiesta al prossimo accesso",
       "keysRevoked": "{{keys}} chiavi API e {{connections}} accessi IA revocati",
-      "calendarFeedRevoked": "Abbonamento al calendario disattivato"
+      "calendarFeedRevoked": "Abbonamento al calendario disattivato",
+      "speechModelSelect": "Usato una volta scaricato"
     },
     "value": {
       "on": "attivo",
@@ -1397,7 +1401,7 @@
     },
     "recognition": "Riconoscimento",
     "chunked": "Testo mentre si parla",
-    "chunkedHint": "L'app invia la registrazione al server Whisper a pezzi mentre qualcuno parla, così il testo arriva già durante. Disattivato: l'intera registrazione solo dopo l'arresto (la dettatura dal vivo resta a pezzi).",
+    "chunkedHint": "L'app invia la registrazione al server Whisper a pezzi mentre qualcuno parla, così il testo arriva già durante. Disattivato: l'intera registrazione solo dopo l'arresto (anche la dettatura dal vivo).",
     "chunkSeconds": "Durata di un pezzo",
     "chunkSecondsHint": "Al massimo questa durata, prima in caso di breve pausa (2–30 secondi). Più breve: il testo arriva prima, ma il server riceve più richieste.",
     "vadFilterHint": "Meno ripetizioni inventate; disattiva se il server rifiuta il campo.",

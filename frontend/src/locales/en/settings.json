@@ -1202,7 +1202,8 @@
       "settings": "Server settings",
       "inviteLink": "Invite link",
       "organization": "Organization",
-      "backup": "Server backup"
+      "backup": "Server backup",
+      "speechModel": "Speech model"
     },
     "action": {
       "account_created": "Account created",
@@ -1227,6 +1228,8 @@
       "backup_created": "Backup created",
       "backup_deleted": "Backup deleted",
       "backup_downloaded": "Backup downloaded",
+      "speech_model_download": "Speech model requested",
+      "speech_model_deleted": "Speech model deleted",
       "account_registered": "Signed up",
       "account_unconfirmed_deleted": "Unconfirmed account deleted",
       "invite_redeemed": "Invite redeemed"
@@ -1245,7 +1248,8 @@
       "unconfirmedDeleted": "Email address not confirmed within 48 hours",
       "mustChange": "New password required at the next sign-in",
       "keysRevoked": "{{keys}} API keys and {{connections}} AI connections revoked",
-      "calendarFeedRevoked": "Calendar subscription switched off"
+      "calendarFeedRevoked": "Calendar subscription switched off",
+      "speechModelSelect": "Used once downloaded"
     },
     "value": {
       "on": "on",
@@ -1397,7 +1401,7 @@
     },
     "recognition": "Recognition",
     "chunked": "Text while speaking",
-    "chunkedHint": "The app sends the recording to the Whisper server in pieces while someone speaks, so the text arrives on the way. Off: the whole recording only after stopping (live dictation stays in pieces).",
+    "chunkedHint": "The app sends the recording to the Whisper server in pieces while someone speaks, so the text arrives on the way. Off: the whole recording only after stopping (live dictation too).",
     "chunkSeconds": "Length of a piece",
     "chunkSecondsHint": "At most this long, earlier at a short pause (2–30 seconds). Shorter: the text comes sooner, but the server gets more requests.",
     "vadFilterHint": "Fewer made-up repetitions; off if the server rejects the field.",

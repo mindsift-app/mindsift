@@ -16,7 +16,8 @@ export interface VoiceInputOptions {
   /** Browser mode: keep listening through pauses (hold-to-record) instead of stopping after a sentence. */
   continuous?: boolean;
   /** Live dictation mode (/diktat): auto-restart browser speech recognition on pause, and chunk server recordings
-   *  every chunkSeconds (STT_CHUNK_SECONDS, default 8) or ~0.8s of silence, whatever the server's chunked setting. */
+   *  every chunkSeconds (STT_CHUNK_SECONDS, default 8) or ~0.8s of silence, unless the server switched chunks off
+   *  (then the recording goes in one piece at the end, as everywhere else). */
   live?: boolean;
   /** Server mode only: send the recording in chunks like live mode (every chunkSeconds or at a short pause), so the
    *  text arrives while speaking and a long dictation is not transcribed all at once at the end. Default on; the
@@ -45,7 +46,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   // The server's setting: recordings in pieces while speaking, and how long a piece is at most
   const [serverChunked, setServerChunked] = useState(true);
   const chunkMsRef = useRef(8000);
-  const chunkServer = live || (chunked && serverChunked);
+  const chunkServer = serverChunked && (live || chunked);
   const [state, setState] = useState<VoiceState>('idle');
   const [pendingChunks, setPendingChunks] = useState(0);
   // A recording or its transcription is under way: the app does not reload for a new version meanwhile

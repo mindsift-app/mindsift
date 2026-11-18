@@ -40,6 +40,7 @@ const (
 	AuditTargetInvite       = "invite"
 	AuditTargetOrganization = "organization"
 	AuditTargetBackup       = "backup"
+	AuditTargetSpeechModel  = "speech_model" // a model of the Whisper server, target_name its id
 )
 
 // Actions: stable keys, the app translates them.
@@ -69,6 +70,8 @@ const (
 	AuditBackupCreated             = "backup.created"
 	AuditBackupDeleted             = "backup.deleted"
 	AuditBackupDownloaded          = "backup.downloaded"
+	AuditSpeechModelDownload       = "speech_model.download" // the admin asked the Whisper server for a model
+	AuditSpeechModelDeleted        = "speech_model.deleted"
 )
 
 // AuditKeep: how long a row stays (PruneAudit, hourly).

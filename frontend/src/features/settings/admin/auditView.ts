@@ -31,6 +31,8 @@ export const AUDIT_ACTIONS = [
   'backup.created',
   'backup.deleted',
   'backup.downloaded',
+  'speech_model.download',
+  'speech_model.deleted',
 ] as const;
 
 // Action keys become i18n keys without dots: account.role_changed → account_role_changed
@@ -70,6 +72,8 @@ export function targetLabel(t: TFunction, e: AuditEntry, users: Map<string, User
       return e.targetName || t('audit.target.organization');
     case 'backup':
       return e.targetName || t('audit.target.backup');
+    case 'speech_model':
+      return e.targetName || t('audit.target.speechModel');
   }
   return '–';
 }
@@ -122,6 +126,9 @@ export function detailLines(t: TFunction, e: AuditEntry): string[] {
       break;
     case 'account.created':
       if (d.role) lines.push(t('audit.detail.value', { label: t('audit.field.role'), value: valueLabel(t, 'role', d.role) }));
+      break;
+    case 'speech_model.download':
+      if (d.select === true) lines.push(t('audit.detail.speechModelSelect'));
       break;
   }
   if (typeof d.group === 'string' && d.group) {

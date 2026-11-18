@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, CircleAlert, X } from 'lucide-react';
+import { useLatestRef } from '../lib/useLatestRef';
 
 export type StatusMessage = { type: 'ok' | 'err'; text: string };
 
@@ -12,6 +13,19 @@ const OK_MS = 4000;
 // stay mounted, so screen readers announce every new message: confirmations politely, errors at once.
 export function StatusToast({ msg, onClose }: { msg: StatusMessage | null; onClose: () => void }) {
   const { t } = useTranslation();
+  const msgRef = useLatestRef(msg);
+  const onCloseRef = useLatestRef(onClose);
+
+  // Leaving the section ends a confirmation: its state often lives in the view, and it would otherwise
+  // show again on the way back. An error stays until it is closed.
+  useEffect(
+    () => () => {
+      if (msgRef.current?.type === 'ok') onCloseRef.current();
+    },
+    // the refs are stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   useEffect(() => {
     if (msg?.type !== 'ok') return;

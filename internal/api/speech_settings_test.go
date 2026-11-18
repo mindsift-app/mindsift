@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/config"
+	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -144,6 +145,9 @@ func TestSpeechSettingsAndModels(t *testing.T) {
 	if rec.Code != http.StatusAccepted {
 		t.Fatalf("download: %d %s", rec.Code, rec.Body.String())
 	}
+	if e := lastAudit(t, store, storage.AuditSpeechModelDownload); e.TargetKind != storage.AuditTargetSpeechModel || e.TargetName != "Systran/faster-whisper-medium" || string(e.Details) != `{"select":true}` {
+		t.Fatalf("download in the audit log: %+v %s", e, e.Details)
+	}
 	getModels()
 	if len(models.Downloads) != 1 || !models.Downloads[0].Running || models.Model != "Systran/faster-whisper-small" {
 		t.Fatalf("while downloading: %+v", models)
@@ -169,6 +173,9 @@ func TestSpeechSettingsAndModels(t *testing.T) {
 	}
 	if srv.speech().Model != "Systran/faster-whisper-small" {
 		t.Fatalf("chosen: %q", srv.speech().Model)
+	}
+	if e := lastAudit(t, store, storage.AuditSettingsChanged); string(e.Details) != `{"changes":[{"key":"speech.model","from":"Systran/faster-whisper-medium","to":"Systran/faster-whisper-small"}]}` {
+		t.Fatalf("choosing a downloaded model in the audit log: %s", e.Details)
 	}
 
 	// STT_* fixes its field: shown, locked, what the administration sends is not stored
@@ -276,7 +283,7 @@ func TestSpeechChunkSettings(t *testing.T) {
 // Deleting a downloaded model on the Whisper server: not the one in use, not one downloading, not while
 // STT_MODEL fixes the model; one that is not there answers 404.
 func TestSpeechModelDelete(t *testing.T) {
-	srv, _, token := setupTestServer(t)
+	srv, store, token := setupTestServer(t)
 	srv.cfg.Speech = config.SpeechConfig{}
 	router := srv.Router()
 	fake := &modelWhisper{local: []string{"Systran/faster-whisper-small", "Systran/faster-whisper-medium"}}
@@ -314,11 +321,72 @@ func TestSpeechModelDelete(t *testing.T) {
 	if len(srv.voice.downloads.snapshot()) != 0 {
 		t.Fatal("the finished download of a deleted model is no longer shown")
 	}
+	if e := lastAudit(t, store, storage.AuditSpeechModelDeleted); e.TargetKind != storage.AuditTargetSpeechModel || e.TargetName != "Systran/faster-whisper-medium" {
+		t.Fatalf("deletion in the audit log: %+v", e)
+	}
+	if rows, _ := store.AuditEntries(storage.AuditFilter{Action: storage.AuditSpeechModelDeleted}); len(rows) != 1 {
+		t.Fatalf("refused deletions are not recorded: %d rows", len(rows))
+	}
 	if rec := del("Systran/faster-whisper-medium"); rec.Code != http.StatusNotFound {
 		t.Fatalf("not there: %d", rec.Code)
 	}
 	srv.cfg.Speech = config.SpeechConfig{Model: "Systran/faster-whisper-large-v3"}
 	if rec := del("Systran/faster-whisper-small"); rec.Code != http.StatusConflict {
 		t.Fatalf("STT_MODEL fixes the model: %d", rec.Code)
+	}
+}
+
+// A fresh server: the mode stays automatic ("") until the admin chooses one, so the address entered
+// later makes it server mode; a mode chosen on purpose stays as chosen.
+func TestSpeechModeAutomaticUntilChosen(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	srv.cfg.Speech = config.SpeechConfig{}
+	router := srv.Router()
+	status := func() string { return sessionCall(router, "GET", "/api/v1/auth/status", "", "", "").Body.String() }
+	put := func(speech string) {
+		t.Helper()
+		if rec := sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","speech":`+speech+`}`, ""); rec.Code != http.StatusOK {
+			t.Fatalf("save %s: %d %s", speech, rec.Code, rec.Body.String())
+		}
+	}
+	adminSpeech := func() domain.SpeechSettings {
+		t.Helper()
+		var out struct {
+			Speech domain.SpeechSettings `json:"speech"`
+		}
+		rec := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "")
+		if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+			t.Fatalf("admin settings: %v %s", err, rec.Body.String())
+		}
+		return out.Speech
+	}
+	// The form sends back what it got, with the new address
+	saveAddress := func(url string) {
+		t.Helper()
+		sp := adminSpeech()
+		sp.URL = url
+		raw, _ := json.Marshal(sp)
+		put(string(raw))
+	}
+	if sp := adminSpeech(); sp.Mode != "" {
+		t.Fatalf("no mode chosen yet: %q", sp.Mode)
+	}
+	if !strings.Contains(status(), `"mode":"browser"`) {
+		t.Fatalf("without an address the browser: %s", status())
+	}
+	saveAddress("http://127.0.0.1:18612")
+	if !strings.Contains(status(), `"mode":"server"`) {
+		t.Fatalf("the address makes it server mode: %s", status())
+	}
+	if sys, _ := store.GetSystemSettings(); sys.Speech.Mode != "" {
+		t.Fatalf("stored mode stays automatic: %q", sys.Speech.Mode)
+	}
+	// Chosen on purpose: browser and off stay as chosen when the address is saved again
+	for _, mode := range []string{"browser", "off"} {
+		put(`{"mode":"` + mode + `","url":"http://127.0.0.1:18612"}`)
+		saveAddress("http://127.0.0.1:18613")
+		if sp := adminSpeech(); sp.Mode != mode || !strings.Contains(status(), `"mode":"`+mode+`"`) {
+			t.Fatalf("%s as chosen: %q %s", mode, sp.Mode, status())
+		}
 	}
 }

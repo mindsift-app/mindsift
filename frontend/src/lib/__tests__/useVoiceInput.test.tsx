@@ -249,7 +249,7 @@ describe('useVoiceInput', () => {
     vi.useRealTimers();
   });
 
-  it('server mode: switched off by the server, the recording goes as a whole after stopping; live dictation still in pieces', async () => {
+  it('server mode: switched off by the server, the recording goes as a whole after stopping, live dictation too', async () => {
     getAuthStatus.mockResolvedValue({ voice: { mode: 'server', maxSeconds: 600, chunked: false, chunkSeconds: 4 } });
     transcribe.mockResolvedValue('Alles auf einmal');
     const onText = vi.fn();
@@ -272,18 +272,23 @@ describe('useVoiceInput', () => {
     expect(transcribe).toHaveBeenCalledTimes(1);
 
     transcribe.mockClear();
-    const live = renderHook(() => useVoiceInput({ onText: vi.fn(), live: true }));
+    const liveText = vi.fn();
+    const live = renderHook(() => useVoiceInput({ onText: liveText, live: true }));
     await waitFor(() => expect(live.result.current.mode).toBe('server'));
     vi.useFakeTimers();
     await act(async () => {
       await live.result.current.start();
     });
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(4000);
+      await vi.advanceTimersByTimeAsync(20000);
     });
-    expect(transcribe).toHaveBeenCalledTimes(1);
-    act(() => live.result.current.cancel());
+    expect(transcribe).not.toHaveBeenCalled();
+    await act(async () => {
+      await live.result.current.stop();
+    });
     vi.useRealTimers();
+    await waitFor(() => expect(liveText).toHaveBeenLastCalledWith('Alles auf einmal', true));
+    expect(transcribe).toHaveBeenCalledTimes(1);
   });
 
   it('server mode with live=true: cuts segments onto new MediaRecorders on the same stream, orders out-of-order responses by chunk index, and releases stream at the end', async () => {

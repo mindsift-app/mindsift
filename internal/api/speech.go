@@ -133,7 +133,9 @@ func (s *Server) speechEnvFields() []string {
 }
 
 // speechForAdmin: the voice input settings as the administration shows them: what applies (the
-// environment's values where it fixes them), the mode as chosen, the key only as "set".
+// environment's values where it fixes them), the mode as chosen ("" while the admin never chose one: the
+// form shows the automatic mode and sends "" back, so an address entered later makes it server mode),
+// the key only as "set".
 func (s *Server) speechForAdmin() *domain.SpeechSettings {
 	st, eff := s.storedSpeech(), s.speech()
 	url, key := s.whisperServer()
@@ -149,11 +151,6 @@ func (s *Server) speechForAdmin() *domain.SpeechSettings {
 	out.AllowBrowser = &allow
 	if s.cfg.Speech.Disabled {
 		out.Mode = "off"
-	} else if out.Mode == "" {
-		out.Mode = "browser"
-		if url != "" {
-			out.Mode = "server"
-		}
 	}
 	return out
 }
@@ -424,11 +421,16 @@ func (s *Server) handleAdminSpeechModelDownload(w http.ResponseWriter, r *http.R
 	local, _ := s.localSpeechModels(ctx)
 	cancel()
 	if slices.Contains(local, model) && !s.voice.downloads.running(model) {
-		if req.Select {
+		if before := s.speech().Model; req.Select && before != model {
 			s.selectSpeechModel(model)
+			s.audit(r, storage.AuditSettingsChanged, storage.AuditEntry{TargetKind: storage.AuditTargetSettings},
+				auditChanges{Changes: []auditChange{{Key: "speech.model", From: before, To: model}}})
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"downloaded": true})
 		return
+	}
+	if !s.voice.downloads.running(model) {
+		s.audit(r, storage.AuditSpeechModelDownload, auditSpeechModelTarget(model), map[string]bool{"select": req.Select})
 	}
 	s.startModelDownload(model, req.Select)
 	writeJSON(w, http.StatusAccepted, map[string]any{"downloaded": false, "downloads": s.voice.downloads.snapshot()})
@@ -477,6 +479,7 @@ func (s *Server) handleAdminSpeechModelDelete(w http.ResponseWriter, r *http.Req
 		return
 	}
 	slog.Info("Speech recognition: model deleted", "model", model)
+	s.audit(r, storage.AuditSpeechModelDeleted, auditSpeechModelTarget(model), nil)
 	// A finished download of it would still show as done
 	d := &s.voice.downloads
 	d.mu.Lock()
@@ -485,6 +488,11 @@ func (s *Server) handleAdminSpeechModelDelete(w http.ResponseWriter, r *http.Req
 	}
 	d.mu.Unlock()
 	writeJSON(w, http.StatusOK, map[string]any{"deleted": true})
+}
+
+// auditSpeechModelTarget: a model of the Whisper server as the target of a row of the audit log.
+func auditSpeechModelTarget(model string) storage.AuditEntry {
+	return storage.AuditEntry{TargetKind: storage.AuditTargetSpeechModel, TargetName: model}
 }
 
 // decodeJSONLimited reads at most 4 MB of JSON into v.
