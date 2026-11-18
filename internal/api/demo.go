@@ -92,10 +92,9 @@ func (s *Server) demoResetInterval() time.Duration {
 	return time.Duration(s.cfg.DemoResetMinutes) * time.Minute
 }
 
+// startDemoResetTicker waits for the deadline NewServer set first; resetDemo sets the following one itself.
 func (s *Server) startDemoResetTicker() {
-	s.setDemoNextReset(time.Now().Add(s.demoResetInterval()))
 	for {
-		// resetDemo sets the following deadline itself
 		if !s.wait(time.Until(s.demoNextReset())) {
 			return
 		}

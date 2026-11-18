@@ -92,6 +92,7 @@ Versions without a git tag were development states and were never published as a
 - Voice input with the browser's speech recognition (Chrome, Edge): a spoken language chosen in the account settings is passed as a full language tag (e.g. de-DE), so Chrome no longer falls back to English.
 - Opening a note no longer slows down for its backlinks in accounts with many notes, and the backlinks show at once; following a plain link no longer claims the linked bullet is gone.
 - Demo: the reset countdown no longer gets stuck at "resetting"; it picks up the next reset time again, also after a lost connection or when the tab comes back.
+- Demo: the reset countdown shows up right after the demo server started, instead of only after the app asked again.
 - Many smaller fixes in live drawing, linked to-dos, sharing, reconnecting and translations.
 
 ## [0.95.0] - 2026-11-12

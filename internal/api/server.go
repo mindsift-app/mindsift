@@ -134,6 +134,9 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	srv.background(srv.startDrawTicker)
 	srv.background(srv.startDocCountsTicker)
 	if cfg.DemoMode && cfg.DemoResetMinutes > 0 {
+		// The first deadline is set here, not in the ticker's goroutine: a status request right after the
+		// start already gets the countdown
+		srv.setDemoNextReset(time.Now().Add(srv.demoResetInterval()))
 		srv.background(srv.startDemoResetTicker)
 	}
 	// The demo sends nothing (FLAW-33); its alarm ticker only fills the notification center
