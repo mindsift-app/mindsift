@@ -353,6 +353,10 @@ type SpeechConfig struct {
 	PerUserPerHour int
 	TimeoutSeconds int
 	VADFilter      *bool // ask the Whisper server to skip silence (fewer made-up repetitions); speaches understands it
+	// Chunked: the app sends a recording in pieces while the person speaks (default on); ChunkSeconds is
+	// the longest piece (cut earlier at a short pause)
+	Chunked      *bool
+	ChunkSeconds int
 	// DefaultModel: STT_DEFAULT_MODEL, the model until the administration chooses one (does not fix it,
 	// unlike STT_MODEL); the install script writes it
 	DefaultModel string
@@ -366,6 +370,7 @@ const (
 	DefaultSTTMaxParallel    = 1
 	DefaultSTTPerUserPerHour = 60
 	DefaultSTTTimeoutSeconds = 120
+	DefaultSTTChunkSeconds   = 8
 )
 
 // Mode is "server", "browser" or "off". The demo never uses the server, so visitors cannot keep
@@ -661,6 +666,8 @@ func Load() *Config {
 			PerUserPerHour: envInt("STT_PER_USER_PER_HOUR", 0, 1, 100000),
 			TimeoutSeconds: envInt("STT_TIMEOUT_SECONDS", 0, 5, 3600),
 			VADFilter:      envBoolPtr("STT_VAD_FILTER"),
+			Chunked:        envBoolPtr("STT_CHUNKED"),
+			ChunkSeconds:   envInt("STT_CHUNK_SECONDS", 0, 2, 30),
 			DefaultModel:   strings.TrimSpace(getEnv("STT_DEFAULT_MODEL", "")),
 		},
 		NotifyDigestMinutes: envInt("NOTIFY_DIGEST_MINUTES", 5, 1, 1440),

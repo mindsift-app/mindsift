@@ -170,11 +170,12 @@ describe('FinishSetupView', () => {
     // Below the switch and again in the summary
     expect(screen.getAllByText(/zusätzlich regelmäßig an einen anderen Ort/)).toHaveLength(2);
     expect((screen.getByLabelText('Uhrzeit') as HTMLInputElement).value).toBe('03:00');
-    expect((screen.getByLabelText('Aufbewahren (Tage)') as HTMLInputElement).value).toBe('3');
+    expect((screen.getByLabelText('Aufbewahren') as HTMLInputElement).value).toBe('3');
 
     fireEvent.change(screen.getByLabelText('Uhrzeit'), { target: { value: '01:45' } });
     fireEvent.blur(screen.getByLabelText('Uhrzeit'));
-    fireEvent.change(screen.getByLabelText('Aufbewahren (Tage)'), { target: { value: '14' } });
+    fireEvent.change(screen.getByLabelText('Aufbewahren'), { target: { value: '14' } });
+    fireEvent.blur(screen.getByLabelText('Aufbewahren'));
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Ersteinrichtung abschließen/ }));
     });
@@ -231,20 +232,18 @@ describe('FinishSetupView', () => {
     expect(payload).not.toHaveProperty('backupRetentionDays');
   });
 
-  it('refuses a retention outside 1 to 365 days before sending', async () => {
-    const onDone = vi.fn();
-    render(<FinishSetupView user={admin} authStatus={status} onDone={onDone} onLogout={() => {}} />);
-    const form = screen.getByRole('button', { name: /Ersteinrichtung abschließen/ }).closest('form')!;
-    for (const days of ['0', '366', '']) {
-      fireEvent.change(screen.getByLabelText('Aufbewahren (Tage)'), { target: { value: days } });
-      // Submitted directly: past the browser's own min/max check, which stops 0 and 366 first
-      await act(async () => {
-        fireEvent.submit(form);
-      });
-      expect(screen.getByText('Backups 1 bis 365 Tage aufbewahren.')).toBeTruthy();
+  it('keeps the retention within 1 to 365 days', async () => {
+    render(<FinishSetupView user={admin} authStatus={status} onDone={() => {}} onLogout={() => {}} />);
+    const field = screen.getByLabelText('Aufbewahren') as HTMLInputElement;
+    for (const [typed, kept] of [['0', '1'], ['366', '365'], ['', '365']]) {
+      fireEvent.change(field, { target: { value: typed } });
+      fireEvent.blur(field);
+      expect(field.value).toBe(kept);
     }
-    expect(finishSetup).not.toHaveBeenCalled();
-    expect(onDone).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Ersteinrichtung abschließen/ }));
+    });
+    expect(finishSetup).toHaveBeenCalledWith(expect.objectContaining({ backupRetentionDays: 365 }));
   });
 
   it('shows the error and stays when saving fails', async () => {

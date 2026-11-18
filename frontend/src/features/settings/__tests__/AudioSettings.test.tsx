@@ -33,13 +33,15 @@ describe('AudioSettings (audio in notes for the whole server)', () => {
     render(<AudioSettings settings={base} onSave={onSave} />);
     const input = screen.getByRole('spinbutton', { name: 'Größte Audiodatei' }) as HTMLInputElement;
     expect(input.value).toBe('7');
-    fireEvent.change(input, { target: { value: '2001' } });
-    fireEvent.blur(input);
-    expect(onSave).not.toHaveBeenCalled();
-    expect(input.value).toBe('7');
     fireEvent.change(input, { target: { value: '20' } });
+    expect(onSave).not.toHaveBeenCalled();
     fireEvent.blur(input);
     expect(onSave).toHaveBeenCalledWith({ audioLimitMB: 20 });
+    // Above the limit: the largest allowed
+    fireEvent.change(input, { target: { value: '2001' } });
+    fireEvent.blur(input);
+    expect(onSave).toHaveBeenLastCalledWith({ audioLimitMB: 2000 });
+    expect(input.value).toBe('2000');
   });
 
   it('switches uploads of audio files off', () => {

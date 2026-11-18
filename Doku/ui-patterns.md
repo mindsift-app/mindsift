@@ -284,6 +284,16 @@ Component: [UnifiedShareModal.tsx](../frontend/src/components/UnifiedShareModal.
 
 - The header names what is shared small on top ("Share task list", `title`) and its name large below (`resourceName`), once.
 
+## Number Fields
+
+Component: [NumberField.tsx](../frontend/src/components/NumberField.tsx)
+
+- Every whole number the person types (limits and sizes in the administration, days to keep backups, uses of an invite, the setup wizard) uses `NumberField`, not `<input type="number">`: no spinner arrows, `inputMode="numeric"` for the number keyboard on phones, `role="spinbutton"` with min, max and the value.
+- Look: an `input-field` frame, 44 px high on phones and 32 px from `sm`; the number right-aligned (`tabular-nums`), the `unit` after it inside the frame in `text-muted` ("MB", "Sekunden", "pro Stunde", "gleichzeitig", "Tage"; from the language files, with `_one`/`_other` where it has a plural). A click on the unit puts the cursor into the number. `className` sets the width (default `w-28`, `w-full` in a grid).
+- Taken when the field is left or on Enter (`onCommit`), not on every keystroke, so a setting is saved once; in a form, Enter only takes the number, the next Enter sends the form. Only digits can be typed; a value outside `min`..`max` becomes the nearest limit, an empty field goes back to the last value. Arrow up/down change it by one, Escape goes back. A new `value` from outside replaces what is typed.
+- Locked (`disabled`) when an environment variable fixes it, with "Festgelegt per …" next to it as elsewhere.
+- Several numbers of one kind (the limits of voice input) stand in a grid of two columns from `sm` (one on phones), each label above its field.
+
 ## Fields That Are Not a Login
 
 Search and filter fields get `NO_AUTOFILL` (`lib/noAutofill.ts`). Passwords that are not the person's own login (other accounts, the mail server, the password of a public link) are text fields with `style={MASKED}` instead of `type="password"`, otherwise password managers offer the person's login there.

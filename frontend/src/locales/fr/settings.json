@@ -542,7 +542,9 @@
       "linkCreated_one": "Lien d'invitation pour {{count}} personne créé ({{code}}).",
       "linkCreated_other": "Lien d'invitation pour {{count}} personnes créé ({{code}}).",
       "codeCreated": "Code d'invitation {{code}} créé.",
-      "alwaysMember": "Avec une invitation, tout le monde arrive comme membre ; les rôles s’attribuent ensuite dans la liste."
+      "alwaysMember": "Avec une invitation, tout le monde arrive comme membre ; les rôles s’attribuent ensuite dans la liste.",
+      "usesUnit_one": "fois",
+      "usesUnit_other": "fois"
     },
     "roleMember": "Membre",
     "roleAdmin": "Admin du serveur",
@@ -910,7 +912,7 @@
     "autoTitle": "Sauvegardes automatiques",
     "autoOff": "Désactiver les sauvegardes automatiques",
     "autoOn": "Activer les sauvegardes automatiques",
-    "keepDays": "Conserver (jours)",
+    "keepDays": "Conserver",
     "running": "Sauvegarde en cours…",
     "runNow": "Sauvegarder maintenant",
     "delete": "Supprimer la sauvegarde",
@@ -922,7 +924,9 @@
     "restored": "Restauré : {{notes}} notes, {{tasks}} tâches, {{lists}} listes, {{inbox}} pensées, {{themes}} thèmes.",
     "deletedTitle": "Sauvegardes des comptes supprimés",
     "deletedHint": "Quand un administrateur ou la gestion des utilisateurs supprime un compte, ses sauvegardes restent ici jusqu’à la fin de la durée de conservation. Ainsi, une personne supprimée par erreur récupère ses données : télécharge une sauvegarde et importe-la dans le nouveau compte sous Paramètres du compte → Export & import. Si quelqu’un supprime son propre compte, ses sauvegardes disparaissent aussitôt.",
-    "deletedOn": "Supprimé le {{deleted}} · retiré le {{remove}}"
+    "deletedOn": "Supprimé le {{deleted}} · retiré le {{remove}}",
+    "days_one": "jour",
+    "days_other": "jours"
   },
   "voiceStatus": {
     "loadFailed": "Impossible de charger le statut",
@@ -1360,14 +1364,14 @@
     "keyUnreadable": "La clé enregistrée ne peut plus être déchiffrée (SECRETS_KEY modifiée ?). Merci de la saisir à nouveau.",
     "keyRemove": "Supprimer la clé",
     "model": "Modèle",
-    "modelHint": "Choisissez un modèle téléchargé d'un clic. Les gris ne sont pas encore sur le serveur Whisper : un clic les télécharge (cela peut prendre quelques minutes) puis les utilise. large-v3-turbo reconnaît le mieux, small est nettement plus rapide.",
+    "modelHint": "Choisissez un modèle téléchargé d'un clic. Les modèles grisés ne sont pas encore sur le serveur Whisper : un clic les télécharge (cela peut prendre quelques minutes) puis les utilise. large-v3-turbo reconnaît le mieux, small est nettement plus rapide. Supprimez avec la corbeille les modèles inutilisés pour gagner de la place.",
     "limits": "Limites",
-    "vadFilter": "Ignorer les silences (moins de répétitions inventées ; désactiver si le serveur refuse le champ)",
+    "vadFilter": "Ignorer les silences",
     "limit": {
       "maxSeconds": "Enregistrement le plus long",
       "maxUploadMb": "Enregistrement le plus volumineux",
-      "maxParallel": "Reconnaissances simultanées",
-      "perUserPerHour": "Reconnaissances par personne et par heure",
+      "maxParallel": "Reconnaissances sur le serveur (les autres attendent)",
+      "perUserPerHour": "Reconnaissances par personne",
       "timeoutSeconds": "Délai d'une reconnaissance (attente comprise)"
     },
     "modelsFailed": "Les modèles n'ont pas pu être chargés",
@@ -1382,6 +1386,24 @@
     "download": "Télécharger",
     "custom": "Autre modèle",
     "customPlaceholder": "Autre modèle, p. ex. Systran/faster-whisper-tiny",
-    "customUse": "Télécharger et utiliser"
+    "customUse": "Télécharger et utiliser",
+    "unit": {
+      "seconds_one": "seconde",
+      "seconds_other": "secondes",
+      "mb": "Mo",
+      "parallel": "à la fois",
+      "perHour": "par heure"
+    },
+    "recognition": "Reconnaissance",
+    "chunked": "Texte pendant la parole",
+    "chunkedHint": "L'app envoie l'enregistrement au serveur Whisper par morceaux pendant que la personne parle, le texte arrive donc en chemin. Désactivé : l'enregistrement entier seulement après l'arrêt (la dictée en direct reste par morceaux).",
+    "chunkSeconds": "Longueur d'un morceau",
+    "chunkSecondsHint": "Au plus cette durée, plus tôt lors d'une courte pause (2 à 30 secondes). Plus court : le texte arrive plus vite, mais le serveur reçoit plus de requêtes.",
+    "vadFilterHint": "Moins de répétitions inventées ; désactivez si le serveur refuse le champ.",
+    "delete": "Supprimer",
+    "deleteModel": "Supprimer le modèle",
+    "deleteModelOf": "Supprimer le modèle {{model}}",
+    "deleteConfirm": "Supprimer {{model}} du serveur Whisper ? Il pourra être retéléchargé plus tard.",
+    "deleteFailed": "Le modèle n'a pas pu être supprimé"
   }
 }

@@ -24,6 +24,7 @@ var speechLimits = map[string][2]int{
 	"speech_max_parallel":      {1, 32},
 	"speech_per_user_per_hour": {1, 100000},
 	"speech_timeout_seconds":   {5, 3600},
+	"speech_chunk_seconds":     {2, 30},
 }
 
 var (
@@ -61,6 +62,9 @@ func (s *Store) readSpeechSetting(sp *domain.SpeechSettings, key, v string) {
 	case "speech_vad_filter":
 		on := v != "false"
 		sp.VADFilter = &on
+	case "speech_chunked":
+		on := v != "false"
+		sp.Chunked = &on
 	default:
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			*speechNumber(sp, key) = n
@@ -79,6 +83,8 @@ func speechNumber(sp *domain.SpeechSettings, key string) *int {
 		return &sp.MaxParallel
 	case "speech_per_user_per_hour":
 		return &sp.PerUserPerHour
+	case "speech_chunk_seconds":
+		return &sp.ChunkSeconds
 	}
 	return &sp.TimeoutSeconds
 }
@@ -145,6 +151,9 @@ func (s *Store) writeSpeechSettings(sp *domain.SpeechSettings) error {
 	}
 	if sp.VADFilter != nil {
 		rows["speech_vad_filter"] = strconv.FormatBool(*sp.VADFilter)
+	}
+	if sp.Chunked != nil {
+		rows["speech_chunked"] = strconv.FormatBool(*sp.Chunked)
 	}
 	for key, value := range rows {
 		if err := set(key, value); err != nil {

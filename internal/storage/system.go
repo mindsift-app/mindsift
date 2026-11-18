@@ -164,7 +164,7 @@ func cloneSystemSettings(in *domain.SystemSettings) *domain.SystemSettings {
 	if out.Speech != nil {
 		v := *out.Speech
 		v.ConfiguredViaEnv = append([]string(nil), v.ConfiguredViaEnv...)
-		for _, p := range []**bool{&v.AllowBrowser, &v.VADFilter} {
+		for _, p := range []**bool{&v.AllowBrowser, &v.VADFilter, &v.Chunked} {
 			if *p != nil {
 				b := **p
 				*p = &b
@@ -322,7 +322,8 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 					settings.MediaQuotaMB = &n
 				}
 			case "speech_mode", "speech_allow_browser", "speech_url", "speech_api_key", "speech_model", "speech_max_seconds",
-				"speech_max_upload_mb", "speech_max_parallel", "speech_per_user_per_hour", "speech_timeout_seconds", "speech_vad_filter":
+				"speech_max_upload_mb", "speech_max_parallel", "speech_per_user_per_hour", "speech_timeout_seconds", "speech_vad_filter",
+				"speech_chunked", "speech_chunk_seconds":
 				if settings.Speech == nil {
 					settings.Speech = &domain.SpeechSettings{}
 				}

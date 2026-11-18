@@ -8,6 +8,7 @@ import { formatBytes, saveBlob } from '../../lib/download';
 import { formatDateTime } from '../../lib/format';
 import { askConfirm } from '../../components/askConfirm';
 import { TimeField } from '../../components/TimeField';
+import { NumberField } from '../../components/NumberField';
 import {
   DEFAULT_BACKUP_RETENTION_DAYS,
   DEFAULT_BACKUP_TIME,
@@ -116,17 +117,17 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
         </div>
         <label className="text-[11px] text-muted">
           {t('backups.keepDays')}
-          <input
-            type="number"
+          <NumberField
+            value={settings.backupRetentionDays || DEFAULT_BACKUP_RETENTION_DAYS}
             min={1}
             max={MAX_BACKUP_RETENTION_DAYS}
-            value={settings.backupRetentionDays || DEFAULT_BACKUP_RETENTION_DAYS}
+            unit={t('backups.days', { count: settings.backupRetentionDays || DEFAULT_BACKUP_RETENTION_DAYS })}
+            label={t('backups.keepDays')}
             disabled={Boolean(settings.backupRetentionDaysConfiguredViaEnv)}
-            onChange={(e) => {
-              const n = parseInt(e.target.value, 10);
+            onCommit={(n) => {
               if (validBackupRetentionDays(n)) onSave({ backupRetentionDays: n });
             }}
-            className="block mt-1 h-11 sm:h-8 px-2 input-field text-base sm:text-xs w-24"
+            className="mt-1 w-28"
           />
         </label>
         <button

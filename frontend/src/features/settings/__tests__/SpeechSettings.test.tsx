@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { SpeechModelsInfo, SystemSettings } from '../../../lib/types';
 
-const { api } = vi.hoisted(() => ({
-  api: { adminSpeechModels: vi.fn(), adminDownloadSpeechModel: vi.fn() },
+const { api, askConfirm } = vi.hoisted(() => ({
+  api: { adminSpeechModels: vi.fn(), adminDownloadSpeechModel: vi.fn(), adminDeleteSpeechModel: vi.fn() },
+  askConfirm: vi.fn(),
 }));
 vi.mock('../../../lib/api', () => ({ api, triggerHaptic: vi.fn() }));
+vi.mock('../../../components/askConfirm', () => ({ askConfirm }));
 
 import { SpeechSettingsCard } from '../admin/SpeechSettingsCard';
 import { SpeechModelPicker } from '../admin/SpeechModelPicker';
@@ -17,6 +19,7 @@ const models: SpeechModelsInfo = {
   models: [
     { id: 'deepdml/faster-whisper-large-v3-turbo-ct2', sizeMb: 1600, downloaded: false },
     { id: 'Systran/faster-whisper-small', sizeMb: 480, downloaded: true },
+    { id: 'Systran/faster-whisper-tiny', downloaded: true },
   ],
   downloads: [],
 };
@@ -24,6 +27,8 @@ const models: SpeechModelsInfo = {
 beforeEach(() => {
   api.adminSpeechModels.mockReset().mockResolvedValue(models);
   api.adminDownloadSpeechModel.mockReset().mockResolvedValue({ downloaded: false });
+  api.adminDeleteSpeechModel.mockReset().mockResolvedValue({ deleted: true });
+  askConfirm.mockReset().mockResolvedValue(true);
 });
 
 describe('SpeechSettingsCard (voice input of the server)', () => {
@@ -54,6 +59,52 @@ describe('SpeechSettingsCard (voice input of the server)', () => {
     expect(screen.getByText(/Festgelegt per STT_DISABLED/)).toBeTruthy();
     expect(screen.getByText(/Festgelegt per STT_MAX_SECONDS/)).toBeTruthy();
   });
+
+  it('shows the limits with their units and saves one when the field is left', () => {
+    const onSave = vi.fn();
+    render(
+      <SpeechSettingsCard
+        settings={{ ...base, speech: { mode: 'server', url: '', model: '', maxSeconds: 600, maxUploadMb: 25, maxParallel: 1, perUserPerHour: 60, timeoutSeconds: 120 } }}
+        onSave={onSave}
+        onChanged={() => {}}
+      />,
+    );
+    const limits = document.querySelector('[data-speech-limits]')!;
+    expect(limits.textContent).toContain('pro Stunde');
+    expect(limits.textContent).toContain('gleichzeitig');
+    expect(limits.textContent).toContain('MB');
+    const field = screen.getByRole('spinbutton', { name: 'Erkennungen je Person' });
+    expect(field.getAttribute('aria-valuetext')).toBe('60 pro Stunde');
+    fireEvent.change(field, { target: { value: '30' } });
+    fireEvent.blur(field);
+    expect(onSave).toHaveBeenLastCalledWith({ speech: expect.objectContaining({ perUserPerHour: 30 }) });
+  });
+
+  it('switches the pieces while speaking off and sets their length, locked by STT_CHUNKED and STT_CHUNK_SECONDS', () => {
+    const onSave = vi.fn();
+    const { rerender } = render(<SpeechSettingsCard settings={{ ...base, speech: { mode: 'server', url: '', model: '' } }} onSave={onSave} onChanged={() => {}} />);
+    const seconds = screen.getByRole('spinbutton', { name: 'Länge eines Stücks' }) as HTMLInputElement;
+    expect(seconds.value).toBe('8');
+    fireEvent.change(seconds, { target: { value: '4' } });
+    fireEvent.blur(seconds);
+    expect(onSave).toHaveBeenLastCalledWith({ speech: expect.objectContaining({ chunkSeconds: 4 }) });
+    fireEvent.change(seconds, { target: { value: '1' } });
+    fireEvent.blur(seconds);
+    expect(onSave).toHaveBeenLastCalledWith({ speech: expect.objectContaining({ chunkSeconds: 2 }) });
+    fireEvent.click(screen.getByTitle('Text schon beim Sprechen'));
+    expect(onSave).toHaveBeenLastCalledWith({ speech: expect.objectContaining({ chunked: false }) });
+
+    rerender(
+      <SpeechSettingsCard
+        settings={{ ...base, speech: { mode: 'server', url: '', model: '', chunked: true, chunkSeconds: 3, configuredViaEnv: ['chunked', 'chunkSeconds'] } }}
+        onSave={onSave}
+        onChanged={() => {}}
+      />,
+    );
+    expect((screen.getByRole('spinbutton', { name: 'Länge eines Stücks' }) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByText(/Festgelegt per STT_CHUNKED/)).toBeTruthy();
+    expect(screen.getByText(/Festgelegt per STT_CHUNK_SECONDS/)).toBeTruthy();
+  });
 });
 
 describe('SpeechModelPicker (models of the Whisper server)', () => {
@@ -80,5 +131,35 @@ describe('SpeechModelPicker (models of the Whisper server)', () => {
     const small = (await screen.findByText('Systran/faster-whisper-small')).closest('button')!;
     expect(small.disabled).toBe(true);
     expect(screen.queryByLabelText('Anderes Modell')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Modell .* löschen$/ })).toBeNull();
+  });
+
+  it('deletes a downloaded model other than the one in use after asking, then reloads the list', async () => {
+    render(<SpeechModelPicker locked={false} onChanged={() => {}} />);
+    await screen.findByText('Systran/faster-whisper-tiny');
+    // Only the downloaded one not in use: not the model in use, not one still to download
+    expect(screen.getAllByRole('button', { name: /^Modell .* löschen$/ })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Modell Systran/faster-whisper-small löschen' })).toBeNull();
+    api.adminSpeechModels.mockClear();
+
+    askConfirm.mockResolvedValueOnce(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Modell Systran/faster-whisper-tiny löschen' }));
+    await waitFor(() => expect(askConfirm).toHaveBeenCalledTimes(1));
+    expect(askConfirm.mock.calls[0][0]).toMatchObject({ danger: true, confirmLabel: 'Löschen' });
+    expect(api.adminDeleteSpeechModel).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Modell Systran/faster-whisper-tiny löschen' }));
+    await waitFor(() => expect(api.adminDeleteSpeechModel).toHaveBeenCalledWith('Systran/faster-whisper-tiny'));
+    await waitFor(() => expect(api.adminSpeechModels).toHaveBeenCalled());
+  });
+
+  it('offers no delete while the model downloads', async () => {
+    api.adminSpeechModels.mockResolvedValue({
+      ...models,
+      downloads: [{ model: 'Systran/faster-whisper-tiny', startedAt: new Date().toISOString(), running: true }],
+    });
+    render(<SpeechModelPicker locked={false} onChanged={() => {}} />);
+    await screen.findByText('Systran/faster-whisper-tiny');
+    expect(screen.queryByRole('button', { name: /^Modell .* löschen$/ })).toBeNull();
   });
 });

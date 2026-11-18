@@ -69,7 +69,7 @@ export interface AuthStatus {
     customLinkUrl?: string;
   };
   // Voice input: own Whisper server, the browser's recognition, or switched off (STT_* environment)
-  voice?: { mode: VoiceMode; maxSeconds: number; browserAllowed?: boolean };
+  voice?: { mode: VoiceMode; maxSeconds: number; browserAllowed?: boolean; chunked?: boolean; chunkSeconds?: number };
   // Sharing: names are suggested while typing (else exact e-mail or username); notes can be shared by
   // public link, for at most publicLinkMaxDays
   peopleSearch?: boolean;
@@ -124,7 +124,7 @@ export interface LegalSettings {
 
 // Voice input (Administration → Voice input & AI). apiKey is only ever sent, never received (apiKeySet);
 // configuredViaEnv names the fields STT_* fixes (mode, allowBrowser, url, apiKey, model, maxSeconds,
-// maxUploadMb, maxParallel, perUserPerHour, timeoutSeconds, vadFilter)
+// maxUploadMb, maxParallel, perUserPerHour, timeoutSeconds, vadFilter, chunked, chunkSeconds)
 export interface SpeechSettings {
   mode: '' | 'server' | 'browser' | 'off';
   allowBrowser?: boolean;
@@ -140,6 +140,9 @@ export interface SpeechSettings {
   perUserPerHour?: number;
   timeoutSeconds?: number;
   vadFilter?: boolean;
+  // the app sends a recording in pieces while speaking (default on), each at most chunkSeconds long
+  chunked?: boolean;
+  chunkSeconds?: number;
   configuredViaEnv?: string[];
 }
 

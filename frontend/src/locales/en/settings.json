@@ -542,7 +542,9 @@
       "linkCreated_one": "Invite link for {{count}} person created ({{code}}).",
       "linkCreated_other": "Invite link for {{count}} people created ({{code}}).",
       "codeCreated": "Invite code {{code}} created.",
-      "alwaysMember": "Everyone joins through an invite as a member; roles are given afterwards in the list."
+      "alwaysMember": "Everyone joins through an invite as a member; roles are given afterwards in the list.",
+      "usesUnit_one": "time",
+      "usesUnit_other": "times"
     },
     "roleMember": "Member",
     "roleAdmin": "Server admin",
@@ -910,7 +912,7 @@
     "autoTitle": "Automatic backups",
     "autoOff": "Switch off automatic backups",
     "autoOn": "Switch on automatic backups",
-    "keepDays": "Keep (days)",
+    "keepDays": "Keep",
     "running": "Backing up…",
     "runNow": "Back up now",
     "delete": "Delete backup",
@@ -922,7 +924,9 @@
     "restored": "Restored: {{notes}} notes, {{tasks}} tasks, {{lists}} lists, {{inbox}} thoughts, {{themes}} themes.",
     "deletedTitle": "Backups of deleted accounts",
     "deletedHint": "When an admin or user manager deletes an account, its backups stay here until the retention period ends. So someone deleted by mistake gets their data back: download a backup and import it in the new account under Account settings → Export & import. Accounts their owners delete lose their backups at once.",
-    "deletedOn": "Deleted on {{deleted}} · removed on {{remove}}"
+    "deletedOn": "Deleted on {{deleted}} · removed on {{remove}}",
+    "days_one": "day",
+    "days_other": "days"
   },
   "voiceStatus": {
     "loadFailed": "The status could not be loaded",
@@ -1360,14 +1364,14 @@
     "keyUnreadable": "The stored key can no longer be decrypted (SECRETS_KEY changed?). Please enter it again.",
     "keyRemove": "Remove the key",
     "model": "Model",
-    "modelHint": "Choose a downloaded model with a click. Grey ones are not on the Whisper server yet: a click downloads them (can take a few minutes) and uses them afterwards. large-v3-turbo recognises best, small is much faster.",
+    "modelHint": "Choose a downloaded model with a click. Grey ones are not on the Whisper server yet: a click downloads them (can take a few minutes) and uses them afterwards. large-v3-turbo recognises best, small is much faster. Delete models you do not use with the bin to save space.",
     "limits": "Limits",
-    "vadFilter": "Skip silence (fewer made-up repetitions; off if the server rejects the field)",
+    "vadFilter": "Skip silence",
     "limit": {
       "maxSeconds": "Longest recording",
       "maxUploadMb": "Largest recording",
-      "maxParallel": "Recognitions at the same time",
-      "perUserPerHour": "Recognitions per person and hour",
+      "maxParallel": "Recognitions on the server (more wait)",
+      "perUserPerHour": "Recognitions per person",
       "timeoutSeconds": "Time limit of a recognition (waiting included)"
     },
     "modelsFailed": "Models could not be loaded",
@@ -1382,6 +1386,24 @@
     "download": "Download",
     "custom": "Other model",
     "customPlaceholder": "Other model, e.g. Systran/faster-whisper-tiny",
-    "customUse": "Download and use"
+    "customUse": "Download and use",
+    "unit": {
+      "seconds_one": "second",
+      "seconds_other": "seconds",
+      "mb": "MB",
+      "parallel": "at once",
+      "perHour": "per hour"
+    },
+    "recognition": "Recognition",
+    "chunked": "Text while speaking",
+    "chunkedHint": "The app sends the recording to the Whisper server in pieces while someone speaks, so the text arrives on the way. Off: the whole recording only after stopping (live dictation stays in pieces).",
+    "chunkSeconds": "Length of a piece",
+    "chunkSecondsHint": "At most this long, earlier at a short pause (2–30 seconds). Shorter: the text comes sooner, but the server gets more requests.",
+    "vadFilterHint": "Fewer made-up repetitions; off if the server rejects the field.",
+    "delete": "Delete",
+    "deleteModel": "Delete model",
+    "deleteModelOf": "Delete model {{model}}",
+    "deleteConfirm": "Delete {{model}} from the Whisper server? It can be downloaded again later.",
+    "deleteFailed": "The model could not be deleted"
   }
 }

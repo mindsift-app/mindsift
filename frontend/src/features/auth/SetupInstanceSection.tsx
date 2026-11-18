@@ -6,6 +6,7 @@ import { SharingMode } from '../../lib/types';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { SelectMenu } from '../../components/SelectMenu';
 import { TimeField } from '../../components/TimeField';
+import { NumberField } from '../../components/NumberField';
 import {
   DEFAULT_BACKUP_RETENTION_DAYS,
   DEFAULT_BACKUP_TIME,
@@ -208,13 +209,14 @@ export const SetupInstanceSection: React.FC<{ state: SetupChoicesState; heading:
                 </div>
                 <label className="text-[11px] text-muted">
                   {t('setup.backupKeepDays')}
-                  <input
-                    type="number"
+                  <NumberField
+                    value={Number(state.backupKeepDays) || DEFAULT_BACKUP_RETENTION_DAYS}
                     min={1}
                     max={MAX_BACKUP_RETENTION_DAYS}
-                    value={state.backupKeepDays}
-                    onChange={(e) => state.setBackupKeepDays(e.target.value)}
-                    className="block mt-1 h-11 sm:h-8 px-2 input-field text-base sm:text-xs w-24"
+                    unit={t('setup.backupDays', { count: Number(state.backupKeepDays) || DEFAULT_BACKUP_RETENTION_DAYS })}
+                    label={t('setup.backupKeepDays')}
+                    onCommit={(n) => state.setBackupKeepDays(String(n))}
+                    className="mt-1 w-28"
                   />
                 </label>
               </div>

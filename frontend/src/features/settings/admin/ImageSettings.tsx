@@ -3,7 +3,7 @@ import { SelectMenu } from '../../../components/SelectMenu';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { SystemSettings } from '../../../lib/types';
 import { ImageQuality } from '../../../lib/media';
-import { MbLimitField } from './MbLimitField';
+import { NumberField } from '../../../components/NumberField';
 
 // The largest limit the server takes (storage.MaxImageLimitMB)
 const MAX_LIMIT_MB = 1000;
@@ -73,13 +73,14 @@ export function ImageSettings({
             {settings.imageLimitMBConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_MAX_IMAGE_MB' })}`}
           </p>
         </div>
-        <MbLimitField
+        <NumberField
           value={settings.imageLimitMB || 15}
           min={1}
           max={MAX_LIMIT_MB}
+          unit={t('server.mb')}
           label={t('server.imageLimit')}
           disabled={!enabled || Boolean(settings.imageLimitMBConfiguredViaEnv)}
-          onSave={(imageLimitMB) => onSave({ imageLimitMB })}
+          onCommit={(imageLimitMB) => onSave({ imageLimitMB })}
         />
       </div>
 

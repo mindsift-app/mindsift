@@ -39,6 +39,18 @@ func firstInt(values ...int) int {
 	return 0
 }
 
+// firstBool: the first value set, else true (both switches are on by default).
+func firstBool(values ...*bool) *bool {
+	on := true
+	for _, v := range values {
+		if v != nil {
+			on = *v
+			break
+		}
+	}
+	return &on
+}
+
 // storedSpeech: what the administration saved for voice input (zero values when nothing).
 func (s *Server) storedSpeech() domain.SpeechSettings {
 	if sys, _ := s.store.GetSystemSettings(); sys != nil && sys.Speech != nil {
@@ -59,15 +71,10 @@ func (s *Server) speech() config.SpeechConfig {
 		MaxParallel:    firstInt(env.MaxParallel, st.MaxParallel, config.DefaultSTTMaxParallel),
 		PerUserPerHour: firstInt(env.PerUserPerHour, st.PerUserPerHour, config.DefaultSTTPerUserPerHour),
 		TimeoutSeconds: firstInt(env.TimeoutSeconds, st.TimeoutSeconds, config.DefaultSTTTimeoutSeconds),
+		ChunkSeconds:   firstInt(env.ChunkSeconds, st.ChunkSeconds, config.DefaultSTTChunkSeconds),
+		VADFilter:      firstBool(env.VADFilter, st.VADFilter),
+		Chunked:        firstBool(env.Chunked, st.Chunked),
 	}
-	vad := true
-	switch {
-	case env.VADFilter != nil:
-		vad = *env.VADFilter
-	case st.VADFilter != nil:
-		vad = *st.VADFilter
-	}
-	out.VADFilter = &vad
 	out.NoBrowser = !s.speechBrowserAllowed(st)
 	// The mode: STT_DISABLED, else the administration's choice; without one the Whisper server when an
 	// address is known (as before the setting existed), else the browser
@@ -120,6 +127,8 @@ func (s *Server) speechEnvFields() []string {
 	add(env.PerUserPerHour > 0, "perUserPerHour")
 	add(env.TimeoutSeconds > 0, "timeoutSeconds")
 	add(env.VADFilter != nil, "vadFilter")
+	add(env.Chunked != nil, "chunked")
+	add(env.ChunkSeconds > 0, "chunkSeconds")
 	return out
 }
 
@@ -133,6 +142,7 @@ func (s *Server) speechForAdmin() *domain.SpeechSettings {
 		APIKeyUnreadable: st.APIKeyUnreadable && s.cfg.Speech.APIKey == "",
 		Model:            eff.Model, MaxSeconds: eff.MaxSeconds, MaxUploadMB: eff.MaxUploadMB, MaxParallel: eff.MaxParallel,
 		PerUserPerHour: eff.PerUserPerHour, TimeoutSeconds: eff.TimeoutSeconds, VADFilter: eff.VADFilter,
+		Chunked: eff.Chunked, ChunkSeconds: eff.ChunkSeconds,
 		ConfiguredViaEnv: s.speechEnvFields(),
 	}
 	allow := !eff.NoBrowser
@@ -181,6 +191,10 @@ func (s *Server) keepSpeechEnvLocked(update, stored *domain.SpeechSettings) {
 			update.TimeoutSeconds = stored.TimeoutSeconds
 		case "vadFilter":
 			update.VADFilter = stored.VADFilter
+		case "chunked":
+			update.Chunked = stored.Chunked
+		case "chunkSeconds":
+			update.ChunkSeconds = stored.ChunkSeconds
 		}
 	}
 	update.ConfiguredViaEnv, update.APIKeySet, update.APIKeyUnreadable = nil, false, false
@@ -418,6 +432,59 @@ func (s *Server) handleAdminSpeechModelDownload(w http.ResponseWriter, r *http.R
 	}
 	s.startModelDownload(model, req.Select)
 	writeJSON(w, http.StatusAccepted, map[string]any{"downloaded": false, "downloads": s.voice.downloads.snapshot()})
+}
+
+// handleAdminSpeechModelDelete: DELETE /admin/voice/models/{model} removes a downloaded model from the
+// Whisper server (DELETE /v1/models/{id} on speaches) to free its space. Not the model in use, not one
+// still downloading, and not at all while STT_MODEL fixes the model.
+func (s *Server) handleAdminSpeechModelDelete(w http.ResponseWriter, r *http.Request) {
+	model := strings.TrimSpace(chi.URLParam(r, "*"))
+	if model == "" || !storage.ValidSpeechModel(model) {
+		writeErrorFrom(w, http.StatusBadRequest, storage.ErrSpeechModel)
+		return
+	}
+	if url, _ := s.whisperServer(); url == "" {
+		writeError(w, http.StatusBadRequest, "Kein Whisper-Server eingetragen")
+		return
+	}
+	switch {
+	case s.cfg.Speech.Model != "":
+		writeError(w, http.StatusConflict, "Das Modell ist per STT_MODEL festgelegt")
+		return
+	case model == s.speech().Model:
+		writeError(w, http.StatusConflict, "Das Modell ist in Gebrauch und kann nicht gelöscht werden")
+		return
+	case s.voice.downloads.running(model):
+		writeError(w, http.StatusConflict, "Das Modell wird gerade heruntergeladen")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	resp, err := s.sttRequest(ctx, http.MethodDelete, "/v1/models/"+model, nil, "")
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "Whisper-Server nicht erreichbar")
+		return
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	switch {
+	case resp.StatusCode == http.StatusNotFound:
+		writeError(w, http.StatusNotFound, "Das Modell ist auf dem Whisper-Server nicht vorhanden")
+		return
+	case resp.StatusCode >= 300:
+		slog.Warn("Speech recognition: deleting a model failed", "model", model, "status", resp.StatusCode, "body", strings.TrimSpace(string(raw)))
+		writeError(w, http.StatusBadGateway, "Der Whisper-Server konnte das Modell nicht löschen")
+		return
+	}
+	slog.Info("Speech recognition: model deleted", "model", model)
+	// A finished download of it would still show as done
+	d := &s.voice.downloads
+	d.mu.Lock()
+	if cur := d.list[model]; cur != nil && !cur.Running {
+		delete(d.list, model)
+	}
+	d.mu.Unlock()
+	writeJSON(w, http.StatusOK, map[string]any{"deleted": true})
 }
 
 // decodeJSONLimited reads at most 4 MB of JSON into v.

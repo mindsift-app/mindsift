@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { SystemSettings } from '../../../lib/types';
-import { MbLimitField } from './MbLimitField';
+import { NumberField } from '../../../components/NumberField';
 
 // The largest storage the server takes (storage.MaxMediaQuotaMB)
 const MAX_QUOTA_MB = 10000000;
@@ -24,13 +24,14 @@ export function MediaQuotaSetting({
           {settings.mediaQuotaMBConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_QUOTA_MB' })}`}
         </p>
       </div>
-      <MbLimitField
+      <NumberField
         value={settings.mediaQuotaMB ?? 0}
         min={0}
         max={MAX_QUOTA_MB}
+        unit={t('server.mb')}
         label={t('server.mediaQuota')}
         disabled={Boolean(settings.mediaQuotaMBConfiguredViaEnv)}
-        onSave={(mediaQuotaMB) => onSave({ mediaQuotaMB })}
+        onCommit={(mediaQuotaMB) => onSave({ mediaQuotaMB })}
       />
     </div>
   );

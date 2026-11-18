@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, CircleAlert, Download, LoaderCircle } from 'lucide-react';
+import { Check, CircleAlert, Download, LoaderCircle, Trash } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { SpeechModelsInfo } from '../../../lib/types';
 import { errorMessage } from '../../../lib/errorMessage';
+import { askConfirm } from '../../../components/askConfirm';
 
 const POLL_MS = 3000;
 
@@ -15,13 +16,15 @@ function elapsed(since: string, now: number): string {
 // Administration → Voice input & AI: the models of the Whisper server. Downloaded ones are chosen with a
 // click; the others are greyed out, a click lets the Whisper server download them and uses them once
 // they are there. speaches tells no progress, so a running download shows a moving bar and the time
-// since it started. Locked (read only) when STT_MODEL fixes the model.
+// since it started. A downloaded model other than the one in use can be deleted from the Whisper server
+// (after a confirmation) to free its space. Locked (read only) when STT_MODEL fixes the model.
 export function SpeechModelPicker({ locked, onChanged }: { locked: boolean; onChanged: () => void }) {
   const { t } = useTranslation('settings');
   const [info, setInfo] = useState<SpeechModelsInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [custom, setCustom] = useState('');
   const [now, setNow] = useState(() => Date.now());
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -72,6 +75,20 @@ export function SpeechModelPicker({ locked, onChanged }: { locked: boolean; onCh
     }
   };
 
+  const remove = async (id: string) => {
+    const ok = await askConfirm({ message: t('speech.deleteConfirm', { model: id }), confirmLabel: t('speech.delete'), danger: true });
+    if (!ok) return;
+    setError(null);
+    setDeleting(id);
+    try {
+      await api.adminDeleteSpeechModel(id);
+    } catch (err) {
+      setError(errorMessage(err, t('speech.deleteFailed')));
+    }
+    await load();
+    setDeleting(null);
+  };
+
   if (!info) {
     return error ? <p className="text-status-err text-xs">{error}</p> : <LoaderCircle className="w-4 h-4 animate-spin text-muted" />;
   }
@@ -83,15 +100,17 @@ export function SpeechModelPicker({ locked, onChanged }: { locked: boolean; onCh
         {info.models.map((m) => {
           const d = download(m.id);
           const current = m.id === info.model;
+          // Not the one in use, not while it downloads, not while STT_MODEL fixes the model
+          const deletable = !locked && info.reachable && m.downloaded && !current && !d?.running;
           return (
-            <li key={m.id}>
+            <li key={m.id} className="flex items-stretch">
               <button
                 type="button"
                 disabled={locked || d?.running || (current && m.downloaded)}
                 onClick={() => void choose(m.id)}
                 data-model={m.id}
                 data-downloaded={m.downloaded ? 'true' : 'false'}
-                className={`w-full min-h-11 px-3 py-2 text-left flex items-center gap-2 text-xs ${
+                className={`flex-1 min-w-0 min-h-11 px-3 py-2 text-left flex items-center gap-2 text-xs ${
                   m.downloaded ? 'bg-panel text-main' : 'bg-canvas text-muted'
                 } ${current ? 'ring-1 ring-inset ring-accent' : ''} enabled:hover:bg-panel-elevated disabled:cursor-default`}
               >
@@ -128,6 +147,19 @@ export function SpeechModelPicker({ locked, onChanged }: { locked: boolean; onCh
                 )}
                 {d?.running && <LoaderCircle className="w-3.5 h-3.5 animate-spin shrink-0" />}
               </button>
+              {deletable && (
+                <button
+                  type="button"
+                  disabled={deleting !== null}
+                  onClick={() => void remove(m.id)}
+                  title={t('speech.deleteModel')}
+                  aria-label={t('speech.deleteModelOf', { model: m.id })}
+                  data-delete-model={m.id}
+                  className="shrink-0 w-11 sm:w-9 flex items-center justify-center border-l border-border bg-panel text-muted enabled:hover:text-status-err enabled:hover:bg-panel-elevated disabled:opacity-50"
+                >
+                  {deleting === m.id ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <Trash className="w-3.5 h-3.5" />}
+                </button>
+              )}
             </li>
           );
         })}
