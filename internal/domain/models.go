@@ -548,12 +548,16 @@ type SystemSettings struct {
 	// unchanged; ViaEnv: fixed by MEDIA_AUDIO_BITRATE.
 	AudioBitrate       int  `json:"audioBitrate,omitempty"`
 	AudioBitrateViaEnv bool `json:"audioBitrateConfiguredViaEnv,omitempty"`
-	// AudioUploadMaxMB: the largest audio file people may upload into a note (default 7 MB, never above
-	// MEDIA_MAX_AUDIO_MB, which also limits recordings); 0 in an update leaves it unchanged; ViaEnv:
-	// fixed by MEDIA_AUDIO_UPLOAD_MAX_MB. AudioMaxMB: MEDIA_MAX_AUDIO_MB (read only).
-	AudioUploadMaxMB       int  `json:"audioUploadMaxMB,omitempty"`
-	AudioUploadMaxMBViaEnv bool `json:"audioUploadMaxMBConfiguredViaEnv,omitempty"`
-	AudioMaxMB             int  `json:"audioMaxMB,omitempty"`
+	// AudioUploads: people may upload audio files from their device (default on); off, only recordings
+	// made in the app. nil in an update leaves it unchanged; ViaEnv: fixed by MEDIA_AUDIO_UPLOADS.
+	AudioUploads       *bool `json:"audioUploads,omitempty"`
+	AudioUploadsViaEnv bool  `json:"audioUploadsConfiguredViaEnv,omitempty"`
+	// AudioLimitMB: the largest audio file in a note, recorded or uploaded (default 7 MB, never above
+	// MEDIA_MAX_AUDIO_MB); 0 in an update leaves it unchanged; ViaEnv: fixed by MEDIA_AUDIO_LIMIT_MB.
+	// AudioMaxMB: MEDIA_MAX_AUDIO_MB (read only).
+	AudioLimitMB       int  `json:"audioLimitMB,omitempty"`
+	AudioLimitMBViaEnv bool `json:"audioLimitMBConfiguredViaEnv,omitempty"`
+	AudioMaxMB         int  `json:"audioMaxMB,omitempty"`
 	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
 	// not speak, and for the demo; empty in an update leaves it unchanged
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`

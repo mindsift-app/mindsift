@@ -152,9 +152,11 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           audioCompressionConfiguredViaEnv: Boolean(sys.audioCompressionConfiguredViaEnv),
           audioBitrate: sys.audioBitrate || 32,
           audioBitrateConfiguredViaEnv: Boolean(sys.audioBitrateConfiguredViaEnv),
-          audioUploadMaxMB: sys.audioUploadMaxMB || 7,
-          audioUploadMaxMBConfiguredViaEnv: Boolean(sys.audioUploadMaxMBConfiguredViaEnv),
+          audioLimitMB: sys.audioLimitMB || 7,
+          audioLimitMBConfiguredViaEnv: Boolean(sys.audioLimitMBConfiguredViaEnv),
           audioMaxMB: sys.audioMaxMB,
+          audioUploads: sys.audioUploads ?? true,
+          audioUploadsConfiguredViaEnv: Boolean(sys.audioUploadsConfiguredViaEnv),
           calendarFeeds: sys.calendarFeeds ?? true,
           calendarFeedsConfiguredViaEnv: Boolean(sys.calendarFeedsConfiguredViaEnv),
           // Shown only (OIDC_* environment)
@@ -532,7 +534,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       if (saved.linkPreviews !== undefined) setServerLinkPreviews(saved.linkPreviews);
       if (saved.imageQuality) setServerImageQuality(saved.imageQuality);
       if (saved.audioCompression) {
-        setServerAudioSettings({ compression: saved.audioCompression, bitrate: saved.audioBitrate, uploadMaxMB: saved.audioUploadMaxMB });
+        setServerAudioSettings({ compression: saved.audioCompression, bitrate: saved.audioBitrate, limitMB: saved.audioLimitMB, uploads: saved.audioUploads });
       }
       setStatusMsg({ type: 'ok', text: i18n.t('settings:server.saved') });
     } catch (err) {

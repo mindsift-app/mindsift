@@ -58,11 +58,12 @@ func (s *Server) imageQuality() string {
 type audioSettings struct {
 	Compression string `json:"compression"` // recordings | off
 	Bitrate     int    `json:"bitrate"`     // kbit/s for recordings
-	UploadMaxMB int    `json:"uploadMaxMB"` // uploaded files (recordings: MEDIA_MAX_AUDIO_MB)
+	LimitMB     int    `json:"limitMB"`     // every audio file, recorded or uploaded
+	Uploads     bool   `json:"uploads"`     // audio files from the device allowed (else recordings only)
 }
 
 func (s *Server) audioSettings() audioSettings {
-	out := audioSettings{storage.AudioCompressionRecordings, storage.DefaultAudioBitrate, storage.DefaultAudioUploadMaxMB}
+	out := audioSettings{storage.AudioCompressionRecordings, storage.DefaultAudioBitrate, storage.DefaultAudioLimitMB, true}
 	if sys, _ := s.store.GetSystemSettings(); sys != nil {
 		if storage.ValidAudioCompression(sys.AudioCompression) {
 			out.Compression = sys.AudioCompression
@@ -70,8 +71,11 @@ func (s *Server) audioSettings() audioSettings {
 		if storage.ValidAudioBitrate(sys.AudioBitrate) {
 			out.Bitrate = sys.AudioBitrate
 		}
-		if sys.AudioUploadMaxMB > 0 {
-			out.UploadMaxMB = sys.AudioUploadMaxMB
+		if sys.AudioLimitMB > 0 {
+			out.LimitMB = sys.AudioLimitMB
+		}
+		if sys.AudioUploads != nil {
+			out.Uploads = *sys.AudioUploads
 		}
 	}
 	m := s.cfg.Media
@@ -81,12 +85,15 @@ func (s *Server) audioSettings() audioSettings {
 	if m.AudioBitrate > 0 {
 		out.Bitrate = m.AudioBitrate
 	}
-	if m.AudioUploadMaxMB > 0 {
-		out.UploadMaxMB = m.AudioUploadMaxMB
+	if m.AudioLimitMB > 0 {
+		out.LimitMB = m.AudioLimitMB
+	}
+	if m.AudioUploads != nil {
+		out.Uploads = *m.AudioUploads
 	}
 	// Never above the limit for every audio file (and the demo's)
-	if limit := int(s.mediaLimit("audio") >> 20); out.UploadMaxMB > limit {
-		out.UploadMaxMB = limit
+	if limit := int(s.mediaLimit("audio") >> 20); out.LimitMB > limit {
+		out.LimitMB = limit
 	}
 	return out
 }
@@ -172,14 +179,18 @@ func (s *Server) handleUploadMedia(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Datei konnte nicht gelesen werden")
 		return
 	}
-	// An audio file chosen from the device has its own, smaller limit; a recording made in the app
-	// (source=recording) only the limit of every audio file
-	if r.FormValue("source") != "recording" {
-		if _, kind, ok := detectMedia(data, header.Header.Get("Content-Type")); ok && kind == "audio" {
-			if mb := s.audioSettings().UploadMaxMB; int64(len(data)) > int64(mb)<<20 {
-				writeErrorFrom(w, http.StatusRequestEntityTooLarge, i18n.NewError("Audiodatei zu groß (höchstens {mb} MB)", "mb", strconv.Itoa(mb)))
-				return
-			}
+	// Audio: one limit for recordings and files from the device; files from the device only while
+	// uploads are allowed. Which one it is the app says (source=recording); a client may claim a
+	// recording, but never gets past the limit.
+	if _, kind, ok := detectMedia(data, header.Header.Get("Content-Type")); ok && kind == "audio" {
+		audio := s.audioSettings()
+		if !audio.Uploads && r.FormValue("source") != "recording" {
+			writeError(w, http.StatusForbidden, "Audiodateien hochladen ist auf diesem Server ausgeschaltet")
+			return
+		}
+		if int64(len(data)) > int64(audio.LimitMB)<<20 {
+			writeErrorFrom(w, http.StatusRequestEntityTooLarge, i18n.NewError("Audiodatei zu groß (höchstens {mb} MB)", "mb", strconv.Itoa(audio.LimitMB)))
+			return
 		}
 	}
 	if m, ok := s.storeMedia(w, userID, docID, data, header.Header.Get("Content-Type"), ""); ok {

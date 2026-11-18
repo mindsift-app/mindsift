@@ -78,7 +78,7 @@ const PAGES: [string, string[]][] = [
     'Push nur über bekannte Push-Dienste',
   ]],
   ['Daten', ['Automatische Backups', 'Dauerhaftes Aufbewahren erlauben']],
-  ['Medien', ['Bildqualität', 'Audio-Komprimierung', 'Bitrate der Aufnahmen', 'Größte hochgeladene Audiodatei']],
+  ['Medien', ['Bildqualität', 'Audio-Komprimierung', 'Bitrate der Aufnahmen', 'Größte Audiodatei', 'Audiodateien hochladen']],
   ['Spracheingabe & KI', ['Spracherkennung', 'KI-Agenten (MCP) erlauben']],
   ['E-Mail / SMTP-Server', ['Mailserver']],
   ['Protokoll', ['Änderungen']],

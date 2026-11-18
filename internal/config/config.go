@@ -308,10 +308,12 @@ type MediaConfig struct {
 	// before uploading them; empty leaves it to the system settings.
 	ImageQuality string
 	// AudioCompression: MEDIA_AUDIO_COMPRESSION=recordings|off; AudioBitrate: MEDIA_AUDIO_BITRATE in
-	// kbit/s; AudioUploadMaxMB: MEDIA_AUDIO_UPLOAD_MAX_MB. Empty or 0 leaves each to the system settings.
+	// kbit/s; AudioLimitMB: MEDIA_AUDIO_LIMIT_MB (every audio file); AudioUploads: MEDIA_AUDIO_UPLOADS
+	// (false: recordings only). Empty, 0 or nil leaves each to the system settings.
 	AudioCompression string
 	AudioBitrate     int
-	AudioUploadMaxMB int
+	AudioLimitMB     int
+	AudioUploads     *bool
 }
 
 // SpeechConfig: with STT_URL set, voice input is transcribed by a self-hosted, OpenAI-compatible
@@ -635,7 +637,8 @@ func Load() *Config {
 			ImageQuality:     imageQualityFromEnv(),
 			AudioCompression: audioCompressionFromEnv(),
 			AudioBitrate:     envInt("MEDIA_AUDIO_BITRATE", 0, 8, 320),
-			AudioUploadMaxMB: envInt("MEDIA_AUDIO_UPLOAD_MAX_MB", 0, 1, 2000),
+			AudioLimitMB:     envInt("MEDIA_AUDIO_LIMIT_MB", 0, 1, 2000),
+			AudioUploads:     envBoolPtr("MEDIA_AUDIO_UPLOADS"),
 		},
 		Legal: func() LegalTexts {
 			customLabel, customURL := legalCustomLink("LEGAL_CUSTOM_LINK_LABEL", "LEGAL_CUSTOM_LINK_URL")

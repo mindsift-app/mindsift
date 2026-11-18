@@ -79,8 +79,9 @@ export interface AuthStatus {
   linkPreviews?: boolean;
   // How strongly the app compresses pictures before upload (administration or MEDIA_IMAGE_QUALITY)
   imageQuality?: 'high' | 'medium' | 'low' | 'off';
-  // Audio in notes: recordings at bitrate kbit/s unless compression is off; uploaded files up to uploadMaxMB
-  audio?: { compression: 'recordings' | 'off'; bitrate: number; uploadMaxMB: number };
+  // Audio in notes: recordings at bitrate kbit/s unless compression is off; every audio file up to
+  // limitMB; files from the device only while uploads is on
+  audio?: { compression: 'recordings' | 'off'; bitrate: number; limitMB: number; uploads: boolean };
 }
 
 export type VoiceMode = 'server' | 'browser' | 'off';
@@ -530,16 +531,19 @@ export interface SystemSettings {
   // via MEDIA_IMAGE_QUALITY; 'off' uploads pictures as they are
   imageQuality?: 'high' | 'medium' | 'low' | 'off';
   imageQualityConfiguredViaEnv?: boolean;
-  // Audio in notes: recordings with audioBitrate (kbit/s) or the browser's own ('off'); audio files from
-  // the device up to audioUploadMaxMB, never above audioMaxMB (MEDIA_MAX_AUDIO_MB, read only). Each fixed
-  // when set via MEDIA_AUDIO_COMPRESSION / MEDIA_AUDIO_BITRATE / MEDIA_AUDIO_UPLOAD_MAX_MB
+  // Audio in notes: recordings with audioBitrate (kbit/s) or the browser's own ('off'); every audio file
+  // up to audioLimitMB, never above audioMaxMB (MEDIA_MAX_AUDIO_MB, read only); files from the device
+  // only with audioUploads. Each fixed when set via MEDIA_AUDIO_COMPRESSION / MEDIA_AUDIO_BITRATE /
+  // MEDIA_AUDIO_LIMIT_MB / MEDIA_AUDIO_UPLOADS
   audioCompression?: 'recordings' | 'off';
   audioCompressionConfiguredViaEnv?: boolean;
   audioBitrate?: number;
   audioBitrateConfiguredViaEnv?: boolean;
-  audioUploadMaxMB?: number;
-  audioUploadMaxMBConfiguredViaEnv?: boolean;
+  audioLimitMB?: number;
+  audioLimitMBConfiguredViaEnv?: boolean;
   audioMaxMB?: number;
+  audioUploads?: boolean;
+  audioUploadsConfiguredViaEnv?: boolean;
   // Language for new accounts and everyone whose browser language the app does not speak
   defaultLanguage?: string;
   // The server's time zone (IANA name, '' = not set: TZ, else UTC) and the zone in effect now (read only)

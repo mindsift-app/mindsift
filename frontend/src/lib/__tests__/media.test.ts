@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { audioRecordingBitrate, audioUploadMaxMB, IMAGE_QUALITY, mediaContent, parseMediaContent, prepareImage, serverImageQuality, setServerAudioSettings, setServerImageQuality } from '../media';
+import { audioRecordingBitrate, audioLimitMB, audioUploadsAllowed, IMAGE_QUALITY, mediaContent, parseMediaContent, prepareImage, serverImageQuality, setServerAudioSettings, setServerImageQuality } from '../media';
 
 describe('media content format', () => {
   it('round-trips captions, also with brackets and backslashes', () => {
@@ -125,17 +125,19 @@ describe('prepareImage per image quality', () => {
 describe('audio settings of the server', () => {
   afterEach(() => setServerAudioSettings(undefined));
 
-  it('records at 32 kbit/s and allows 7 MB uploads by default', () => {
+  it('records at 32 kbit/s, allows uploads and 7 MB per audio file by default', () => {
     setServerAudioSettings(undefined);
     expect(audioRecordingBitrate()).toBe(32000);
-    expect(audioUploadMaxMB()).toBe(7);
+    expect(audioLimitMB()).toBe(7);
+    expect(audioUploadsAllowed()).toBe(true);
   });
 
   it('follows the server, and leaves the bitrate to the browser when compression is off', () => {
-    setServerAudioSettings({ compression: 'recordings', bitrate: 64, uploadMaxMB: 20 });
+    setServerAudioSettings({ compression: 'recordings', bitrate: 64, limitMB: 20 });
     expect(audioRecordingBitrate()).toBe(64000);
-    expect(audioUploadMaxMB()).toBe(20);
-    setServerAudioSettings({ compression: 'off', bitrate: 64, uploadMaxMB: 20 });
+    expect(audioLimitMB()).toBe(20);
+    setServerAudioSettings({ compression: 'off', bitrate: 64, limitMB: 20, uploads: false });
     expect(audioRecordingBitrate()).toBeUndefined();
+    expect(audioUploadsAllowed()).toBe(false);
   });
 });

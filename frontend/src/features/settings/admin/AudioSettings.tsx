@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SelectMenu } from '../../../components/SelectMenu';
+import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { SystemSettings } from '../../../lib/types';
 
 type AudioCompression = NonNullable<SystemSettings['audioCompression']>;
@@ -9,8 +10,9 @@ type AudioCompression = NonNullable<SystemSettings['audioCompression']>;
 const BITRATES = [16, 24, 32, 48, 64, 96, 128];
 
 // Administration → Media: audio in notes. Recordings made in the app are compressed to the chosen
-// bitrate (or left to the browser when off); audio files from the device are stored as they are, up to
-// the upload limit. Each part is locked when its MEDIA_AUDIO_* variable fixes it.
+// bitrate (or left to the browser when off); audio files from the device are stored as they are and may
+// be switched off. One size limit holds for both. Each part is locked when its MEDIA_AUDIO_* variable
+// fixes it.
 export function AudioSettings({
   settings,
   onSave,
@@ -21,24 +23,24 @@ export function AudioSettings({
   const { t } = useTranslation('settings');
   const compression = settings.audioCompression || 'recordings';
   const bitrate = settings.audioBitrate || 32;
-  const uploadMax = settings.audioUploadMaxMB || 7;
+  const limit = settings.audioLimitMB || 7;
   const maxMB = settings.audioMaxMB || 50;
   const bitrates = BITRATES.includes(bitrate) ? BITRATES : [...BITRATES, bitrate].sort((a, b) => a - b);
 
   // The limit is typed, so it is saved when the field is left (or with Enter), not on every keystroke
   // (a new value from the server replaces the draft)
-  const [draft, setDraft] = useState(String(uploadMax));
-  const [shown, setShown] = useState(uploadMax);
-  if (shown !== uploadMax) {
-    setShown(uploadMax);
-    setDraft(String(uploadMax));
+  const [draft, setDraft] = useState(String(limit));
+  const [shown, setShown] = useState(limit);
+  if (shown !== limit) {
+    setShown(limit);
+    setDraft(String(limit));
   }
-  const commitUploadMax = () => {
+  const commitLimit = () => {
     const n = parseInt(draft, 10);
     if (Number.isInteger(n) && n >= 1 && n <= maxMB) {
-      if (n !== uploadMax) onSave({ audioUploadMaxMB: n });
+      if (n !== limit) onSave({ audioLimitMB: n });
     } else {
-      setDraft(String(uploadMax));
+      setDraft(String(limit));
     }
   };
 
@@ -90,10 +92,10 @@ export function AudioSettings({
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
         <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
-          <p className="text-main font-semibold">{t('server.audioUploadMax')}</p>
+          <p className="text-main font-semibold">{t('server.audioLimit')}</p>
           <p className="text-[11px] text-muted mt-0.5">
-            {t('server.audioUploadMaxHint', { max: maxMB })}
-            {settings.audioUploadMaxMBConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_AUDIO_UPLOAD_MAX_MB' })}`}
+            {t('server.audioLimitHint', { max: maxMB })}
+            {settings.audioLimitMBConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_AUDIO_LIMIT_MB' })}`}
           </p>
         </div>
         <label className="flex items-center gap-2 text-[11px] text-muted">
@@ -102,10 +104,10 @@ export function AudioSettings({
             min={1}
             max={maxMB}
             value={draft}
-            disabled={Boolean(settings.audioUploadMaxMBConfiguredViaEnv)}
-            aria-label={t('server.audioUploadMax')}
+            disabled={Boolean(settings.audioLimitMBConfiguredViaEnv)}
+            aria-label={t('server.audioLimit')}
             onChange={(e) => setDraft(e.target.value)}
-            onBlur={commitUploadMax}
+            onBlur={commitLimit}
             onKeyDown={(e) => {
               if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
             }}
@@ -113,6 +115,22 @@ export function AudioSettings({
           />
           {t('server.mb')}
         </label>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 pt-3 border-t border-border">
+        <div className="pr-4">
+          <p className="text-main font-semibold">{t('server.audioUploads')}</p>
+          <p className="text-[11px] text-muted mt-0.5">
+            {t('server.audioUploadsHint')}
+            {settings.audioUploadsConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_AUDIO_UPLOADS' })}`}
+          </p>
+        </div>
+        <ToggleSwitch
+          checked={settings.audioUploads !== false}
+          disabled={Boolean(settings.audioUploadsConfiguredViaEnv)}
+          onChange={(audioUploads) => onSave({ audioUploads })}
+          title={t('server.audioUploads')}
+        />
       </div>
     </div>
   );

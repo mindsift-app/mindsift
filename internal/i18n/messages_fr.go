@@ -595,6 +595,7 @@ var messagesFR = map[string]string{
 	"Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch {minutes} Minuten gesperrt.": "Trop de codes de configuration erronés. La configuration est bloquée encore {minutes} minutes.",
 	"Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch eine Minute gesperrt.":       "Trop de codes de configuration erronés. La configuration est bloquée encore une minute.",
 	"Ungültige Bildqualität (erlaubt: high, medium, low, off)":                                     "Qualité d'image non valide (autorisées : high, medium, low, off)",
+	"Audiodateien hochladen ist auf diesem Server ausgeschaltet":                                   "L'envoi de fichiers audio est désactivé sur ce serveur",
 	"Ungültige Audio-Komprimierung (erlaubt: recordings, off)":                                     "Compression audio non valide (autorisées : recordings, off)",
 	"Ungültige Bitrate (erlaubt: 8 bis 320 kbit/s)":                                                "Débit non valide (autorisé : 8 à 320 kbit/s)",
 	"Ungültige Größenbegrenzung für Audiodateien":                                                  "Limite de taille non valide pour les fichiers audio",

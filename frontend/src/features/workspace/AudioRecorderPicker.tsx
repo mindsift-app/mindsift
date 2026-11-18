@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LoaderCircle, Mic, Square, Upload, X } from 'lucide-react';
-import { audioRecordingBitrate, audioUploadMaxMB, UploadedMedia, uploadMedia } from '../../lib/media';
+import { audioLimitMB, audioRecordingBitrate, audioUploadsAllowed, UploadedMedia, uploadMedia } from '../../lib/media';
 import { VoiceRecorder } from '../../lib/voice';
 import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
@@ -90,7 +90,9 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
     tickRef.current = window.setInterval(() => {
       const ms = Date.now() - startedRef.current;
       setElapsed(ms);
-      if (ms >= MAX_RECORDING_MS) void stop();
+      // Stops in time before the server's limit for audio files (a little room for the last second)
+      const full = (recorderRef.current?.recordedBytes() ?? 0) >= audioLimitMB() * 1024 * 1024 * 0.97;
+      if (ms >= MAX_RECORDING_MS || full) void stop();
     }, 250);
   };
 
@@ -150,7 +152,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
           </button>
         )}
 
-        {state === 'ready' && (
+        {state === 'ready' && audioUploadsAllowed() && (
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
@@ -181,7 +183,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
           e.target.value = '';
           if (!f) return;
           // Checked here as well, so a large file is not sent only to be refused
-          const maxMB = audioUploadMaxMB();
+          const maxMB = audioLimitMB();
           if (f.size > maxMB * 1024 * 1024) {
             setError(t('media.audioTooLarge', { mb: maxMB }));
             return;

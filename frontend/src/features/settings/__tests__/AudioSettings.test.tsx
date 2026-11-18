@@ -29,7 +29,7 @@ describe('AudioSettings (audio in notes for the whole server)', () => {
   it('saves the upload limit when the field is left, within 1 and MEDIA_MAX_AUDIO_MB', () => {
     const onSave = vi.fn();
     render(<AudioSettings settings={base} onSave={onSave} />);
-    const input = screen.getByRole('spinbutton', { name: 'Größte hochgeladene Audiodatei' }) as HTMLInputElement;
+    const input = screen.getByRole('spinbutton', { name: 'Größte Audiodatei' }) as HTMLInputElement;
     expect(input.value).toBe('7');
     fireEvent.change(input, { target: { value: '80' } });
     fireEvent.blur(input);
@@ -37,13 +37,21 @@ describe('AudioSettings (audio in notes for the whole server)', () => {
     expect(input.value).toBe('7');
     fireEvent.change(input, { target: { value: '20' } });
     fireEvent.blur(input);
-    expect(onSave).toHaveBeenCalledWith({ audioUploadMaxMB: 20 });
+    expect(onSave).toHaveBeenCalledWith({ audioLimitMB: 20 });
+  });
+
+  it('switches uploads of audio files off', () => {
+    const onSave = vi.fn();
+    render(<AudioSettings settings={base} onSave={onSave} />);
+    const toggle = screen.getByTitle('Audiodateien hochladen');
+    fireEvent.click(toggle);
+    expect(onSave).toHaveBeenCalledWith({ audioUploads: false });
   });
 
   it('is locked part by part when MEDIA_AUDIO_* fixes it', () => {
     render(
       <AudioSettings
-        settings={{ ...base, audioBitrate: 40, audioBitrateConfiguredViaEnv: true, audioUploadMaxMBConfiguredViaEnv: true }}
+        settings={{ ...base, audioBitrate: 40, audioBitrateConfiguredViaEnv: true, audioLimitMBConfiguredViaEnv: true, audioUploadsConfiguredViaEnv: true }}
         onSave={() => {}}
       />,
     );
@@ -53,6 +61,7 @@ describe('AudioSettings (audio in notes for the whole server)', () => {
     expect((screen.getByRole('spinbutton') as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Audio-Komprimierung' }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.getByText(/Festgelegt per MEDIA_AUDIO_BITRATE/)).toBeTruthy();
-    expect(screen.getByText(/Festgelegt per MEDIA_AUDIO_UPLOAD_MAX_MB/)).toBeTruthy();
+    expect(screen.getByText(/Festgelegt per MEDIA_AUDIO_LIMIT_MB/)).toBeTruthy();
+    expect(screen.getByText(/Festgelegt per MEDIA_AUDIO_UPLOADS/)).toBeTruthy();
   });
 });
