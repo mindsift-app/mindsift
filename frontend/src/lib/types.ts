@@ -507,7 +507,7 @@ export interface AuditEntry {
   actorId?: string;
   actorName?: string;
   action: string;
-  targetKind?: 'user' | 'settings' | 'invite' | 'organization' | 'backup';
+  targetKind?: 'user' | 'settings' | 'invite' | 'organization' | 'backup' | 'speech_model';
   targetId?: string;
   targetName?: string;
   details?: Record<string, unknown>;

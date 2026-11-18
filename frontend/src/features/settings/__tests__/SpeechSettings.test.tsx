@@ -45,6 +45,17 @@ describe('SpeechSettingsCard (voice input of the server)', () => {
     expect(sent.apiKey).toBeUndefined();
   });
 
+  it('keeps the automatic mode when the address is saved, so the server takes the Whisper server', () => {
+    const onSave = vi.fn();
+    render(<SpeechSettingsCard settings={{ ...base, speech: { mode: '', url: '', model: '' } }} onSave={onSave} onChanged={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Spracherkennung' }).textContent).toContain('Browser');
+    fireEvent.change(screen.getByLabelText('Adresse des Whisper-Servers'), { target: { value: 'http://127.0.0.1:18612' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    const sent = onSave.mock.calls[onSave.mock.calls.length - 1][0].speech;
+    expect(sent.url).toBe('http://127.0.0.1:18612');
+    expect(sent.mode).toBe('');
+  });
+
   it('locks what STT_* fixes and names the variable', () => {
     render(
       <SpeechSettingsCard

@@ -1202,7 +1202,8 @@
       "settings": "Réglages du serveur",
       "inviteLink": "Lien d'invitation",
       "organization": "Organisation",
-      "backup": "Sauvegarde du serveur"
+      "backup": "Sauvegarde du serveur",
+      "speechModel": "Modèle vocal"
     },
     "action": {
       "account_created": "Compte créé",
@@ -1227,6 +1228,8 @@
       "backup_created": "Sauvegarde créée",
       "backup_deleted": "Sauvegarde supprimée",
       "backup_downloaded": "Sauvegarde téléchargée",
+      "speech_model_download": "Modèle vocal demandé",
+      "speech_model_deleted": "Modèle vocal supprimé",
       "account_registered": "Inscription",
       "account_unconfirmed_deleted": "Compte non confirmé supprimé",
       "invite_redeemed": "Invitation utilisée"
@@ -1245,7 +1248,8 @@
       "unconfirmedDeleted": "Adresse e-mail non confirmée sous 48 heures",
       "mustChange": "Nouveau mot de passe exigé à la prochaine connexion",
       "keysRevoked": "{{keys}} clés API et {{connections}} accès IA révoqués",
-      "calendarFeedRevoked": "Abonnement calendrier désactivé"
+      "calendarFeedRevoked": "Abonnement calendrier désactivé",
+      "speechModelSelect": "Utilisé une fois téléchargé"
     },
     "value": {
       "on": "activé",
@@ -1397,7 +1401,7 @@
     },
     "recognition": "Reconnaissance",
     "chunked": "Texte pendant la parole",
-    "chunkedHint": "L'app envoie l'enregistrement au serveur Whisper par morceaux pendant que la personne parle, le texte arrive donc en chemin. Désactivé : l'enregistrement entier seulement après l'arrêt (la dictée en direct reste par morceaux).",
+    "chunkedHint": "L'app envoie l'enregistrement au serveur Whisper par morceaux pendant que la personne parle, le texte arrive donc en chemin. Désactivé : l'enregistrement entier seulement après l'arrêt (la dictée en direct aussi).",
     "chunkSeconds": "Longueur d'un morceau",
     "chunkSecondsHint": "Au plus cette durée, plus tôt lors d'une courte pause (2 à 30 secondes). Plus court : le texte arrive plus vite, mais le serveur reçoit plus de requêtes.",
     "vadFilterHint": "Moins de répétitions inventées ; désactivez si le serveur refuse le champ.",
