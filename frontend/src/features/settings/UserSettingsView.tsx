@@ -42,7 +42,10 @@ interface UserSettingsViewProps {
   customThemes: UserTheme[];
   onThemeChange: (themeId: ThemeId) => void;
   onCustomThemesChange: (themes: UserTheme[], activate?: ThemeId) => void;
+  // A save in the settings answers with the account; nothing else needs to load again
   onUserUpdated: (u: User) => void;
+  // Own data deleted, imported or restored: tasks, lists and counters load again
+  onDataChanged: () => void;
   onBack: () => void;
 }
 
@@ -55,6 +58,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   onThemeChange,
   onCustomThemesChange,
   onUserUpdated,
+  onDataChanged,
   onBack }) => {
   const [section, setSection] = useState<UserSettingsSection>('profile');
   // Voice input: the language whenever there is voice input; the choice Whisper/browser only with a
@@ -80,7 +84,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   const [legal, setLegal] = useState<AuthStatus['legal']>();
 
   // Profil with the danger zone (user/useProfileSettings.ts); Sicherheit keeps its own state (user/SecuritySection.tsx)
-  const profile = useProfileSettings(currentUser, onUserUpdated);
+  const profile = useProfileSettings(currentUser, onUserUpdated, onDataChanged);
   const { dangerAction } = profile;
   const [showAbout, setShowAbout] = useState(false);
   // The public demo sends nothing and keeps the shared accounts intact (FLAW-33)
@@ -360,7 +364,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           {/* ================================================================= */}
           {/* SECTION 5: EXPORT & IMPORT */}
           {/* ================================================================= */}
-          {section === 'data' && <DataSection dataExport={dataExport} />}
+          {section === 'data' && <DataSection dataExport={dataExport} onDataChanged={onDataChanged} />}
         </div>
       </div>
 

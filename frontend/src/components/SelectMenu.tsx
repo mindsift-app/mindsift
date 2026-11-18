@@ -62,11 +62,19 @@ const BUTTON_CLASS = {
 export function SelectMenu<T extends string>({ value, onChange, fitLabel, ...rest }: SelectMenuProps<T>) {
   const selected = rest.options.find((o) => o.value === value) ?? rest.options[0];
   const widest = fitLabel ? [] : widestLabels(rest.options);
+  // A label cut short is readable on hover; one shown in full needs no tooltip. Measured when the pointer
+  // arrives, so it holds for the width the field has right now.
+  const labelRef = useRef<HTMLSpanElement | null>(null);
+  const [cut, setCut] = useState(false);
+  const measure = () => {
+    const el = labelRef.current;
+    setCut(Boolean(el && el.scrollWidth > el.clientWidth));
+  };
   return (
     <MenuBase
       {...rest}
-      // A label cut short is readable on hover
-      title={rest.title ?? selected?.label}
+      title={rest.title ?? (cut ? selected?.label : undefined)}
+      onHover={measure}
       isSelected={(v) => v === value}
       onPick={(v) => v !== value && onChange(v)}
       closeOnPick
@@ -85,7 +93,9 @@ export function SelectMenu<T extends string>({ value, onChange, fitLabel, ...res
                 className="col-start-1 row-start-1 truncate invisible after:content-[attr(data-label)]"
               />
             ))}
-            <span className="col-start-1 row-start-1 truncate">{selected?.label}</span>
+            <span ref={labelRef} className="col-start-1 row-start-1 truncate">
+              {selected?.label}
+            </span>
           </span>
         </>
       }
@@ -122,6 +132,8 @@ interface MenuBaseProps<T extends string> extends BaseProps<T> {
   closeOnPick?: boolean;
   multi?: boolean;
   display: React.ReactNode;
+  // The pointer arrived on the button
+  onHover?: () => void;
 }
 
 function MenuBase<T extends string>({
@@ -137,6 +149,7 @@ function MenuBase<T extends string>({
   closeOnPick,
   multi,
   display,
+  onHover,
 }: MenuBaseProps<T>) {
   const { t } = useTranslation();
   const searchable = options.length >= SEARCH_FROM;
@@ -232,6 +245,7 @@ function MenuBase<T extends string>({
         disabled={disabled}
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={onKeyDown}
+        onPointerEnter={onHover}
         aria-label={ariaLabel}
         title={title}
         aria-haspopup="listbox"

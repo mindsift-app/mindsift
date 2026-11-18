@@ -12,6 +12,8 @@ interface ImportCardProps {
   title: string;
   description: React.ReactNode;
   accept: string;
+  // After an import: the app loads the own data again
+  onImported?: () => void;
 }
 
 const summaryParts = (s: ImportSummary) =>
@@ -27,7 +29,7 @@ const summaryParts = (s: ImportSummary) =>
 
 // One import path: drop or pick a file, see a preview of what would be created, then import.
 // Touch targets are large enough for phones; the file picker works on mobile browsers.
-export const ImportCard: React.FC<ImportCardProps> = ({ source, title, description, accept }) => {
+export const ImportCard: React.FC<ImportCardProps> = ({ source, title, description, accept, onImported }) => {
   const { t } = useTranslation('settings');
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -75,6 +77,7 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
       setFile(null);
       setPreview(null);
       setConfirmRestore(false);
+      onImported?.();
     } catch (err) {
       setError(errorMessage(err, t('import.failed')));
     } finally {

@@ -51,6 +51,7 @@
     "apiIntro": "Con le chiavi API personali, script, smart home o agenti IA come Claude Code e Codex possono leggere e modificare attività, liste, note e posta in arrivo: via curl o MCP, con gli stessi permessi. Le note e la lettura e organizzazione della posta in arrivo funzionano solo tramite MCP."
   },
   "api": {
+    "saved": "Salvato",
     "saveFailed": "Salvataggio non riuscito",
     "sim": {
       "chooseList": "❌ Scegli una lista.",

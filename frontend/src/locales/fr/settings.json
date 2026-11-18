@@ -51,6 +51,7 @@
     "apiIntro": "Avec des clés API, tu connectes Home Assistant, n8n, tes propres scripts ou des agents IA comme Claude Code à MindSift. L'accès fonctionne comme pour toi-même, les paramètres restent verrouillés."
   },
   "api": {
+    "saved": "Enregistré",
     "saveFailed": "Échec de l'enregistrement",
     "sim": {
       "chooseList": "❌ Choisis une liste.",

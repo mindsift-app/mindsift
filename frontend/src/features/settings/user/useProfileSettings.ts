@@ -10,7 +10,7 @@ import { errorMessage } from '../../../lib/errorMessage';
 // Kontoeinstellungen → Profil: name, username, login address, avatar, and the danger zone (delete own data
 // or the account). Lives in the view, so unsaved input survives switching sections. Password, two-factor
 // sign-in and sessions are in Sicherheit (SecuritySection).
-export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) => void) {
+export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) => void, onDataChanged: () => void) {
   const [displayName, setDisplayName] = useState(currentUser.displayName || '');
   const [username, setUsername] = useState(currentUser.username || '');
   const [email, setEmail] = useState(currentUser.email || '');
@@ -167,7 +167,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       await withSecondFactor((proof) => api.purgeOwnData(dangerPassword, proof));
       setDangerAction(null);
       setDangerDone(i18n.t('settings:profile.dataDeleted'));
-      onUserUpdated(currentUser);
+      // Tasks, lists and counters are empty now
+      onDataChanged();
     } catch (err) {
       setDangerError(errorMessage(err, i18n.t('settings:profile.actionFailed')));
     } finally {

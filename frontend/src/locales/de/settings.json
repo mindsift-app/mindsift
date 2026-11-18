@@ -51,6 +51,7 @@
     "apiIntro": "Mit persönlichen API-Schlüsseln lesen und ändern Skripte, dein Smart Home oder KI-Agenten wie Claude Code und Codex deine Aufgaben, Listen, Notizen und die Inbox: per curl oder über MCP, mit denselben Rechten. Notizen sowie Lesen und Sortieren der Inbox gehen nur über MCP."
   },
   "api": {
+    "saved": "Gespeichert",
     "saveFailed": "Speichern fehlgeschlagen",
     "sim": {
       "chooseList": "❌ Bitte eine Liste wählen.",

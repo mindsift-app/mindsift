@@ -66,6 +66,10 @@ Versions without a git tag were development states and were never published as a
 
 ### Fixed
 - Settings: the "saved" message (and any error) now appears as a notice at the bottom of the screen instead of pushing the page down, so choosing a value no longer makes the page jump; errors stay until closed. Dropdowns keep their width when an option with a long name is chosen, so nothing next to them moves.
+- Settings that save at once (retention, voice input, language, typed dates, calendar subscription, renaming and recolouring own themes) now confirm with a short "Saved" like the rest of the settings, instead of saving silently. Messages of own themes and the calendar subscription no longer push the page down.
+- Dropdowns show their chosen option as a tooltip only when it is cut short.
+- Groups: messages after creating, renaming or changing a group appear as a notice at the bottom of the screen instead of pushing the page down.
+- Saving in the account settings no longer reloads your tasks, lists and counters each time; that now happens only after deleting your own data, an import or restoring a backup, which also brings the imported tasks and lists in at once.
 - Notes: empty rows no longer show indent lines of their own; the lines end with the last bullet of their group, so a blank line at the end of a group or before the next part really looks empty. In the middle of a list the lines still run through.
 - Task alarms: when one channel failed (for example the mail server) while another got through (for example push), the alarm counted as sent and the e-mail never came. Now each channel is tried again on its own (up to three times) without the others going out twice, and every failed channel is written to the server log. Push without a registered device no longer counts as delivered.
 - Notifications (assignments, shares, mentions, watched tasks): when one channel failed, for example the mail server, the channels that got the message (Discord, push, own webhook) received it again on each of up to three retries. Now only the failed channel is tried again.

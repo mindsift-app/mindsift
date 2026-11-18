@@ -6,8 +6,6 @@ import {
   Plus,
   Trash,
   ArrowLeft,
-  Check,
-  CircleAlert,
   UserPlus,
   Shield,
   Pencil,
@@ -21,6 +19,7 @@ import { UserAvatar } from '../../components/UserAvatar';
 import { askConfirm } from '../../components/askConfirm';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { SelectMenu } from '../../components/SelectMenu';
+import { StatusMessage, StatusToast } from '../../components/StatusToast';
 import { errorMessage } from '../../lib/errorMessage';
 
 interface GroupsViewProps {
@@ -33,7 +32,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
   const [teams, setTeams] = useState<Team[]>([]);
   const [directoryUsers, setDirectoryUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusMsg, setStatusMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [statusMsg, setStatusMsg] = useState<StatusMessage | null>(null);
 
   // Create Group Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -249,29 +248,8 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
         </button>
       </div>
 
-      {/* Status Messages */}
-      {statusMsg && (
-        <div
-          className={`p-3 text-xs flex items-center justify-between gap-2 rounded-card ${
-            statusMsg.type === 'ok' ? 'alert-ok' : 'alert-err'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {statusMsg.type === 'ok' ? (
-              <Check className="w-4 h-4 text-accent shrink-0" />
-            ) : (
-              <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
-            )}
-            <span>{statusMsg.text}</span>
-          </div>
-          <button
-            onClick={() => setStatusMsg(null)}
-            className="text-muted hover:text-main text-[11px] cursor-pointer"
-          >
-            {t('close')}
-          </button>
-        </div>
-      )}
+      {/* Answers to changes float above the page, so nothing in it moves */}
+      <StatusToast msg={statusMsg} onClose={() => setStatusMsg(null)} />
 
       {/* Modal: Neue Gruppe erstellen */}
       {showCreateModal && (

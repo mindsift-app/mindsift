@@ -51,6 +51,7 @@
     "apiIntro": "With personal API keys, scripts, your smart home or AI agents like Claude Code and Codex read and change your tasks, lists, notes and inbox: via curl or MCP, with the same permissions. Notes as well as reading and sorting the inbox work over MCP only."
   },
   "api": {
+    "saved": "Saved",
     "saveFailed": "Saving failed",
     "sim": {
       "chooseList": "❌ Please choose a list.",

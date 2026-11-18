@@ -19,7 +19,6 @@
   "title": "Groupes",
   "intro": "Crée des groupes (par ex. famille, colocation ou équipe projet) parmi les personnes que tu peux voir, et partage des notes, des tâches et des listes avec tous simultanément.",
   "newGroup": "Nouveau groupe",
-  "close": "Fermer",
   "create": {
     "title": "Créer un nouveau groupe",
     "name": "Nom du groupe *",

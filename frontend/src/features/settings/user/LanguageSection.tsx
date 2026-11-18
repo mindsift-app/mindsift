@@ -1,32 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../../../lib/types';
-import { api } from '../../../lib/api';
-import { errorMessage } from '../../../lib/errorMessage';
-import { showError } from '../../../components/ErrorNotice';
-import i18n, { LANGUAGES, languageName } from '../../../i18n';
+import { LANGUAGES, languageName } from '../../../i18n';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
+import { InstantSaveToast, useInstantSave } from './InstantSave';
 
 // Language of the app: own choice or the browser's ('' = browser, then the server's default); dates and
 // quantities read from typed text (lib/typedRecognition.ts), on unless switched off
 export function useLanguageSetting(onUserUpdated: (u: User) => void) {
-  const [languageSaving, setLanguageSaving] = useState(false);
+  const instant = useInstantSave(onUserUpdated);
 
-  const save = async (settings: { language?: string; typedRecognition?: boolean }) => {
-    setLanguageSaving(true);
-    try {
-      onUserUpdated(await api.updateSettings(settings));
-    } catch (err) {
-      showError(errorMessage(err, i18n.t('settings:api.saveFailed')));
-    } finally {
-      setLanguageSaving(false);
-    }
-  };
+  const handleChangeLanguage = (next: string) => instant.save({ language: next });
+  const handleChangeTypedRecognition = (next: boolean) => instant.save({ typedRecognition: next });
 
-  const handleChangeLanguage = (next: string) => save({ language: next });
-  const handleChangeTypedRecognition = (next: boolean) => save({ typedRecognition: next });
-
-  return { languageSaving, handleChangeLanguage, handleChangeTypedRecognition };
+  return { instant, languageSaving: instant.saving, handleChangeLanguage, handleChangeTypedRecognition };
 }
 
 // Kontoeinstellungen → Sprache
@@ -40,7 +27,7 @@ export function LanguageSection({
   serverDefault?: string;
 }) {
   const { t } = useTranslation('settings');
-  const { languageSaving, handleChangeLanguage, handleChangeTypedRecognition } = language;
+  const { instant, languageSaving, handleChangeLanguage, handleChangeTypedRecognition } = language;
   const options = [
     { value: '', title: t('common:languageAuto'), text: t('language.autoHint', { fallback: languageName(serverDefault || 'de') }) },
     ...LANGUAGES.map((l) => ({ value: l.id as string, title: l.name, text: '' })),
@@ -51,6 +38,7 @@ export function LanguageSection({
         <h2 className="text-sm font-bold text-main">{t('language.title')}</h2>
         <p className="text-muted mt-0.5">{t('language.intro')}</p>
       </div>
+      <InstantSaveToast save={instant} />
       <div className="space-y-2" role="radiogroup" aria-label={t('language.title')}>
         {options.map((opt) => {
           const selected = (currentUser.language || '') === opt.value;
