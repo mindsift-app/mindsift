@@ -275,6 +275,18 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 				if ValidImageQuality(v) {
 					settings.ImageQuality = v
 				}
+			case "audio_compression":
+				if ValidAudioCompression(v) {
+					settings.AudioCompression = v
+				}
+			case "audio_bitrate":
+				if n, err := strconv.Atoi(v); err == nil && ValidAudioBitrate(n) {
+					settings.AudioBitrate = n
+				}
+			case "audio_upload_max_mb":
+				if n, err := strconv.Atoi(v); err == nil && n >= 1 {
+					settings.AudioUploadMaxMB = n
+				}
 			case "time_zone":
 				zone := v
 				settings.TimeZone = &zone
@@ -329,6 +341,15 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	}
 	if settings.ImageQuality == "" {
 		settings.ImageQuality = ImageQualityHigh
+	}
+	if settings.AudioCompression == "" {
+		settings.AudioCompression = AudioCompressionRecordings
+	}
+	if settings.AudioBitrate == 0 {
+		settings.AudioBitrate = DefaultAudioBitrate
+	}
+	if settings.AudioUploadMaxMB == 0 {
+		settings.AudioUploadMaxMB = DefaultAudioUploadMaxMB
 	}
 	if settings.TimeZone == nil {
 		notSet := ""
@@ -468,6 +489,27 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('image_quality', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, settings.ImageQuality)
 	}
+	if err == nil && settings.AudioCompression != "" {
+		if !ValidAudioCompression(settings.AudioCompression) {
+			return ErrInvalidAudioCompression
+		}
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_compression', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, settings.AudioCompression)
+	}
+	if err == nil && settings.AudioBitrate != 0 {
+		if !ValidAudioBitrate(settings.AudioBitrate) {
+			return ErrInvalidAudioBitrate
+		}
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_bitrate', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(settings.AudioBitrate))
+	}
+	if err == nil && settings.AudioUploadMaxMB != 0 {
+		if settings.AudioUploadMaxMB < 1 {
+			return ErrInvalidAudioUploadMax
+		}
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('audio_upload_max_mb', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(settings.AudioUploadMaxMB))
+	}
 	if err == nil && settings.TimeZone != nil {
 		zone := strings.TrimSpace(*settings.TimeZone)
 		if zone != "" {
@@ -513,18 +555,42 @@ func ValidMFARequired(v string) bool {
 }
 
 // How strongly the app compresses pictures before uploading them (domain.SystemSettings.ImageQuality);
-// the encoder qualities per level live in the frontend (lib/media.ts).
+// the encoder qualities per level live in the frontend (lib/media.ts). "off" uploads the file as it is.
 const (
 	ImageQualityHigh   = "high"
 	ImageQualityMedium = "medium"
 	ImageQualityLow    = "low"
+	ImageQualityOff    = "off"
 )
 
-var ErrInvalidImageQuality = i18n.NewError("Ungültige Bildqualität (erlaubt: high, medium, low)")
+var ErrInvalidImageQuality = i18n.NewError("Ungültige Bildqualität (erlaubt: high, medium, low, off)")
 
 func ValidImageQuality(v string) bool {
-	return v == ImageQualityHigh || v == ImageQualityMedium || v == ImageQualityLow
+	return v == ImageQualityHigh || v == ImageQualityMedium || v == ImageQualityLow || v == ImageQualityOff
 }
+
+// Audio in notes (domain.SystemSettings.AudioCompression): "recordings" records with AudioBitrate,
+// "off" leaves the bitrate to the browser. Uploaded audio files are never re-encoded.
+const (
+	AudioCompressionRecordings = "recordings"
+	AudioCompressionOff        = "off"
+	DefaultAudioBitrate        = 32 // kbit/s, plenty for speech in Opus
+	MinAudioBitrate            = 8
+	MaxAudioBitrate            = 320
+	DefaultAudioUploadMaxMB    = 7
+)
+
+var (
+	ErrInvalidAudioCompression = i18n.NewError("Ungültige Audio-Komprimierung (erlaubt: recordings, off)")
+	ErrInvalidAudioBitrate     = i18n.NewError("Ungültige Bitrate (erlaubt: 8 bis 320 kbit/s)")
+	ErrInvalidAudioUploadMax   = i18n.NewError("Ungültige Größenbegrenzung für Audiodateien")
+)
+
+func ValidAudioCompression(v string) bool {
+	return v == AudioCompressionRecordings || v == AudioCompressionOff
+}
+
+func ValidAudioBitrate(kbps int) bool { return kbps >= MinAudioBitrate && kbps <= MaxAudioBitrate }
 
 // MaxPublicLinkDays: no public link lives longer than this (there is no link for good).
 const MaxPublicLinkDays = 14

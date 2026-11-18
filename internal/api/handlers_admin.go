@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -584,6 +585,11 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 		out.ImageQuality = s.cfg.Media.ImageQuality
 		out.ImageQualityViaEnv = true
 	}
+	audio := s.audioSettings()
+	out.AudioCompression, out.AudioCompressionViaEnv = audio.Compression, s.cfg.Media.AudioCompression != ""
+	out.AudioBitrate, out.AudioBitrateViaEnv = audio.Bitrate, s.cfg.Media.AudioBitrate > 0
+	out.AudioUploadMaxMB, out.AudioUploadMaxMBViaEnv = audio.UploadMaxMB, s.cfg.Media.AudioUploadMaxMB > 0
+	out.AudioMaxMB = int(s.mediaLimit("audio") >> 20)
 	out.EmailLinksAvailable = s.emailLinksAvailable()
 	out.DefaultLanguage = s.defaultLanguage()
 	out.OIDC = s.oidcStatusForAdmin()
@@ -676,14 +682,36 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	if s.cfg.Media.ImageQuality != "" {
 		settings.ImageQuality = "" // fixed by MEDIA_IMAGE_QUALITY
 	}
+	if s.cfg.Media.AudioCompression != "" {
+		settings.AudioCompression = "" // fixed by MEDIA_AUDIO_COMPRESSION
+	}
+	if s.cfg.Media.AudioBitrate > 0 {
+		settings.AudioBitrate = 0 // fixed by MEDIA_AUDIO_BITRATE
+	}
+	if s.cfg.Media.AudioUploadMaxMB > 0 {
+		settings.AudioUploadMaxMB = 0 // fixed by MEDIA_AUDIO_UPLOAD_MAX_MB
+	}
 	settings.PeopleSearchViaEnv, settings.PublicLinksViaEnv, settings.PublicLinkMaxDaysViaEnv, settings.CalendarFeedsViaEnv = false, false, false, false
-	settings.ImageQualityViaEnv = false
+	settings.ImageQualityViaEnv, settings.AudioCompressionViaEnv, settings.AudioBitrateViaEnv, settings.AudioUploadMaxMBViaEnv = false, false, false, false
+	settings.AudioMaxMB = 0 // read only
 	if settings.MFARequired != nil && !storage.ValidMFARequired(*settings.MFARequired) {
 		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidMFARequired)
 		return
 	}
 	if settings.ImageQuality != "" && !storage.ValidImageQuality(settings.ImageQuality) {
 		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidImageQuality)
+		return
+	}
+	if settings.AudioCompression != "" && !storage.ValidAudioCompression(settings.AudioCompression) {
+		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidAudioCompression)
+		return
+	}
+	if settings.AudioBitrate != 0 && !storage.ValidAudioBitrate(settings.AudioBitrate) {
+		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidAudioBitrate)
+		return
+	}
+	if max := int(s.mediaLimit("audio") >> 20); settings.AudioUploadMaxMB < 0 || settings.AudioUploadMaxMB > max {
+		writeErrorFrom(w, http.StatusBadRequest, i18n.NewError("Größenbegrenzung für Audiodateien: 1 bis {mb} MB", "mb", strconv.Itoa(max)))
 		return
 	}
 	if settings.DefaultLanguage != "" && !i18n.Valid(settings.DefaultLanguage) {

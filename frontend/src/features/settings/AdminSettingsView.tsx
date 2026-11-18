@@ -13,6 +13,7 @@ import {
   KeyRound,
   Share2,
   Database,
+  Images,
   Mic,
   LucideIcon,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ import { ServerSection } from './admin/ServerSection';
 import { SignInSection } from './admin/SignInSection';
 import { SharingSection } from './admin/SharingSection';
 import { DataSettingsSection } from './admin/DataSettingsSection';
+import { MediaSettingsSection } from './admin/MediaSettingsSection';
 import { AiSection } from './admin/AiSection';
 import { SmtpSection } from './admin/SmtpSection';
 import { AuditSection } from './admin/AuditSection';
@@ -42,6 +44,7 @@ type AdminSection =
   | 'sharing'
   | 'server'
   | 'data'
+  | 'media'
   | 'ai'
   | 'smtp'
   | 'audit';
@@ -67,6 +70,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
     { id: 'sharing', icon: Share2, label: t('admin.nav.sharing'), hint: t('admin.nav.sharingHint'), serverAdminOnly: true },
     { id: 'server', icon: Server, label: t('admin.nav.server'), hint: t('admin.nav.serverHint'), serverAdminOnly: true },
     { id: 'data', icon: Database, label: t('admin.nav.data'), hint: t('admin.nav.dataHint'), serverAdminOnly: true },
+    { id: 'media', icon: Images, label: t('admin.nav.media'), hint: t('admin.nav.mediaHint'), serverAdminOnly: true },
     { id: 'ai', icon: Mic, label: t('admin.nav.ai'), hint: t('admin.nav.aiHint'), serverAdminOnly: true },
     { id: 'smtp', icon: Mail, label: t('admin.nav.smtp'), hint: t('admin.nav.smtpHint'), serverAdminOnly: true },
     { id: 'audit', icon: ScrollText, label: t('admin.nav.audit'), hint: t('admin.nav.auditHint'), serverAdminOnly: true },
@@ -169,6 +173,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               {section === 'sharing' && <SharingSection admin={admin} />}
               {section === 'server' && <ServerSection admin={admin} />}
               {section === 'data' && <DataSettingsSection admin={admin} />}
+              {section === 'media' && <MediaSettingsSection admin={admin} />}
               {section === 'ai' && <AiSection admin={admin} />}
               {section === 'smtp' && <SmtpSection admin={admin} />}
               {section === 'audit' && <AuditSection users={admin.users} />}

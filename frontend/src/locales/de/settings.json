@@ -669,10 +669,22 @@
     "linkPreviews": "Link-Vorschauen",
     "linkPreviewsHint": "Steht in einem Punkt nur eine Web-Adresse, ruft der MindSift-Server die Seite ab und zeigt Titel, Beschreibung und Bild als Karte. Ausgeschaltet ruft der Server keine Seiten mehr ab, und die App zeigt weder Vorschaukarten noch den Schalter pro Gerät.",
     "imageQuality": "Bildqualität",
-    "imageQualityHint": "Bilder werden vor dem Hochladen im Browser auf höchstens 2048 Pixel verkleinert und komprimiert. Die Größe bleibt bei jeder Stufe gleich, damit Text in Screenshots und Diagrammen lesbar bleibt; niedrigere Stufen komprimieren stärker und sparen Speicherplatz. Gilt nur für neu eingefügte Bilder, GIFs bleiben unverändert.",
+    "imageQualityHint": "Bilder werden vor dem Hochladen im Browser auf höchstens 2048 Pixel verkleinert und komprimiert. Die Größe bleibt bei jeder Stufe gleich, damit Text in Screenshots und Diagrammen lesbar bleibt; niedrigere Stufen komprimieren stärker und sparen Speicherplatz. „Aus“ lädt Bilder in Originalgröße hoch, samt Metadaten wie dem Aufnahmeort. Gilt nur für neu eingefügte Bilder, GIFs bleiben unverändert.",
     "imageQualityHigh": "Hoch (Standard)",
     "imageQualityMedium": "Mittel",
     "imageQualityLow": "Sparsam – kleinere Dateien, Text bleibt lesbar",
+    "imageQualityOff": "Aus – Bilder unverändert hochladen",
+    "audioCompression": "Audio-Komprimierung",
+    "audioCompressionHint": "Sprachaufnahmen in Notizen werden mit der gewählten Bitrate aufgenommen. Hochgeladene Audiodateien bleiben immer unverändert. „Aus“ überlässt die Bitrate dem Browser (meist rund 128 kbit/s, etwa 1 MB pro Minute).",
+    "audioCompressionRecordings": "Nur Aufnahmen (Standard)",
+    "audioCompressionOff": "Aus",
+    "audioBitrate": "Bitrate der Aufnahmen",
+    "audioBitrateHint": "32 kbit/s reichen für Sprache gut, 30 Minuten werden damit etwa 7 MB groß. Höhere Werte lohnen sich für Musik. Gilt für neue Aufnahmen.",
+    "audioBitrateOption": "{{kbps}} kbit/s",
+    "audioBitrateDefault": "{{kbps}} kbit/s (Standard)",
+    "audioUploadMax": "Größte hochgeladene Audiodatei",
+    "audioUploadMaxHint": "Gilt für Audiodateien, die vom Gerät hochgeladen werden, nicht für Aufnahmen in der App. Höchstens {{max}} MB (MEDIA_MAX_AUDIO_MB).",
+    "mb": "MB",
     "publicLinkMaxDays": "Längste Laufzeit eines Links",
     "days_one": "{{count}} Tag",
     "days_other": "{{count}} Tage",
@@ -725,7 +737,9 @@
       "server": "Server",
       "serverHint": "Name, Zeitzone, Version & Netzwerk",
       "data": "Daten",
-      "dataHint": "Backups, Aufbewahrung & Bilder",
+      "dataHint": "Backups & Aufbewahrung",
+      "media": "Medien",
+      "mediaHint": "Bilder & Audio",
       "ai": "Spracheingabe & KI",
       "aiHint": "Whisper & KI-Agenten (MCP)",
       "smtp": "E-Mail / SMTP-Server",
@@ -737,7 +751,8 @@
       "signinIntro": "Wer sich ohne Einladung registrieren darf, wer einen zweiten Faktor braucht und die Anmeldung über einen Anbieter (Single Sign-on).",
       "sharingIntro": "Wer mit wem teilen darf, ob Namen beim Tippen vorgeschlagen werden, öffentliche Links zu Notizen und Kalender-Abos.",
       "serverIntro": "Name, Standardsprache und Zeitzone dieser Instanz, die installierte Version und was der Server im Netz erreichen darf.",
-      "dataIntro": "Tägliche Backups, ob Erledigtes und Gelöschtes für immer bleiben darf, und wie stark Bilder komprimiert werden.",
+      "dataIntro": "Tägliche Backups und ob Erledigtes und Gelöschtes für immer bleiben darf.",
+      "mediaIntro": "Wie stark Bilder und Sprachaufnahmen komprimiert werden und wie groß hochgeladene Audiodateien sein dürfen.",
       "aiIntro": "Die Spracherkennung dieses Servers und ob KI-Agenten über MCP zugreifen dürfen."
     },
     "demo": "In der Demo deaktiviert: Server-Einstellungen, E-Mail und Konten lassen sich hier nur ansehen.",
@@ -1222,7 +1237,12 @@
       "imageQuality": {
         "high": "Hoch",
         "medium": "Mittel",
-        "low": "Sparsam"
+        "low": "Sparsam",
+        "off": "Aus"
+      },
+      "audioCompression": {
+        "recordings": "Nur Aufnahmen",
+        "off": "Aus"
       }
     },
     "field": {
@@ -1253,6 +1273,9 @@
       "calendarFeeds": "Kalender-Abos",
       "linkPreviews": "Link-Vorschauen",
       "imageQuality": "Bildqualität",
+      "audioCompression": "Audio-Komprimierung",
+      "audioBitrate": "Bitrate der Aufnahmen",
+      "audioUploadMaxMB": "Größte hochgeladene Audiodatei (MB)",
       "defaultLanguage": "Standardsprache",
       "timeZone": "Zeitzone",
       "displayName": "Anzeigename",

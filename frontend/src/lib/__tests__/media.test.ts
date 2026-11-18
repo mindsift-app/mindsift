@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { IMAGE_QUALITY, mediaContent, parseMediaContent, prepareImage, serverImageQuality, setServerImageQuality } from '../media';
+import { audioRecordingBitrate, audioUploadMaxMB, IMAGE_QUALITY, mediaContent, parseMediaContent, prepareImage, serverImageQuality, setServerAudioSettings, setServerImageQuality } from '../media';
 
 describe('media content format', () => {
   it('round-trips captions, also with brackets and backslashes', () => {
@@ -104,11 +104,38 @@ describe('prepareImage per image quality', () => {
     expect(IMAGE_QUALITY.medium.jpeg).toBeGreaterThan(IMAGE_QUALITY.medium.webp);
   });
 
+  it('sends pictures unchanged when compression is off', async () => {
+    fakeBrowser(4096, 3072);
+    const original = photo();
+    setServerImageQuality('off');
+    const out = await prepareImage(original);
+    expect(out.blob).toBe(original);
+    expect(calls).toEqual([]);
+  });
+
   it('leaves GIFs as they are', async () => {
     fakeBrowser(4096, 4096);
     const gif = new Blob(['GIF89a'], { type: 'image/gif' });
     const out = await prepareImage(gif, 'low');
     expect(out.blob).toBe(gif);
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe('audio settings of the server', () => {
+  afterEach(() => setServerAudioSettings(undefined));
+
+  it('records at 32 kbit/s and allows 7 MB uploads by default', () => {
+    setServerAudioSettings(undefined);
+    expect(audioRecordingBitrate()).toBe(32000);
+    expect(audioUploadMaxMB()).toBe(7);
+  });
+
+  it('follows the server, and leaves the bitrate to the browser when compression is off', () => {
+    setServerAudioSettings({ compression: 'recordings', bitrate: 64, uploadMaxMB: 20 });
+    expect(audioRecordingBitrate()).toBe(64000);
+    expect(audioUploadMaxMB()).toBe(20);
+    setServerAudioSettings({ compression: 'off', bitrate: 64, uploadMaxMB: 20 });
+    expect(audioRecordingBitrate()).toBeUndefined();
   });
 });

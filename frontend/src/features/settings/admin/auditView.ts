@@ -81,7 +81,7 @@ function valueLabel(t: TFunction, key: string, v: unknown): string {
   if (v === null || v === undefined || v === '') return t('audit.value.empty');
   const s = String(v);
   if (key === 'role') return t(`common:role.${s}`, { defaultValue: s });
-  if (key === 'sharingMode' || key === 'registrationMode' || key === 'mfaRequired' || key === 'imageQuality') {
+  if (key === 'sharingMode' || key === 'registrationMode' || key === 'mfaRequired' || key === 'imageQuality' || key === 'audioCompression') {
     return t(`audit.value.${key}.${s.replace('+', '_')}`, { defaultValue: s });
   }
   return s;

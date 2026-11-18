@@ -355,6 +355,7 @@
     "stopSave": "Aufnahme beenden und speichern",
     "start": "Aufnahme starten",
     "uploadAudio": "Audiodatei hochladen",
+    "audioTooLarge": "Die Audiodatei ist zu groß (höchstens {{mb}} MB)",
     "file": "Datei",
     "cancelEsc": "Abbrechen (Esc)",
     "chooseImage": "Bitte eine Bilddatei wählen",

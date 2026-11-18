@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LoaderCircle, Mic, Square, Upload, X } from 'lucide-react';
-import { UploadedMedia, uploadMedia } from '../../lib/media';
+import { audioRecordingBitrate, audioUploadMaxMB, UploadedMedia, uploadMedia } from '../../lib/media';
 import { VoiceRecorder } from '../../lib/voice';
 import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
@@ -46,11 +46,11 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
     };
   }, []);
 
-  const upload = async (blob: Blob, name: string) => {
+  const upload = async (blob: Blob, name: string, source?: 'recording') => {
     setState('uploading');
     setError(null);
     try {
-      onDone(await uploadMedia(docId, blob, name));
+      onDone(await uploadMedia(docId, blob, name, source));
     } catch (err) {
       setError(errorMessage(err, t('media.uploadFailed')));
       setState('ready');
@@ -70,12 +70,12 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
       return;
     }
     const ext = blob.type.includes('mp4') ? 'm4a' : blob.type.includes('ogg') ? 'ogg' : 'webm';
-    await upload(blob, `sprachnotiz.${ext}`);
+    await upload(blob, `sprachnotiz.${ext}`, 'recording');
   };
 
   const start = async () => {
     setError(null);
-    const rec = new VoiceRecorder();
+    const rec = new VoiceRecorder(audioRecordingBitrate());
     try {
       await rec.start();
     } catch {
@@ -178,7 +178,15 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) void upload(f, f.name || 'audio');
+          e.target.value = '';
+          if (!f) return;
+          // Checked here as well, so a large file is not sent only to be refused
+          const maxMB = audioUploadMaxMB();
+          if (f.size > maxMB * 1024 * 1024) {
+            setError(t('media.audioTooLarge', { mb: maxMB }));
+            return;
+          }
+          void upload(f, f.name || 'audio');
         }}
       />
     </div>

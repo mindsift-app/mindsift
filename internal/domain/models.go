@@ -535,10 +535,25 @@ type SystemSettings struct {
 	// nothing and the app shows no preview cards. nil in an update leaves it unchanged. Off in demo mode.
 	LinkPreviews *bool `json:"linkPreviews,omitempty"`
 	// ImageQuality: how strongly the app compresses pictures before uploading them (always at most
-	// 2048 px): "high" (default), "medium" or "low". Empty in an update leaves it unchanged; ViaEnv:
-	// fixed by MEDIA_IMAGE_QUALITY.
+	// 2048 px): "high" (default), "medium", "low" or "off" (uploaded as it is). Empty in an update leaves
+	// it unchanged; ViaEnv: fixed by MEDIA_IMAGE_QUALITY.
 	ImageQuality       string `json:"imageQuality,omitempty"`
 	ImageQualityViaEnv bool   `json:"imageQualityConfiguredViaEnv,omitempty"`
+	// AudioCompression: "recordings" (default: recordings in the app use AudioBitrate) or "off" (the
+	// browser's own bitrate). Uploaded audio files are stored as sent either way. Empty in an update
+	// leaves it unchanged; ViaEnv: fixed by MEDIA_AUDIO_COMPRESSION.
+	AudioCompression       string `json:"audioCompression,omitempty"`
+	AudioCompressionViaEnv bool   `json:"audioCompressionConfiguredViaEnv,omitempty"`
+	// AudioBitrate: bitrate of recordings in kbit/s (8–320, default 32); 0 in an update leaves it
+	// unchanged; ViaEnv: fixed by MEDIA_AUDIO_BITRATE.
+	AudioBitrate       int  `json:"audioBitrate,omitempty"`
+	AudioBitrateViaEnv bool `json:"audioBitrateConfiguredViaEnv,omitempty"`
+	// AudioUploadMaxMB: the largest audio file people may upload into a note (default 7 MB, never above
+	// MEDIA_MAX_AUDIO_MB, which also limits recordings); 0 in an update leaves it unchanged; ViaEnv:
+	// fixed by MEDIA_AUDIO_UPLOAD_MAX_MB. AudioMaxMB: MEDIA_MAX_AUDIO_MB (read only).
+	AudioUploadMaxMB       int  `json:"audioUploadMaxMB,omitempty"`
+	AudioUploadMaxMBViaEnv bool `json:"audioUploadMaxMBConfiguredViaEnv,omitempty"`
+	AudioMaxMB             int  `json:"audioMaxMB,omitempty"`
 	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
 	// not speak, and for the demo; empty in an update leaves it unchanged
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`

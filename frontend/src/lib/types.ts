@@ -78,7 +78,9 @@ export interface AuthStatus {
   // Preview cards for web addresses in notes (the administration can switch them off; off in the demo)
   linkPreviews?: boolean;
   // How strongly the app compresses pictures before upload (administration or MEDIA_IMAGE_QUALITY)
-  imageQuality?: 'high' | 'medium' | 'low';
+  imageQuality?: 'high' | 'medium' | 'low' | 'off';
+  // Audio in notes: recordings at bitrate kbit/s unless compression is off; uploaded files up to uploadMaxMB
+  audio?: { compression: 'recordings' | 'off'; bitrate: number; uploadMaxMB: number };
 }
 
 export type VoiceMode = 'server' | 'browser' | 'off';
@@ -525,9 +527,19 @@ export interface SystemSettings {
   // The server fetches previews of web addresses in notes (off: no cards, nothing fetched; off in the demo)
   linkPreviews?: boolean;
   // How strongly the app compresses pictures before upload (size always 2048 px at most); fixed when set
-  // via MEDIA_IMAGE_QUALITY
-  imageQuality?: 'high' | 'medium' | 'low';
+  // via MEDIA_IMAGE_QUALITY; 'off' uploads pictures as they are
+  imageQuality?: 'high' | 'medium' | 'low' | 'off';
   imageQualityConfiguredViaEnv?: boolean;
+  // Audio in notes: recordings with audioBitrate (kbit/s) or the browser's own ('off'); audio files from
+  // the device up to audioUploadMaxMB, never above audioMaxMB (MEDIA_MAX_AUDIO_MB, read only). Each fixed
+  // when set via MEDIA_AUDIO_COMPRESSION / MEDIA_AUDIO_BITRATE / MEDIA_AUDIO_UPLOAD_MAX_MB
+  audioCompression?: 'recordings' | 'off';
+  audioCompressionConfiguredViaEnv?: boolean;
+  audioBitrate?: number;
+  audioBitrateConfiguredViaEnv?: boolean;
+  audioUploadMaxMB?: number;
+  audioUploadMaxMBConfiguredViaEnv?: boolean;
+  audioMaxMB?: number;
   // Language for new accounts and everyone whose browser language the app does not speak
   defaultLanguage?: string;
   // The server's time zone (IANA name, '' = not set: TZ, else UTC) and the zone in effect now (read only)

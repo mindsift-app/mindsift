@@ -358,6 +358,7 @@
     "stopSave": "Arrêter et enregistrer l'enregistrement",
     "start": "Démarrer l'enregistrement",
     "uploadAudio": "Téléverser un fichier audio",
+    "audioTooLarge": "Le fichier audio est trop volumineux ({{mb}} Mo au maximum)",
     "file": "Fichier",
     "cancelEsc": "Annuler (Échap)",
     "chooseImage": "Veuillez choisir un fichier image",
