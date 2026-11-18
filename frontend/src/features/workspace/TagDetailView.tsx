@@ -59,7 +59,7 @@ export function TagDetailView({
           <button
             type="button"
             onClick={() => setSubView('tags')}
-            className="btn-action inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted hover:text-main cursor-pointer"
+            className="btn-action h-11 sm:h-7 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted hover:text-main cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{t('tags.allTiles')}</span>
@@ -79,7 +79,7 @@ export function TagDetailView({
           <button
             type="button"
             onClick={() => setSubView('tags')}
-            className="text-xs text-accent hover:underline flex items-center gap-1 cursor-pointer"
+            className="text-xs text-accent hover:underline flex items-center gap-1 cursor-pointer min-h-11 sm:min-h-0"
           >
             <ArrowLeft className="w-3 h-3" />
             <span>{t('tags.overview')}</span>

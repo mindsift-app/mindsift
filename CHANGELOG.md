@@ -65,6 +65,7 @@ Versions without a git tag were development states and were never published as a
 - Link previews in notes span the full width of the note; the picture takes 38 % of it (golden section, at most 340 px) in the usual 1.91:1 format of link pictures and sets the card's height; the button that hides a preview sits at its bottom right, where the bullet's floating buttons no longer cover it. A web link added with `/link` to an empty bullet gets its preview too, also when you typed a text for it (the preview shows the page's title).
 
 ### Fixed
+- Back buttons at the top of the settings, administration, groups, help and tag pages are easier to tap on phones.
 - Settings: the "saved" message (and any error) now appears as a notice at the bottom of the screen instead of pushing the page down, so choosing a value no longer makes the page jump; errors stay until closed. Dropdowns keep their width when an option with a long name is chosen, so nothing next to them moves.
 - Settings that save at once (retention, voice input, language, typed dates, calendar subscription, renaming and recolouring own themes) now confirm with a short "Saved" like the rest of the settings, instead of saving silently. Messages of own themes and the calendar subscription no longer push the page down.
 - Dropdowns show their chosen option as a tooltip only when it is cut short.

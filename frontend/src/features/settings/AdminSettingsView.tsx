@@ -85,7 +85,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="btn-action h-8 px-2.5 text-xs flex items-center gap-1.5"
+            className="btn-action h-11 sm:h-8 px-2.5 text-xs flex items-center gap-1.5"
             title={t('user.backTitle')}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
