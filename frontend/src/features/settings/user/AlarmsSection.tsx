@@ -344,7 +344,7 @@ export function AlarmsSection({
               type="button"
               onClick={() => handleTestChannel('email')}
               disabled={demoMode || testingChannel === 'email'}
-              className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3 h-3 text-accent" />
               <span>{testingChannel === 'email' ? t('sending') : t('alarms.email.test')}</span>
@@ -371,7 +371,7 @@ export function AlarmsSection({
               type="button"
               onClick={() => handleTestChannel('discord')}
               disabled={demoMode || testingChannel === 'discord'}
-              className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3 h-3 text-accent" />
               <span>{testingChannel === 'discord' ? t('sending') : t('alarms.discord.test')}</span>
@@ -385,7 +385,7 @@ export function AlarmsSection({
               value={discordWebhookUrl}
               onChange={(e) => setDiscordWebhookUrl(e.target.value)}
               placeholder="https://discord.com/api/webhooks/123456789/token..."
-              className="w-full h-8 px-2.5 input-field font-mono"
+              className="w-full h-11 sm:h-8 px-2.5 input-field font-mono"
             />
           </div>
         </div>
@@ -413,7 +413,7 @@ export function AlarmsSection({
               type="button"
               onClick={() => handleTestChannel('webhook')}
               disabled={demoMode || testingChannel === 'webhook'}
-              className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3 h-3 text-accent" />
               <span>{testingChannel === 'webhook' ? t('sending') : t('alarms.webhook.test')}</span>
@@ -429,7 +429,7 @@ export function AlarmsSection({
               value={customWebhookUrl}
               onChange={(e) => setCustomWebhookUrl(e.target.value)}
               placeholder={t('alarms.webhook.placeholder')}
-              className="w-full h-8 px-2.5 input-field font-mono"
+              className="w-full h-11 sm:h-8 px-2.5 input-field font-mono"
             />
           </div>
         </div>
@@ -458,7 +458,7 @@ export function AlarmsSection({
                 type="button"
                 onClick={() => void sendTestPush()}
                 disabled={pushBusy || demoMode || pushDevices.length === 0}
-                className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Send className="w-3 h-3 text-accent" />
                 <span>{t('alarms.push.test')}</span>
@@ -487,7 +487,7 @@ export function AlarmsSection({
                       disabled={pushBusy || demoMode}
                       title={t('alarms.push.remove')}
                       aria-label={t('alarms.push.removeNamed', { name: d.device || t('alarms.push.device') })}
-                      className="h-9 w-9 sm:h-7 sm:w-7 shrink-0 flex items-center justify-center text-faint hover:text-status-err disabled:opacity-40"
+                      className="h-11 w-11 sm:h-7 sm:w-7 shrink-0 flex items-center justify-center text-faint hover:text-status-err disabled:opacity-40"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -502,7 +502,7 @@ export function AlarmsSection({
           <button
             type="submit"
             disabled={savingAlarms}
-            className="btn-primary h-9 px-5 text-xs font-semibold"
+            className="btn-primary h-11 sm:h-9 px-5 text-xs font-semibold"
           >
             {savingAlarms ? t('saving') : t('alarms.save')}
           </button>
