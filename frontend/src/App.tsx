@@ -401,15 +401,23 @@ export const App: React.FC = () => {
     const next = activate ?? activeTheme;
     if (activate || isCustomThemeId(next)) activateTheme(next, themes);
   };
-  useEffect(() => {
-    if (!user?.id) return;
+  const reloadCustomThemes = () => {
     api
       .getThemes()
       .then((themes) => handleCustomThemesChange(themes))
       .catch(() => {});
+  };
+  useEffect(() => {
+    if (!user?.id) return;
+    reloadCustomThemes();
     // Once per sign-in
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+  // An import or a restored backup can bring custom themes along: read them again with everything else
+  const handleDataChanged = () => {
+    void refreshAll();
+    reloadCustomThemes();
+  };
 
   // Web Share Target: import shared thoughts from external apps
   useEffect(() => {
@@ -925,7 +933,7 @@ export const App: React.FC = () => {
                 onThemeChange={handleChangeTheme}
                 onCustomThemesChange={handleCustomThemesChange}
                 onUserUpdated={setUser}
-                onDataChanged={refreshAll}
+                onDataChanged={handleDataChanged}
                 onBack={() => setActiveTab('triage')}
               />
             )}

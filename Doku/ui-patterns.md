@@ -105,7 +105,7 @@ Component: [ErrorNotice.tsx](../frontend/src/components/ErrorNotice.tsx), `showE
 Component: [StatusToast.tsx](../frontend/src/components/StatusToast.tsx)
 
 - The answer to a save in the account settings, the administration and the groups page ("Gespeichert", an invite code, what went wrong) floats centered at the bottom (`bg-panel-elevated`, above the bottom navigation bar on mobile) instead of standing above the content, so the page does not move.
-- A confirmation (tick, `role="status"`) goes after 4 s; an error (frame and text in `status-err`, `role="alert"`) stays until it is closed with its ×. Both can be closed; the live regions stay mounted, so screen readers announce each new message.
+- A confirmation (tick, `role="status"`) goes after 4 s, or when its section is left (it does not come back on return); an error (frame and text in `status-err`, `role="alert"`) stays until it is closed with its ×. Both can be closed; the live regions stay mounted, so screen readers announce each new message.
 - Settings that save as soon as they are changed (retention, voice input, language, calendar subscription, renaming or recolouring an own theme) answer with the same notice: a short "Gespeichert" (`settings:api.saved`) or the error. Retention, voice input and language share `useInstantSave` and `InstantSaveToast` ([InstantSave.tsx](../frontend/src/features/settings/user/InstantSave.tsx)). Exceptions: two-factor sign-in and passkeys keep their messages inside their own block; device settings under Darstellung (theme, corners, accent, link previews, journal) apply visibly and say nothing.
 
 ## Notification with "Undo"

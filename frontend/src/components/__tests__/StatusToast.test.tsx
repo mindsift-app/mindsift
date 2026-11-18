@@ -41,6 +41,17 @@ describe('StatusToast (answer to a save in the settings)', () => {
     expect((container.firstElementChild as HTMLElement).className).toContain('fixed');
   });
 
+  it('ends a confirmation when it leaves the page (the section is left), but keeps an error', () => {
+    const onClose = vi.fn();
+    const ok = render(<StatusToast msg={{ type: 'ok', text: 'Gespeichert' }} onClose={onClose} />);
+    ok.unmount();
+    expect(onClose).toHaveBeenCalledTimes(1);
+    onClose.mockClear();
+    const err = render(<StatusToast msg={{ type: 'err', text: 'Speichern fehlgeschlagen' }} onClose={onClose} />);
+    err.unmount();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('starts the time again for a new message', () => {
     vi.useFakeTimers();
     const onClose = vi.fn();

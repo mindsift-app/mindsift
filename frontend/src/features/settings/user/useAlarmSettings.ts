@@ -82,6 +82,7 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
   const [notifyBeforeMinutes, setNotifyBeforeMinutes] = useState<number>(
     currentUser.notifyBeforeMinutes ?? 30
   );
+  // The answer to saving, a test and the push switches: one notice (StatusToast)
   const [alarmMsg, setAlarmMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [savingAlarms, setSavingAlarms] = useState(false);
   const [testingChannel, setTestingChannel] = useState<string | null>(null);
@@ -91,7 +92,6 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
   const [pushHere, setPushHere] = useState(false);
   const [pushEndpointHere, setPushEndpointHere] = useState<string | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
-  const [pushMsg, setPushMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const reloadPush = useCallback(async () => {
     const [devices, sub] = await Promise.all([api.getPushDevices().catch(() => []), currentPushSubscription()]);
     setPushDevices(devices);
@@ -101,12 +101,12 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
   // An old installation or a device you no longer use: remove it from the list
   const removeDevice = async (endpoint: string) => {
     setPushBusy(true);
-    setPushMsg(null);
+    setAlarmMsg(null);
     try {
       await removePushDevice(endpoint);
       await reloadPush();
     } catch (err) {
-      setPushMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.removeFailed') });
+      setAlarmMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.removeFailed') });
     } finally {
       setPushBusy(false);
     }
@@ -118,26 +118,26 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
   }, [reloadPush]);
   const togglePushHere = async (on: boolean) => {
     setPushBusy(true);
-    setPushMsg(null);
+    setAlarmMsg(null);
     try {
       if (on) await enablePush();
       else await disablePush();
       await reloadPush();
-      setPushMsg({ type: 'ok', text: on ? i18n.t('settings:alarms.push.on') : i18n.t('settings:alarms.push.off') });
+      setAlarmMsg({ type: 'ok', text: on ? i18n.t('settings:alarms.push.on') : i18n.t('settings:alarms.push.off') });
     } catch (err) {
-      setPushMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.enableFailed') });
+      setAlarmMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.enableFailed') });
     } finally {
       setPushBusy(false);
     }
   };
   const sendTestPush = async () => {
     setPushBusy(true);
-    setPushMsg(null);
+    setAlarmMsg(null);
     try {
       const res = await api.testPush();
-      setPushMsg({ type: 'ok', text: i18n.t('settings:alarms.push.testSent', { count: res.devices }) });
+      setAlarmMsg({ type: 'ok', text: i18n.t('settings:alarms.push.testSent', { count: res.devices }) });
     } catch (err) {
-      setPushMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.testFailed') });
+      setAlarmMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.testFailed') });
     } finally {
       setPushBusy(false);
     }
@@ -267,7 +267,6 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     pushHere,
     pushEndpointHere,
     pushBusy,
-    pushMsg,
     removeDevice,
     togglePushHere,
     sendTestPush,
