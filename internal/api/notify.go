@@ -30,6 +30,11 @@ import (
 
 const notifyMaxAttempts = 3
 
+// notifyMaxAge: a queued event that has still not gone out on every channel after this long is dropped.
+// Attempts are only counted for the recipient a run really tried, so during a long outage the events the
+// circuit breaker keeps skipping would otherwise wait for ever.
+const notifyMaxAge = 48 * time.Hour
+
 // notifyItem is one line of a bundled message.
 type notifyItem struct {
 	kind, title, text string
@@ -635,8 +640,9 @@ func (s *Server) flushNotifications(now time.Time, run *outages) {
 		// An event is done once every channel it went out on got it (or has nothing to deliver to); one
 		// with a failed channel stays queued for that channel alone, up to notifyMaxAttempts runs. A
 		// channel the circuit breaker skipped was not tried: the event waits for the next run without
-		// counting an attempt, so an outage does not use up the attempts of everyone the run skipped
-		var done, dropped []int64
+		// counting an attempt, so an outage does not use up the attempts of everyone the run skipped.
+		// Whatever is still missing after notifyMaxAge is dropped, tried or not
+		var done, dropped, expired []int64
 		retry, wait := map[int64][]string{}, map[int64][]string{}
 		for i, q := range queued {
 			delivered := slices.Clone(q.Delivered)
@@ -652,6 +658,8 @@ func (s *Server) flushNotifications(now time.Time, run *outages) {
 			switch {
 			case !missing:
 				done = append(done, q.ID)
+			case queuedBefore(q.CreatedAt, now.Add(-notifyMaxAge)):
+				expired = append(expired, q.ID)
 			case !tried:
 				wait[q.ID] = delivered
 			case q.Attempts+1 >= notifyMaxAttempts:
@@ -670,8 +678,11 @@ func (s *Server) flushNotifications(now time.Time, run *outages) {
 		if len(dropped) > 0 {
 			slog.Warn("Notifications dropped after several failed attempts", "user_id", uid, "count", len(dropped))
 		}
+		if len(expired) > 0 {
+			slog.Warn("Notifications dropped after waiting 2 days", "user_id", uid, "count", len(expired))
+		}
 		// Left in the queue they would go out a second time
-		logFailed("Removing delivered notifications from the queue", s.store.DeleteQueuedNotifications(append(done, dropped...)), "user_id", uid)
+		logFailed("Removing delivered notifications from the queue", s.store.DeleteQueuedNotifications(slices.Concat(done, dropped, expired)), "user_id", uid)
 		if len(retry) > 0 {
 			logFailed("Counting a failed attempt to notify", s.store.RetryQueuedNotifications(retry), "user_id", uid)
 		}
@@ -679,6 +690,13 @@ func (s *Server) flushNotifications(now time.Time, run *outages) {
 			logFailed("Recording the channels a held back notification reached", s.store.SetQueuedNotificationsDelivered(wait), "user_id", uid)
 		}
 	}
+}
+
+// queuedBefore: whether a queued event (created_at, RFC 3339) was queued before limit; an unreadable time
+// never counts as old.
+func queuedBefore(createdAt string, limit time.Time) bool {
+	at, err := time.Parse(time.RFC3339, createdAt)
+	return err == nil && at.Before(limit)
 }
 
 // channelNames lists the chosen channels by the names the queue and the logs use.
@@ -785,7 +803,7 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 	}
 	if len(out.push) > 0 {
 		// Without a device there is nothing to deliver, and nothing to try again
-		if err := s.sendPush(userID, pushDigest(lang, heading, out.push, s.notifyLink())); !errors.Is(err, errNoPushDevice) {
+		if err := s.sendPushVia(userID, pushDigest(lang, heading, out.push, s.notifyLink()), run); !errors.Is(err, errNoPushDevice) {
 			fail("push", err)
 		}
 	}

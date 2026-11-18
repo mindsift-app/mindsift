@@ -21,8 +21,8 @@ import (
 // target again, so at most one recipient per run and target waits for the timeout.
 //
 // Targets: "email" is the one mail server; Discord and own webhooks go by the host of their URL (all
-// Discord webhooks share discord.com, own webhooks of different people mostly differ). Push goes to the
-// devices' push services one by one and is not covered.
+// Discord webhooks share discord.com, own webhooks of different people mostly differ); push goes by the
+// host of each device's push service (pushTarget; most devices share a few, such as fcm.googleapis.com).
 //
 // A run belongs to one goroutine; outages is not safe for concurrent use. A nil *outages skips nothing.
 type outages struct {
