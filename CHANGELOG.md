@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Changed
+- Desktop: 8 px instead of 24 px left and right of the main area, so notes, tasks and lists get more room.
+
 ### Added
 - AI agents (MCP) can add a whole nested block of bullets to an existing note in one step (`add_note_bullet` with `markdown`) instead of one bullet at a time, which made extending notes slow.
 

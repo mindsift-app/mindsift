@@ -871,7 +871,7 @@ export const App: React.FC = () => {
         }`}
       >
       <main
-        className={`flex-1 w-full px-3 sm:px-6 pt-3 sm:pt-2.5 pb-24 ${
+        className={`flex-1 w-full px-3 sm:px-2 pt-3 sm:pt-2.5 pb-24 ${
           activeTab === 'workspace'
             ? 'min-h-0 flex flex-col sm:pb-2'
             : activeTab === 'triage'
