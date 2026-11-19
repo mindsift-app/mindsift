@@ -8,6 +8,8 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+## [0.96.0] - 2026-11-19
+
 **The biggest update so far, and a big step towards 1.0.** Draw together live in shared notes, start notes from templates, paste or drag images and code straight into a note, and let MindSift understand dates and quantities as you type. Subscribe to your tasks in your calendar app. Administrators get two-factor sign-in, passkeys and single sign-on, an audit log, an update hint and a command line for emergencies. And it all runs comfortably for over a thousand people at once on a single CPU core.
 
 **Before you update:** read the items marked **Attention**. In short: set your time zone (the server now defaults to UTC), keep `SECRETS_KEY`, keep the pre-migration backup this update writes if you might go back to v0.95.0, and have free disk space of about twice the database's size for the one-time conversion. New servers ask for a setup code from the log. The app needs Safari 16.4, Chrome/Edge 111 or Firefox 128.
@@ -15,97 +17,51 @@ Versions without a git tag were development states and were never published as a
 ### Added
 - **Live drawing together** in shared notes, with a host who saves for everyone; opening a drawing alone locks it for others.
 - **Note templates** (`/template`, "New note" from a template, also for AI agents).
-- **Images and code straight into notes:** paste or drag images (quality set by the administrator), and code from ChatGPT, Claude or docs becomes code blocks with their language; any code language name, more config formats highlighted.
-- **Dates and quantities from what you type** ("dentist tomorrow 2pm", "2x milk"), also when dictating; a personal switch turns it off. Hold the + in the desktop rail to dictate.
+- **Images and code straight into notes:** paste or drag images, resize them by their corner (kept in copies and Markdown as `![caption|320](…)`); code from ChatGPT, Claude or docs becomes code blocks with their language. Images, drawings and audio get indent arrows.
+- **Dates and quantities from what you type** ("dentist tomorrow 2pm", "2x milk"), also when dictating; a personal switch turns it off.
+- **Dictation on the +** (desktop rail and phone) locks like in WhatsApp when you slide away; with your own Whisper server you can dictate again while earlier recordings are still being recognised.
 - **Calendar subscription** of your tasks for Google, Apple, Thunderbird and Outlook.
-- **Lists suggest earlier items**; tasks filter by several hashtags.
+- **Drag a single bullet:** an expanded bullet moves alone, its sub-bullets stay; also onto another note in the sidebar.
+- **Custom themes in the app:** rename, recolour live with a colour picker, export as CSS, add from the template.
+- Lists suggest earlier items; tasks filter by several hashtags; hashtags below the folder tree filter the tree.
 - **For administrators:** command line (`docker exec mindsift mindsift …`), audit log, update hint, password reset options, two-factor sign-in and passkeys, single sign-on with back-channel logout, server time zone, backups before database updates, Prometheus metrics, outgoing proxy support.
-- **AI agents (MCP):** images, moving and extracting bullets, code blocks, notes from templates; sequence diagrams, state diagrams and Git graphs from Mermaid besides flowcharts and mind maps; a `drawing_help` tool with the drawing syntax.
-- **Drag a single bullet:** dragging an expanded bullet moves it alone, its sub-bullets stay and move up into its place; a collapsed bullet takes them along. Works onto another note in the sidebar too; the preview shows what moves.
-- Images, drawings and audio in notes have indent arrows, shown on hover or after tapping.
-- Images in notes can be resized by dragging their bottom right corner (the aspect ratio stays, up to the width of the note); a button at the top right brings back the default size. The size is kept when copying, in Markdown export (Obsidian's `![caption|320](…)`) and on import.
-- Quick Dump on the desktop: with your own Whisper server you can hold the + in the left rail again right away while earlier dictations are still being recognised; they are saved in the order you spoke them, a counter on the + shows how many are waiting, and one that fails keeps its recording until a reload and offers "Try again".
-- Dictation on the + (desktop rail and phone) locks like in WhatsApp: slide away while holding and the recording keeps running; the red stop button finishes it, a small × discards it (Escape too on the desktop). The phone's + is free again right after a dictation, like the desktop's.
-- **Custom themes in the app:** each custom theme is a row under "Custom themes": rename it in place, change its colours with the colour picker (applied live), export it as a CSS file to share, and add a new one from the template with the + below the list.
-- **Media settings for administrators:** a new "Media" page in the administration. Image compression can now be switched off, voice notes recorded in notes are compressed to 32 kbit/s by default (bitrate adjustable, or off), audio files are limited to 7 MB by default (adjustable; a recording ends on its own before the limit), and uploading audio files from the device can be switched off. Images can be switched off altogether, or only those from other addresses; images copied from a link are now compressed like your own. The largest image and the storage per person are set there too. Each setting can be fixed through its variable (`MEDIA_IMAGES`, `MEDIA_IMAGE_QUALITY`, `MEDIA_MAX_IMAGE_MB`, `MEDIA_EXTERNAL_IMAGES`, `MEDIA_AUDIO_COMPRESSION`, `MEDIA_AUDIO_BITRATE`, `MEDIA_MAX_AUDIO_MB`, `MEDIA_AUDIO_UPLOADS`, `MEDIA_QUOTA_MB`).
-- **More settings in the administration:** imprint and privacy notice (links and texts) under Server, and voice input under Voice input & AI: mode (own Whisper server, browser, off), the Whisper server's address and key, the limits, and the model, chosen from a list that shows which models are downloaded; a click on another one lets the Whisper server download it and uses it once it is there.
-- Voice input in the administration: downloaded models other than the one in use can be deleted from the Whisper server to free its space, after a short confirmation.
-- Voice input in the administration: how often a recording goes to the Whisper server while you speak (every 8 s by default, 2–30 s) can be set, or switched off so a recording is sent as a whole after stopping (live dictation with `/diktat` too); `STT_CHUNKED` and `STT_CHUNK_SECONDS` fix both.
-- **For providers:** `SMTP_DISABLED`, `LINK_PREVIEWS`, `PUSH_KNOWN_SERVICES_ONLY`, `ALLOW_PRIVATE_WEBHOOKS`, `BACKUP_ENABLED`, `BACKUP_TIME` and `BACKUP_RETENTION_DAYS` fix their setting and lock it in the administration; `INSTANCE_NAME` and `STT_DEFAULT_MODEL` only preset the name and the model.
+- **More in the administration:** a Media page (images, compression, audio bitrate and size, uploads, storage per person), imprint and privacy notice, and voice input (mode, Whisper server, limits, chunk interval, and its models: download, choose, delete).
+- **For providers:** most of these settings can be fixed through variables that lock them in the administration (`MEDIA_*`, `STT_*`, `SMTP_DISABLED`, `LINK_PREVIEWS`, `PUSH_KNOWN_SERVICES_ONLY`, `ALLOW_PRIVATE_WEBHOOKS`, `BACKUP_*`); `INSTANCE_NAME` and `STT_DEFAULT_MODEL` only preset.
+- **AI agents (MCP):** images, moving and extracting bullets, code blocks, notes from templates; sequence diagrams, state diagrams and Git graphs from Mermaid; a `drawing_help` tool.
 
 ### Changed
-- Number fields in the administration (limits of voice input, media sizes, backup days, uses of an invite) look the same everywhere: the number on the right with its unit, no spinner arrows, saved when you leave the field or press Enter. The limits of voice input sit in two columns, each with its label above.
-- **Attention:** with `SMTP_HOST` set, the mail server of the environment now applies and Administration → E-mail is locked (before, a server saved there took precedence). Every `STT_*` variable now fixes its field in the administration: `docker-compose.yml` and `.env.example` no longer set them, and the install script writes `STT_DEFAULT_MODEL` instead of `STT_MODEL`. If your `.env` still has `STT_MODEL` (or other `STT_*` values from the old example), they stay fixed; rename `STT_MODEL` to `STT_DEFAULT_MODEL` to choose the model in the administration.
-- **Attention:** audio files in notes are limited to 7 MB by default (was 50 MB), set under Administration → Media. `MEDIA_MAX_AUDIO_MB`, `MEDIA_MAX_IMAGE_MB` and `MEDIA_QUOTA_MB` now fix their setting there and lock it; if your `.env` still has them from the old example (`50`, `15`, `0`), remove them to choose the values in the administration.
 - **Attention:** the server runs on UTC without `TZ`; set your time zone under Administration → Server.
 - **Attention:** a new server's setup asks for a one-time code from the log (`setupCode` for `POST /auth/setup`).
 - **Attention:** passwords count to the last character and are stored in a new form older versions cannot read.
 - **Attention:** notes are stored far more compactly; the update converts them once.
-- **Attention:** the SMTP password is stored encrypted with `SECRETS_KEY`.
+- **Attention:** the SMTP password is stored encrypted with `SECRETS_KEY`. With `SMTP_HOST` set, the environment's mail server applies and Administration → E-mail is locked.
+- **Attention:** every `STT_*` and `MEDIA_*` variable now locks its field in the administration. Remove leftovers from the old `.env.example` (`STT_*`, `MEDIA_MAX_AUDIO_MB=50`, `MEDIA_MAX_IMAGE_MB=15`, `MEDIA_QUOTA_MB=0`) to choose in the administration; rename `STT_MODEL` to `STT_DEFAULT_MODEL`.
+- **Attention:** audio files in notes are limited to 7 MB by default (was 50 MB).
 - **Attention:** the app needs Safari 16.4, Chrome/Edge 111 or Firefox 128 or newer.
 - **Attention:** note titles have at most 60 characters.
-- **Much more on a small server:** 1,200 people at once on 1 CPU core and 1 GB RAM with 0.03 % errors.
-- **Desktop redesign** with a navigation rail, Quick Dump as a window and a calmer look.
+- **Much more on a small server:** 1,200 people at once on 1 CPU core and 1 GB RAM with 0.03 % errors; opening notes, backlinks, linking and folders do far less work.
+- **Desktop redesign** with a navigation rail, Quick Dump as a window and a calmer look; the administration is split into short pages.
+- After a server update the app reloads itself, after saving all unsent changes; it waits while you type, record or are offline.
 - Offline changes in shared lists and tasks never undo someone else's, and linked to-dos stay in step with their tasks.
-- A dragged bullet takes the level of the bullet it is dropped in front of; move the mouse to the right while dragging to drop it deeper, down to the last sub-bullet of the bullet above. The drop line shows the level, the bullets around it keep their place.
-- An image's empty caption only shows on hover or after tapping; on touch screens the first tap shows the controls, the second opens the image.
-- On phones, code blocks have no indent arrows; the bar above the keyboard indents them.
-- Tables: Enter goes on into an empty row below instead of adding another one, so typing a new table and leaving it with Enter flows; the ⋯ menu sits above the + for a column.
-- Administration → Server: no button to take the browser's time zone any more; setup suggests it.
-- The setup option "Create sample data" is now "Add the MindSift help as notes": it creates only the help notes, no sample tasks, lists, inbox thoughts or other notes; the full sample data stays in the online demo. The help notes also come in Spanish, French and Italian.
-- Opening a note loads it from the server once instead of twice; linking titles from agents and imports, extracting and pulling back branches, and listing or moving folders no longer read every bullet of every note (about ten times faster with many notes).
-- After a server update the app reloads itself to the new version instead of offering a dismissable notice: a short notice counts down and first sends or safely stores all unsent changes; it waits while you type in a note, does not reload by itself while unsaved input, a recording or unsaved dictations exist, and never reloads while offline.
-- Administration: the long "Server & sharing" page is split into Sign-in & registration, Sharing, Server, Data and Voice input & AI, each a short page of its own.
-- The calendar subscription carries the instance name and a description ("<instance> – Tasks" in your language).
-- The version and imprint line at the bottom left of the app is gone; the imprint and "About MindSift" sit at the bottom of the help page, like in the settings.
-- Demo: about 35 more sample notes (work, projects, recipes, reading, travel) linked with [[wiki links]] and sharing hashtags, and a journal with entries for most of the last three weeks; only the help notes keep emoji icons.
-- Clicking a hashtag below the folder tree filters the tree to the notes carrying it (several hashtags: notes with all of them); a red ✕ beside "Hashtags" clears the filter, and the bar above the trash glows red while it is on. The hashtag page stays reachable through the "Hashtags" tab and hashtags in a note.
-- AI agents (MCP) are encouraged to use colour in diagrams and to structure notes with sub-headings and indented details; the MCP descriptions are much shorter, so clients that cut long descriptions off see them whole.
-- The app starts with only the texts of your language; it no longer loads the German ones as well.
-- Link previews in notes span the full width of the note; the picture takes 38 % of it (golden section, at most 340 px) in the usual 1.91:1 format of link pictures and sets the card's height; the button that hides a preview sits at its bottom right, where the bullet's floating buttons no longer cover it. A web link added with `/link` to an empty bullet gets its preview too, also when you typed a text for it (the preview shows the page's title).
+- Notes: a dragged bullet takes the level where it is dropped (move right to go deeper); Enter at the start of a bullet adds a line above; tables flow on with Enter; link previews span the note's width; empty rows no longer show indent lines.
+- Settings confirm every change with a short notice at the bottom of the screen instead of pushing the page down.
+- Setup's "Create sample data" now adds only the help notes (also in Spanish, French and Italian); the demo has many more linked sample notes and a journal.
+- The app loads only the texts of your language; MCP descriptions are much shorter.
 
 ### Fixed
-- Back buttons at the top of the settings, administration, groups, help and tag pages are easier to tap on phones.
-- Settings: the "saved" message (and any error) now appears as a notice at the bottom of the screen instead of pushing the page down, so choosing a value no longer makes the page jump; errors stay until closed. Dropdowns keep their width when an option with a long name is chosen, so nothing next to them moves.
-- Settings that save at once (retention, voice input, language, typed dates, calendar subscription, renaming and recolouring own themes) now confirm with a short "Saved" like the rest of the settings, instead of saving silently. Messages of own themes and the calendar subscription no longer push the page down.
-- Dropdowns show their chosen option as a tooltip only when it is cut short.
-- Groups: messages after creating, renaming or changing a group appear as a notice at the bottom of the screen instead of pushing the page down.
-- Saving in the account settings no longer reloads your tasks, lists and counters each time; that now happens only after deleting your own data, an import or restoring a backup, which also brings the imported tasks and lists in at once.
-- Notes: empty rows no longer show indent lines of their own; the lines end with the last bullet of their group, so a blank line at the end of a group or before the next part really looks empty. In the middle of a list the lines still run through.
-- Task alarms: when one channel failed (for example the mail server) while another got through (for example push), the alarm counted as sent and the e-mail never came. Now each channel is tried again on its own (up to three times) without the others going out twice, and every failed channel is written to the server log. Push without a registered device no longer counts as delivered.
-- Notifications (assignments, shares, mentions, watched tasks): when one channel failed, for example the mail server, the channels that got the message (Discord, push, own webhook) received it again on each of up to three retries. Now only the failed channel is tried again.
-- Daily summary: when a channel failed at the chosen time, for example because the mail server was briefly down, that channel got no summary that day. Now only the failed channel is tried again every 5 minutes for the next 30 minutes (also past midnight for a summary set after 23:30), without the others getting it twice; if it still fails, it is given up and written to the server log.
-- Alarms, notifications and daily summaries: a mail server (or Discord or webhook host) that does not answer no longer holds up everyone's messages by up to a minute per person. It is tried once per minute; the other channels still go out right away, and the skipped messages follow as soon as it is back, without using up their retries.
-- Alarms, notifications and daily summaries by push: a push service that does not answer no longer holds up the other people's messages either; devices on other push services still get theirs right away. The test push in the settings still tries every device.
-- Notifications that still could not be sent on a channel after 2 days (for example during a long mail server outage) are dropped and written to the server log instead of waiting for ever.
-- Clicking into the free space after the end of a line in a note (or at the very end of its text) now always puts the cursor behind the last character, also when the line ends in `inline code`, bold, a link or other formatting; before, it often landed in front of the closing mark, so Enter carried it into the new bullet.
-- Opening the journal no longer stutters: its days are built one after another instead of all at once.
-- Drawings from Mermaid: in a Git graph, a merge from a branch that goes on afterwards runs beside that branch's lane instead of sharing it; an arrow label no longer sits right at the arrowhead when two shapes are only slightly offset.
 - **Attention:** usernames are unique; existing duplicates are renamed (`anna` → `anna1`).
 - **Attention:** pictures load only from MindSift itself (custom themes lose external backgrounds).
+- Alarms, notifications and daily summaries: a failed channel is retried on its own without the others going out twice; a mail server, webhook host or push service that does not answer no longer holds up everyone else; messages still undeliverable after 2 days are dropped and logged.
 - Repeating tasks repeat again after their next occurrence was deleted.
 - Search finds your own notes even when others have many matches.
 - Imports and restores no longer lose data when they fail.
-- Enter at the very start of a bullet adds an empty line above it instead of splitting it; headings, to-dos and their sub-bullets stay as they are.
-- Controls in a block someone else is editing (indent arrows, code language, table + and ⋯, audio caption) stay in place, greyed out, so the layout no longer jumps.
-- Dragging a bullet inside a zoomed-in branch put it in the wrong place.
-- Custom themes: faint text, placeholders, counts, done tasks, hover surfaces, input fields and borders follow the theme's own colours instead of staying grey; "More colours" in the theme editor sets faint text, hover surface, input field, borders and code blocks.
-- Custom themes: a colour set under "More colours" can follow the main colours again (round arrow next to it); status and Kanban column colours can be changed there too, their light fills and borders follow them. An imported theme with its own accent no longer keeps the template's blue hover, and the drop line when sorting tasks and list items and the edge of the swiped Quick Dump card glow in the theme's colours.
-- In diagrams drawn from Mermaid, two arrows between the same two boxes (there and back) no longer lie on top of each other.
-- Pulling a note back into the note it was extracted from now asks first when people it is shared with link to it from their own notes, instead of silently leaving their links pointing nowhere.
-- Voice input with the browser's speech recognition (Chrome, Edge): a spoken language chosen in the account settings is passed as a full language tag (e.g. de-DE), so Chrome no longer falls back to English.
-- Opening a note no longer slows down for its backlinks in accounts with many notes, and the backlinks show at once; following a plain link no longer claims the linked bullet is gone.
-- Demo: the reset countdown no longer gets stuck at "resetting"; it picks up the next reset time again, also after a lost connection or when the tab comes back.
-- Demo: the reset countdown shows up right after the demo server started, instead of only after the app asked again.
-- Voice input in the administration: entering the Whisper server's address on a server where no mode was chosen yet now switches to "Own Whisper server" instead of staying on "Browser"; a mode chosen on purpose stays as it is.
-- Voice input in the administration: downloading and deleting a model of the Whisper server now show in the audit log, and so does choosing a model that is already downloaded.
-- Alarm settings: the messages after switching push on or off and after a test push appear as a notice at the bottom of the screen like the other settings' messages, instead of pushing the page down.
-- Settings: a "Saved" message no longer shows up again when you leave a section within a few seconds and come back.
-- Custom themes from an import or a restored backup appear right away instead of only after reloading the page.
-- Account settings on phones: the test buttons of the alarm channels, the push device remove button, the save buttons, the avatar and emoji buttons, the web address fields and the appearance options are now big enough to tap (at least 44 px high).
-- Voice input in the administration: when a model downloaded with "use after download" becomes the model in use, the audit log now records the switch as a change by the admin who asked for it.
-- Settings: a "Saved" confirmation of a change that finished only after you left the section no longer appears when you come back; errors still stay until closed.
-- Many smaller fixes in live drawing, linked to-dos, sharing, reconnecting and translations.
+- Clicking after the end of a line puts the cursor behind formatting like `code` or links; dragging inside a zoomed-in branch lands in the right place; the journal opens without stutter.
+- Custom themes: text, inputs, borders and status colours follow the theme instead of staying grey.
+- Pulling a note back asks first when others link to it.
+- Browser voice input passes the full language tag, so Chrome no longer falls back to English.
+- Phones: buttons in the settings and back buttons of full-page views are at least 44 px high.
+- Demo: the reset countdown no longer gets stuck.
+- Many smaller fixes in live drawing, Mermaid drawings, linked to-dos, sharing, reconnecting and translations.
 
 ## [0.95.0] - 2026-11-12
 
