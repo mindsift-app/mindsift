@@ -2,6 +2,7 @@ package storage
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -222,5 +223,91 @@ func TestRestoredNoteKeepsItsPin(t *testing.T) {
 	}
 	if found, isPinned := pinned(); !found || !isPinned {
 		t.Errorf("restored note must come back pinned: found=%v pinned=%v", found, isPinned)
+	}
+}
+
+// The owner deleting a shared folder (in the demo every top-level folder is one) takes the folder out of
+// the tree for everyone, not only its notes; it goes to the trash as a folder and comes back as a personal
+// folder with its notes and subfolders.
+func TestOwnerDeletesSharedFolder(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "sharedtrash.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	openSharing(t, store)
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	ben, _ := store.CreateUser("ben@example.com", "hash", "Ben", "member")
+	_, _ = store.CreateFolder(anna.ID, "Projekte/Leer")
+	top, _ := store.CreateDocument(anna.ID, "", "Übersicht", "", "Projekte", nil, nil, false)
+	inner, _ := store.CreateDocument(anna.ID, "", "Verkehr", "", "Projekte/Stadt", nil, nil, false)
+	sf, err := store.CreateSharedFolder(anna.ID, "Projekte", "Projekte")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateFolderShare(anna.ID, sf.ID, "user", ben.ID, "write"); err != nil {
+		t.Fatal(err)
+	}
+	has := func(userID, path string) bool {
+		folders, _ := store.GetFolders(userID)
+		for _, f := range folders {
+			if f == path {
+				return true
+			}
+		}
+		return false
+	}
+	if !has(anna.ID, "Projekte/Stadt") || !has(ben.ID, "Projekte/Stadt") {
+		t.Fatalf("setup: the shared folder for Anna and Ben")
+	}
+
+	if _, err := store.DeleteFolder(anna.ID, "Projekte"); err != nil {
+		t.Fatalf("DeleteFolder: %v", err)
+	}
+	for _, u := range []string{anna.ID, ben.ID} {
+		if has(u, "Projekte") || has(u, "Projekte/Stadt") || has(u, "Projekte/Leer") {
+			t.Fatalf("the deleted shared folder must leave the tree of %s", u)
+		}
+	}
+	trash, _ := store.GetTrash(anna.ID)
+	if len(trash) != 1 || trash[0].Kind != "folder" || trash[0].NoteCount != 2 {
+		t.Fatalf("trash should hold the folder with its 2 notes: %+v", trash)
+	}
+	if _, err := store.RestoreFolder(anna.ID, trash[0].ID); err != nil {
+		t.Fatalf("RestoreFolder: %v", err)
+	}
+	for _, p := range []string{"Projekte", "Projekte/Stadt", "Projekte/Leer"} {
+		if !has(anna.ID, p) {
+			t.Errorf("folder %q should be back", p)
+		}
+	}
+	for id, path := range map[string]string{top.ID: "Projekte", inner.ID: "Projekte/Stadt"} {
+		if d, err := store.GetDocumentByID(anna.ID, id); err != nil || d.IsArchived || d.FolderPath != path {
+			t.Errorf("note back in %s: %+v %v", path, d, err)
+		}
+	}
+}
+
+// Moving a folder moves only the user's own folder, not a folder of the same name of someone else.
+func TestMoveFolderLeavesOtherUsersAlone(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "movefolder.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	ben, _ := store.CreateUser("ben@example.com", "hash", "Ben", "member")
+	for _, u := range []string{anna.ID, ben.ID} {
+		_, _ = store.CreateFolder(u, "Ziel")
+		_, _ = store.CreateFolder(u, "A/Leer")
+	}
+	if _, _, err := store.MoveFolder(anna.ID, "A", "Ziel"); err != nil {
+		t.Fatal(err)
+	}
+	if a, _ := store.GetFolders(anna.ID); strings.Join(a, "|") != "Ziel|Ziel/A|Ziel/A/Leer" {
+		t.Errorf("Anna's folders: %v", a)
+	}
+	if b, _ := store.GetFolders(ben.ID); strings.Join(b, "|") != "A|A/Leer|Ziel" {
+		t.Errorf("Ben's folders must stay: %v", b)
 	}
 }
