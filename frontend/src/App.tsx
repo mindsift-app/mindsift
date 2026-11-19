@@ -27,8 +27,6 @@ import {
   ThemeId,
 } from './lib/theme';
 import { SetupAndAuthView } from './features/auth/SetupAndAuthView';
-import { FinishSetupView } from './features/auth/FinishSetupView';
-import { OAuthConsentView } from './features/auth/OAuthConsentView';
 import { OfflineBanner } from './components/OfflineBanner';
 import { DemoHint } from './components/DemoHint';
 import { useConnectionState } from './lib/useConnectionState';
@@ -65,6 +63,12 @@ import { NavRail } from './app/NavRail';
 import { captureDictation, DictationOutcome, undoDictationDate } from './features/capture/captureDictation';
 import { useQuickDumpShortcut } from './app/useQuickDumpShortcut';
 // The Quick Dump window loads on its first opening, so it stays out of the start bundle
+// Views only the first start of a server or an OAuth connect needs: chunks of their own, not in the sign-in page
+const SetupWizardView = lazy(() => import('./features/auth/SetupWizardView').then((m) => ({ default: m.SetupWizardView })));
+const FinishSetupView = lazy(() => import('./features/auth/FinishSetupView').then((m) => ({ default: m.FinishSetupView })));
+const OAuthConsentView = lazy(() => import('./features/auth/OAuthConsentView').then((m) => ({ default: m.OAuthConsentView })));
+// The administration only admins open: a chunk of its own, not in the app's chunk (app/mainViews.ts)
+const AdminSettingsView = lazy(() => import('./features/settings/AdminSettingsView').then((m) => ({ default: m.AdminSettingsView })));
 const QuickDumpWindow = lazy(() => import('./app/QuickDumpWindow').then((m) => ({ default: m.QuickDumpWindow })));
 import { useSessionBootstrap } from './app/useSessionBootstrap';
 import { useMainViews } from './app/useMainViews';
@@ -637,8 +641,20 @@ export const App: React.FC = () => {
     return <AppLoading />;
   }
 
-  // Show Setup Wizard or Login Screen if needsSetup or not logged in
-  if (authStatus.needsSetup || !user || resetToken) {
+  // First start of the server: the setup wizard
+  if (authStatus.needsSetup) {
+    return (
+      <>
+      {availableUpdate && <UpdateReloadNotice update={availableUpdate} onReloadNow={reloadForUpdate} />}
+      <Suspense fallback={<AppLoading />}>
+        <SetupWizardView authStatus={authStatus} onAuthenticated={handleAuthenticated} />
+      </Suspense>
+      </>
+    );
+  }
+
+  // Login screen if not logged in
+  if (!user || resetToken) {
     return (
       <>
       <EmailConfirmToast />
@@ -662,6 +678,7 @@ export const App: React.FC = () => {
   // The first admin came from ADMIN_USER / ADMIN_PASSWORD: the wizard's instance settings come first
   if (setupPending && user.role === 'admin') {
     return (
+      <Suspense fallback={<AppLoading />}>
       <FinishSetupView
         user={user}
         authStatus={authStatus}
@@ -672,6 +689,7 @@ export const App: React.FC = () => {
         }}
         onLogout={handleLogout}
       />
+      </Suspense>
     );
   }
 
@@ -711,7 +729,11 @@ export const App: React.FC = () => {
   // Consent of the OAuth flow (claude.ai, ChatGPT connect over MCP) instead of the app; after logging in
   // the address is still /oauth/authorize, so the consent follows the login
   if (window.location.pathname === '/oauth/authorize') {
-    return <OAuthConsentView user={user} instanceName={authStatus.instanceName || 'MindSift'} onLogout={handleLogout} />;
+    return (
+      <Suspense fallback={<AppLoading />}>
+        <OAuthConsentView user={user} instanceName={authStatus.instanceName || 'MindSift'} onLogout={handleLogout} />
+      </Suspense>
+    );
   }
 
   if (!views) {
@@ -939,10 +961,12 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'admin_settings' && isServerAdmin && (
-              <views.AdminSettingsView
-                currentUser={user}
-                onBack={() => setActiveTab('triage')}
-              />
+              <Suspense fallback={null}>
+                <AdminSettingsView
+                  currentUser={user}
+                  onBack={() => setActiveTab('triage')}
+                />
+              </Suspense>
             )}
           </section>
         </ViewErrorBoundary>

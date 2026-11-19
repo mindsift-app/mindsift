@@ -100,7 +100,9 @@ func ValidSpeechModel(v string) bool {
 		return false
 	}
 	for _, r := range v {
-		if !(r == '/' || r == '.' || r == '_' || r == '-' || r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z') {
+		switch {
+		case r == '/', r == '.', r == '_', r == '-', r >= '0' && r <= '9', r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z':
+		default:
 			return false
 		}
 	}
