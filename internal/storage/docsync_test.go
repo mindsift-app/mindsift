@@ -381,8 +381,8 @@ func TestDemoAccountsGetSampleDataAndShares(t *testing.T) {
 		t.Fatalf("sample note missing: %v", err)
 	}
 	doc, err := s.GetDocumentByID(admin.ID, docID)
-	// The demo speaks English
-	if err != nil || len(doc.Blocks) < 20 || doc.FolderPath != "Projects" || s.Language(admin.ID) != "en" || s.Language(member.ID) != "en" {
+	// The sample data is English; the accounts keep no language of their own (the browser decides)
+	if err != nil || len(doc.Blocks) < 20 || doc.FolderPath != "Projects" || s.Language(admin.ID) != "" || s.Language(member.ID) != "" {
 		t.Fatalf("sample note too small or misplaced: %d blocks, folder %q, %v", len(doc.Blocks), doc.FolderPath, err)
 	}
 	maxLevel := 0

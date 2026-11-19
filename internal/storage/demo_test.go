@@ -162,3 +162,36 @@ func TestSeedMCPDiagrams(t *testing.T) {
 		store.Close()
 	}
 }
+
+// The shared demo accounts carry no language of their own, so the app follows each visitor's browser; a
+// language a visitor chose is gone after the next reset or start, and the sample data stays in the default.
+func TestDemoAccountsFollowTheBrowserLanguage(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "demo_lang.db"))
+	if err != nil {
+		t.Fatalf("NewStore failed: %v", err)
+	}
+	defer store.Close()
+	store.ConfiguredLanguage = "en"
+
+	if err := store.ResetAndSeedDemo(); err != nil {
+		t.Fatalf("ResetAndSeedDemo failed: %v", err)
+	}
+	if err := store.SetLanguage(DemoAdminID, "fr"); err != nil {
+		t.Fatalf("SetLanguage failed: %v", err)
+	}
+	if err := store.EnsureDemoAccounts(); err != nil {
+		t.Fatalf("EnsureDemoAccounts failed: %v", err)
+	}
+	for _, id := range []string{DemoAdminID, DemoUserID} {
+		var lang string
+		if err := store.db.QueryRow(`SELECT language FROM users WHERE id = ?`, id).Scan(&lang); err != nil {
+			t.Fatalf("read language: %v", err)
+		}
+		if lang != "" {
+			t.Errorf("%s: language %q, want none (the browser decides)", id, lang)
+		}
+		if got := store.MessageLanguage(id); got != "en" {
+			t.Errorf("%s: message language %q, want the default en", id, got)
+		}
+	}
+}

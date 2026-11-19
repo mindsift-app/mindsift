@@ -273,14 +273,19 @@ func (s *Store) EnsureDemoAccounts() error {
 		s.execLogged(`UPDATE users SET is_active = 1 WHERE id = ?`, normalUser.ID)
 	}
 
-	// The demo accounts speak the default language, English unless DEFAULT_LANGUAGE says otherwise (the
-	// sample data follows it); visitors can switch in the settings
+	// The sample data is in the default language, English unless DEFAULT_LANGUAGE says otherwise: the
+	// accounts speak it while it is written. Afterwards they have no language of their own: everyone shares
+	// them, so the app follows each visitor's browser (a language a visitor chose is gone after a reset).
 	lang := s.ConfiguredLanguage
 	if !i18n.Valid(lang) {
 		lang = "en"
 	}
 	logDBErr(s.SetLanguage(adminUser.ID, lang))
 	logDBErr(s.SetLanguage(normalUser.ID, lang))
+	defer func() {
+		logDBErr(s.SetLanguage(adminUser.ID, ""))
+		logDBErr(s.SetLanguage(normalUser.ID, ""))
+	}()
 
 	// 3. Sample data for the admin, all shared with the demo user (only on first start). Both accounts
 	// share an organization so they can see each other in the default sharing mode.

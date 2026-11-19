@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Fixed
+- Demo: the app speaks each visitor's browser language instead of always English; a language chosen in the settings lasts until the next reset. The sample data stays English (or in `DEFAULT_LANGUAGE`).
+
 ## [0.96.0] - 2026-11-19
 
 **The biggest update so far, and a big step towards 1.0.** Draw together live in shared notes, start notes from templates, paste or drag images and code straight into a note, and let MindSift understand dates and quantities as you type. Subscribe to your tasks in your calendar app. Administrators get two-factor sign-in, passkeys and single sign-on, an audit log, an update hint and a command line for emergencies. And it all runs comfortably for over a thousand people at once on a single CPU core.
