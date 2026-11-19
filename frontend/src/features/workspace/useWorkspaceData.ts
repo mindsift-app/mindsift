@@ -208,6 +208,8 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
             break;
           case 'deleted': {
             const path = ev.path;
+            // A deleted shared folder is no longer shared
+            api.getSharedFolders().then(setSharedFolders).catch(() => {});
             const gone = new Set(ev.deletedDocIds || []);
             if (!path) {
               // Somebody else deleted a folder with notes I see (shared with me, of a shared folder): all of

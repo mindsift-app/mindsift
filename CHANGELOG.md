@@ -8,7 +8,15 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Changed
+- Desktop: 8 px instead of 24 px left and right of the main area, so notes, tasks and lists get more room.
+
+### Added
+- AI agents (MCP) can add a whole nested block of bullets to an existing note in one step (`add_note_bullet` with `markdown`) instead of one bullet at a time, which made extending notes slow.
+
 ### Fixed
+- Deleting a shared folder as its owner (in the demo every top-level folder is one) removed only its notes and left the folder behind; now the folder goes to the trash with its notes and subfolders, stops being shared and disappears for everyone it was shared with. Restoring brings it back as a personal folder.
+- Moving a folder also renamed folders of the same name of other people on the server.
 - Demo: the app speaks each visitor's browser language instead of always English; a language chosen in the settings lasts until the next reset. The sample data stays English (or in `DEFAULT_LANGUAGE`).
 
 ## [0.96.0] - 2026-11-19

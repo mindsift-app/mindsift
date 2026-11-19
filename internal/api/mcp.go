@@ -169,7 +169,7 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 				"to see open tasks, complete_task to check one off, add_subtask/update_subtask for a task's " +
 				"checklist, list_lists/get_list for shopping and other lists and check_list_item to tick items, " +
 				"list_notes/get_note to read notes and create_note for a " +
-				"new one. IDs come from the list tools; never guess them. Tasks and list items you create or " +
+				"new one (its whole content as one Markdown outline; to extend a note, add_note_bullet with markdown adds a whole nested block in one call). IDs come from the list tools; never guess them. Tasks and list items you create or " +
 				"change show the user a badge with the name of your API key. Notes, tasks and lists come with a url " +
 				"that opens them in the app: when you tell the user about one, summarize it and add its url so " +
 				"they can look for themselves. Notes are outlines: one thought per bullet, details as indented child bullets, " +

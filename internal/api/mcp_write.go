@@ -46,6 +46,12 @@ var errMCPType = errors.New("'type': text, todo, h1, h2, h3, numbered, callout, 
 // errMCPLanguage: a language for a bullet that is no code bullet
 var errMCPLanguage = errors.New("'language' gibt es nur für Code (type code)")
 
+// errMCPMarkdownAlone: markdown together with the fields of a single bullet
+var errMCPMarkdownAlone = errors.New("'markdown' ersetzt text, type, language und checked, nur eines davon angeben")
+
+// errMCPMarkdownEmpty: markdown that gave no bullets
+var errMCPMarkdownEmpty = errors.New("Aus 'markdown' ist kein Punkt entstanden. Schicke den Inhalt als Markdown-Liste, eine Zeile pro Punkt.")
+
 // errMCPDividerText: text for a divider, which has none
 var errMCPDividerText = errors.New("Ein Trennstrich hat keinen Text (mit type einen anderen Typ wählen)")
 
@@ -193,6 +199,84 @@ func bulletPlace(d *collab.Doc, afterID, parentID string) (parent, key string, e
 	return parent, key, err
 }
 
+// addNoteMarkdown inserts a whole outline written as Markdown (read like create_note's content) in one
+// change: its first level at the place bulletPlace picks, deeper levels as children below it.
+func addNoteMarkdown(ctx context.Context, s *Server, userID string, actor *apiActor, noteID, markdown, afterID, parentID string) (any, error) {
+	raw, _ := json.Marshal(markdown)
+	content, err := mcpNoteContent(raw)
+	if err != nil {
+		return nil, err
+	}
+	blocks := mcpContentBlocks(content)
+	if len(blocks) == 0 {
+		return nil, errMCPMarkdownEmpty
+	}
+	d, err := s.noteDoc(noteID)
+	if err != nil {
+		return nil, err
+	}
+	anchor, first, err := bulletPlace(d, afterID, parentID)
+	if err != nil {
+		return nil, err
+	}
+	// The next sibling after the place, so the new top-level bullets fit between first and it
+	next := ""
+	for _, sib := range d.Children(anchor) {
+		if sib.OrderKey > first {
+			next = sib.OrderKey
+			break
+		}
+	}
+	parents := storage.TreeFromLevels(len(blocks), func(i int) int { return blocks[i].Level })
+	ids := make([]string, len(blocks))
+	children := map[int][]int{} // parent index (-1 = the place's parent) → its new children in order
+	for i := range blocks {
+		ids[i] = domain.NewID("blk")
+		children[parents[i]] = append(children[parents[i]], i)
+	}
+	keys := make([]string, len(blocks))
+	for p, idxs := range children {
+		var ks []string
+		if p < 0 {
+			// The first new top-level bullet takes the place bulletPlace picked, the others follow it
+			// before the next sibling
+			rest, err := collab.KeysBetween(first, next, len(idxs)-1)
+			if err != nil {
+				return nil, err
+			}
+			ks = append([]string{first}, rest...)
+		} else if ks, err = collab.KeysBetween("", "", len(idxs)); err != nil {
+			return nil, err
+		}
+		for j, i := range idxs {
+			keys[i] = ks[j]
+		}
+	}
+	link := s.store.WikiLinker(userID)
+	ops := make([]collab.Op, 0, len(blocks))
+	for i, b := range blocks {
+		parent := anchor
+		if parents[i] >= 0 {
+			parent = ids[parents[i]]
+		}
+		text := b.Content
+		// [[Titel]] links like in create_note; code and drawings stay as written
+		if b.Type != drawing.BlockType && b.Type != "code" {
+			text = link(text)
+		}
+		props := collab.Props{Checked: b.Checked, Lang: b.Lang}
+		ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: ids[i], ParentID: &parent, OrderKey: keys[i], Type: b.Type, Content: &text, Props: &props})
+	}
+	if err := s.applyNoteOpsCtx(ctx, userID, actor, noteID, ops); err != nil {
+		return nil, err
+	}
+	res, err := noteResult(s, userID, noteID)
+	if m, ok := res.(map[string]any); ok {
+		m["addedIds"] = ids
+	}
+	return res, err
+}
+
 func noteResult(s *Server, userID, docID string) (any, error) {
 	d, err := s.noteDoc(docID)
 	if err != nil {
@@ -269,12 +353,15 @@ var mcpWriteTools = []mcpTool{
 		Description: "Add a bullet to a note: after a bullet (same level), as the last child of a bullet, or at the end. " +
 			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, table, code, divider, drawing. " +
 			"[[Note title]] links another note (|text for an own link text). " +
+			"Several bullets at once: markdown instead of text and type, a whole outline in one call (as create_note's content: nested list with a tab or 2+ spaces per level, - [ ] to-dos, ## headings, code fences, tables, ```mermaid); " +
+			"its first level goes where a single bullet would, deeper levels below it. Prefer this over one call per bullet. " +
 			"Outline: details as children (parentId) rather than \"**Term:** text\"; h2/h3 for sections, with an empty text bullet above a heading that follows other bullets. " +
 			"type table: text is a Markdown table (| :---: | centers a column, | ---: | aligns it right, \\| is a | inside a cell). " + mcpCodeHelp + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId"}, map[string]any{
 			"noteId":   prop("string", "Note id"),
 			"text":     prop("string", "Text of the new bullet (none for a divider)"),
+			"markdown": prop("string", "Several bullets as Markdown, nested (instead of text, type, language and checked)"),
 			"type":     map[string]any{"type": "string", "enum": mcpBulletTypeEnum},
 			"language": prop("string", "For type code: the code's language, e.g. go, python, typescript, bash, sql, json; another name (e.g. pf) is kept as written, without highlighting (optional)"),
 			"afterId":  prop("string", "Insert right after this bullet, on its level (optional)"),
@@ -283,14 +370,20 @@ var mcpWriteTools = []mcpTool{
 		}),
 		run: func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
-				NoteID, Text, Type, Language, AfterID, ParentID string
-				Checked                                         bool
+				NoteID, Text, Type, Language, AfterID, ParentID, Markdown string
+				Checked                                                   bool
 			}
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
 			if err := s.editableNote(userID, a.NoteID); err != nil {
 				return nil, err
+			}
+			if strings.TrimSpace(a.Markdown) != "" {
+				if a.Text != "" || a.Type != "" || a.Language != "" || a.Checked {
+					return nil, errMCPMarkdownAlone
+				}
+				return addNoteMarkdown(ctx, s, userID, actor, a.NoteID, a.Markdown, a.AfterID, a.ParentID)
 			}
 			if a.Type == "" {
 				a.Type = "text"

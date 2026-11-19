@@ -76,6 +76,18 @@ func (s *Server) handleDeleteFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A shared folder its owner deletes stops being shared: everyone it was shared with loses it, also
+	// when it held no note of theirs
+	var sharedWith []string
+	if folders, err := s.store.GetSharedFolders(userID); err == nil {
+		clean := strings.Trim(strings.TrimSpace(folderPath), "/")
+		for _, f := range folders {
+			if f.IsOwner && strings.Trim(f.MountPath, "/") == clean {
+				sharedWith, _ = s.store.GetAuthorizedSharedFolderUsers(f.ID)
+			}
+		}
+	}
+
 	deletedDocIDs, err := s.store.DeleteFolder(userID, folderPath)
 	if err != nil {
 		writeInternal(w, err)
@@ -90,8 +102,14 @@ func (s *Server) handleDeleteFolder(w http.ResponseWriter, r *http.Request) {
 	})
 	// Everyone else with access to some of the notes (shared notes, shared folder) gets one event with the
 	// notes they lose, without a path (theirs differ), instead of a DOC_DELETED per note
-	for uid, ids := range s.othersWithDocs(userID, deletedDocIDs) {
+	others := s.othersWithDocs(userID, deletedDocIDs)
+	for uid, ids := range others {
 		s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]any{"type": folderEventDeleted, "deletedDocIds": ids})
+	}
+	for _, uid := range sharedWith {
+		if _, told := others[uid]; !told && uid != userID {
+			s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]any{"type": folderEventDeleted, "deletedDocIds": []string{}})
+		}
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{

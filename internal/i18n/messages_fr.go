@@ -11,6 +11,8 @@ var messagesFR = map[string]string{
 
 	// MCP: note structure tools
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "Le serveur traite d'autres requêtes volumineuses (images) ; réessayez dans quelques secondes",
+	"'markdown' ersetzt text, type, language und checked, nur eines davon angeben":                                   "'markdown' remplace text, type, language et checked, n'en indiquer qu'un seul",
+	"Aus 'markdown' ist kein Punkt entstanden. Schicke den Inhalt als Markdown-Liste, eine Zeile pro Punkt.":         "'markdown' n'a donné aucune puce. Envoie le contenu sous forme de liste Markdown, une ligne par puce.",
 	"'language' gibt es nur für Code (type code)":                                                                    "'language' n'existe que pour le code (type code)",
 	"'language': 1 bis 40 Zeichen, nur Buchstaben, Ziffern und + - _ . #":                                            "'language' : 1 à 40 caractères, uniquement lettres, chiffres et + - _ . #",
 	"Ein Trennstrich hat keinen Text (mit type einen anderen Typ wählen)":                                            "Un séparateur n'a pas de texte (choisir un autre type avec type)",
