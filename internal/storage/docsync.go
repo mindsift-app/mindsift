@@ -254,6 +254,13 @@ func (s *Store) backfillBlockTree() {
 	}
 }
 
+// TreeFromLevels: the parent index of each bullet of a flat list with nesting levels (-1 = top level),
+// as treeFromLevels reads it
+func TreeFromLevels(n int, level func(int) int) []int {
+	parents, _ := treeFromLevels(n, level)
+	return parents
+}
+
 // treeFromLevels turns a flat list with nesting levels into parent indices (-1 = top level) and
 // sequential order keys per parent. Levels deeper than possible are clamped.
 func treeFromLevels(n int, level func(int) int) ([]int, []string) {

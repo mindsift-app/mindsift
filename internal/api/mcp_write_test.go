@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -456,5 +457,58 @@ func TestMCPDrawingHelp(t *testing.T) {
 		if !strings.Contains(tool.Description, "drawing_help") || len(tool.Description) > 1600 {
 			t.Errorf("%s: %d characters, should be short and point to drawing_help", name, len(tool.Description))
 		}
+	}
+}
+
+// add_note_bullet with markdown inserts a whole nested outline in one call, at the same places as a
+// single bullet.
+func TestMCPAddNoteBulletMarkdown(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	call := mcpCaller(t, srv)
+	agentKey, _ := store.CreateAPIKey(claims.UserID, "Agent", []string{"notes:read", "notes:write"})
+	key := agentKey.RawKey
+
+	doc, err := store.CreateDocument(claims.UserID, "", "Plan", "", "", []domain.DocumentBlock{
+		{ID: "blk_mm1", Type: "text", Content: "Eins", Level: 0},
+		{ID: "blk_mm2", Type: "text", Content: "Zwei", Level: 0},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	md, _ := json.Marshal("- A\n\t- A1\n\t\t- A1a\n\t- [ ] A2\n- B")
+	res, isErr, msg := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","afterId":"blk_mm1","markdown":`+string(md)+`}`)
+	if isErr {
+		t.Fatalf("markdown after a bullet: %s", msg)
+	}
+	if ids, _ := res["addedIds"].([]any); len(ids) != 5 {
+		t.Fatalf("addedIds: %v", res["addedIds"])
+	}
+	if s := strings.Join(bulletTexts(res), "|"); s != "0:Eins|0:A|1:A1|2:A1a|1:A2|0:B|0:Zwei" {
+		t.Fatalf("after a bullet: %s", s)
+	}
+	// As children of a bullet, and at the end
+	md, _ = json.Marshal("- K1\n  - K1a\n- K2")
+	if _, isErr, msg := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","parentId":"blk_mm2","markdown":`+string(md)+`}`); isErr {
+		t.Fatalf("markdown as children: %s", msg)
+	}
+	md, _ = json.Marshal("## Ende\n- Schluss")
+	res, _, _ = call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","markdown":`+string(md)+`}`)
+	got := strings.Join(bulletTexts(res), "|")
+	if !strings.HasPrefix(got, "0:Eins|0:A|1:A1|2:A1a|1:A2|0:B|0:Zwei|1:K1|2:K1a|1:K2|0:Ende|") || !strings.HasSuffix(got, ":Schluss") {
+		t.Fatalf("children and end: %s", got)
+	}
+	for _, b := range res["bullets"].([]any) {
+		m := b.(map[string]any)
+		if m["text"] == "A2" && (m["type"] != "todo" || m["checked"] == true) {
+			t.Fatalf("open to-do: %v", m)
+		}
+		if m["text"] == "Ende" && m["type"] != "h2" {
+			t.Fatalf("heading: %v", m)
+		}
+	}
+	// markdown replaces the fields of a single bullet
+	if _, isErr, msg := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","text":"x","markdown":"- y"}`); !isErr || !strings.Contains(msg, "markdown") {
+		t.Fatalf("markdown with text: %v %s", isErr, msg)
 	}
 }

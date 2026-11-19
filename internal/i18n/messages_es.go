@@ -11,6 +11,8 @@ var messagesES = map[string]string{
 
 	// MCP: note structure tools
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "El servidor está procesando otras solicitudes grandes (imágenes); vuelve a intentarlo en unos segundos",
+	"'markdown' ersetzt text, type, language und checked, nur eines davon angeben":                                   "'markdown' sustituye a text, type, language y checked, indica solo uno de ellos",
+	"Aus 'markdown' ist kein Punkt entstanden. Schicke den Inhalt als Markdown-Liste, eine Zeile pro Punkt.":         "De 'markdown' no ha salido ningún punto. Envía el contenido como lista Markdown, una línea por punto.",
 	"'language' gibt es nur für Code (type code)":                                                                    "'language' solo existe para código (type code)",
 	"'language': 1 bis 40 Zeichen, nur Buchstaben, Ziffern und + - _ . #":                                            "'language': de 1 a 40 caracteres, solo letras, dígitos y + - _ . #",
 	"Ein Trennstrich hat keinen Text (mit type einen anderen Typ wählen)":                                            "Un separador no tiene texto (elige otro tipo con type)",
