@@ -8,7 +8,7 @@ vi.mock('../../../lib/api', () => ({
   triggerHaptic: vi.fn(),
 }));
 
-import { SetupAndAuthView } from '../SetupAndAuthView';
+import { SetupWizardView } from '../SetupWizardView';
 
 const status = { needsSetup: true, allowRegistration: false, instanceName: 'MindSift' };
 
@@ -26,12 +26,12 @@ const submit = () =>
     fireEvent.click(screen.getByRole('button', { name: /Ersteinrichtung abschließen/ }));
   });
 
-describe('SetupAndAuthView: setup wizard', () => {
+describe('SetupWizardView', () => {
   beforeEach(() => completeSetup.mockClear());
 
   it('creates the admin with daily backups switched on by default', async () => {
     const onAuthenticated = vi.fn();
-    render(<SetupAndAuthView authStatus={status} onAuthenticated={onAuthenticated} />);
+    render(<SetupWizardView authStatus={status} onAuthenticated={onAuthenticated} />);
     fillAccount();
     expect(screen.getByRole('switch', { name: 'Tägliche Backups einschalten' }).getAttribute('aria-checked')).toBe('true');
     await submit();
@@ -42,7 +42,7 @@ describe('SetupAndAuthView: setup wizard', () => {
   });
 
   it('creates the admin without backups when switched off', async () => {
-    render(<SetupAndAuthView authStatus={status} onAuthenticated={() => {}} />);
+    render(<SetupWizardView authStatus={status} onAuthenticated={() => {}} />);
     fillAccount();
     fireEvent.click(screen.getByRole('switch', { name: 'Tägliche Backups einschalten' }));
     await submit();
@@ -51,7 +51,7 @@ describe('SetupAndAuthView: setup wizard', () => {
   });
 
   it('keeps the retention within 1 to 365 days', async () => {
-    render(<SetupAndAuthView authStatus={status} onAuthenticated={() => {}} />);
+    render(<SetupWizardView authStatus={status} onAuthenticated={() => {}} />);
     fillAccount();
     const field = screen.getByLabelText('Aufbewahren') as HTMLInputElement;
     fireEvent.change(field, { target: { value: '400' } });
@@ -67,7 +67,7 @@ describe('SetupAndAuthView: setup wizard', () => {
 
   it('asks the mail server when the environment sets none and sends it with the account', async () => {
     const fresh = { ...status, setup: { smtpConfigured: false, smtpViaEnv: false, baseUrlSet: false, emailLinks: false, backupDir: '/data/backups' } };
-    render(<SetupAndAuthView authStatus={fresh} onAuthenticated={() => {}} />);
+    render(<SetupWizardView authStatus={fresh} onAuthenticated={() => {}} />);
     fillAccount();
     expect(screen.getByText('3. Mailserver')).toBeTruthy();
     const summary = screen.getByTestId('setup-summary');
@@ -91,7 +91,7 @@ describe('SetupAndAuthView: setup wizard', () => {
 
   it('only shows a mail server set by the environment', async () => {
     const withEnv = { ...status, setup: { smtpConfigured: true, smtpViaEnv: true, baseUrlSet: true, emailLinks: true, backupDir: '/data/backups' } };
-    render(<SetupAndAuthView authStatus={withEnv} onAuthenticated={() => {}} />);
+    render(<SetupWizardView authStatus={withEnv} onAuthenticated={() => {}} />);
     fillAccount();
     expect(screen.getByText(/Mailserver per Umgebung eingerichtet/)).toBeTruthy();
     expect(screen.queryByRole('switch', { name: 'Mailserver jetzt einrichten' })).toBeNull();
@@ -101,7 +101,7 @@ describe('SetupAndAuthView: setup wizard', () => {
   });
 
   it('refuses a mail server switched on without host', async () => {
-    render(<SetupAndAuthView authStatus={status} onAuthenticated={() => {}} />);
+    render(<SetupWizardView authStatus={status} onAuthenticated={() => {}} />);
     fillAccount();
     fireEvent.click(screen.getByRole('switch', { name: 'Mailserver jetzt einrichten' }));
     await submit();
@@ -110,7 +110,7 @@ describe('SetupAndAuthView: setup wizard', () => {
   });
 
   it('asks for the setup code from the server log only when the server requires one', async () => {
-    render(<SetupAndAuthView authStatus={status} onAuthenticated={() => {}} />);
+    render(<SetupWizardView authStatus={status} onAuthenticated={() => {}} />);
     expect(screen.queryByLabelText('Einrichtungscode *')).toBeNull();
     fillAccount();
     await submit();
@@ -118,7 +118,7 @@ describe('SetupAndAuthView: setup wizard', () => {
   });
 
   it('sends the setup code with the account', async () => {
-    render(<SetupAndAuthView authStatus={{ ...status, setupCodeRequired: true }} onAuthenticated={() => {}} />);
+    render(<SetupWizardView authStatus={{ ...status, setupCodeRequired: true }} onAuthenticated={() => {}} />);
     const field = screen.getByLabelText('Einrichtungscode *') as HTMLInputElement;
     expect(field.required).toBe(true);
     expect(document.activeElement).toBe(field);
@@ -131,7 +131,7 @@ describe('SetupAndAuthView: setup wizard', () => {
 
   it('shows the server error for a wrong setup code', async () => {
     completeSetup.mockRejectedValueOnce(new Error('Der Einrichtungscode stimmt nicht. Er steht im Server-Log.'));
-    render(<SetupAndAuthView authStatus={{ ...status, setupCodeRequired: true }} onAuthenticated={() => {}} />);
+    render(<SetupWizardView authStatus={{ ...status, setupCodeRequired: true }} onAuthenticated={() => {}} />);
     fireEvent.change(screen.getByLabelText('Einrichtungscode *'), { target: { value: 'AAAA-BBBB-CCCC' } });
     fillAccount();
     await submit();
@@ -155,7 +155,7 @@ describe('SetupAndAuthView: setup wizard', () => {
     });
 
     it('refuses an empty backup time', async () => {
-      render(<SetupAndAuthView authStatus={status} onAuthenticated={() => {}} />);
+      render(<SetupWizardView authStatus={status} onAuthenticated={() => {}} />);
       fillAccount();
       fireEvent.change(screen.getByLabelText('Uhrzeit'), { target: { value: '' } });
       await submit();

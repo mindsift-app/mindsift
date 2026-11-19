@@ -490,7 +490,7 @@ func TestLinesBothWaysSideBySide(t *testing.T) {
 		}
 		for k1, p1 := range paths {
 			for k2, p2 := range paths {
-				if k1 >= k2 || !(strings.Contains(k1, "→") && reverseKey(k1) == k2) {
+				if k1 >= k2 || !strings.Contains(k1, "→") || reverseKey(k1) != k2 {
 					continue
 				}
 				for i := 1; i < len(p1); i++ {

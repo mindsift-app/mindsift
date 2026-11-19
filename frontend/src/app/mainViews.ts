@@ -7,7 +7,6 @@ export { TasksView } from '../features/triage/TasksView';
 export { WorkspaceView } from '../features/workspace/WorkspaceView';
 export { SharedListsView } from '../features/lists/SharedListsView';
 export { UserSettingsView } from '../features/settings/UserSettingsView';
-export { AdminSettingsView } from '../features/settings/AdminSettingsView';
 export { HelpView } from '../features/help/HelpView';
 export { GroupsView } from '../features/teams/GroupsView';
 export { CommandPalette } from '../components/CommandPalette';
