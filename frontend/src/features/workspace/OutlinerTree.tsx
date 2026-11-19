@@ -204,7 +204,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const pendingFocusRef = useRef<{ blockId: string; cursor: 'start' | 'end' | 'select' | number } | null>(null);
 
   const focusBlockInput = useCallback(
-    (blockId: string, cursor: 'start' | 'end' | 'select' | number = 'end') => {
+    (blockId: string, cursor: 'start' | 'end' | 'select' | number = 'end', now = false) => {
       setFocusedBlockId(blockId);
       const registered = textareaMapRef.current.get(blockId);
       if (registered) {
@@ -228,8 +228,11 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           }
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         };
-        // A numeric position refers to content that was just changed, so wait one extra frame for it to render
-        requestAnimationFrame(() => (typeof cursor === 'number' ? requestAnimationFrame(apply) : apply()));
+        // Moving between rendered blocks (arrow keys) focuses at once, so keys typed right after it land in the
+        // new block; otherwise the next frame, and a numeric position refers to content that was just changed, so
+        // wait one extra frame for it to render
+        if (now && typeof cursor !== 'number') apply();
+        else requestAnimationFrame(() => (typeof cursor === 'number' ? requestAnimationFrame(apply) : apply()));
       } else {
         pendingFocusRef.current = { blockId, cursor };
       }
@@ -853,10 +856,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       const targetEntry =
         direction === 'up' ? visibleEntries[visIdx - 1] : visibleEntries[visIdx + 1];
       if (targetEntry) {
-        focusBlockInput(
-          targetEntry.block.id,
-          direction === 'up' ? 'end' : 'start'
-        );
+        focusBlockInput(targetEntry.block.id, direction === 'up' ? 'end' : 'start', true);
       }
     },
     [focusBlockInput, visibleEntries]

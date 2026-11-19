@@ -55,6 +55,7 @@ Versions without a git tag were development states and were never published as a
 - Repeating tasks repeat again after their next occurrence was deleted.
 - Search finds your own notes even when others have many matches.
 - Imports and restores no longer lose data when they fail.
+- Typing right after moving to another bullet with the arrow keys no longer puts the first characters into the previous one.
 - Clicking after the end of a line puts the cursor behind formatting like `code` or links; dragging inside a zoomed-in branch lands in the right place; the journal opens without stutter.
 - Custom themes: text, inputs, borders and status colours follow the theme instead of staying grey.
 - Pulling a note back asks first when others link to it.
