@@ -1,7 +1,7 @@
 import React from 'react';
-import { Pin, Users } from 'lucide-react';
+import { Pin } from 'lucide-react';
 import { Document, SharedFolder } from '../../lib/types';
-import { DOC_ROW_GROUP, DocRowDelete, DocRowIcon, FolderTreeItem } from './FolderTreeItem';
+import { DOC_ROW_GROUP, DocRowDelete, DocRowIcon, DocShareMarks, FolderTreeItem } from './FolderTreeItem';
 import { useDocDragDrop } from './useDocDragDrop';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
 import { TemplateMark } from './NoteTemplates';
@@ -90,9 +90,7 @@ export function FolderTree({
                   <DocRowIcon icon={d.icon} />
                   <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
                   {d.isTemplate && <TemplateMark />}
-                  {d.sharedWith && d.sharedWith.length > 0 && (
-                    <Users className="w-3 h-3 text-status-ok shrink-0" />
-                  )}
+                  <DocShareMarks doc={d} />
                   <Pin className="w-3 h-3 text-muted shrink-0" />
                   <DocRowDelete doc={d} selected={selectedDocId === d.id && subView === 'editor'} onRequestDelete={requestDeleteDoc} />
                 </div>
@@ -154,9 +152,7 @@ export function FolderTree({
                   <DocRowIcon icon={d.icon} />
                   <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
                   {d.isTemplate && <TemplateMark />}
-                  {d.sharedWith && d.sharedWith.length > 0 && (
-                    <Users className="w-3 h-3 text-status-ok shrink-0" />
-                  )}
+                  <DocShareMarks doc={d} />
                   <DocRowDelete doc={d} selected={selectedDocId === d.id && subView === 'editor'} onRequestDelete={requestDeleteDoc} />
                 </div>
               ))}

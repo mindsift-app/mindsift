@@ -503,6 +503,7 @@
   },
   "publicLink": {
     "title": "Enlace público",
+    "active": "Compartido públicamente",
     "hint": "Cualquiera con el enlace puede leer la nota, incluso sin cuenta. El enlace siempre caduca y no aparece en buscadores.",
     "duration": "Válido durante",
     "for": {

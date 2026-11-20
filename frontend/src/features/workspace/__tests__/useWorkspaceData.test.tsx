@@ -95,6 +95,19 @@ describe('useWorkspaceData', () => {
     expect(result.current.docs.map((d) => d.id)).toEqual(['c', 'a', 'b']);
   });
 
+  it('fetches the folders when a note was made in a folder new here, not for a known one', async () => {
+    vi.mocked(api.getFolders).mockResolvedValue(['Projekte']);
+    const { result } = setup(false);
+    await waitFor(() => expect(result.current.folders).toEqual(['Projekte']));
+    act(() => lastHandler()({ event: 'DOC_CREATED', payload: listed('c', { folderPath: 'Projekte' }) }));
+    await waitFor(() => expect(result.current.docs).toHaveLength(3));
+    expect(api.getFolders).toHaveBeenCalledTimes(1);
+
+    act(() => lastHandler()({ event: 'DOC_CREATED', payload: listed('d', { folderPath: 'Neu von Agent' }) }));
+    await waitFor(() => expect(api.getFolders).toHaveBeenCalledTimes(2));
+    expect(api.getDocuments).toHaveBeenCalledTimes(1);
+  });
+
   it('removes the notes of a deleted folder, and fetches the list only when other notes were there', async () => {
     vi.mocked(api.getDocuments).mockResolvedValue([
       listed('a', { folderPath: 'Alt' }),

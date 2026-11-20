@@ -1,5 +1,5 @@
 import React from 'react';
-import { Folder, FolderOpen, FolderPlus, Plus, Trash, Users } from 'lucide-react';
+import { Folder, FolderOpen, FolderPlus, Globe, Plus, Trash, Users } from 'lucide-react';
 import { Document, SharedFolder } from '../../lib/types';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
 import { isFolderShared } from './workspaceListing';
@@ -47,6 +47,21 @@ const TICK = 'absolute top-1/2 h-px w-2 bg-border/70 pointer-events-none';
 export const DocRowIcon: React.FC<{ icon?: string }> = ({ icon }) => (
   <span className="w-3.5 shrink-0 inline-flex justify-center">{icon}</span>
 );
+
+/** Marks of a note row: shared with people, shared by public link */
+export const DocShareMarks: React.FC<{ doc: Document }> = ({ doc }) => {
+  const { t } = useTranslation('workspace');
+  return (
+    <>
+      {doc.sharedWith && doc.sharedWith.length > 0 && <Users className="w-3 h-3 text-status-ok shrink-0" />}
+      {doc.hasPublicLink && (
+        <span role="img" title={t('publicLink.active')} aria-label={t('publicLink.active')} className="shrink-0 inline-flex">
+          <Globe className="w-3 h-3 text-status-ok" />
+        </span>
+      )}
+    </>
+  );
+};
 
 /** Where a delete confirmation opens: at the pointer, or below the button for keyboard clicks */
 const deleteAt = (e: React.MouseEvent<HTMLElement>) => {
@@ -291,6 +306,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               <DocRowIcon icon={d.icon} />
               <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
               {d.isTemplate && <TemplateMark />}
+              <DocShareMarks doc={d} />
               <DocRowDelete doc={d} selected={selectedDocId === d.id && subView === 'editor'} onRequestDelete={requestDeleteDoc} />
             </div>
           ))}

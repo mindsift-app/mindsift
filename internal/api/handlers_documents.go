@@ -181,6 +181,9 @@ func (s *Server) handleUpdateDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Title != nil || req.Icon != nil || req.FolderPath != nil {
 		s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
+		if req.FolderPath != nil {
+			s.announceNoteMoved(userID, docID)
+		}
 	} else if req.IsPinned != nil || req.IsTemplate != nil {
 		// Pin and template mark are the person's own: only their other tabs and devices hear of it
 		if listed, err := s.store.GetDocumentListItem(userID, docID); err == nil && listed != nil {
@@ -303,9 +306,15 @@ func (s *Server) handleMoveDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
+	s.announceNoteMoved(userID, docID)
+	writeJSON(w, http.StatusOK, doc)
+}
+
+// announceNoteMoved tells everyone with the note that it changed folder: the folder it went into is kept
+// as a folder now (storage.MoveDocument), so their folder lists are fetched again.
+func (s *Server) announceNoteMoved(userID, docID string) {
 	docUsers, _ := s.store.GetAuthorizedDocUsers(docID)
 	s.wsHub.BroadcastToUsers(append(docUsers, userID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventNoteMoved, "docId": docID})
-	writeJSON(w, http.StatusOK, doc)
 }
 
 // --- DOCUMENT SHARING & COLLABORATION ---

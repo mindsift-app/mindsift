@@ -499,6 +499,7 @@
   },
   "publicLink": {
     "title": "Öffentlicher Link",
+    "active": "Öffentlich geteilt",
     "hint": "Jeder mit dem Link kann die Notiz lesen, auch ohne Konto. Der Link läuft immer ab und landet nicht in Suchmaschinen.",
     "duration": "Gültig für",
     "for": {

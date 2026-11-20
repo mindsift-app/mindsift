@@ -178,7 +178,7 @@ export function WorkspaceTabBar({
                     currentUser?.role === 'admin');
                 const sharesCount = selectedDocObj.sharedWith?.length || 0;
                 const isShared =
-                  sharesCount > 0 || !isOwner || inSharedFolder;
+                  sharesCount > 0 || !isOwner || inSharedFolder || !!selectedDocObj.hasPublicLink;
                 const ownerDisplayName = selectedDocObj.ownerName || t('tasks:tabs.owner');
                 if (!isShared) return null;
                 return (

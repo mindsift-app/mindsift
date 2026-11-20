@@ -292,12 +292,13 @@ func (s *Server) handleSetPublicLink(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
+	s.announcePublicLink(userID, docID)
 	s.writePublicLinkState(w, l)
 }
 
 // handleDeletePublicLink: DELETE /documents/{id}/public-link – the address stops working at once.
 func (s *Server) handleDeletePublicLink(w http.ResponseWriter, r *http.Request) {
-	_, docID, ok := s.ownPublicLink(w, r)
+	userID, docID, ok := s.ownPublicLink(w, r)
 	if !ok {
 		return
 	}
@@ -305,7 +306,16 @@ func (s *Server) handleDeletePublicLink(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, err)
 		return
 	}
+	s.announcePublicLink(userID, docID)
 	s.writePublicLinkState(w, nil)
+}
+
+// announcePublicLink sends the owner's tabs and devices the note as listed, so the note list shows or
+// drops its public-link mark. Only the owner sees the mark, so nobody else is told.
+func (s *Server) announcePublicLink(userID, docID string) {
+	if listed, err := s.store.GetDocumentListItem(userID, docID); err == nil && listed != nil {
+		s.wsHub.BroadcastToUser(userID, "DOC_UPDATED", listed)
+	}
 }
 
 // runPublicLinkCleanup removes expired links (hourly, with the other retention work).

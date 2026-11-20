@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -299,6 +300,7 @@ func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, 
 		doc.Blocks = stored
 		doc.Content = docPlainText(stored)
 	}
+	s.keepFolder(userID, cleanFolder)
 	return doc, nil
 }
 
@@ -672,7 +674,35 @@ func listDocuments(q docQueryer, userID string, withBlockJSON bool) ([]domain.Do
 			}
 		}
 	}
+	if linked, err := publicLinkDocIDs(q, owned, time.Now()); err == nil {
+		for i := range docs {
+			docs[i].HasPublicLink = linked[docs[i].ID]
+		}
+	}
 	return docs, blocksJSON, nil
+}
+
+// publicLinkDocIDs returns which of the notes have a public link that is still valid at now (one query
+// for all of them).
+func publicLinkDocIDs(q docQueryer, docIDs []string, now time.Time) (map[string]bool, error) {
+	out := map[string]bool{}
+	if len(docIDs) == 0 {
+		return out, nil
+	}
+	idsJSON, _ := json.Marshal(docIDs)
+	rows, err := q.Query(`SELECT doc_id FROM public_links WHERE doc_id IN (SELECT value FROM json_each(?)) AND expires_at > ?`,
+		string(idsJSON), now.UTC().Format(time.RFC3339))
+	if err != nil {
+		return out, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); !dbFailed(err) {
+			out[id] = true
+		}
+	}
+	return out, rows.Err()
 }
 
 // docSharesOf returns the shares of several notes at once, per note in the order GetDocShares gives
@@ -773,6 +803,11 @@ func (s *Store) getDocumentByID(userID, docID string, withBlocks bool) (*domain.
 		if shares, err := s.GetDocShares(doc.ID); err == nil {
 			doc.SharedWith = shares
 		}
+		if doc.IsOwner {
+			if linked, err := publicLinkDocIDs(s.db, []string{doc.ID}, time.Now()); err == nil {
+				doc.HasPublicLink = linked[doc.ID]
+			}
+		}
 		return doc, nil
 	}
 
@@ -799,6 +834,11 @@ func (s *Store) getDocumentByID(userID, docID string, withBlocks bool) (*domain.
 	resolveDocumentPath(userID, d, mounts, names, userFolders)
 	if shares, err := s.GetDocShares(d.ID); err == nil {
 		d.SharedWith = shares
+	}
+	if d.IsOwner {
+		if linked, err := publicLinkDocIDs(s.db, []string{d.ID}, time.Now()); err == nil {
+			d.HasPublicLink = linked[d.ID]
+		}
 	}
 	return d, nil
 }

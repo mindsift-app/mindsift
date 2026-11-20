@@ -11,6 +11,8 @@ Versions without a git tag were development states and were never published as a
 ## [0.96.2] - 2026-11-20
 
 ### Fixed
+- A folder that came into being through a note (moved into a new folder path, or made there by an AI agent) no longer disappears when its last note is deleted or moved away; it now stays like a folder made with "New folder". Existing folders of this kind are kept from this version on.
+- Notes shared by public link now show a globe in the note list and the "Shared" button above the note; notes inside folders also show the shared mark for people they are shared with, which only pinned notes and notes outside folders did before.
 - Underscores inside a word, as in `DOCUMENT_STORAGE_KEY_PATTERN` or `snake_case_name`, no longer turn part of the word italic or bold; `_italic_` and `__bold__` around whole words work as before.
 
 ## [0.96.1] - 2026-11-19

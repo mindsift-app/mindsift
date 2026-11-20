@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -277,7 +278,27 @@ func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
 	return deletedDocIDs, nil
 }
 
+// MoveDocument puts the note into another folder for the user; a folder that did not exist yet is
+// created for good, so it stays when its last note goes (like a folder made with "New folder").
 func (s *Store) MoveDocument(userID, docID, targetFolderPath string) (*domain.Document, error) {
+	doc, err := s.moveDocument(userID, docID, targetFolderPath)
+	if err == nil {
+		s.keepFolder(userID, doc.FolderPath)
+	}
+	return doc, err
+}
+
+// keepFolder records the folder a note was put into (CreateFolder, which leaves an existing one alone).
+// Before, such a folder only existed through its notes and vanished with the last one.
+func (s *Store) keepFolder(userID, folderPath string) {
+	if clean := cleanFolderPath(folderPath); clean != "" {
+		if _, err := s.CreateFolder(userID, clean); err != nil {
+			slog.Warn("keeping folder of a note", "error", err)
+		}
+	}
+}
+
+func (s *Store) moveDocument(userID, docID, targetFolderPath string) (*domain.Document, error) {
 	doc, err := s.GetDocumentByID(userID, docID)
 	if err != nil {
 		return nil, err
@@ -429,7 +450,7 @@ func (s *Store) MoveFolder(userID, sourcePath, targetParentPath string) (string,
 				suffix := strings.TrimPrefix(doc.FolderPath, cleanSource)
 				nextDocFolder = newFolderPath + suffix
 			}
-			if _, moveErr := s.MoveDocument(userID, doc.ID, nextDocFolder); moveErr != nil {
+			if _, moveErr := s.moveDocument(userID, doc.ID, nextDocFolder); moveErr != nil {
 				// The reason may be told when it was written for people (a permission), not a database error
 				if i18n.Known(moveErr.Error()) {
 					return "", movedDocIDs, i18n.NewError("Notiz „{title}“ verschieben: {reason}", "title", doc.Title, "reason", moveErr.Error())
@@ -976,4 +997,47 @@ func (s *Store) GetSharedFolderDocIDs(folderID string) ([]string, error) {
 		return nil, err
 	}
 	return docIDs, nil
+}
+
+// migrateKeepNoteFolders records every personal folder that so far only existed through its notes (a
+// note's own folder or one a person put a shared note into), so it stays when its last note goes, as
+// notes moved or made in a new folder do from now on (keepFolder).
+func (s *Store) migrateKeepNoteFolders() error {
+	type userFolder struct{ userID, path string }
+	var found []userFolder
+	rows, err := s.db.Query(`SELECT user_id, folder_path FROM documents WHERE folder_path != '' AND shared_folder_id = '' AND is_archived = 0
+		UNION SELECT user_id, folder_path FROM doc_user_folders WHERE folder_path != ''`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var f userFolder
+		if err := rows.Scan(&f.userID, &f.path); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		found = append(found, f)
+	}
+	_ = rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	seen := map[userFolder]bool{}
+	var writes []sqlStmt
+	for _, f := range found {
+		f.path = cleanFolderPath(f.path)
+		if f.path == "" || seen[f] {
+			continue
+		}
+		seen[f] = true
+		writes = append(writes, stmt(`INSERT INTO workspace_folders (id, user_id, shared_folder_id, path, sub_path, created_at)
+			SELECT ?, ?, '', ?, '', ? WHERE NOT EXISTS (SELECT 1 FROM workspace_folders WHERE user_id = ? AND path = ? AND shared_folder_id = '')`,
+			domain.NewID("wfld"), f.userID, f.path, now, f.userID, f.path))
+	}
+	if len(writes) == 0 {
+		return nil
+	}
+	return s.execInTx(writes...)
 }

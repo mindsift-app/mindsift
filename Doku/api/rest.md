@@ -419,6 +419,8 @@ Routes marked **S** are open to server admins and user managers (`role = manager
 
 The owner of a note shares it read only by link (`/p/<token>` in the app); see [sharing-and-permissions.md](../sharing-and-permissions.md). Not reachable with API keys or MCP.
 
+In the note list (`GET /documents`, `GET /documents/{id}` and the `DOC_UPDATED` events) the owner's notes with a valid link carry `hasPublicLink: true`; creating or revoking a link sends the owner a `DOC_UPDATED`.
+
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/documents/{id}/public-link` | Owner only: `{enabled, maxDays, link}`; `link` = `{token, expiresAt, hasPassword}` or `null` |

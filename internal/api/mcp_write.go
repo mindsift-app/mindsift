@@ -345,6 +345,9 @@ var mcpWriteTools = []mcpTool{
 				s.notifyDocChanged(a.ID, head)
 			}
 			s.broadcastDocToAuthorizedUsers(a.ID, "DOC_UPDATED")
+			if a.FolderPath != nil {
+				s.announceNoteMoved(userID, a.ID)
+			}
 			return s.toNoteView(d), nil
 		},
 	},

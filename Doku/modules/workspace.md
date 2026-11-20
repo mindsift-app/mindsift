@@ -89,7 +89,7 @@ Code: [WorkspaceView.tsx](../../frontend/src/features/workspace/WorkspaceView.ts
 
 Account Settings → Export & Import → "Download Markdown archive" (`GET /export/markdown`, code: [export_markdown.go](../../internal/storage/export_markdown.go)).
 
-- Folders and notes reflect the user's view (own folders, mounted shared folders, notes shared with them); empty folders are preserved.
+- Folders and notes reflect the user's view (own folders, mounted shared folders, notes shared with them); empty folders are preserved, also folders that came into being through a note (made in a new folder path or moved there).
 - Each note: YAML frontmatter (`title`, `icon`, `tags`, `created_at`, `updated_at`) and Markdown formatted for immediate rendering in Obsidian: top-level headings, dividers, callout boxes (`> [!note]`), and code blocks as top-level blocks with their children shifted forward one level; everything else as a list indented with one tab per level, to-dos formatted as `- [ ]`.
 - Filenames are sanitized across operating systems (no `/ \ : * ? " < > |`, never `.`/`..`); duplicate titles receive " (2)".
 - The ZIP is streamed directly to the response while reading data, without temporary files.

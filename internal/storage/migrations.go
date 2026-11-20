@@ -93,6 +93,7 @@ var migrations = []migration{
 	{68, "Task alarms remember which channels got through", (*Store).migrateAlarmDelivered},
 	{69, "Queued notifications remember which channels got through", (*Store).migrateQueueDelivered},
 	{70, "The daily summary remembers the channels that failed, to try them again", (*Store).migrateDailySummaryRetry},
+	{71, "Folders that only existed through their notes are kept as folders", (*Store).migrateKeepNoteFolders},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
