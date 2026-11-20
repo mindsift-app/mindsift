@@ -71,7 +71,7 @@ Each WebSocket connection has a queue of up to 128 events; when it is full, furt
 | `type` | Payload besides `type` | Sent after | The app fetches |
 |---|---|---|---|
 | `created` | `path` | `POST /folders` | the folders |
-| `moved` | `sourcePath`, `newPath` | `POST /folders/move`; a `DOC_UPDATED` per moved note before it | the folders |
+| `moved` | `sourcePath`, `newPath` | `POST /folders/move`, `POST /folders/rename`; a `DOC_UPDATED` per moved note before it | the folders |
 | `deleted` | `path`, `deletedDocIds` (notes now in the trash) | `DELETE /folders` | the folders and the trash; the note list only if other notes it holds were in the folder (shared notes placed there go back to the top level) |
 | `deleted` (no `path`) | `deletedDocIds` (the notes of the folder this person had access to) | `DELETE /folders` by someone else; one event per person instead of a `DOC_DELETED` per note | the folders and the trash, once |
 | `restored` | `restored` (note id, or `folder`) | restoring a note or folder from the trash; a `DOC_CREATED` per note before it | the folders and the trash (the restoring app fetches the folders itself as well, so empty subfolders show without a realtime connection) |

@@ -312,6 +312,8 @@ var messagesIT = map[string]string{
 	"ungültiger Freigabetyp":                                                       "tipo di condivisione non valido",
 	"ungültiger Mount-Pfad":                                                        "percorso di montaggio non valido",
 	"ungültiger Ordnerpfad":                                                        "percorso della cartella non valido",
+	"ungültiger Ordnername":                                                        "nome della cartella non valido",
+	"Einen Ordner mit diesem Namen gibt es hier schon":                             "Qui esiste già una cartella con questo nome",
 	"ungültiger Quell-Ordnerpfad":                                                  "percorso della cartella di origine non valido",
 	"ungültiger Sortierschlüssel":                                                  "chiave di ordinamento non valida",
 	"unverschlüsselte Verbindung – Anmeldung verweigert":                           "connessione non cifrata: accesso rifiutato",

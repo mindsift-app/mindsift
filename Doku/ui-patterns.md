@@ -239,6 +239,7 @@ Component: [ActionMenu.tsx](../frontend/src/components/ActionMenu.tsx), in the s
 
 - Right of the status in the list header (task lists, shopping lists), instead of separate share and delete buttons: Mute (task lists; greyed out with a hint for lists nobody else sees), Share, Rename ([RenameListSheet.tsx](../frontend/src/components/RenameListSheet.tsx), a `FormSheet` like "Neue Liste"), Delete (asks at the mouse position).
 - An entry someone may not use stays in the menu, greyed out with a short reason below it (read only, only the owner can delete), so the menu looks the same everywhere. Longer explanations go into the tooltip (`tooltip`), not below the entry.
+- Folders in the notes sidebar use it too: the row shows only + (new note here) and ⋯ (new subfolder, rename, share, delete); rename opens the "New folder" form with the current name selected and "Speichern". Both buttons show on hover, on touch screens always (`touch:`), 44 px tall on phones.
 - Groups are set apart by a thin line (`separatorBefore`); one choice of several (a table's line mode) carries `checked` and shows a ✓ at the chosen entry. `keepFocus` keeps the cursor in the text field while the menu is used (the table's menu acts on the cell with the cursor).
 
 ## Tables in Notes

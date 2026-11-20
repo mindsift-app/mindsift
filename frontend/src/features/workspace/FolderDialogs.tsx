@@ -1,5 +1,5 @@
 import React from 'react';
-import { FilePlus, FolderPlus } from 'lucide-react';
+import { FilePlus, FolderPlus, Pencil } from 'lucide-react';
 import { Document } from '../../lib/types';
 import { FormSheet } from '../../components/FormSheet';
 import { ConfirmPopover } from '../../components/ConfirmPopover';
@@ -19,6 +19,8 @@ interface FolderDialogsProps {
   showNewFolderModal: boolean;
   setShowNewFolderModal: (show: boolean) => void;
   newFolderParentPath: string;
+  /** The form renames a folder instead of making one */
+  renamingFolder?: boolean;
   newFolderCoords: { x: number; y: number } | null;
   newFolderName: string;
   setNewFolderName: (name: string) => void;
@@ -50,6 +52,7 @@ export function FolderDialogs({
   showNewFolderModal,
   setShowNewFolderModal,
   newFolderParentPath,
+  renamingFolder = false,
   newFolderCoords,
   newFolderName,
   setNewFolderName,
@@ -78,8 +81,15 @@ export function FolderDialogs({
       {/* New Folder Popover (small & positioned near click, asks only for name & OK) */}
       {showNewFolderModal && (
         <FormSheet
-          title={newFolderParentPath ? t('folder.subfolderIn', { path: newFolderParentPath }) : t('view.newFolder')}
-          icon={<FolderPlus className="w-4 h-4 text-accent" />}
+          title={
+            renamingFolder
+              ? t('folder.renameTitle')
+              : newFolderParentPath
+              ? t('folder.subfolderIn', { path: newFolderParentPath })
+              : t('view.newFolder')
+          }
+          icon={renamingFolder ? <Pencil className="w-4 h-4 text-accent" /> : <FolderPlus className="w-4 h-4 text-accent" />}
+          submitLabel={renamingFolder ? t('common:save') : undefined}
           onClose={() => setShowNewFolderModal(false)}
           onSubmit={handleCreateFolderSubmit}
           anchor={newFolderCoords}
@@ -88,6 +98,7 @@ export function FolderDialogs({
             type="text"
             autoFocus
             value={newFolderName}
+            onFocus={(e) => e.currentTarget.select()}
             onChange={(e) => setNewFolderName(e.target.value)}
             placeholder={t('folder.namePlaceholder')}
             className="input-field w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs"

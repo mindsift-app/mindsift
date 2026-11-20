@@ -261,6 +261,7 @@ Write attempts by viewers on lists or their tasks return `403` ("No write permis
 | POST | `/folders/trash/{id}/restore` | Restore folder from trash (with all subfolders, even empty ones, and notes) → `restoredDocIds` |
 | DELETE | `/folders/trash/{id}` | Permanently delete folder in trash along with notes |
 | POST | `/folders/move` | `sourcePath`, `targetParentPath` |
+| POST | `/folders/rename` | `path`, `name`: new name in the same place, with notes and subfolders → `{newPath, movedDocIds}`; `409` when a folder of that name is already there |
 | GET/POST | `/workspace/folders/shared` | Shared folders; create (`name`, `mountPath`) |
 | GET/DELETE | `/workspace/folders/shared/{id}` | Retrieve; delete |
 | PUT | `/workspace/folders/shared/{id}/mount` | Change own mount path (`mountPath`) |

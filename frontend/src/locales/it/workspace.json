@@ -282,12 +282,16 @@
     "namePlaceholder": "Nome della cartella",
     "noteNamePlaceholder": "Nome della nota",
     "newNoteHere": "Crea nota in questa cartella",
-    "newSubfolder": "Crea nuova sottocartella",
-    "share": "Condividi cartella e permessi",
-    "delete": "Elimina cartella",
     "noNotes": "Ancora nessuna nota",
     "moveToRoot": "Sposta al livello principale",
-    "empty": "Vuota"
+    "empty": "Vuota",
+    "menuSubfolder": "Nuova sottocartella",
+    "menuRename": "Rinomina",
+    "menuShare": "Condividi",
+    "menuDelete": "Elimina",
+    "more": "Altre azioni",
+    "renameTitle": "Rinomina cartella",
+    "renameFailed": "Ridenominazione non riuscita"
   },
   "merge": {
     "undone": "Unione annullata",

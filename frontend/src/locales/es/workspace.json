@@ -282,12 +282,16 @@
     "namePlaceholder": "Nombre de la carpeta",
     "noteNamePlaceholder": "Nombre de la nota",
     "newNoteHere": "Crear una nota en esta carpeta",
-    "newSubfolder": "Crear una nueva subcarpeta",
-    "share": "Compartir carpeta y permisos",
-    "delete": "Eliminar carpeta",
     "noNotes": "Aún no hay notas",
     "moveToRoot": "Mover al nivel superior",
-    "empty": "Vacía"
+    "empty": "Vacía",
+    "menuSubfolder": "Nueva subcarpeta",
+    "menuRename": "Cambiar nombre",
+    "menuShare": "Compartir",
+    "menuDelete": "Eliminar",
+    "more": "Más acciones",
+    "renameTitle": "Cambiar nombre de la carpeta",
+    "renameFailed": "No se pudo cambiar el nombre"
   },
   "merge": {
     "undone": "Fusión deshecha",

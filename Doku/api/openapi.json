@@ -2382,6 +2382,20 @@
         }
       }
     },
+    "/api/v1/folders/rename": {
+      "post": {
+        "summary": "Rename a folder",
+        "description": "path, name: the folder gets the new name in the same place, with its notes and subfolders; answers newPath and movedDocIds. 409 when a folder of that name is already there",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/folders/trash/{id}": {
       "delete": {
         "summary": "Permanently delete folder in trash along with notes",

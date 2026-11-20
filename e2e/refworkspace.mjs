@@ -145,7 +145,8 @@ await step('Delete a folder after confirming', async () => {
   await sleep(600);
   const row = side.getByText('Prüfordner', { exact: true }).first();
   await row.hover();
-  await row.locator('xpath=ancestor::div[.//button[@title="Ordner löschen"]][1]').getByTitle('Ordner löschen').click({ force: true });
+  await row.locator('xpath=ancestor::div[.//button[@title="Weitere Aktionen"]][1]').getByTitle('Weitere Aktionen').click({ force: true });
+  await d.getByRole('menuitem', { name: 'Löschen' }).click();
   await d.getByRole('button', { name: 'In den Papierkorb' }).click();
 });
 await step('Drag a note to the trash, undo in the notice', async () => {

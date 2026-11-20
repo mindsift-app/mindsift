@@ -2,11 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 // --- WORKSPACE FOLDERS ---
@@ -186,12 +188,46 @@ func (s *Server) handleMoveFolder(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
+	s.answerFolderMoved(w, userID, eventType, req.SourcePath, newPath, movedDocIDs)
+}
+
+// handleRenameFolder: POST /folders/rename {path, name} – the folder gets a new name in the same place,
+// with its notes and subfolders; 409 when a folder of that name is already there.
+func (s *Server) handleRenameFolder(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	var req struct {
+		Path string `json:"path"`
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+		return
+	}
+	eventType := folderEventMoved
+	if s.isFolderMount(userID, req.Path) {
+		eventType = folderEventMount
+	}
+	newPath, movedDocIDs, err := s.store.RenameFolder(userID, req.Path, req.Name)
+	if errors.Is(err, storage.ErrFolderExists) {
+		writeErrorFrom(w, http.StatusConflict, err)
+		return
+	}
+	if err != nil {
+		writeErrorFrom(w, http.StatusBadRequest, err)
+		return
+	}
+	s.answerFolderMoved(w, userID, eventType, req.Path, newPath, movedDocIDs)
+}
+
+// answerFolderMoved tells everyone with the moved notes and the person's other tabs and devices, and
+// answers with the folder's new path.
+func (s *Server) answerFolderMoved(w http.ResponseWriter, userID, eventType, sourcePath, newPath string, movedDocIDs []string) {
 	for _, id := range movedDocIDs {
 		s.broadcastDocToAuthorizedUsers(id, "DOC_UPDATED")
 	}
 	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{
 		"type":       eventType,
-		"sourcePath": req.SourcePath,
+		"sourcePath": sourcePath,
 		"newPath":    newPath,
 	})
 	writeJSON(w, http.StatusOK, map[string]any{

@@ -50,6 +50,7 @@
     "loadFailed": "Text konnte nicht geladen werden"
   },
   "save": "Speichern",
+  "create": "Erstellen",
   "add": "Hinzufügen",
   "close": "Schließen",
   "delete": "Löschen",

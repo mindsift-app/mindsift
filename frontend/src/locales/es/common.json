@@ -50,6 +50,7 @@
     "loadFailed": "No se pudo cargar el texto"
   },
   "save": "Guardar",
+  "create": "Crear",
   "add": "Añadir",
   "close": "Cerrar",
   "delete": "Eliminar",

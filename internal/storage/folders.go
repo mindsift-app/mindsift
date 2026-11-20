@@ -3,9 +3,11 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -415,10 +417,43 @@ func (s *Store) MoveFolder(userID, sourcePath, targetParentPath string) (string,
 	} else {
 		newFolderPath = cleanTarget + "/" + folderName
 	}
+	return s.moveFolderTo(userID, cleanSource, newFolderPath)
+}
 
+// ErrFolderExists: renaming would give the folder the name of another folder next to it.
+var ErrFolderExists = errors.New("Einen Ordner mit diesem Namen gibt es hier schon")
+
+// RenameFolder gives a folder a new name in the same place; its notes and subfolders go with it (as
+// MoveFolder). For the place of a shared folder only the person's own place changes. Returns the new path
+// and the notes that moved.
+func (s *Store) RenameFolder(userID, folderPath, newName string) (string, []string, error) {
+	cleanSource := cleanFolderPath(folderPath)
+	if cleanSource == "" || strings.Contains(cleanSource, "..") {
+		return "", nil, fmt.Errorf("ungültiger Quell-Ordnerpfad")
+	}
+	name := strings.TrimSpace(newName)
+	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, "/\\") {
+		return "", nil, fmt.Errorf("ungültiger Ordnername")
+	}
+	newFolderPath := name
+	if i := strings.LastIndex(cleanSource, "/"); i >= 0 {
+		newFolderPath = cleanSource[:i] + "/" + name
+	}
 	if newFolderPath == cleanSource {
 		return cleanSource, []string{}, nil
 	}
+	if existing, err := s.GetFolders(userID); err == nil && slices.Contains(existing, newFolderPath) {
+		return "", nil, ErrFolderExists
+	}
+	return s.moveFolderTo(userID, cleanSource, newFolderPath)
+}
+
+// moveFolderTo moves the folder cleanSource (with its notes and subfolders) to newFolderPath.
+func (s *Store) moveFolderTo(userID, cleanSource, newFolderPath string) (string, []string, error) {
+	if newFolderPath == cleanSource {
+		return cleanSource, []string{}, nil
+	}
+	folderName := filepath.Base(newFolderPath)
 
 	// 1. Check if sourcePath is the root mount of a shared folder
 	mounts, _, err := s.getUserFolderMounts(userID)
