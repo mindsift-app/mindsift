@@ -764,6 +764,8 @@ type Document struct {
 	IsOwner          bool       `json:"isOwner"`
 	OwnerName        string     `json:"ownerName,omitempty"`
 	SharedWith       []DocShare `json:"sharedWith,omitempty"`
+	// HasPublicLink: the note has a valid public link (only set for its owner)
+	HasPublicLink    bool       `json:"hasPublicLink,omitempty"`
 	SharedFolderID   string     `json:"sharedFolderId,omitempty"`
 	SubFolderPath    string     `json:"subFolderPath,omitempty"`
 	IsSharedFolder   bool       `json:"isSharedFolder,omitempty"`

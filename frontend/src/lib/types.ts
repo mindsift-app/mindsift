@@ -809,6 +809,8 @@ export interface Document {
   isOwner?: boolean;
   ownerName?: string;
   sharedWith?: DocShare[];
+  // The note has a valid public link (only set for its owner)
+  hasPublicLink?: boolean;
   sharedFolderId?: string;
   subFolderPath?: string;
   isSharedFolder?: boolean;

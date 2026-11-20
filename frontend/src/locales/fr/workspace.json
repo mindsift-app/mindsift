@@ -503,6 +503,7 @@
   },
   "publicLink": {
     "title": "Lien public",
+    "active": "Partagé publiquement",
     "hint": "Toute personne disposant du lien peut lire la note, même sans compte. Le lien expire toujours et n’apparaît pas dans les moteurs de recherche.",
     "duration": "Valable pendant",
     "for": {

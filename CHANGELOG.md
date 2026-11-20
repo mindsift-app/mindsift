@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Fixed
+- Notes shared by public link now show a globe in the note list and the "Shared" button above the note; notes inside folders also show the shared mark for people they are shared with, which only pinned notes and notes outside folders did before.
+
 ## [0.96.2] - 2026-11-20
 
 ### Fixed
