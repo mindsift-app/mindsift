@@ -760,16 +760,16 @@ type Document struct {
 	UpdatedAt  string `json:"updatedAt"`
 
 	// Collaboration & Permissions
-	Permission       string     `json:"permission"` // owner | write | read
-	IsOwner          bool       `json:"isOwner"`
-	OwnerName        string     `json:"ownerName,omitempty"`
-	SharedWith       []DocShare `json:"sharedWith,omitempty"`
+	Permission string     `json:"permission"` // owner | write | read
+	IsOwner    bool       `json:"isOwner"`
+	OwnerName  string     `json:"ownerName,omitempty"`
+	SharedWith []DocShare `json:"sharedWith,omitempty"`
 	// HasPublicLink: the note has a valid public link (only set for its owner)
-	HasPublicLink    bool       `json:"hasPublicLink,omitempty"`
-	SharedFolderID   string     `json:"sharedFolderId,omitempty"`
-	SubFolderPath    string     `json:"subFolderPath,omitempty"`
-	IsSharedFolder   bool       `json:"isSharedFolder,omitempty"`
-	FolderPermission string     `json:"folderPermission,omitempty"`
+	HasPublicLink    bool   `json:"hasPublicLink,omitempty"`
+	SharedFolderID   string `json:"sharedFolderId,omitempty"`
+	SubFolderPath    string `json:"subFolderPath,omitempty"`
+	IsSharedFolder   bool   `json:"isSharedFolder,omitempty"`
+	FolderPermission string `json:"folderPermission,omitempty"`
 
 	// Only in the note list (GetDocumentList), which carries no bullets: what the folder tree, the hashtag
 	// list and the to-do counts need of them. OpenTodos: open to-dos with text; TagCounts: per hashtag the

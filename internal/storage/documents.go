@@ -300,6 +300,7 @@ func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, 
 		doc.Blocks = stored
 		doc.Content = docPlainText(stored)
 	}
+	s.keepFolder(userID, cleanFolder)
 	return doc, nil
 }
 

@@ -75,7 +75,7 @@ Each WebSocket connection has a queue of up to 128 events; when it is full, furt
 | `deleted` | `path`, `deletedDocIds` (notes now in the trash) | `DELETE /folders` | the folders and the trash; the note list only if other notes it holds were in the folder (shared notes placed there go back to the top level) |
 | `deleted` (no `path`) | `deletedDocIds` (the notes of the folder this person had access to) | `DELETE /folders` by someone else; one event per person instead of a `DOC_DELETED` per note | the folders and the trash, once |
 | `restored` | `restored` (note id, or `folder`) | restoring a note or folder from the trash; a `DOC_CREATED` per note before it | the folders and the trash (the restoring app fetches the folders itself as well, so empty subfolders show without a realtime connection) |
-| `noteMoved` | `docId` | `POST /documents/{id}/move`; `DOC_UPDATED` before it | the folders and the trash; the note list only if the note is new there |
+| `noteMoved` | `docId` | `POST /documents/{id}/move`, `PATCH /documents/{id}` with `folderPath`, MCP `update_note` with `folderPath`; `DOC_UPDATED` before it | the folders and the trash; the note list only if the note is new there |
 | `mount` | `folderId`/`mountPath` or `sourcePath`/`newPath` | a shared folder placed elsewhere | everything (folders, shared folders, note list, trash) |
 | `shared` | `folderId` | shared folder created, deleted, shared or unshared | everything |
 

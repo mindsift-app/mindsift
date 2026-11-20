@@ -63,7 +63,7 @@ A task is a `thought` with `status='kept'` or `status='converted' AND converted_
 | `doc_pins` | Pinned notes / favorites per user |
 | `doc_templates` | Notes each user marked as one of their templates (migration 61) |
 | `doc_shares`, `doc_team_shares` | Note shares to users or teams (`permission`: `read` = viewer, `write` = editor) |
-| `workspace_folders` | Explicitly created folder paths |
+| `workspace_folders` | Folder paths: made with "New folder", and every folder a note was made in or moved into (migration 71 added those of existing notes), so a folder stays when its last note goes |
 | `workspace_shared_folders` | Shared folders (entities with an owner) |
 | `workspace_folder_shares` | Shared folder permissions |
 | `workspace_folder_mounts` | Personal mount path per recipient and shared folder |

@@ -48,6 +48,7 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
   const [rollupTodos, setRollupTodos] = useState<DocTodo[] | null>(null);
   const todosShownRef = useLatestRef(todosShown);
   const docsRef = useLatestRef(docs);
+  const foldersRef = useLatestRef(folders);
 
   // Hashtag counts from the notes in memory: the list's counts per note, the open note's from its bullets
   // (per note cached, workspaceListing.ts)
@@ -73,6 +74,7 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
 
   // The folders alone fetched again (folder events, a folder restored from the trash)
   const reloadFolders = useCallback(() => api.getFolders().then(setFolders).catch(() => {}), []);
+
 
   // A note closed in its editor: the list drops its bullets, so its counts come from the server's fields
   // (DOC_COUNTS, DOC_UPDATED) and the link dialog fetches its bullets fresh
@@ -159,6 +161,9 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
           }
         }
         setDocs((prev) => (prev.some((d) => d.id === created.id) ? prev : [created, ...prev]));
+        // Made in a folder new here (an agent, another device): the server keeps that folder now, so the
+        // folders are fetched and it stays when its last note goes
+        if (created.folderPath && !foldersRef.current.includes(created.folderPath)) void reloadFolders();
       } else if (msg.event === 'DOC_UPDATED' && msg.payload) {
         // The note as the list has it (no bullets, with its counts): one note changes, the list is not fetched again
         const updated = msg.payload as Document;
@@ -239,7 +244,7 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
       }
     });
     return unsub;
-  }, [currentUser, reloadTrash, setSelectedDocId, reloadDocList, reloadFolders, docsRef]);
+  }, [currentUser, reloadTrash, setSelectedDocId, reloadDocList, reloadFolders, docsRef, foldersRef]);
 
   return {
     docs,
