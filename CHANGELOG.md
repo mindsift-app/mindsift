@@ -8,6 +8,8 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+## [0.97.0] - 2026-11-20
+
 ### Added
 - Repeating tasks can repeat on weekdays (Monday to Friday): the task done on Friday comes back on Monday.
 - Folders can be renamed: "Rename" in the folder's new ⋯ menu opens a small form with the current name; notes and subfolders go along, and a name already used next to it is refused with a message.
