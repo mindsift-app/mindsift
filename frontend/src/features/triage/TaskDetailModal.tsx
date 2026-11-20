@@ -782,6 +782,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     options={[
                       { value: '', label: t('detail.recurrence.none') },
                       { value: 'daily', label: t('detail.recurrence.daily') },
+                      { value: 'weekdays', label: t('detail.recurrence.weekdays') },
                       { value: 'weekly', label: t('detail.recurrence.weekly') },
                       { value: 'monthly', label: t('detail.recurrence.monthly') },
                       { value: 'yearly', label: t('detail.recurrence.yearly') },

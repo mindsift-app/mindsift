@@ -23,7 +23,10 @@ describe('calendar', () => {
 
   it('repeats like the server: months fall back to their last day', () => {
     expect(nextRepeat('2026-01-31', 'monthly')).toBe('2026-02-28');
+    expect(nextRepeat('2026-01-31', 'monthly', 2)).toBe('2026-03-31');
     expect(nextRepeat('2026-02-28', 'monthly')).toBe('2026-03-28');
+    expect(nextRepeat('2026-11-20', 'weekdays')).toBe('2026-11-23');
+    expect(nextRepeat('2026-11-20', 'weekdays', 3)).toBe('2026-11-25');
     expect(nextRepeat('2026-11-09', 'weekly')).toBe('2026-11-16');
     expect(nextRepeat('2024-02-29', 'yearly')).toBe('2025-02-28');
   });
@@ -42,7 +45,8 @@ describe('calendar', () => {
         task({ id: 'c', dueDate: '2026-11-10', recurrence: 'daily', isCompleted: true }),
       ],
       '2026-11-09',
-      '2026-11-22'
+      '2026-11-22',
+      '2026-11-01'
     );
     expect(days.get('2026-11-09')?.map((e) => [e.task.id, e.upcoming])).toEqual([['a', false]]);
     expect(days.get('2026-11-16')?.map((e) => [e.task.id, e.upcoming, e.time])).toEqual([
@@ -51,5 +55,18 @@ describe('calendar', () => {
     ]);
     // A done task does not repeat any more
     expect(days.get('2026-11-11')).toBeUndefined();
+  });
+
+  it('shows no coming dates up to today: an overdue task skips them when ticked off', () => {
+    const days = entriesByDay([task({ id: 'a', dueDate: '2026-11-21', recurrence: 'daily' })], '2026-11-16', '2026-11-29', '2026-11-23');
+    expect(days.get('2026-11-21')?.map((e) => e.upcoming)).toEqual([false]);
+    expect(days.get('2026-11-22')).toBeUndefined();
+    expect(days.get('2026-11-23')).toBeUndefined();
+    expect(days.get('2026-11-24')?.map((e) => e.upcoming)).toEqual([true]);
+  });
+
+  it('shows weekday tasks only from Monday to Friday', () => {
+    const days = entriesByDay([task({ id: 'w', dueDate: '2026-11-20', recurrence: 'weekdays' })], '2026-11-16', '2026-11-29', '2026-11-01');
+    expect([...days.keys()].sort()).toEqual(['2026-11-20', '2026-11-23', '2026-11-24', '2026-11-25', '2026-11-26', '2026-11-27']);
   });
 });

@@ -724,7 +724,7 @@ func (s *Store) migrateBaseline() error {
 		// Who added an item to a (shopping) list
 		"ALTER TABLE list_items ADD COLUMN created_by TEXT NOT NULL DEFAULT '';",
 
-		// Repeating tasks: daily | weekly | monthly | yearly
+		// Repeating tasks: daily | weekdays | weekly | monthly | yearly
 		"ALTER TABLE thoughts ADD COLUMN recurrence TEXT NOT NULL DEFAULT '';",
 		"ALTER TABLE thoughts ADD COLUMN recurrence_spawned INTEGER NOT NULL DEFAULT 0;",
 	}

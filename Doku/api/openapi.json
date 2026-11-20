@@ -4158,7 +4158,7 @@
     "/api/v1/thoughts/{id}": {
       "delete": {
         "summary": "Delete a Quick Dump entry or task",
-        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403",
+        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekdays/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403",
         "tags": [
           "Thoughts, Triage, Tasks"
         ],
@@ -4180,7 +4180,7 @@
       },
       "get": {
         "summary": "A Quick Dump entry or task",
-        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403",
+        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekdays/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403",
         "tags": [
           "Thoughts, Triage, Tasks"
         ],
@@ -4202,7 +4202,7 @@
       },
       "patch": {
         "summary": "Change a Quick Dump entry or task",
-        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403. isCompleted and kanbanStatus state the wanted status, never a toggle: a task already in it stays as it is and nothing is broadcast. Optional changedAt and sentAt (sender's clock, ms since 1970): a tick or column change made offline and sent later; the status stays as it is when it changed after that, the other fields are written anyway. Without them the change counts as made now",
+        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekdays/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403. isCompleted and kanbanStatus state the wanted status, never a toggle: a task already in it stays as it is and nothing is broadcast. Optional changedAt and sentAt (sender's clock, ms since 1970): a tick or column change made offline and sent later; the status stays as it is when it changed after that, the other fields are written anyway. Without them the change counts as made now",
         "tags": [
           "Thoughts, Triage, Tasks"
         ],

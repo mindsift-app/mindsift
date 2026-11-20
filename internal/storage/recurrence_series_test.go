@@ -22,11 +22,11 @@ func TestRepeatingTaskSeries(t *testing.T) {
 
 	newRepeating := func(content, rule string) string {
 		t.Helper()
-		th, err := store.CreateThoughtWithDetails(alice.ID, content, "", "manual", "2026-11-02", tl.ID, "todo", "")
+		th, err := store.CreateThoughtWithDetails(alice.ID, content, "", "manual", "2099-11-02", tl.ID, "todo", "")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := store.UpdateThoughtTriage(alice.ID, th.ID, "keep", "task", "", "2026-11-02", tl.ID); err != nil {
+		if _, err := store.UpdateThoughtTriage(alice.ID, th.ID, "keep", "task", "", "2099-11-02", tl.ID); err != nil {
 			t.Fatal(err)
 		}
 		if err := store.SetTaskRecurrence(alice.ID, th.ID, rule); err != nil {
@@ -70,7 +70,7 @@ func TestRepeatingTaskSeries(t *testing.T) {
 	if again == first {
 		t.Fatal("no new successor after the old one was deleted")
 	}
-	if th, _ := store.GetThoughtByID(alice.ID, again); th.DueDate != "2026-11-09" {
+	if th, _ := store.GetThoughtByID(alice.ID, again); th.DueDate != "2099-11-09" {
 		t.Errorf("new successor due %q", th.DueDate)
 	}
 
@@ -111,7 +111,7 @@ func TestRepeatingTaskSeries(t *testing.T) {
 		}
 	}
 	set(plants, true)
-	if th, _ := store.GetThoughtByID(alice.ID, only(plants)); th.Recurrence != "weekly" || th.DueDate != "2026-11-09" {
+	if th, _ := store.GetThoughtByID(alice.ID, only(plants)); th.Recurrence != "weekly" || th.DueDate != "2099-11-09" {
 		t.Errorf("successor after the rule changed: %q due %q", th.Recurrence, th.DueDate)
 	}
 
@@ -196,8 +196,8 @@ func TestRepeatingTaskSeriesFromNoteAndBoard(t *testing.T) {
 func TestLateUntickKeepsTheSuccessor(t *testing.T) {
 	store, alice, _ := setupTestStore(t)
 	defer store.Close()
-	th, _ := store.CreateThoughtWithDetails(alice.ID, "Zähne putzen", "", "manual", "2026-11-02", "", "todo", "")
-	_, _ = store.UpdateThoughtTriage(alice.ID, th.ID, "keep", "task", "", "2026-11-02", "")
+	th, _ := store.CreateThoughtWithDetails(alice.ID, "Zähne putzen", "", "manual", "2099-11-02", "", "todo", "")
+	_, _ = store.UpdateThoughtTriage(alice.ID, th.ID, "keep", "task", "", "2099-11-02", "")
 	_ = store.SetTaskRecurrence(alice.ID, th.ID, "daily")
 	done, open := true, false
 	before, _ := store.GetThoughtByID(alice.ID, th.ID)

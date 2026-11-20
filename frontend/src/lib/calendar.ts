@@ -69,17 +69,28 @@ const addMonthsClamped = (day: string, months: number): string => {
   return localDay(new Date(first.getFullYear(), first.getMonth(), Math.min(d.getDate(), lastDay)));
 };
 
-// The next date of a repeating task, as the server computes it when the task is ticked off
-export function nextRepeat(day: string, rule: string): string {
+const isWeekend = (day: string) => [0, 6].includes(parseDay(day).getDay());
+
+// The n-th date of a repeating task after day, counted from day like the server does (months keep the
+// day of the first date: 31 Jan -> 28 Feb -> 31 Mar; weekdays are Monday to Friday)
+export function nextRepeat(day: string, rule: string, n = 1): string {
   switch (rule) {
     case 'daily':
-      return shiftDay(day, 1);
+      return shiftDay(day, n);
     case 'weekly':
-      return shiftDay(day, 7);
+      return shiftDay(day, 7 * n);
     case 'monthly':
-      return addMonthsClamped(day, 1);
+      return addMonthsClamped(day, n);
     case 'yearly':
-      return addMonthsClamped(day, 12);
+      return addMonthsClamped(day, 12 * n);
+    case 'weekdays': {
+      let d = day;
+      for (let i = 0; i < n; ) {
+        d = shiftDay(d, 1);
+        if (!isWeekend(d)) i++;
+      }
+      return d;
+    }
   }
   return day;
 }
@@ -97,8 +108,9 @@ export interface CalendarEntry {
 }
 
 // The entries per day between from and to (both included): due tasks, and the coming dates of open
-// repeating tasks. All-day entries first, then by time.
-export function entriesByDay(tasks: Thought[], from: string, to: string): Map<string, CalendarEntry[]> {
+// repeating tasks after today (ticking an overdue one off skips the dates missed meanwhile, as the
+// server does). All-day entries first, then by time.
+export function entriesByDay(tasks: Thought[], from: string, to: string, today: string = localDay(new Date())): Map<string, CalendarEntry[]> {
   const out = new Map<string, CalendarEntry[]>();
   const add = (day: string, e: CalendarEntry) => {
     if (day < from || day > to) return;
@@ -111,10 +123,8 @@ export function entriesByDay(tasks: Thought[], from: string, to: string): Map<st
     const { date, time } = splitDue(task.dueDate);
     add(date, { task, time, upcoming: false });
     if (task.recurrence && !task.isCompleted) {
-      let next = nextRepeat(date, task.recurrence);
-      for (let n = 0; n < 400 && next <= to; n++) {
-        add(next, { task, time, upcoming: true });
-        next = nextRepeat(next, task.recurrence);
+      for (let n = 1, next = nextRepeat(date, task.recurrence); n <= 2000 && next <= to; n++, next = nextRepeat(date, task.recurrence, n)) {
+        if (next > today) add(next, { task, time, upcoming: true });
       }
     }
   }

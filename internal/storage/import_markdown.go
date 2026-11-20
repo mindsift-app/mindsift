@@ -1462,7 +1462,7 @@ func markdownToBlocks(md string, limit int) (_ []domain.DocumentBlock, ok bool) 
 }
 
 var (
-	recurRe    = regexp.MustCompile(`(?i)[ \t]*🔁[ \t]*every[ \t]+(day|week|month|year)\b`)
+	recurRe    = regexp.MustCompile(`(?i)[ \t]*🔁[ \t]*every[ \t]+(weekday|day|week|month|year)\b`)
 	dueRe      = regexp.MustCompile(`[ \t]*📅[ \t]*(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?`)
 	priorityRe = regexp.MustCompile(`[ \t]*(🔺|⏫|🔼|🔽|⏬)`)
 )
@@ -1500,7 +1500,7 @@ func parseTaskFile(body string) []importTask {
 			t.done, t.content = c[1] != " ", c[2]
 		}
 		if r := recurRe.FindStringSubmatch(t.content); r != nil {
-			t.recurrence = map[string]string{"day": "daily", "week": "weekly", "month": "monthly", "year": "yearly"}[strings.ToLower(r[1])]
+			t.recurrence = map[string]string{"day": "daily", "weekday": "weekdays", "week": "weekly", "month": "monthly", "year": "yearly"}[strings.ToLower(r[1])]
 			t.content = recurRe.ReplaceAllString(t.content, "")
 		}
 		if d := dueRe.FindStringSubmatch(t.content); d != nil {

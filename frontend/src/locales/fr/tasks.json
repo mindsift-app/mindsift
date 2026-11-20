@@ -26,10 +26,11 @@
       "label": "Répétition",
       "none": "Aucune répétition",
       "daily": "Quotidienne",
+      "weekdays": "Jours ouvrables (lun.–ven.)",
       "weekly": "Hebdomadaire",
       "monthly": "Mensuelle",
       "yearly": "Annuelle",
-      "hintDate": "En terminant cette tâche, la suivante est créée automatiquement, avec une échéance décalée d'un intervalle après cette date.",
+      "hintDate": "En terminant cette tâche, la suivante est créée automatiquement, au rythme de cette date. Les échéances déjà passées au moment de terminer sont sautées.",
       "hintDone": "En terminant cette tâche, la suivante est créée automatiquement, avec une échéance décalée d'un intervalle après achèvement."
     },
     "taskList": "Liste de tâches :",

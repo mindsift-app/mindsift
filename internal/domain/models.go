@@ -311,7 +311,7 @@ type Thought struct {
 	Notes          string        `json:"notes,omitempty"`
 	Subtasks       []SubTask     `json:"subtasks"`
 	Assignees      []string      `json:"assignees"`            // user IDs; only people with access to the task list
-	Recurrence     string        `json:"recurrence,omitempty"` // "" | daily | weekly | monthly | yearly
+	Recurrence     string        `json:"recurrence,omitempty"` // "" | daily | weekdays | weekly | monthly | yearly
 	Reminders      []int         `json:"reminders"`            // minutes before the due date; empty = each person's lead time
 	AlarmSent      bool          `json:"alarmSent,omitempty"`
 	SortOrder      int           `json:"sortOrder"`

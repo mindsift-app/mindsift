@@ -187,7 +187,7 @@ func (s *Store) writeVaultLists(zw zipEntries, userID string, names *vaultNames,
 }
 
 // Obsidian Tasks writes repeat rules as "🔁 every week"
-var recurrenceEvery = map[string]string{"daily": "day", "weekly": "week", "monthly": "month", "yearly": "year"}
+var recurrenceEvery = map[string]string{"daily": "day", "weekdays": "weekday", "weekly": "week", "monthly": "month", "yearly": "year"}
 
 // taskMarkdownLine writes a task in the format of the Obsidian Tasks plugin (📅 due date, ⏫/🔺 priority)
 // with its subtasks and notes indented below.
