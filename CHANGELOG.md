@@ -8,6 +8,8 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+## [0.97.1] - 2026-11-20
+
 ### Fixed
 - Deleting a folder that holds shared folders moved into it now deletes it: before, only its sharing ended, while the folder and its subfolders stayed and each further try added an empty "0 notes" entry to the trash. Your own shared folders inside go to the trash with it; folders others share with you go back to the top level.
 - A deleted subfolder of a shared folder now goes to the trash as a folder and comes back with its subfolders and notes; before, only its notes landed in the trash. Notes of others in it show up in their own trash.
