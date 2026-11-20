@@ -288,6 +288,137 @@ func TestOwnerDeletesSharedFolder(t *testing.T) {
 	}
 }
 
+// Shared folders placed inside a deleted folder go with it: they must not keep the deleted folder in the
+// tree. The person's own ones go to the trash with it, someone else's ones go back to the top level.
+func TestDeleteFolderTakesNestedSharedFolders(t *testing.T) {
+	for _, root := range []string{"Journal", "Journal/Projekte"} {
+		t.Run(root, func(t *testing.T) {
+			store, err := NewStore(filepath.Join(t.TempDir(), "nestedshared.db"))
+			if err != nil {
+				t.Fatalf("NewStore: %v", err)
+			}
+			defer store.Close()
+			openSharing(t, store)
+			anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+			ben, _ := store.CreateUser("ben@example.com", "hash", "Ben", "member")
+			_, _ = store.CreateFolder(anna.ID, "Journal")
+			proj, _ := store.CreateDocument(anna.ID, "", "Übersicht", "", "Projekte", nil, nil, false)
+			trip, _ := store.CreateDocument(anna.ID, "", "Rom", "", "Reisen/Italien", nil, nil, false)
+			_, _ = store.CreateDocument(ben.ID, "", "Bens Notiz", "", "Bens", nil, nil, false)
+			for _, sh := range []struct{ owner, name, with string }{{anna.ID, "Projekte", ben.ID}, {anna.ID, "Reisen", ben.ID}, {ben.ID, "Bens", anna.ID}} {
+				sf, err := store.CreateSharedFolder(sh.owner, sh.name, sh.name)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := store.CreateFolderShare(sh.owner, sf.ID, "user", sh.with, "write"); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for _, mv := range [][2]string{{"Projekte", "Journal"}, {"Reisen", "Journal/Projekte"}, {"Bens", "Journal/Projekte/Reisen"}} {
+				if _, _, err := store.MoveFolder(anna.ID, mv[0], mv[1]); err != nil {
+					t.Fatalf("MoveFolder %v: %v", mv, err)
+				}
+			}
+			folders := func(userID string) string {
+				f, _ := store.GetFolders(userID)
+				return strings.Join(f, "|")
+			}
+			if got := folders(anna.ID); got != "Journal|Journal/Projekte|Journal/Projekte/Reisen|Journal/Projekte/Reisen/Bens|Journal/Projekte/Reisen/Italien" {
+				t.Fatalf("setup: Anna's folders %s", got)
+			}
+
+			if _, err := store.DeleteFolder(anna.ID, root); err != nil {
+				t.Fatalf("DeleteFolder: %v", err)
+			}
+			want := "Bens"
+			if root == "Journal/Projekte" {
+				want = "Bens|Journal"
+			}
+			if got := folders(anna.ID); got != want {
+				t.Fatalf("Anna's folders after deleting %s: %s, want %s", root, got, want)
+			}
+			if got := folders(ben.ID); got != "Bens" {
+				t.Errorf("Ben keeps only his own folder: %s", got)
+			}
+			trash, _ := store.GetTrash(anna.ID)
+			if len(trash) != 1 || trash[0].Kind != "folder" || trash[0].NoteCount != 2 {
+				t.Fatalf("trash should hold one folder with 2 notes: %+v", trash)
+			}
+			if _, err := store.RestoreFolder(anna.ID, trash[0].ID); err != nil {
+				t.Fatalf("RestoreFolder: %v", err)
+			}
+			for id, p := range map[string]string{proj.ID: "Journal/Projekte", trip.ID: "Journal/Projekte/Reisen/Italien"} {
+				if d, err := store.GetDocumentByID(anna.ID, id); err != nil || d.IsArchived || d.FolderPath != p {
+					t.Errorf("note back in %s: %+v %v", p, d, err)
+				}
+			}
+		})
+	}
+}
+
+// A subfolder of a shared folder goes to the trash as a folder, not only its notes, and comes back inside
+// the shared folder for everyone. Someone else's note in it shows up in their own trash on its own.
+func TestDeleteSubfolderOfSharedFolder(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "sharedsub.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	openSharing(t, store)
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	ben, _ := store.CreateUser("ben@example.com", "hash", "Ben", "member")
+	_, _ = store.CreateFolder(anna.ID, "Projekte/Stadt/Leer")
+	sf, err := store.CreateSharedFolder(anna.ID, "Projekte", "Projekte")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateFolderShare(anna.ID, sf.ID, "user", ben.ID, "write"); err != nil {
+		t.Fatal(err)
+	}
+	annas, _ := store.CreateDocument(anna.ID, "", "Verkehr", "", "Projekte/Stadt", nil, nil, false)
+	bens, err := store.CreateDocument(ben.ID, "", "Plan", "", "Projekte/Stadt/Leer", nil, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	folders := func(userID string) string {
+		f, _ := store.GetFolders(userID)
+		return strings.Join(f, "|")
+	}
+	if got := folders(ben.ID); got != "Projekte|Projekte/Stadt|Projekte/Stadt/Leer" {
+		t.Fatalf("setup: Ben's folders %s", got)
+	}
+
+	if _, err := store.DeleteFolder(anna.ID, "Projekte/Stadt"); err != nil {
+		t.Fatalf("DeleteFolder: %v", err)
+	}
+	for _, u := range []string{anna.ID, ben.ID} {
+		if got := folders(u); got != "Projekte" {
+			t.Fatalf("folders after the delete: %s", got)
+		}
+	}
+	trash, _ := store.GetTrash(anna.ID)
+	if len(trash) != 1 || trash[0].Kind != "folder" || trash[0].Title != "Stadt" || trash[0].NoteCount != 2 {
+		t.Fatalf("Anna's trash should hold the folder with 2 notes: %+v", trash)
+	}
+	if bt, _ := store.GetTrash(ben.ID); len(bt) != 1 || bt[0].ID != bens.ID {
+		t.Fatalf("Ben's trash should show his note: %+v", bt)
+	}
+
+	if _, err := store.RestoreFolder(anna.ID, trash[0].ID); err != nil {
+		t.Fatalf("RestoreFolder: %v", err)
+	}
+	for _, u := range []string{anna.ID, ben.ID} {
+		if got := folders(u); got != "Projekte|Projekte/Stadt|Projekte/Stadt/Leer" {
+			t.Errorf("folders after the restore: %s", got)
+		}
+	}
+	for id, p := range map[string]string{annas.ID: "Projekte/Stadt", bens.ID: "Projekte/Stadt/Leer"} {
+		if d, err := store.GetDocumentByID(anna.ID, id); err != nil || d.IsArchived || d.FolderPath != p {
+			t.Errorf("note back in %s: %+v %v", p, d, err)
+		}
+	}
+}
+
 // Moving a folder moves only the user's own folder, not a folder of the same name of someone else.
 func TestMoveFolderLeavesOtherUsersAlone(t *testing.T) {
 	store, err := NewStore(filepath.Join(t.TempDir(), "movefolder.db"))

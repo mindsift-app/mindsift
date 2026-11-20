@@ -156,6 +156,7 @@ func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
 	inSharedFolder := false
 	dissolveShared := ""          // id of the shared folder whose owner deletes it
 	var sharedSubfolders []string // its subfolders as paths below clean
+	trashSharedSub := false       // a subfolder of a shared folder is deleted
 
 	mounts, _, err := s.getUserFolderMounts(userID)
 	if err == nil {
@@ -211,6 +212,19 @@ func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
 					}
 					_ = rows.Close()
 				}
+				// It goes to the trash as a folder too (with its subfolders), and comes back inside the shared folder
+				trashSharedSub = true
+				if subRows, qErr := s.db.Query(`SELECT sub_path FROM workspace_folders WHERE shared_folder_id = ? AND sub_path LIKE ?`,
+					sfID, subPath+"/%"); qErr == nil {
+					for subRows.Next() {
+						var sp string
+						if !dbFailed(subRows.Scan(&sp)) {
+							sharedSubfolders = append(sharedSubfolders, clean+strings.TrimPrefix(sp, subPath))
+						}
+					}
+					logDBErr(subRows.Err())
+					_ = subRows.Close()
+				}
 				writes = append(writes, stmt(`DELETE FROM workspace_folders WHERE shared_folder_id = ? AND (sub_path = ? OR sub_path LIKE ?)`,
 					sfID, subPath, subPath+"/%"))
 			}
@@ -235,6 +249,47 @@ func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
 	}
 	_ = rows.Close()
 
+	// Shared folders the person placed somewhere below this folder go with it: their own ones are deleted
+	// like the folder (dissolved into it, so its trash entry brings them back as personal subfolders), and
+	// others' ones go back to the top level instead of keeping the deleted folder in the tree.
+	for sfID, mPath := range mounts {
+		mPath = cleanFolderPath(mPath)
+		if !strings.HasPrefix(mPath, clean+"/") {
+			continue
+		}
+		var ownerID string
+		if err := s.db.QueryRow(`SELECT owner_id FROM workspace_shared_folders WHERE id = ?`, sfID).Scan(&ownerID); dbFailed(err) {
+			continue
+		}
+		if ownerID != userID {
+			writes = append(writes, stmt(`DELETE FROM workspace_folder_mounts WHERE folder_id = ? AND user_id = ?`, sfID, userID))
+			continue
+		}
+		sharedSubfolders = append(sharedSubfolders, mPath)
+		if rows, qErr := s.db.Query(`SELECT id FROM documents WHERE shared_folder_id = ?`, sfID); qErr == nil {
+			for rows.Next() {
+				var id string
+				if err := rows.Scan(&id); !dbFailed(err) && !seenDocID[id] {
+					seenDocID[id] = true
+					deletedDocIDs = append(deletedDocIDs, id)
+				}
+			}
+			logDBErr(rows.Err())
+			_ = rows.Close()
+		}
+		if subRows, qErr := s.db.Query(`SELECT sub_path FROM workspace_folders WHERE shared_folder_id = ? AND sub_path != ''`, sfID); qErr == nil {
+			for subRows.Next() {
+				var sp string
+				if !dbFailed(subRows.Scan(&sp)) {
+					sharedSubfolders = append(sharedSubfolders, mPath+"/"+sp)
+				}
+			}
+			logDBErr(subRows.Err())
+			_ = subRows.Close()
+		}
+		writes = append(writes, dissolveSharedFolderStmts(sfID, mPath)...)
+	}
+
 	// The notes of the folder go to the trash; restoring one creates its folder again
 	for _, id := range deletedDocIDs {
 		writes = append(writes, trashStmts(userID, id)...)
@@ -253,19 +308,16 @@ func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
 			logDBErr(frows.Err())
 			_ = frows.Close()
 		}
+		subfolders = append(subfolders, sharedSubfolders...)
 		_, folderWrites := trashFolderStmts(userID, clean, subfolders, deletedDocIDs)
 		writes = append(writes, folderWrites...)
 	}
-	if dissolveShared != "" {
+	if dissolveShared != "" || trashSharedSub {
 		_, folderWrites := trashFolderStmts(userID, clean, sharedSubfolders, deletedDocIDs)
 		writes = append(writes, folderWrites...)
-		writes = append(writes,
-			stmt(`UPDATE documents SET folder_path = CASE WHEN sub_folder_path = '' THEN ? ELSE ? || '/' || sub_folder_path END,
-				shared_folder_id = '', sub_folder_path = '' WHERE shared_folder_id = ?`, clean, clean, dissolveShared),
-			stmt(`DELETE FROM workspace_folder_mounts WHERE folder_id = ?`, dissolveShared),
-			stmt(`DELETE FROM workspace_folder_shares WHERE folder_id = ?`, dissolveShared),
-			stmt(`DELETE FROM workspace_folders WHERE shared_folder_id = ?`, dissolveShared),
-			stmt(`DELETE FROM workspace_shared_folders WHERE id = ?`, dissolveShared))
+	}
+	if dissolveShared != "" {
+		writes = append(writes, dissolveSharedFolderStmts(dissolveShared, clean)...)
 	}
 
 	// Also clear any personal folder placements for shared notes in this folder
@@ -278,6 +330,19 @@ func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
 		return nil, err
 	}
 	return deletedDocIDs, nil
+}
+
+// dissolveSharedFolderStmts ends the shared folder sfID placed at mountPath: its notes become notes in
+// that place again (folder_path), and the share, its placements and its subfolder records go.
+func dissolveSharedFolderStmts(sfID, mountPath string) []sqlStmt {
+	return []sqlStmt{
+		stmt(`UPDATE documents SET folder_path = CASE WHEN sub_folder_path = '' THEN ? ELSE ? || '/' || sub_folder_path END,
+			shared_folder_id = '', sub_folder_path = '' WHERE shared_folder_id = ?`, mountPath, mountPath, sfID),
+		stmt(`DELETE FROM workspace_folder_mounts WHERE folder_id = ?`, sfID),
+		stmt(`DELETE FROM workspace_folder_shares WHERE folder_id = ?`, sfID),
+		stmt(`DELETE FROM workspace_folders WHERE shared_folder_id = ?`, sfID),
+		stmt(`DELETE FROM workspace_shared_folders WHERE id = ?`, sfID),
+	}
 }
 
 // MoveDocument puts the note into another folder for the user; a folder that did not exist yet is

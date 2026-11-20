@@ -69,15 +69,15 @@ func (s *Store) trashDocument(userID, docID string) error {
 	return s.execInTx(trashStmts(userID, docID)...)
 }
 
-// GetTrash lists the notes and folders in the user's trash, newest deletion first. Notes of a trashed
-// folder are part of the folder's entry.
+// GetTrash lists the notes and folders in the user's trash, newest deletion first. Notes of a folder the
+// user trashed are part of the folder's entry; someone else's notes in it are listed for them one by one.
 func (s *Store) GetTrash(userID string) ([]TrashedDocument, error) {
 	rows, err := s.db.Query(`SELECT d.id, d.title, d.icon, d.folder_path, d.shared_folder_id, d.sub_folder_path, d.archived_at, d.user_id,
 		       COALESCE(wsf.name, '')
 		FROM documents d LEFT JOIN workspace_shared_folders wsf ON wsf.id = d.shared_folder_id
 		WHERE d.`+trashScope+`
-		  AND NOT EXISTS (SELECT 1 FROM trashed_folders tf WHERE tf.id = d.trash_folder_id)
-		ORDER BY d.archived_at DESC`, userID, userID)
+		  AND NOT EXISTS (SELECT 1 FROM trashed_folders tf WHERE tf.id = d.trash_folder_id AND tf.user_id = ?)
+		ORDER BY d.archived_at DESC`, userID, userID, userID)
 	if err != nil {
 		return nil, err
 	}
