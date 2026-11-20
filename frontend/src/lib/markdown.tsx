@@ -34,6 +34,7 @@ const inlineTokenRegex = (withTags: boolean) =>
   );
 const INLINE_TOKENS = inlineTokenRegex(false);
 const INLINE_TOKENS_WITH_TAGS = inlineTokenRegex(true);
+const UNDERSCORE_WORD_CHAR = /[\p{L}\p{N}_]/u;
 
 function renderInlineTokens(text: string, options?: InlineMarkdownOptions): React.ReactNode[] {
   if (!text) return [];
@@ -48,11 +49,22 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(text)) !== null) {
+    const token = match[0];
+    const end = match.index + token.length;
+
+    // Underscores inside a word are no emphasis (as in CommonMark): DOCUMENT_STORAGE_KEY or snake_case_name
+    // stay plain text. The search goes on one character later, so a real _emphasis_ starting inside the match still counts.
+    if (
+      token.startsWith('_') &&
+      (UNDERSCORE_WORD_CHAR.test(text[match.index - 1] ?? '') || UNDERSCORE_WORD_CHAR.test(text[end] ?? ''))
+    ) {
+      regex.lastIndex = match.index + 1;
+      continue;
+    }
+
     if (match.index > lastIndex) {
       elements.push(text.slice(lastIndex, match.index));
     }
-    const token = match[0];
-    const end = match.index + token.length;
     const key = `${match.index}-${token}`;
 
     const secretId = secretIdOf(token);

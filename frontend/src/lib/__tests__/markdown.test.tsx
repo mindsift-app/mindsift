@@ -37,6 +37,21 @@ describe('renderInlineMarkdown', () => {
     expect(em?.textContent).toBe('kursivem');
   });
 
+  it('keeps underscores inside words as text instead of emphasis', () => {
+    const { container } = render(
+      <div>{renderInlineMarkdown('Variable DOCUMENT_STORAGE_KEY_PATTERN, snake_case_name und A__B__C')}</div>
+    );
+    expect(container.querySelector('em, strong')).toBeNull();
+    expect(container.textContent).toBe('Variable DOCUMENT_STORAGE_KEY_PATTERN, snake_case_name und A__B__C');
+  });
+
+  it('still renders underscore emphasis next to a word with underscores', () => {
+    const { container } = render(<div>{renderInlineMarkdown('Der Wert a_b _kursiv_ und (__fett__).')}</div>);
+    expect(container.querySelector('em')?.textContent).toBe('kursiv');
+    expect(container.querySelector('strong')?.textContent).toBe('fett');
+    expect(container.textContent).toBe('Der Wert a_b kursiv und (fett).');
+  });
+
   it('renders both bold and italic text in one paragraph', () => {
     const { container } = render(<div>{renderInlineMarkdown('Hier ist **fett** und *kursiv* vereint')}</div>);
     const strong = container.querySelector('strong');
