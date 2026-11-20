@@ -344,13 +344,16 @@ export interface SubTask {
   blockId?: string;
 }
 
-// Repeat rule of a task: completing it creates the next one (due date one interval later)
-export type Recurrence = '' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+// Repeat rule of a task: completing it creates the next one (due date in the rhythm of the old one, after the day it was done)
+export type Recurrence = '' | 'daily' | 'weekdays' | 'weekly' | 'monthly' | 'yearly';
 
 // Texts in common:recurrence.<rule>, in the language shown when read
 export const RECURRENCE_LABELS: Record<Exclude<Recurrence, ''>, string> = {
   get daily() {
     return i18n.t('common:recurrence.daily');
+  },
+  get weekdays() {
+    return i18n.t('common:recurrence.weekdays');
   },
   get weekly() {
     return i18n.t('common:recurrence.weekly');

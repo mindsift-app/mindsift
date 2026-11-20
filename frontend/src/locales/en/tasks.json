@@ -26,10 +26,11 @@
       "label": "Repeat",
       "none": "No repeat",
       "daily": "Daily",
+      "weekdays": "Weekdays (Mon–Fri)",
       "weekly": "Weekly",
       "monthly": "Monthly",
       "yearly": "Yearly",
-      "hintDate": "Completing it creates the next task automatically, due one interval after this date.",
+      "hintDate": "Completing it creates the next task automatically, in the rhythm of this date. Dates already past when it is completed are skipped.",
       "hintDone": "Completing it creates the next task automatically, due one interval after completion."
     },
     "taskList": "Task list:",

@@ -26,10 +26,11 @@
       "label": "Wiederholung",
       "none": "Keine Wiederholung",
       "daily": "Täglich",
+      "weekdays": "Werktags (Mo–Fr)",
       "weekly": "Wöchentlich",
       "monthly": "Monatlich",
       "yearly": "Jährlich",
-      "hintDate": "Beim Erledigen entsteht automatisch die nächste Aufgabe, fällig ein Intervall nach diesem Datum.",
+      "hintDate": "Beim Erledigen entsteht automatisch die nächste Aufgabe im Rhythmus dieses Datums. Termine, die beim Erledigen schon vorbei sind, werden übersprungen.",
       "hintDone": "Beim Erledigen entsteht automatisch die nächste Aufgabe, fällig ein Intervall nach dem Erledigen."
     },
     "taskList": "Aufgabenliste:",

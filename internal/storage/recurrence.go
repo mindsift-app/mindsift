@@ -10,40 +10,95 @@ import (
 )
 
 // ErrInvalidRecurrence is returned for unknown repeat rules.
-var ErrInvalidRecurrence = errors.New("Unbekannte Wiederholung (erlaubt: täglich, wöchentlich, monatlich, jährlich)")
+var ErrInvalidRecurrence = errors.New("Unbekannte Wiederholung (erlaubt: täglich, werktags, wöchentlich, monatlich, jährlich)")
 
 func validRecurrence(r string) bool {
 	switch r {
-	case "", "daily", "weekly", "monthly", "yearly":
+	case "", "daily", "weekdays", "weekly", "monthly", "yearly":
 		return true
 	}
 	return false
 }
 
-// NextDueDate moves a due date (YYYY-MM-DD or YYYY-MM-DDTHH:MM, today when empty) one interval forward
-// and keeps the time. Months and years keep the day where possible and fall back to the month's last
-// day (31 Jan -> 28/29 Feb). today is an instant; its day counts in the server's time zone.
+// NextDueDate is the due date of the next occurrence of a repeating task completed at the instant today.
+// It keeps the rhythm of the old due date (YYYY-MM-DD or YYYY-MM-DDTHH:MM; today when empty) and its
+// time, and lies after today's day: occurrences missed meanwhile are skipped (a daily task due Saturday
+// and done on Monday comes back on Tuesday, not on Sunday), a task done early keeps its next date.
+// Weekdays: Monday to Friday. Months and years keep the day where possible and fall back to the month's
+// last day (31 Jan -> 28/29 Feb -> 31 Mar). today's day counts in the server's time zone.
 func NextDueDate(due, rule string, today time.Time) string {
 	parsed, hasTime, ok := domain.ParseDue(due, clock.Location())
 	today = clock.In(today)
-	base := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+	day := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+	start := day
 	if ok {
-		base = time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.UTC)
+		start = time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.UTC)
 	}
-	switch rule {
-	case "daily":
-		base = base.AddDate(0, 0, 1)
-	case "weekly":
-		base = base.AddDate(0, 0, 7)
-	case "monthly":
-		base = addMonthsClamped(base, 1)
-	case "yearly":
-		base = addMonthsClamped(base, 12)
+	next := start
+	if validRecurrence(rule) && rule != "" {
+		next = nthOccurrence(start, rule, 1)
+		if next.Before(day) || next.Equal(day) {
+			next = firstOccurrenceAfter(start, rule, day)
+		}
 	}
 	if hasTime {
-		return base.Format("2006-01-02") + parsed.Format("T15:04")
+		return next.Format("2006-01-02") + parsed.Format("T15:04")
 	}
-	return base.Format("2006-01-02")
+	return next.Format("2006-01-02")
+}
+
+// nthOccurrence is the n-th date after start in the rule's rhythm, counted from start (so months keep
+// the day of start instead of drifting to the shortest month's).
+func nthOccurrence(start time.Time, rule string, n int) time.Time {
+	switch rule {
+	case "daily":
+		return start.AddDate(0, 0, n)
+	case "weekly":
+		return start.AddDate(0, 0, 7*n)
+	case "monthly":
+		return addMonthsClamped(start, n)
+	case "yearly":
+		return addMonthsClamped(start, 12*n)
+	case "weekdays":
+		d := start
+		for i := 0; i < n; {
+			d = d.AddDate(0, 0, 1)
+			if d.Weekday() != time.Saturday && d.Weekday() != time.Sunday {
+				i++
+			}
+		}
+		return d
+	}
+	return start
+}
+
+// firstOccurrenceAfter is the first date in the rule's rhythm from start that lies after day.
+func firstOccurrenceAfter(start time.Time, rule string, day time.Time) time.Time {
+	switch rule {
+	case "daily", "weekdays":
+		d := day.AddDate(0, 0, 1)
+		if rule == "weekdays" {
+			for d.Weekday() == time.Saturday || d.Weekday() == time.Sunday {
+				d = d.AddDate(0, 0, 1)
+			}
+		}
+		return d
+	case "weekly":
+		weeks := int(day.Sub(start).Hours()/24)/7 + 1
+		return start.AddDate(0, 0, 7*weeks)
+	case "monthly", "yearly":
+		step := 1
+		if rule == "yearly" {
+			step = 12
+		}
+		months := (day.Year()-start.Year())*12 + int(day.Month()-start.Month())
+		n := max(months/step, 1)
+		for nthOccurrence(start, rule, n).Compare(day) <= 0 {
+			n++
+		}
+		return nthOccurrence(start, rule, n)
+	}
+	return start
 }
 
 func addMonthsClamped(t time.Time, months int) time.Time {

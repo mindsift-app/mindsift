@@ -585,6 +585,9 @@ const fr: HelpContent = {
               <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par e-mail, webhook Discord ou notifications push sur tes appareils à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant). Les alertes par e-mail vont à ton adresse de connexion. Une nouvelle adresse de connexion ne compte qu'après un clic sur le lien de l'e-mail de confirmation qui lui est envoyé ; d'ici là, l'ancienne reste valable. Toutes les heures suivent le fuseau horaire du serveur, que l'administrateur du serveur règle sous <em>Administration du serveur → Serveur</em>.
             </li>
             <li>
+              <strong className="text-main">Tâches récurrentes :</strong> Choisis une répétition dans la fenêtre de détail (quotidienne, jours ouvrables du lundi au vendredi, hebdomadaire, mensuelle ou annuelle). En la cochant, la tâche suivante est créée automatiquement au rythme de l’ancienne date ; cochée en retard, les dates manquées sont sautées (quotidienne, échéance samedi, cochée lundi : la suivante est due mardi). Tu la reconnais à l’icône 🔁.
+            </li>
+            <li>
               <strong className="text-main">Rappels par tâche :</strong> Dans la fenêtre de détail, coche une ou plusieurs heures sous « Rappel », p. ex. 2 semaines avant et le jour de l’échéance. Pour cette tâche, ils remplacent ton délai et valent pour tous ceux qui reçoivent son alarme d’échéance ; « Par défaut » revient au délai des paramètres. Sans heure, MindSift rappelle des jours entiers avant, à 9 h. Les tâches avec leurs propres rappels portent une petite 🔔.
             </li>
             <li>

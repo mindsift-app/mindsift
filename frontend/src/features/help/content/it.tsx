@@ -581,7 +581,7 @@ const it: HelpContent = {
               <strong className="text-main">Assegnazione:</strong> nelle liste condivise puoi assegnare un'attività a una o più persone con accesso (digita il nome, Invio). Gli assegnatari compaiono come piccole immagini del profilo sull'attività; chi perde l'accesso alla lista viene rimosso automaticamente.
             </li>
             <li>
-              <strong className="text-main">Attività ricorrenti:</strong> scegli una ripetizione nella finestra dei dettagli (da giornaliera ad annuale). Spuntandola viene creata automaticamente l'attività successiva con la data aggiornata; la riconosci dall'icona 🔁.
+              <strong className="text-main">Attività ricorrenti:</strong> scegli una ripetizione nella finestra dei dettagli (giornaliera, nei giorni feriali dal lunedì al venerdì, settimanale, mensile o annuale). Spuntandola viene creata automaticamente l'attività successiva al ritmo della data precedente; se la spunti in ritardo, le scadenze perse vengono saltate (giornaliera, scadenza sabato, spuntata lunedì: la successiva scade martedì). La riconosci dall'icona 🔁.
             </li>
             <li>
               <strong className="text-main">Data di scadenza con ora:</strong> nella finestra dei dettagli puoi impostare un orario accanto alla data; «✕ Ora» rende nuovamente l'attività valida per l'intera giornata. Mostra ad esempio «Oggi, 14:30», gli elementi scaduti in rosso.

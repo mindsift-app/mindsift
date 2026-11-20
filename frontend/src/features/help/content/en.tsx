@@ -581,7 +581,7 @@ const en: HelpContent = {
               <strong className="text-main">Assigning:</strong> in shared task lists you assign a task to one or more people with access (type a name, Enter). The assignees appear as small profile pictures on the task; whoever loses access to the list is removed automatically.
             </li>
             <li>
-              <strong className="text-main">Recurring tasks:</strong> choose a repeat in the detail window (daily to yearly). Checking it off creates the next task automatically with the date moved on; you recognize it by the 🔁 icon.
+              <strong className="text-main">Recurring tasks:</strong> choose a repeat in the detail window (daily, weekdays from Monday to Friday, weekly, monthly or yearly). Checking it off creates the next task automatically in the rhythm of the old date; checked off late, the missed dates are skipped (daily, due Saturday, checked off Monday: the next one is due Tuesday). You recognize it by the 🔁 icon.
             </li>
             <li>
               <strong className="text-main">Due date with time:</strong> in the detail window you can set a time next to the date; “✕ Time” makes the task all-day again. It shows e.g. “Today, 14:30”, overdue items in red.

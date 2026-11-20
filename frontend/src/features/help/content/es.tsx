@@ -662,7 +662,7 @@ const es: HelpContent = {
               <strong className="text-main">Asignaciones:</strong> en listas de tareas compartidas puedes asignar una tarea a una o varias personas con acceso (escribe un nombre, Enter). Las personas asignadas aparecen como fotos de perfil pequeñas en la tarea; quien pierda acceso a la lista se desasigna automáticamente.
             </li>
             <li>
-              <strong className="text-main">Tareas periódicas:</strong> elige una repetición en la ventana de detalle (de diaria a anual). Al completarla se crea automáticamente la siguiente tarea con la fecha actualizada; la reconocerás por el icono 🔁.
+              <strong className="text-main">Tareas periódicas:</strong> elige una repetición en la ventana de detalle (diaria, días laborables de lunes a viernes, semanal, mensual o anual). Al completarla se crea automáticamente la siguiente tarea al ritmo de la fecha anterior; si la completas tarde, las fechas perdidas se saltan (diaria, vence el sábado, completada el lunes: la siguiente vence el martes). La reconocerás por el icono 🔁.
             </li>
             <li>
               <strong className="text-main">Fecha de vencimiento con hora:</strong> en la ventana de detalle puedes indicar una hora junto a la fecha; «✕ Hora» vuelve a hacer la tarea para todo el día. Muestra p. ej. «Hoy, 14:30», y los elementos vencidos en rojo.

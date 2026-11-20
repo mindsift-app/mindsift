@@ -10,20 +10,38 @@ import (
 )
 
 func TestNextDueDate(t *testing.T) {
-	today := time.Date(2026, 10, 29, 15, 0, 0, 0, time.UTC)
-	cases := []struct{ due, rule, want string }{
-		{"2026-10-30", "daily", "2026-10-31"},
-		{"2026-10-30", "weekly", "2026-11-06"},
-		{"2026-01-31", "monthly", "2026-02-28"},
-		{"2026-03-15", "monthly", "2026-04-15"},
-		{"2028-02-29", "yearly", "2029-02-28"},
-		{"", "weekly", "2026-11-05"},
-		{"2026-01-31T07:15", "monthly", "2026-02-28T07:15"},
-		{"2026-10-30T23:30", "daily", "2026-10-31T23:30"},
+	at := func(day string) time.Time {
+		d, _ := time.Parse("2006-01-02", day)
+		return d.Add(15 * time.Hour)
+	}
+	cases := []struct{ due, rule, today, want string }{
+		// On time or early: one interval after the due date
+		{"2026-10-30", "daily", "2026-10-29", "2026-10-31"},
+		{"2026-10-30", "weekly", "2026-10-29", "2026-11-06"},
+		{"2026-01-31", "monthly", "2026-01-20", "2026-02-28"},
+		{"2026-03-15", "monthly", "2026-03-15", "2026-04-15"},
+		{"2028-02-29", "yearly", "2028-02-01", "2029-02-28"},
+		{"", "weekly", "2026-10-29", "2026-11-05"},
+		{"2026-01-31T07:15", "monthly", "2026-01-31", "2026-02-28T07:15"},
+		{"2026-10-30T23:30", "daily", "2026-10-29", "2026-10-31T23:30"},
+		// Late: missed dates are skipped, the next one lies after the day it was done
+		{"2026-11-21", "daily", "2026-11-23", "2026-11-24"}, // due Saturday, done Monday: Tuesday
+		{"2026-11-21T08:00", "daily", "2026-11-23", "2026-11-24T08:00"},
+		{"2026-11-02", "weekly", "2026-11-20", "2026-11-23"},  // stays on Monday
+		{"2026-11-02", "weekly", "2026-11-23", "2026-11-30"},  // done on its weekday: next week
+		{"2026-01-31", "monthly", "2026-04-10", "2026-04-30"}, // day 31 kept, April has 30
+		{"2026-01-31", "monthly", "2026-04-30", "2026-05-31"},
+		{"2024-02-29", "yearly", "2026-03-01", "2027-02-28"},
+		// Weekdays: Monday to Friday
+		{"2026-11-20", "weekdays", "2026-11-20", "2026-11-23"}, // Friday -> Monday
+		{"2026-11-18", "weekdays", "2026-11-17", "2026-11-19"}, // early: the weekday after its date
+		{"2026-11-20", "weekdays", "2026-11-23", "2026-11-24"}, // Friday's, done Monday: Tuesday
+		{"2026-11-21", "weekdays", "2026-11-21", "2026-11-23"}, // set on a Saturday: Monday
+		{"", "weekdays", "2026-11-21", "2026-11-23"},
 	}
 	for _, c := range cases {
-		if got := NextDueDate(c.due, c.rule, today); got != c.want {
-			t.Errorf("NextDueDate(%q, %s) = %s, want %s", c.due, c.rule, got, c.want)
+		if got := NextDueDate(c.due, c.rule, at(c.today)); got != c.want {
+			t.Errorf("NextDueDate(%q, %s, done %s) = %s, want %s", c.due, c.rule, c.today, got, c.want)
 		}
 	}
 }
@@ -38,7 +56,7 @@ func TestNextDueDateCountsFromTheServersDay(t *testing.T) {
 			t.Errorf("%s: NextDueDate = %s, want %s", zone, got, want)
 		}
 		// A date that is set does not depend on the zone
-		if got := NextDueDate("2026-10-30T23:30", "daily", instant); got != "2026-10-31T23:30" {
+		if got := NextDueDate("2026-11-20T23:30", "daily", instant); got != "2026-11-21T23:30" {
 			t.Errorf("%s: with a date: %s", zone, got)
 		}
 	}
@@ -59,8 +77,8 @@ func TestRepeatingTaskSpawnsItsSuccessor(t *testing.T) {
 	var pushed []*domain.Thought
 	store.OnTaskCreated = func(th *domain.Thought) { pushed = append(pushed, th) }
 
-	task, _ := store.CreateThoughtWithDetails(anna.ID, "Müll rausbringen #haushalt", "high", "manual", "2026-11-02", tl.ID, "todo", "Gelbe Tonne")
-	_, _ = store.UpdateThoughtTriage(anna.ID, task.ID, "keep", "task", "", "2026-11-02", tl.ID)
+	task, _ := store.CreateThoughtWithDetails(anna.ID, "Müll rausbringen #haushalt", "high", "manual", "2099-11-02", tl.ID, "todo", "Gelbe Tonne")
+	_, _ = store.UpdateThoughtTriage(anna.ID, task.ID, "keep", "task", "", "2099-11-02", tl.ID)
 	subs := []domain.SubTask{{ID: "s1", Title: "Tüten", IsCompleted: true}}
 	_, _ = store.UpdateThoughtDetails(anna.ID, task.ID, nil, nil, nil, nil, nil, nil, nil, &subs, nil)
 	_, _ = store.SetTaskAssignees(anna.ID, task.ID, []string{ben.ID})
@@ -80,7 +98,7 @@ func TestRepeatingTaskSpawnsItsSuccessor(t *testing.T) {
 	}
 	next := pushed[0]
 	if next.Content != "Müll rausbringen #haushalt" || next.Priority != "high" || next.Notes != "Gelbe Tonne" ||
-		next.DueDate != "2026-11-09" || next.Recurrence != "weekly" || next.IsCompleted || next.TaskListID != tl.ID ||
+		next.DueDate != "2099-11-09" || next.Recurrence != "weekly" || next.IsCompleted || next.TaskListID != tl.ID ||
 		next.KanbanStatus != "todo" || len(next.Subtasks) != 1 || next.Subtasks[0].IsCompleted ||
 		len(next.Assignees) != 1 || next.Assignees[0] != ben.ID || next.UserID != anna.ID {
 		t.Errorf("successor wrong: %+v", next)
@@ -109,7 +127,7 @@ func TestRepeatingTaskSpawnsItsSuccessor(t *testing.T) {
 	if err := store.ReorderTasks(tl.ID, []domain.ThoughtReorderItem{{ID: next.ID, SortOrder: 0, KanbanStatus: &status}}); err != nil {
 		t.Fatalf("ReorderTasks: %v", err)
 	}
-	if len(pushed) != 3 || pushed[2].DueDate != "2026-11-16" {
+	if len(pushed) != 3 || pushed[2].DueDate != "2099-11-16" {
 		t.Fatalf("Kanban completion should spawn the next week, got %+v", pushed)
 	}
 
@@ -243,5 +261,16 @@ func TestAlarmGivesUpAfterThreeFailedRuns(t *testing.T) {
 	_ = store.MarkTaskAlarmSent(task.ID, u.ID, ReminderLeadTime)
 	if failures := store.taskAlarmFailures(task.ID, u.ID); failures != 0 {
 		t.Errorf("successful alarm should reset failures, got %d", failures)
+	}
+}
+
+// Repeat rules go out and come back in the Obsidian Tasks form ("🔁 every weekday")
+func TestRecurrenceMarkdownRoundTrip(t *testing.T) {
+	for rule := range recurrenceEvery {
+		line := taskMarkdownLine(domain.Thought{Content: "Zeitung holen", Recurrence: rule})
+		got := parseTaskFile(line + "\n")
+		if len(got) != 1 || got[0].recurrence != rule || got[0].content != "Zeitung holen" {
+			t.Errorf("%s: %q came back as %+v", rule, line, got)
+		}
 	}
 }

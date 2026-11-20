@@ -26,10 +26,11 @@
       "label": "Repetir",
       "none": "Sin repetición",
       "daily": "Diariamente",
+      "weekdays": "Días laborables (lun–vie)",
       "weekly": "Semanalmente",
       "monthly": "Mensualmente",
       "yearly": "Anualmente",
-      "hintDate": "Al completarla se crea automáticamente la siguiente tarea, que vencerá un intervalo después de esta fecha.",
+      "hintDate": "Al completarla se crea automáticamente la siguiente tarea, al ritmo de esta fecha. Las fechas que ya han pasado al completarla se saltan.",
       "hintDone": "Al completarla se crea automáticamente la siguiente tarea, que vencerá un intervalo después de completarse."
     },
     "taskList": "Lista de tareas:",

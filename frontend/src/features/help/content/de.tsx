@@ -749,7 +749,7 @@ const de: HelpContent = {
               <strong className="text-main">Zuweisen:</strong> In geteilten Aufgabenlisten weist du eine Aufgabe einer oder mehreren Personen mit Zugriff zu (Namen tippen, Enter). Die Zugewiesenen erscheinen als kleine Profilbilder an der Aufgabe; wer den Zugriff auf die Liste verliert, wird automatisch entfernt.
             </li>
             <li>
-              <strong className="text-main">Wiederkehrende Aufgaben:</strong> Im Detail-Fenster eine Wiederholung wählen (täglich bis jährlich). Beim Abhaken entsteht automatisch die nächste Aufgabe mit fortgeschriebenem Datum; erkennbar am 🔁-Symbol.
+              <strong className="text-main">Wiederkehrende Aufgaben:</strong> Im Detail-Fenster eine Wiederholung wählen (täglich, werktags von Montag bis Freitag, wöchentlich, monatlich oder jährlich). Beim Abhaken entsteht automatisch die nächste Aufgabe im Rhythmus des alten Datums; hakst du verspätet ab, werden die verpassten Termine übersprungen (täglich, fällig Samstag, abgehakt Montag: die nächste ist Dienstag fällig). Erkennbar am 🔁-Symbol.
             </li>
             <li>
               <strong className="text-main">Fälligkeit mit Uhrzeit:</strong> Im Detail-Fenster neben dem Datum optional eine Uhrzeit setzen; „✕ Uhrzeit“ macht die Aufgabe wieder ganztägig. Angezeigt wird z.B. „Heute, 14:30“, Überfälliges in Rot.
