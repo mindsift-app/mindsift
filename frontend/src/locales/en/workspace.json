@@ -282,12 +282,16 @@
     "namePlaceholder": "Folder name",
     "noteNamePlaceholder": "Note name",
     "newNoteHere": "Create a note in this folder",
-    "newSubfolder": "Create a new subfolder",
-    "share": "Share folder and permissions",
-    "delete": "Delete folder",
     "noNotes": "No notes yet",
     "moveToRoot": "Move to the top level",
-    "empty": "Empty"
+    "empty": "Empty",
+    "menuSubfolder": "New subfolder",
+    "menuRename": "Rename",
+    "menuShare": "Share",
+    "menuDelete": "Delete",
+    "more": "More actions",
+    "renameTitle": "Rename folder",
+    "renameFailed": "Renaming failed"
   },
   "merge": {
     "undone": "Merge undone",

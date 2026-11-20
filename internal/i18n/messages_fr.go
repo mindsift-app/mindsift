@@ -312,6 +312,8 @@ var messagesFR = map[string]string{
 	"ungültiger Freigabetyp":                                                       "type de partage non valide",
 	"ungültiger Mount-Pfad":                                                        "chemin de montage non valide",
 	"ungültiger Ordnerpfad":                                                        "chemin de dossier non valide",
+	"ungültiger Ordnername":                                                        "nom de dossier invalide",
+	"Einen Ordner mit diesem Namen gibt es hier schon":                             "Un dossier portant ce nom existe déjà ici",
 	"ungültiger Quell-Ordnerpfad":                                                  "chemin de dossier source non valide",
 	"ungültiger Sortierschlüssel":                                                  "clé de tri non valide",
 	"unverschlüsselte Verbindung – Anmeldung verweigert":                           "connexion non chiffrée – connexion refusée",

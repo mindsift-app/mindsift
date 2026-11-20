@@ -50,6 +50,7 @@
     "loadFailed": "The text could not be loaded"
   },
   "save": "Save",
+  "create": "Create",
   "add": "Add",
   "close": "Close",
   "delete": "Delete",

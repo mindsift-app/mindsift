@@ -282,12 +282,16 @@
     "namePlaceholder": "Ordnername",
     "noteNamePlaceholder": "Name der Notiz",
     "newNoteHere": "Notiz in diesem Ordner erstellen",
-    "newSubfolder": "Neuen Unterordner erstellen",
-    "share": "Ordner teilen und Berechtigungen",
-    "delete": "Ordner löschen",
     "noNotes": "Noch keine Notizen",
     "moveToRoot": "Auf Hauptebene verschieben",
-    "empty": "Leer"
+    "empty": "Leer",
+    "menuSubfolder": "Neuer Unterordner",
+    "menuRename": "Umbenennen",
+    "menuShare": "Teilen",
+    "menuDelete": "Löschen",
+    "more": "Weitere Aktionen",
+    "renameTitle": "Ordner umbenennen",
+    "renameFailed": "Umbenennen fehlgeschlagen"
   },
   "merge": {
     "undone": "Zusammenführen rückgängig gemacht",

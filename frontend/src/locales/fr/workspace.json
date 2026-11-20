@@ -282,12 +282,16 @@
     "namePlaceholder": "Nom du dossier",
     "noteNamePlaceholder": "Nom de la note",
     "newNoteHere": "Créer une note dans ce dossier",
-    "newSubfolder": "Créer un nouveau sous-dossier",
-    "share": "Partager le dossier et autorisations",
-    "delete": "Supprimer le dossier",
     "noNotes": "Pas encore de note",
     "moveToRoot": "Déplacer au niveau supérieur",
-    "empty": "Vide"
+    "empty": "Vide",
+    "menuSubfolder": "Nouveau sous-dossier",
+    "menuRename": "Renommer",
+    "menuShare": "Partager",
+    "menuDelete": "Supprimer",
+    "more": "Plus d'actions",
+    "renameTitle": "Renommer le dossier",
+    "renameFailed": "Échec du renommage"
   },
   "merge": {
     "undone": "Fusion annulée",

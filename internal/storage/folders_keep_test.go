@@ -100,3 +100,58 @@ func TestMigrateKeepNoteFolders(t *testing.T) {
 		t.Errorf("folder gone after its last note: %v", got)
 	}
 }
+
+// Renaming a folder keeps its place and takes its notes and subfolders along; a name already used next
+// to it is refused, a name with a slash too.
+func TestRenameFolder(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "folders-rename.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	block := func(id string) []domain.DocumentBlock {
+		return []domain.DocumentBlock{{ID: id, Type: "bullet", Content: "Text", Level: 0}}
+	}
+	inFolder, _ := store.CreateDocument(anna.ID, "", "Plan", "", "Projekte/Alt", block("r1"), nil, false)
+	inSub, _ := store.CreateDocument(anna.ID, "", "Detail", "", "Projekte/Alt/Unter", block("r2"), nil, false)
+	if _, err := store.CreateFolder(anna.ID, "Projekte/Leer"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateFolder(anna.ID, "Projekte/Alt/Leerer Unterordner"); err != nil {
+		t.Fatal(err)
+	}
+
+	newPath, moved, err := store.RenameFolder(anna.ID, "Projekte/Alt", "  Neu  ")
+	if err != nil || newPath != "Projekte/Neu" || len(moved) != 2 {
+		t.Fatalf("rename: %q %v %v", newPath, moved, err)
+	}
+	for id, want := range map[string]string{inFolder.ID: "Projekte/Neu", inSub.ID: "Projekte/Neu/Unter"} {
+		d, _ := store.GetDocumentByID(anna.ID, id)
+		if d.FolderPath != want {
+			t.Errorf("%s: folder %q, want %q", d.Title, d.FolderPath, want)
+		}
+	}
+	got, _ := store.GetFolders(anna.ID)
+	for _, want := range []string{"Projekte/Neu", "Projekte/Neu/Unter", "Projekte/Neu/Leerer Unterordner"} {
+		if !slices.Contains(got, want) {
+			t.Errorf("missing %q after rename: %v", want, got)
+		}
+	}
+	if slices.Contains(got, "Projekte/Alt") || slices.Contains(got, "Projekte/Alt/Leerer Unterordner") {
+		t.Errorf("old name still there: %v", got)
+	}
+
+	if _, _, err := store.RenameFolder(anna.ID, "Projekte/Neu", "Leer"); err != ErrFolderExists {
+		t.Errorf("name of the folder next to it: %v, want ErrFolderExists", err)
+	}
+	for _, bad := range []string{"", "  ", "a/b", ".."} {
+		if _, _, err := store.RenameFolder(anna.ID, "Projekte/Neu", bad); err == nil {
+			t.Errorf("name %q should be refused", bad)
+		}
+	}
+	// A top-level folder, and only the case changed
+	if p, _, err := store.RenameFolder(anna.ID, "Projekte", "projekte"); err != nil || p != "projekte" {
+		t.Errorf("top-level rename: %q %v", p, err)
+	}
+}

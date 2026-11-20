@@ -64,6 +64,14 @@ export const workspaceApi = {
     );
   },
 
+  // A new name in the same place; 409 when a folder of that name is already there
+  async renameFolder(path: string, name: string): Promise<{ newPath: string; movedDocIds: string[] }> {
+    return request<{ newPath: string; movedDocIds: string[] }>('/api/v1/folders/rename', {
+      method: 'POST',
+      body: JSON.stringify({ path, name }),
+    });
+  },
+
   async moveFolder(sourcePath: string, targetParentPath: string): Promise<{ newPath: string; movedDocIds: string[] }> {
     return request<{ newPath: string; movedDocIds: string[] }>('/api/v1/folders/move', {
       method: 'POST',

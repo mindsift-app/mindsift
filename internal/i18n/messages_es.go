@@ -312,6 +312,8 @@ var messagesES = map[string]string{
 	"ungültiger Freigabetyp":                                                       "tipo de permiso compartido no válido",
 	"ungültiger Mount-Pfad":                                                        "ruta de montaje no válida",
 	"ungültiger Ordnerpfad":                                                        "ruta de carpeta no válida",
+	"ungültiger Ordnername":                                                        "nombre de carpeta no válido",
+	"Einen Ordner mit diesem Namen gibt es hier schon":                             "Ya existe una carpeta con este nombre aquí",
 	"ungültiger Quell-Ordnerpfad":                                                  "ruta de carpeta de origen no válida",
 	"ungültiger Sortierschlüssel":                                                  "clave de orden no válida",
 	"unverschlüsselte Verbindung – Anmeldung verweigert":                           "conexión sin cifrar; inicio de sesión rechazado",

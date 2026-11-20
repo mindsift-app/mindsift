@@ -8,6 +8,15 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Added
+- Folders can be renamed: "Rename" in the folder's new ⋯ menu opens a small form with the current name; notes and subfolders go along, and a name already used next to it is refused with a message.
+
+### Changed
+- A folder row in the notes sidebar shows only + (new note here) and ⋯; new subfolder, rename, share and delete are in the ⋯ menu. On phones both buttons are always visible and 44 px tall instead of appearing only after a tap.
+
+### Fixed
+- The button of small forms (e.g. "New folder") said "Erstellen" in every language; it now follows the app's language.
+
 ## [0.96.2] - 2026-11-20
 
 ### Fixed

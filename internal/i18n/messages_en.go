@@ -312,6 +312,8 @@ var messagesEN = map[string]string{
 	"ungültiger Freigabetyp":                                                       "invalid share type",
 	"ungültiger Mount-Pfad":                                                        "invalid mount path",
 	"ungültiger Ordnerpfad":                                                        "invalid folder path",
+	"ungültiger Ordnername":                                                        "invalid folder name",
+	"Einen Ordner mit diesem Namen gibt es hier schon":                             "A folder with this name already exists here",
 	"ungültiger Quell-Ordnerpfad":                                                  "invalid source folder path",
 	"ungültiger Sortierschlüssel":                                                  "invalid order key",
 	"unverschlüsselte Verbindung – Anmeldung verweigert":                           "unencrypted connection – sign-in refused",

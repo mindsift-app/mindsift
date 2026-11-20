@@ -1,5 +1,6 @@
-import React from 'react';
-import { Folder, FolderOpen, FolderPlus, Globe, Plus, Trash, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { Folder, FolderOpen, FolderPlus, Globe, Pencil, Plus, Trash, Users } from 'lucide-react';
+import { ActionMenu } from '../../components/ActionMenu';
 import { Document, SharedFolder } from '../../lib/types';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
 import { isFolderShared } from './workspaceListing';
@@ -23,6 +24,8 @@ interface FolderTreeItemProps {
   handleShareFolderClick: (folderPath: string, existingSf?: SharedFolder) => void;
   // Asks first (popover at the given point), then moves the folder to the trash
   handleDeleteFolder: (folderPath: string, at: { x: number; y: number }) => void;
+  // Opens the form for the folder's new name (at the given point)
+  handleRenameFolder: (folderPath: string, at: { x: number; y: number }) => void;
   // Asks first (popover at the given point), then moves the note to the trash
   requestDeleteDoc?: (docId: string, at: { x: number; y: number }) => void;
   onSelectDoc: (id: string) => void;
@@ -63,8 +66,8 @@ export const DocShareMarks: React.FC<{ doc: Document }> = ({ doc }) => {
   );
 };
 
-/** Where a delete confirmation opens: at the pointer, or below the button for keyboard clicks */
-const deleteAt = (e: React.MouseEvent<HTMLElement>) => {
+/** Where a confirmation or form opens: at the pointer, or below the button or menu entry for keyboard clicks */
+const clickPoint = (e: React.MouseEvent) => {
   const r = e.currentTarget.getBoundingClientRect();
   const byPointer = e.clientX !== 0 || e.clientY !== 0;
   return byPointer ? { x: e.clientX, y: e.clientY } : { x: r.left, y: r.bottom };
@@ -90,7 +93,7 @@ export const DocRowDelete: React.FC<{
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
-        onRequestDelete(doc.id, deleteAt(e));
+        onRequestDelete(doc.id, clickPoint(e));
       }}
       className={`-my-1.5 sm:my-0 p-1 h-11 w-11 sm:h-6 sm:w-6 shrink-0 flex items-center justify-center text-faint hover:text-status-err transition-colors cursor-pointer opacity-0 pointer-events-none group-hover/doc:opacity-100 group-hover/doc:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto${
         selected ? ' touch:opacity-100 touch:pointer-events-auto' : ''
@@ -120,6 +123,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   handleOpenNewFolder,
   handleShareFolderClick,
   handleDeleteFolder,
+  handleRenameFolder,
   requestDeleteDoc,
   onSelectDoc,
   docDropProps,
@@ -132,6 +136,9 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   const hasContent = node.subfolders.length > 0 || node.docs.length > 0;
   const isExpanded = Boolean(hasContent && expandedFolders[node.fullPath]);
   const isDragOver = dragOverFolder === node.fullPath;
+
+  // The buttons show on hover; while the menu is open they stay
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const inFolder = depth > 0;
   const childCount = node.subfolders.length + node.docs.length;
@@ -191,56 +198,62 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
           )}
         </button>
 
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity shrink-0">
+        {/* New note here, the rest in the menu (subfolder, rename, share, delete). Shown on hover; touch
+            screens have none, so there they are always there */}
+        <div
+          className={`flex items-center gap-0.5 transition-opacity shrink-0 ${
+            menuOpen
+              ? 'opacity-100'
+              : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto touch:opacity-100 touch:pointer-events-auto'
+          }`}
+        >
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               handleCreateDocument(node.fullPath, e);
             }}
-            className="p-1 h-6 w-6 flex items-center justify-center text-muted hover:text-main transition-colors cursor-pointer"
+            className="p-1 h-11 w-11 sm:h-6 sm:w-6 flex items-center justify-center text-muted hover:text-main transition-colors cursor-pointer"
             title={t('folder.newNoteHere')}
+            aria-label={t('folder.newNoteHere')}
           >
             <Plus className="w-3 h-3" />
           </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenNewFolder(node.fullPath, e);
-            }}
-            className="p-1 h-6 w-6 flex items-center justify-center text-muted hover:text-main transition-colors cursor-pointer"
-            title={t('folder.newSubfolder')}
-          >
-            <FolderPlus className="w-3 h-3" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleShareFolderClick(node.fullPath, node.sharedFolderObj);
-            }}
-            className={`p-1 h-6 w-6 flex items-center justify-center transition-colors cursor-pointer ${
-              isFolderShared(node.sharedFolderObj) ? 'text-accent' : 'text-faint hover:text-accent'
-            }`}
-            title={t('folder.share')}
-          >
-            <Users className="w-3 h-3" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Keyboard clicks have no pointer position: open at the button instead
-              const r = e.currentTarget.getBoundingClientRect();
-              const byPointer = e.clientX !== 0 || e.clientY !== 0;
-              handleDeleteFolder(node.fullPath, byPointer ? { x: e.clientX, y: e.clientY } : { x: r.left, y: r.bottom });
-            }}
-            className="p-1 h-6 w-6 flex items-center justify-center text-faint hover:text-status-err transition-colors cursor-pointer"
-            title={t('folder.delete')}
-          >
-            <Trash className="w-3 h-3" />
-          </button>
+          <div onClick={(e) => e.stopPropagation()}>
+            <ActionMenu
+              label={t('folder.more')}
+              buttonClassName="p-1 h-11 w-11 sm:h-6 sm:w-6 flex items-center justify-center text-muted hover:text-main transition-colors cursor-pointer"
+              onOpenChange={setMenuOpen}
+              items={[
+                {
+                  key: 'subfolder',
+                  icon: <FolderPlus className="w-3.5 h-3.5" />,
+                  label: t('folder.menuSubfolder'),
+                  onSelect: (e) => handleOpenNewFolder(node.fullPath, e),
+                },
+                {
+                  key: 'rename',
+                  icon: <Pencil className="w-3.5 h-3.5" />,
+                  label: t('folder.menuRename'),
+                  onSelect: (e) => handleRenameFolder(node.fullPath, clickPoint(e)),
+                },
+                {
+                  key: 'share',
+                  icon: <Users className="w-3.5 h-3.5" />,
+                  label: t('folder.menuShare'),
+                  onSelect: () => handleShareFolderClick(node.fullPath, node.sharedFolderObj),
+                },
+                {
+                  key: 'delete',
+                  icon: <Trash className="w-3.5 h-3.5" />,
+                  label: t('folder.menuDelete'),
+                  danger: true,
+                  separatorBefore: true,
+                  onSelect: (e) => handleDeleteFolder(node.fullPath, clickPoint(e)),
+                },
+              ]}
+            />
+          </div>
         </div>
       </div>
 
@@ -266,6 +279,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               handleOpenNewFolder={handleOpenNewFolder}
               handleShareFolderClick={handleShareFolderClick}
               handleDeleteFolder={handleDeleteFolder}
+              handleRenameFolder={handleRenameFolder}
               requestDeleteDoc={requestDeleteDoc}
               onSelectDoc={onSelectDoc}
               docDropProps={docDropProps}

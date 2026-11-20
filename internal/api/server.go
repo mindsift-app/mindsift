@@ -410,6 +410,7 @@ func (s *Server) Router() http.Handler {
 		r.Get("/api/v1/folders", s.handleGetFolders)
 		r.Post("/api/v1/folders", s.handleCreateFolder)
 		r.Post("/api/v1/folders/move", s.handleMoveFolder)
+		r.Post("/api/v1/folders/rename", s.handleRenameFolder)
 		r.Delete("/api/v1/folders", s.handleDeleteFolder)
 		r.Post("/api/v1/folders/trash/{id}/restore", s.handleRestoreFolder)
 		r.Delete("/api/v1/folders/trash/{id}", s.handlePurgeFolder)

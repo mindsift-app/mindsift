@@ -9,7 +9,7 @@ interface FormSheetProps {
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
   children: React.ReactNode; // the fields
-  submitLabel?: string;
+  submitLabel?: string; // default: "Erstellen" in the person's language
   danger?: boolean; // red submit button for destructive actions
   busy?: boolean;
   // Desktop only: open next to the click instead of centred
@@ -27,7 +27,7 @@ export const FormSheet: React.FC<FormSheetProps> = ({
   onClose,
   onSubmit,
   children,
-  submitLabel = 'Erstellen',
+  submitLabel,
   anchor,
   wide = false,
   danger = false,
@@ -92,7 +92,7 @@ export const FormSheet: React.FC<FormSheetProps> = ({
             disabled={busy}
             className={`${danger ? 'btn-danger' : 'btn-primary'} flex-1 sm:flex-none h-11 sm:h-8 px-4 text-sm sm:text-xs font-semibold disabled:opacity-50`}
           >
-            {submitLabel}
+            {submitLabel ?? t('common:create')}
           </button>
         </div>
         {/* keeps the buttons clear of the home indicator when no keyboard is open */}

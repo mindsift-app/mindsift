@@ -20,6 +20,8 @@ interface FolderTreeProps {
   handleOpenNewFolder: (parentPath?: string, e?: React.MouseEvent) => void;
   handleShareFolderClick: (folderPath: string, existingSf?: SharedFolder) => void;
   requestDeleteFolder: (folderPath: string, at: { x: number; y: number }) => void;
+  // Opens the form for a folder's new name
+  requestRenameFolder: (folderPath: string, at: { x: number; y: number }) => void;
   // A note's delete button (own notes): asks first, then moves it to the trash
   requestDeleteDoc?: (docId: string, at: { x: number; y: number }) => void;
   // A row clicked (pinned or top-level note) and a note picked in a folder (also resets the jump target)
@@ -44,6 +46,7 @@ export function FolderTree({
   handleOpenNewFolder,
   handleShareFolderClick,
   requestDeleteFolder,
+  requestRenameFolder,
   requestDeleteDoc,
   onOpenDoc,
   onSelectDoc,
@@ -119,6 +122,7 @@ export function FolderTree({
                   handleOpenNewFolder={handleOpenNewFolder}
                   handleShareFolderClick={handleShareFolderClick}
                   handleDeleteFolder={requestDeleteFolder}
+                  handleRenameFolder={requestRenameFolder}
                   requestDeleteDoc={requestDeleteDoc}
                   onSelectDoc={onSelectDoc}
                   docDropProps={docDropProps}

@@ -178,8 +178,19 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [newFolderCoords, setNewFolderCoords] = useState<{ x: number; y: number } | null>(null);
   const [newFolderParentPath, setNewFolderParentPath] = useState<string>('');
   const [newFolderName, setNewFolderName] = useState<string>('');
+  // The same form renames a folder: its path while it does (null for a new folder)
+  const [renameFolderPath, setRenameFolderPath] = useState<string | null>(null);
+
+  const handleOpenRenameFolder = (path: string, at: { x: number; y: number }) => {
+    setRenameFolderPath(path);
+    setNewFolderParentPath('');
+    setNewFolderName(path.split('/').pop() || path);
+    setNewFolderCoords({ x: Math.min(at.x, window.innerWidth - 270), y: Math.min(at.y, window.innerHeight - 200) });
+    setShowNewFolderModal(true);
+  };
 
   const handleOpenNewFolder = (parentPath = '', e?: React.MouseEvent) => {
+    setRenameFolderPath(null);
     setNewFolderParentPath(parentPath);
     setNewFolderName('');
     if (e) {
@@ -446,6 +457,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     e.preventDefault();
     const cleanName = newFolderName.trim().replace(/^\/+|\/+$/g, '');
     if (!cleanName) return;
+    if (renameFolderPath !== null) {
+      await renameFolder(renameFolderPath, cleanName);
+      return;
+    }
     const cleanPath = newFolderParentPath ? `${newFolderParentPath}/${cleanName}` : cleanName;
     try {
       const res = await api.createFolder(cleanPath);
@@ -456,6 +471,24 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       setShowNewFolderModal(false);
     } catch (err) {
       showError(errorMessage(err, i18n.t('workspace:folder.createFailed')));
+    }
+  };
+
+  // A folder renamed: shown under its new name at once (notes, subfolders, opened folders); the moved notes
+  // also come as DOC_UPDATED and the folders are fetched again on WORKSPACE_FOLDERS_UPDATED
+  const renameFolder = async (path: string, name: string) => {
+    try {
+      const { newPath } = await api.renameFolder(path, name);
+      const moved = (p: string) => (p === path ? newPath : p.startsWith(`${path}/`) ? newPath + p.slice(path.length) : p);
+      setFolders((prev) => Array.from(new Set(prev.map(moved))).sort());
+      setDocs((prev) =>
+        prev.map((d) => (d.folderPath && moved(d.folderPath) !== d.folderPath ? { ...d, folderPath: moved(d.folderPath) } : d))
+      );
+      setExpandedFolders((prev) => Object.fromEntries(Object.entries(prev).map(([k, v]) => [moved(k), v])));
+      setRenameFolderPath(null);
+      setShowNewFolderModal(false);
+    } catch (err) {
+      showError(errorMessage(err, i18n.t('workspace:folder.renameFailed')));
     }
   };
 
@@ -975,6 +1008,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             handleOpenNewFolder={handleOpenNewFolder}
             handleShareFolderClick={handleShareFolderClick}
             requestDeleteFolder={requestDeleteFolder}
+            requestRenameFolder={handleOpenRenameFolder}
             requestDeleteDoc={requestDeleteDoc}
             onOpenDoc={(id) => {
               setSelectedDocId(id);
@@ -1193,6 +1227,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         showNewFolderModal={showNewFolderModal}
         setShowNewFolderModal={setShowNewFolderModal}
         newFolderParentPath={newFolderParentPath}
+        renamingFolder={renameFolderPath !== null}
         newFolderCoords={newFolderCoords}
         newFolderName={newFolderName}
         setNewFolderName={setNewFolderName}
