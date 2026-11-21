@@ -32,6 +32,12 @@ var embeddedDist embed.FS
 //go:embed icon.png
 var trayIcon []byte
 
+// The app icon (the window's icon on Windows when the exe has no resource, the about box); on Linux the
+// window's icon comes from the desktop entry, see desktopentry_linux.go
+//
+//go:embed packaging/linux/icons/hicolor/512x512/apps/app.mindsift.MindSift.png
+var appIcon []byte
+
 var version = ""
 
 func main() {
@@ -55,10 +61,17 @@ func main() {
 	}
 	sh := &shell.Shell{Settings: settings, Local: local, Static: staticFS, Origin: windowOrigin(), Version: version, Base: base}
 
+	// Before the window opens, so the desktop finds the entry and its icon when it maps the window
+	registerDesktopEntry()
+
 	var window *application.WebviewWindow
 	app := application.New(application.Options{
 		Name:        "MindSift",
 		Description: "MindSift desktop",
+		Icon:        appIcon,
+		// The application id is also the Wayland app-id and the X11 WM_CLASS of the window, which the
+		// desktop matches to app.mindsift.MindSift.desktop (and with it the icon)
+		Linux: application.LinuxOptions{ApplicationID: shell.DesktopEntryID},
 		Assets: application.AssetOptions{
 			Handler:        sh,
 			DisableLogging: true,

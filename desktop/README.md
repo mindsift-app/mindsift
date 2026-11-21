@@ -8,7 +8,8 @@ release yet.
   in the look of the sign-in page and the system's language. It lists the entries used lately (local
   instances and servers mixed, newest first), the instance folders found in the base folder that are not
   listed (also ones copied there by hand), "Neue lokale Instanz…" (a name) and "Mit Server verbinden…"
-  (name and address, checked with `GET /api/v1/health`). Entries can be renamed and removed from the list;
+  (name and address, checked with `GET /api/v1/health`: 15 s in all, a failed connection is tried once
+  more after a second; a server that answers wrongly is reported at once). Entries can be renamed and removed from the list;
   removing never deletes data. The entry opened last opens directly at the next start. The tray menu has
   "MindSift öffnen", "Instanz wechseln…" (the start view, also Ctrl+Shift+O for desktops without a
   tray) and "Beenden", in the system’s language (`internal/shell/texts.go`).
@@ -95,6 +96,31 @@ SKIP_FRONTEND=1 desktop/build.sh windows   # reuse frontend/dist
 
 Pushes to the `desktop-spike` branch are built by `.gitea/workflows/desktop-spike.yaml` (the same script,
 run with docker); the Linux binary and the Windows exe are artifacts of the workflow run in the Gitea UI.
+
+## App icon
+
+The artwork is the web app's (`frontend/public/icon.svg`); `packaging/make-icons.sh` (podman) turns it into
+the committed files: `packaging/linux/icons/hicolor/<size>/apps/app.mindsift.MindSift.png` (16-512, plus
+the SVG as `scalable`) and `packaging/windows/app.ico` (16-256). Run it only when the artwork changes.
+
+- **Application id `app.mindsift.MindSift`** (`Linux.ApplicationID` in `main.go`): Wails passes it to GTK as
+  application id *and* program name, so it is the Wayland app-id and the X11 `WM_CLASS` of the window
+  (checked under Xvfb with `xprop`). GTK 4 has no per-window icon; the desktop looks the app-id up in
+  `app.mindsift.MindSift.desktop` and takes its `Icon=` from the `hicolor` theme.
+- **Linux, loose binary:** at start (`desktopentry_linux.go`, logic in `internal/shell/desktopentry.go`)
+  the app writes `~/.local/share/applications/app.mindsift.MindSift.desktop` (`Exec=` is the binary's
+  absolute path, rewritten when it moves) and the icons into `~/.local/share/icons/hicolor/`, only when a
+  file differs. It does nothing under Flatpak (`FLATPAK_ID`) or when the binary lies under `/usr/`. A
+  launcher that scans late may show the entry only from the next start.
+- **Flatpak later:** `packaging/linux/app.mindsift.MindSift.desktop` (`Exec=mindsift-desktop`) and
+  `packaging/linux/icons/hicolor/` are the same files the binary embeds, so the manifest installs them as
+  they are.
+- **Windows:** `tools/mksyso` (run by `build.sh windows`) writes `resource_windows_amd64.syso` with the icon
+  (resource id 3, where Wails looks for the window's icon), version information (file properties) and
+  the application manifest of Wails' build (per-monitor DPI, common controls); `go build` links it in and
+  the script deletes it afterwards. It is `wails3 generate syso` on the library Wails itself pins
+  (tc-hib/winres v0.3.1, 2024-03-18), without the Wails command line.
+- **Tray:** `icon.png`; the Wails `Icon` option holds the 512 px icon (about box, Windows fallback).
 
 The Linux binary needs GTK 4 and WebKitGTK 6.0 at runtime (Debian/Ubuntu: `libgtk-4-1
 libwebkitgtk-6.0-4`, Fedora: `gtk4 webkitgtk6.0`, Arch: `gtk4 webkitgtk-6.0`). The Windows binary needs
