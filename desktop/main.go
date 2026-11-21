@@ -121,7 +121,7 @@ func main() {
 		// Developer tools (right click → Inspect) help to see what the engine does while this is a spike
 		DevToolsEnabled: true,
 		// Runs after every page load, the server's pages included
-		JS: dropGuard,
+		JS: dropGuard + dropScripts,
 		KeyBindings: map[string]func(application.Window){
 			"alt+left":     func(w application.Window) { w.ExecJS("history.back()") },
 			"alt+right":    func(w application.Window) { w.ExecJS("history.forward()") },
@@ -133,6 +133,8 @@ func main() {
 	if e, ok := settings.Last(); ok && startURL != shell.StartPath {
 		window.SetTitle(e.Name + " – MindSift")
 	}
+	// Files dragged in from other programs (Linux; filedrop_linux.go)
+	setupFileDrop(window)
 
 	tray := app.SystemTray.New()
 	tray.SetIcon(trayIcon)
