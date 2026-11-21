@@ -135,7 +135,35 @@ SKIP_FRONTEND=1 desktop/build.sh windows   # reuse frontend/dist
 ```
 
 Pushes to the `desktop-spike` branch are built by `.gitea/workflows/desktop-spike.yaml` (the same script,
-run with docker); the Linux binary and the Windows exe are artifacts of the workflow run in the Gitea UI.
+run with docker); the Linux binary, the Windows exe and the Flatpak bundle are artifacts of the workflow
+run in the Gitea UI.
+
+## Flatpak
+
+```bash
+desktop/packaging/flatpak/build.sh     # -> desktop/out/mindsift.flatpak
+flatpak install --user mindsift.flatpak && flatpak run app.mindsift.MindSift
+```
+
+- **Files** in `packaging/flatpak/`: the manifest `app.mindsift.MindSift.yml` (each permission explained
+  there), the AppStream metainfo and `build.sh`. The desktop file and the icons are those of
+  `packaging/linux/`.
+- **Runtime:** `org.gnome.Platform//51` (GTK 4, WebKitGTK 6.0). The binary is built inside
+  `org.gnome.Sdk//51` with `org.freedesktop.Sdk.Extension.golang//26.08`, so it links against the
+  runtime's libraries; the extension is pinned to a commit in `build.sh` (Go 1.27.3), the GNOME branch
+  follows its security rebuilds. The bundle names Flathub as the runtime's source, so `flatpak install`
+  fetches the runtime from there.
+- **Build:** `build.sh` builds the frontend (node container), stages the repository with `frontend/dist` in
+  `desktop/dist` and the Go modules vendored (`go mod vendor` in `desktop/`, which includes the main
+  module through its `replace`), then runs `flatpak-builder` offline (`GOFLAGS=-mod=vendor`,
+  `GOPROXY=off`) in a privileged Debian container; the runtimes stay in the volume `mindsift-flatpak`.
+- **Data:** under Flatpak `XDG_DATA_HOME` is `~/.var/app/app.mindsift.MindSift/data`, so the base folder
+  is `~/.var/app/app.mindsift.MindSift/data/MindSift`; the app needs no access to the home folder. It
+  writes no desktop entry of its own (`FLATPAK_ID`); Flatpak exports the packaged one.
+- **Flathub later** needs the sources in the manifest instead of the staged folder: a `git` source of the
+  release tag, the Go modules as generated sources (e.g. flatpak-go-mod's `modules.txt` plus one archive
+  source per module) or a vendor archive attached to the release, and the frontend either built from
+  generated npm sources (flatpak-node-generator, with the node SDK extension) or taken as a release asset.
 
 ## App icon
 
