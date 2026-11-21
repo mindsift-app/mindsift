@@ -24,6 +24,9 @@ desktop/build.sh linux      # only Linux (cgo, GTK4 + WebKitGTK 6.0, built in go
 SKIP_FRONTEND=1 desktop/build.sh windows   # reuse frontend/dist
 ```
 
+Pushes to the `desktop-spike` branch are built by `.gitea/workflows/desktop-spike.yaml` (the same script,
+run with docker); the Linux binary and the Windows exe are artifacts of the workflow run in the Gitea UI.
+
 The Linux binary needs GTK 4 and WebKitGTK 6.0 at runtime (Debian/Ubuntu: `libgtk-4-1
 libwebkitgtk-6.0-4`, Fedora: `gtk4 webkitgtk6.0`, Arch: `gtk4 webkitgtk-6.0`). The Windows binary needs
 the WebView2 runtime (part of Windows 10/11).
