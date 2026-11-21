@@ -20,7 +20,12 @@ func SystemUser() (login, name string) {
 	}
 	// GECOS may carry more fields after the name ("Full Name,Room,Phone")
 	name, _, _ = strings.Cut(u.Name, ",")
-	return login, strings.TrimSpace(name)
+	name = strings.TrimSpace(name)
+	// Flatpak writes "Unknown" into the sandbox's passwd when the GECOS field is empty
+	if name == "Unknown" {
+		name = ""
+	}
+	return login, name
 }
 
 // SystemLanguage: the language of the system as a two-letter code ("de_DE.UTF-8" → "de"): LANGUAGE,
