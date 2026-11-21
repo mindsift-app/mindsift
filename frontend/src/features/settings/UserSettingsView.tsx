@@ -134,9 +134,12 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           </div>
         </div>
 
-        <span className="px-2.5 py-1 bg-panel border border-border text-xs text-muted font-medium">
-          {t('user.role')} <strong className="text-accent">{roleBadgeLabel}</strong>
-        </span>
+        {/* One person in the desktop app: no role to show */}
+        {!desktop && (
+          <span className="px-2.5 py-1 bg-panel border border-border text-xs text-muted font-medium">
+            {t('user.role')} <strong className="text-accent">{roleBadgeLabel}</strong>
+          </span>
+        )}
       </div>
 
       {/* Main 2-Column Layout */}
