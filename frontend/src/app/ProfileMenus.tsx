@@ -7,6 +7,7 @@ import { UserAvatar } from '../components/UserAvatar';
 import { ThemeQuickPicker } from '../components/ThemeQuickPicker';
 import { APP_VERSION } from '../version';
 import { openDesktopStart } from '../lib/desktopStart';
+import { openDesktopShellStart, useDesktopShellStart } from '../lib/useDesktopShellStart';
 import { ActiveTab } from './appTabs';
 import { usePwaInstall } from './usePwaInstall';
 
@@ -39,6 +40,7 @@ export function ProfileDropdown({
   setShowProfileMenu,
 }: ProfileMenuProps & { setShowProfileMenu: (show: boolean) => void }) {
   const { t } = useTranslation('app');
+  const shellStart = useDesktopShellStart();
   return (
     <div className="absolute left-full bottom-0 ml-3 w-64 max-h-[calc(100dvh-1.5rem)] overflow-y-auto panel-surface shadow-panel z-50 divide-y divide-border text-xs origin-bottom-left animate-in fade-in zoom-in-95 slide-in-from-left-1 duration-150">
       {/* User Info Header */}
@@ -139,13 +141,25 @@ export function ProfileDropdown({
             <span>{t('profile.switchInstance')}</span>
           </button>
         ) : (
-          <button
-            onClick={handleLogout}
-            className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 text-status-err hover:bg-status-err-bg transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>{t('profile.logout')}</span>
-          </button>
+          <>
+            {/* A server's page in the desktop app: back to the app's start view, sign-out stays */}
+            {shellStart && (
+              <button
+                onClick={() => openDesktopShellStart(shellStart)}
+                className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 text-main hover:bg-panel-elevated transition-colors"
+              >
+                <ArrowLeftRight className="w-4 h-4 text-accent" />
+                <span>{t('profile.switchInstance')}</span>
+              </button>
+            )}
+            <button
+              onClick={handleLogout}
+              className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 text-status-err hover:bg-status-err-bg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>{t('profile.logout')}</span>
+            </button>
+          </>
         )}
       </div>
     </div>
@@ -173,6 +187,7 @@ export function MobileProfileSheet({
   pwa: ReturnType<typeof usePwaInstall>;
 }) {
   const { t } = useTranslation('app');
+  const shellStart = useDesktopShellStart();
   const { isStandaloneApp, setShowManualPwaGuide, setShowPwaInstallModal } = pwa;
   return (
     <div
@@ -324,6 +339,17 @@ export function MobileProfileSheet({
               <span>{t('profile.switchInstance')}</span>
             </button>
           ) : (
+            <>
+            {shellStart && (
+              <button
+                type="button"
+                onClick={() => openDesktopShellStart(shellStart)}
+                className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-main hover:bg-panel-elevated transition-colors text-xs cursor-pointer"
+              >
+                <ArrowLeftRight className="w-4 h-4 text-accent" />
+                <span>{t('profile.switchInstance')}</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -335,6 +361,7 @@ export function MobileProfileSheet({
               <LogOut className="w-4 h-4" />
               <span>{t('profile.logout')}</span>
             </button>
+            </>
           )}
         </div>
 

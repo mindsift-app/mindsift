@@ -351,6 +351,27 @@ describe('desktop app', () => {
     expect(hook.result.current.user?.id).toBe('usr_1');
   });
 
+  it('a stored session the instance refuses at the start gives way to a new one, not the sign-in', async () => {
+    // The 401 comes before the status said desktop and before the hook listens (as in main.tsx)
+    mocks.token = 'stale';
+    mocks.getAuthStatus.mockResolvedValue(desktopStatus);
+    mocks.getMe.mockImplementationOnce(async () => {
+      mocks.token = '';
+      window.dispatchEvent(new CustomEvent('mindsift:unauthorized'));
+      throw new Error('HTTP 401');
+    });
+    prefetchAuthStatus();
+    await Promise.resolve();
+    mocks.desktop = true;
+    const signedOut = vi.fn();
+    const hook = renderHook(() => useSessionBootstrap(signedOut));
+    await waitFor(() => expect(hook.result.current.bootLoading).toBe(false));
+    expect(mocks.desktopSignIn).toHaveBeenCalledTimes(1);
+    expect(mocks.token).toBe('desktop-tok');
+    expect(hook.result.current.user?.id).toBe('usr_1');
+    expect(signedOut).not.toHaveBeenCalled();
+  });
+
   it('a normal server never asks for a desktop session', async () => {
     mocks.token = '';
     await boot();
