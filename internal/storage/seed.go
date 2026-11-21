@@ -16,6 +16,30 @@ type seedBlock struct {
 	text    string
 	checked bool
 	lang    string
+	// serverOnly: only on a server with several people (sharing, Home Assistant …); desktopOnly: only in the
+	// desktop app, where one person works on one computer. Used by the help notes (forEdition).
+	serverOnly  bool
+	desktopOnly bool
+}
+
+// forEdition leaves out the blocks that do not belong to the edition: the desktop app's or a server's.
+func forEdition(spec []seedBlock, desktop bool) []seedBlock {
+	out := make([]seedBlock, 0, len(spec))
+	for _, b := range spec {
+		if (desktop && b.serverOnly) || (!desktop && b.desktopOnly) {
+			continue
+		}
+		out = append(out, b)
+	}
+	return out
+}
+
+// orDesktop picks the text for the edition: the server's or, in the desktop app, the local one.
+func orDesktop(desktop bool, server, local string) string {
+	if desktop {
+		return local
+	}
+	return server
 }
 
 // seedNetworkDrawing: the sample drawing in the homelab note (block type "drawing"), a small network plan
@@ -86,9 +110,9 @@ func (s *Store) SeedStarterContent(user *domain.User) error {
 	// The sample notes link the help notes by their German or English title, so the demo gets the help in
 	// the language of its sample data (the setup offers it in all five)
 	if s.MessageLanguage(user.ID) == "de" {
-		s.seedHelpNotesDE(user, true)
+		s.seedHelpNotesDE(user, true, false)
 	} else {
-		s.seedHelpNotesEN(user, true)
+		s.seedHelpNotesEN(user, true, false)
 	}
 	// The sample notes link each other by title; links carry the note's id like ones made in the app
 	s.LinkWikiTitles(user.ID)

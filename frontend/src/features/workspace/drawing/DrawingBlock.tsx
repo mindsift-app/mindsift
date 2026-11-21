@@ -6,7 +6,7 @@ import { Drawing, contentBox, drawingTexts, parseDrawing, serializeDrawing, whee
 import { DrawingElements } from './DrawingElements';
 import { ConfirmPopover } from '../../../components/ConfirmPopover';
 import { AvatarStack } from '../../../components/AvatarStack';
-import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
+import { isDesktopApp, isWebSocketConnected, tryWebSocket } from '../../../lib/api';
 import { useLatestRef } from '../../../lib/useLatestRef';
 import { NoteClientContext, NoteSharedContext } from './noteShared';
 import { useToast, WorkspaceToast } from '../WorkspaceToast';
@@ -572,7 +572,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
                 : docId && editing === 'resume'
                 ? { docId, blockId, mode: 'draw', canDraw: true, noteClientId, resume: true }
                 : docId && editing === 'solo'
-                ? { docId, blockId, mode: null, canDraw: true, canStart: shared, noteClientId }
+                ? { docId, blockId, mode: null, canDraw: true, canStart: shared && !isDesktopApp(), noteClientId }
                 : undefined
             }
             onClose={(next, wasLive, undoable) => {

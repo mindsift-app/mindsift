@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Archive, Check, Download, RotateCcw } from 'lucide-react';
 import { BackupFile, DataSection, DATA_SECTIONS, ImportSummary } from '../../lib/types';
-import { api } from '../../lib/api';
+import { api, isDesktopApp } from '../../lib/api';
 import { formatBytes, saveBlob } from '../../lib/download';
 import { SectionPicker } from './SectionPicker';
 import { formatDateTime } from '../../lib/format';
@@ -56,15 +56,15 @@ export const ServerBackupsCard: React.FC<{ onRestored?: () => void }> = ({ onRes
       <div>
         <h3 className="font-bold text-main flex items-center gap-1.5">
           <Archive className="w-3.5 h-3.5 text-accent" />
-          {t('backups.serverTitle')}
+          {isDesktopApp() ? t('backups.serverTitleDesktop') : t('backups.serverTitle')}
         </h3>
         <p className="text-muted text-[11px] mt-0.5">
-          {t('backups.serverHint')}
+          {isDesktopApp() ? t('backups.serverHintDesktop') : t('backups.serverHint')}
         </p>
       </div>
       <div className="border border-border divide-y divide-border bg-canvas">
         {files.length === 0 ? (
-          <p className="p-3 text-[11px] text-faint">{t('backups.none')}</p>
+          <p className="p-3 text-[11px] text-faint">{isDesktopApp() ? t('backups.noneDesktop') : t('backups.none')}</p>
         ) : (
           files.map((f) => (
             <div key={f.name} className="p-3 space-y-2">

@@ -144,6 +144,9 @@ type Config struct {
 
 	// OIDC: sign-in through an OpenID Connect provider (OIDC_*); checked by OIDCConfig.Resolve at the start
 	OIDC OIDCConfig
+
+	// Desktop: the server runs inside the desktop app (desktop.go, set by ApplyDesktop only); nil on a server
+	Desktop *Desktop
 }
 
 // OIDCConfig: OIDC_ISSUER, OIDC_CLIENT_ID and OIDC_CLIENT_SECRET (or OIDC_CLIENT_SECRET_FILE) switch the

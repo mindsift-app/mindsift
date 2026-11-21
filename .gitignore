@@ -28,3 +28,8 @@ whisper/
 # Local instructions for coding agents (not part of the public repo)
 AGENTS.md
 CLAUDE.md
+
+# Desktop spike builds
+desktop/out/
+desktop/dist/*
+!desktop/dist/index.html

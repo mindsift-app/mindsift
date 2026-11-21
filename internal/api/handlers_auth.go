@@ -55,7 +55,8 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	status := map[string]any{
-		"needsSetup": count == 0,
+		// Never in the desktop app: it creates its account itself (desktop.go)
+		"needsSetup": count == 0 && !s.desktopMode(),
 		// The wizard asks for the one-time code from the server log (setup_code.go)
 		"setupCodeRequired": count == 0 && s.setupCode.required(),
 		// Registering without an invite: allowed at all, how (closed | approval | domain | domain+approval |
@@ -119,8 +120,13 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	// What the first-boot wizard tells beside its questions (mail server, BASE_URL, backup folder); only
 	// while there is no account, since whoever fills the wizard becomes the admin
-	if count == 0 && !s.cfg.DemoMode {
+	if count == 0 && !s.cfg.DemoMode && !s.desktopMode() {
 		status["setup"] = s.setupInfo(false)
+	}
+	// Desktop app: no sign-in (the app asks POST /auth/desktop for a session), the platform and the realtime
+	// transport to use (desktop.go); left out on a normal server
+	if d := s.desktopStatus(); d != nil {
+		status["desktop"] = d
 	}
 	// Countdown to the next demo reset; seconds as well, so client clocks do not matter
 	if next := s.demoNextReset(); !next.IsZero() {
@@ -334,7 +340,7 @@ func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupCh
 	}
 
 	if c.CreateSampleData {
-		logFailed("Creating the help notes", s.store.SeedHelpNotes(user), "user_id", user.ID)
+		logFailed("Creating the help notes", s.store.SeedHelpNotes(user, s.desktopMode()), "user_id", user.ID)
 	}
 	return nil
 }

@@ -6,7 +6,7 @@ import { FormSheet } from '../../../components/FormSheet';
 import { StatusToast } from '../../../components/StatusToast';
 import { useProfileSettings } from './useProfileSettings';
 import { PendingEmailNote } from './PendingEmailNote';
-import { getCurrentOidc } from '../../../lib/api';
+import { getCurrentOidc, isDesktopApp } from '../../../lib/api';
 
 // Kontoeinstellungen → Profil (state in useProfileSettings); password, two-factor sign-in and sessions
 // are in Sicherheit (SecuritySection)
@@ -20,6 +20,8 @@ export function ProfileSection({
   onOpenSecurity: () => void;
 }) {
   const { t } = useTranslation('settings');
+  // The desktop app has one account without sign-in: no address, no Sicherheit, no account to delete
+  const desktop = isDesktopApp();
   const {
     currentUser,
     onUserUpdated,
@@ -50,9 +52,9 @@ export function ProfileSection({
   return (
     <div className="space-y-5">
       <div className="border-b border-border pb-3">
-        <h2 className="text-sm font-bold text-main">{t('profile.title')}</h2>
+        <h2 className="text-sm font-bold text-main">{t(desktop ? 'profile.titleDesktop' : 'profile.title')}</h2>
         <p className="text-muted mt-0.5">
-          {t('profile.intro')}
+          {t(desktop ? 'profile.introDesktop' : 'profile.intro')}
         </p>
       </div>
 
@@ -134,7 +136,7 @@ export function ProfileSection({
               </div>
 
               <p className="text-[10px] text-faint">
-                {t('profile.avatarHint')}
+                {t(desktop ? 'profile.avatarHintDesktop' : 'profile.avatarHint')}
               </p>
             </div>
           </div>
@@ -169,9 +171,11 @@ export function ProfileSection({
               title={demoMode ? t('profile.demoDisabled') : t('profile.usernameRules')}
               className="w-full h-11 sm:h-9 px-3 input-field font-mono disabled:opacity-60"
             />
-            <p className="mt-1 text-[10px] text-faint">{t('profile.usernameHint')}</p>
+            <p className="mt-1 text-[10px] text-faint">{t(desktop ? 'profile.usernameHintDesktop' : 'profile.usernameHint')}</p>
           </div>
 
+          {/* The desktop app sends no mail and has no sign-in: no address */}
+          {!desktop && (
           <div>
             <label className="block text-muted font-medium mb-1">
               {t('settings:profile.emailLogin')}
@@ -191,6 +195,7 @@ export function ProfileSection({
             )}
             <PendingEmailNote user={currentUser} onUserUpdated={onUserUpdated} />
           </div>
+          )}
         </div>
 
         {needsCurrentPassword && (
@@ -230,13 +235,15 @@ export function ProfileSection({
       </form>
 
       {/* Password, two-factor sign-in and sessions: Sicherheit (SecuritySection) */}
-      <p className="text-[11px] text-muted">
-        <Trans
-          t={t}
-          i18nKey="profile.securityMoved"
-          components={{ link: <button type="button" onClick={onOpenSecurity} className="text-accent hover:underline" /> }}
-        />
-      </p>
+      {!desktop && (
+        <p className="text-[11px] text-muted">
+          <Trans
+            t={t}
+            i18nKey="profile.securityMoved"
+            components={{ link: <button type="button" onClick={onOpenSecurity} className="text-accent hover:underline" /> }}
+          />
+        </p>
+      )}
 
       {/* Danger zone: delete own data or the whole account (password required) */}
       <div className="p-4 border border-status-err/40 bg-status-err/5 rounded-card space-y-3">
@@ -248,7 +255,7 @@ export function ProfileSection({
           <div>
             <p className="text-main font-medium">{t('profile.deleteData')}</p>
             <p className="text-[11px] text-muted">
-              {t('profile.deleteDataHint')}
+              {t(desktop ? 'profile.deleteDataHintDesktop' : 'profile.deleteDataHint')}
             </p>
           </div>
           <button
@@ -261,25 +268,28 @@ export function ProfileSection({
             {t('profile.deleteDataButton')}
           </button>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-status-err/20">
-          <div>
-            <p className="text-main font-medium">{t('profile.deleteAccount')}</p>
-            <p className="text-[11px] text-muted">
-              {isLastAdmin
-                ? t('profile.lastAdmin')
-                : t('profile.deleteAccountHint')}
-            </p>
+        {/* The desktop app has one account that cannot be deleted */}
+        {!desktop && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-status-err/20">
+            <div>
+              <p className="text-main font-medium">{t('profile.deleteAccount')}</p>
+              <p className="text-[11px] text-muted">
+                {isLastAdmin
+                  ? t('profile.lastAdmin')
+                  : t('profile.deleteAccountHint')}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => openDanger('account')}
+              disabled={isLastAdmin || demoMode}
+              title={demoMode ? t('profile.demoDisabled') : undefined}
+              className="btn-danger h-11 sm:h-8 px-3 text-xs shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {t('profile.deleteAccountButton')}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => openDanger('account')}
-            disabled={isLastAdmin || demoMode}
-            title={demoMode ? t('profile.demoDisabled') : undefined}
-            className="btn-danger h-11 sm:h-8 px-3 text-xs shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {t('profile.deleteAccountButton')}
-          </button>
-        </div>
+        )}
         {dangerDone && <p className="text-[11px] text-status-ok">{dangerDone}</p>}
       </div>
     </div>

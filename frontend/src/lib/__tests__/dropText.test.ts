@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { draggedText, droppedText, transferText } from '../dropText';
+import { draggedText, droppedText, textDropEffect, transferText } from '../dropText';
 import { refuseUnhandledDrop } from '../dropGuard';
 import { clipboard, png } from '../../test/clipboard';
 import { BLOCK_DRAG_TYPE } from '../../features/workspace/moveBranchEvent';
@@ -24,6 +24,22 @@ describe('droppedText', () => {
     const img = clipboard({ html: '<img src="https://example.com/a.png">', text: 'https://example.com/a.png' });
     expect(droppedText(img)).toBe(false);
     expect(droppedText(clipboard({ text: 'Einkaufsliste' }))).toBe(true);
+  });
+});
+
+describe('textDropEffect', () => {
+  const drag = (effectAllowed: string) => ({ ...clipboard({ text: 'Hallo' }), effectAllowed }) as DataTransfer;
+
+  it('copies text in where the drag allows it', () => {
+    for (const allowed of ['all', 'uninitialized', 'copy', 'copyMove', 'copyLink', 'none']) {
+      expect(textDropEffect(drag(allowed))).toBe('copy');
+    }
+  });
+
+  it('moves or links when the other program allows nothing else (a copy would cancel the drop)', () => {
+    expect(textDropEffect(drag('move'))).toBe('move');
+    expect(textDropEffect(drag('linkMove'))).toBe('move');
+    expect(textDropEffect(drag('link'))).toBe('link');
   });
 });
 

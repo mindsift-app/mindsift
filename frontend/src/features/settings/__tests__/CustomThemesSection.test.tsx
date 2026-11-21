@@ -8,7 +8,7 @@ import template from '../../../themes/theme-template.css?raw';
 const { api } = vi.hoisted(() => ({
   api: { saveTheme: vi.fn(), deleteTheme: vi.fn() },
 }));
-vi.mock('../../../lib/api', () => ({ api, triggerHaptic: vi.fn() }));
+vi.mock('../../../lib/api', () => ({ api, triggerHaptic: vi.fn(), isDesktopApp: () => false }));
 
 import { AppearanceSection } from '../user/AppearanceSection';
 import { useAppearanceSettings } from '../user/useAppearanceSettings';

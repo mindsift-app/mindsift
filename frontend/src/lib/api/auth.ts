@@ -14,7 +14,7 @@ import {
   User,
   NotificationSettings,
 } from '../types';
-import { setToken, clearToken, ensureArray, request, setCurrentSharingMode, setCurrentPeopleSearch, setCurrentOidc } from './client';
+import { setToken, clearToken, ensureArray, request, setCurrentSharingMode, setCurrentPeopleSearch, setCurrentOidc, setCurrentDesktop } from './client';
 import { forgetTrust, rememberTrust, trustedDeviceId, trustTokens } from '../trustedDevice';
 import { clearStoredNotes } from '../docSync/persist';
 import type { PasskeyJSON } from '../webauthn';
@@ -27,7 +27,16 @@ export const authApi = {
     if (st.sharingMode) setCurrentSharingMode(st.sharingMode);
     setCurrentPeopleSearch(st.peopleSearch !== false);
     setCurrentOidc(st.oidc, st.passwordLogin);
+    // Also picks the realtime transport of the desktop app's window (realtime.ts)
+    setCurrentDesktop(st.desktop);
     return st;
+  },
+
+  // Desktop app: a session for its one account, without a sign-in (only the app's own window gets one)
+  async desktopSignIn(): Promise<User> {
+    const res = await request<{ token: string; user: User }>('/api/v1/auth/desktop', { method: 'POST', body: '{}' });
+    setToken(res.token);
+    return res.user;
   },
 
   // Sign-in through the OIDC provider (lib/oidc.ts): the provider's address and the value to keep until the
@@ -119,6 +128,8 @@ export const authApi = {
     backupRetentionDays?: number;
     smtp?: SmtpForm;
     email?: string;
+    // Desktop app only: the backup folder ('' = backups/ in the instance's folder)
+    backupDir?: string;
   }): Promise<void> {
     await request<{ done: boolean }>('/api/v1/admin/setup', {
       method: 'POST',

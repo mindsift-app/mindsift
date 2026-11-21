@@ -5,24 +5,30 @@
     "title": "Lingua",
     "intro": "La lingua con cui MindSift mostra menu e avvisi.",
     "autoHint": "La lingua del browser se MindSift la supporta, altrimenti la lingua predefinita di questo server ({{fallback}}).",
+    "autoHintDesktop": "La lingua del sistema se MindSift la supporta, altrimenti la lingua predefinita di questa istanza ({{fallback}}).",
     "more": "Altre lingue seguiranno presto.",
     "typedRecognition": "Riconoscere date e quantità durante la digitazione",
     "typedRecognitionHint": "Legge date come «domani alle 14» da ciò che scrivi o detti e le imposta come scadenza, e quantità come «2x latte» nelle liste della spesa. Vale su tutti i tuoi dispositivi."
   },
   "defaultLanguage": {
     "title": "Lingua predefinita",
-    "hint": "Per i nuovi account e per chi usa un browser con una lingua non supportata da MindSift, inclusa la schermata di accesso e la demo. Ciascun utente può modificarla in Impostazioni account → Lingua."
+    "hint": "Per i nuovi account e per chi usa un browser con una lingua non supportata da MindSift, inclusa la schermata di accesso e la demo. Ciascun utente può modificarla in Impostazioni account → Lingua.",
+    "hintDesktop": "Vale quando MindSift non supporta la lingua del sistema. Puoi modificarla in qualsiasi momento in Impostazioni account → Lingua."
   },
   "timeZone": {
     "title": "Fuso orario",
     "notSet": "Non impostato ({{zone}})",
     "now": "Ora del server: {{time}} ({{zone}})",
+    "nowDesktop": "Ora attuale: {{time}} ({{zone}})",
     "source": {
       "setting": "Origine: questa impostazione",
       "env": "Origine: variabile d'ambiente TZ",
-      "default": "Origine: UTC predefinito – nessun fuso orario impostato qui o tramite TZ"
+      "envDesktop": "Fonte: fuso orario del sistema",
+      "default": "Origine: UTC predefinito – nessun fuso orario impostato qui o tramite TZ",
+      "defaultDesktop": "Fonte: UTC predefinito – il sistema non indica un fuso orario, scegline uno qui"
     },
-    "hint": "Un unico fuso orario per tutto il server: scadenze, allarmi, riepilogo giornaliero, backup e date nelle e-mail lo seguono. Una modifica vale subito."
+    "hint": "Un unico fuso orario per tutto il server: scadenze, allarmi, riepilogo giornaliero, backup e date nelle e-mail lo seguono. Una modifica vale subito.",
+    "hintDesktop": "Il fuso orario di questa istanza: scadenze, allarmi, riepilogo giornaliero e backup seguono questo. Se non impostato, vale quello del sistema. Una modifica vale subito."
   },
   "user": {
     "backTitle": "Torna alla panoramica",
@@ -33,10 +39,12 @@
     "nav": {
       "profile": "Profilo",
       "profileHint": "Nome, e-mail e immagine",
+      "profileHintDesktop": "Nome e immagine",
       "appearance": "Aspetto e temi",
       "appearanceHint": "Colori, contrasto e angoli",
       "alarms": "Notifiche",
       "alarmsHint": "Email, Discord e webhook",
+      "alarmsHintDesktop": "Discord e webhook",
       "voice": "Inserimento vocale",
       "voiceHint": "Lingua, Whisper o browser",
       "retention": "Conservazione",
@@ -107,6 +115,13 @@
       "needsBaseUrl": "La connessione tramite claude.ai e ChatGPT richiede OAuth, che a sua volta necessita di <c>BASE_URL</c> nella configurazione del server. Chiedi all'amministratore di MindSift di impostarlo.",
       "tools": "Strumenti:",
       "toolsHint": "L'agente vede solo gli strumenti autorizzati dalla chiave o dalla connessione; l'accesso corrisponde a quello del tuo utente."
+    },
+    "local": {
+      "title": "Raggiungibile dai programmi locali",
+      "intro": "I programmi su questo computer, ad esempio un agente IA, raggiungono così l’MCP e l’API REST di questa istanza con una chiave API. Solo tramite 127.0.0.1, non dalla rete; lì non ci sono né accesso né l’app.",
+      "port": "Porta",
+      "changePort": "Cambia porta",
+      "hint": "Nell’agente IA aggiungi un server MCP di tipo HTTP con questo indirizzo e passa una chiave API nell’intestazione <c>X-API-Key</c> (esempi sotto). L’istanza è raggiungibile solo finché è aperta nell’app desktop."
     },
     "defaultKeyName": "Home Assistant",
     "confirmDisconnect": "Vuoi davvero disconnettere «{{name}}»?",
@@ -205,6 +220,7 @@
     "demoOff": "Disattivato nella demo: le notifiche e i test non vengono inviati.",
     "pauseAll": "Sospendi tutte le notifiche",
     "pauseAllHint": "Sospende temporaneamente tutte le notifiche via email e Discord.",
+    "pauseAllHintDesktop": "Sospende temporaneamente tutte le notifiche Discord e webhook.",
     "ownChanges": "Notifica anche le mie modifiche alle attività seguite",
     "ownChangesHint": "Per impostazione predefinita vieni notificato solo per le modifiche apportate da altre persone.",
     "eventHeader": "Evento",
@@ -305,6 +321,7 @@
     "intro": "Ogni tema è un singolo file CSS autonomo che raggruppa tutti i colori, le superfici, il contrasto e i raggi di curvatura in 6 gruppi fissi.",
     "linkPreviews": "Mostra anteprime dei link",
     "linkPreviewsHint": "Una scheda con titolo, descrizione e una piccola immagine sopra i punti contenenti un indirizzo web. Il server MindSift recupera la pagina, non il browser. Si applica a questo dispositivo; le singole anteprime possono essere nascoste con ✕.",
+    "linkPreviewsHintDesktop": "Una scheda con titolo, descrizione e una piccola immagine sopra i punti contenenti un indirizzo web. Si applica a questo dispositivo; le singole anteprime possono essere nascoste con ✕.",
     "journal": "Mostra diario",
     "journalHint": "Una nota al giorno, in sequenza con un calendario – in cima alla barra laterale delle note. Disattivarlo lo nasconde soltanto; i giorni restano salvati come note. Si applica a questo dispositivo.",
     "theme": "Tema",
@@ -433,6 +450,7 @@
   "data": {
     "title": "Esportazione e importazione",
     "intro": "Scarica i tuoi dati come backup o archivio Markdown, ripristina backup del server o importa dati MindSift e vault di Obsidian.",
+    "introDesktop": "Scarica i tuoi dati come backup o archivio Markdown, ripristina i backup di questa istanza o importa dati MindSift e vault di Obsidian.",
     "backupTitle": "Backup completo (.zip)",
     "backupHint": "Tutti i tuoi pensieri, attività, note e liste in formato JSON, con le immagini e le note vocali delle tue note, inclusi in un file ZIP. «Importa dati MindSift» ripristina tutto completamente. La cartella <c>Obsidian</c> contiene inoltre tutto in Markdown, che Obsidian o qualsiasi editor di testo apre direttamente, anche senza MindSift.",
     "vaultTitle": "Archivio Markdown per Obsidian (.zip)",
@@ -451,7 +469,9 @@
   },
   "profile": {
     "title": "Profilo e credenziali di accesso",
+    "titleDesktop": "Profilo",
     "intro": "Gestisci il tuo nome visualizzato, il nome utente e l'indirizzo e-mail.",
+    "introDesktop": "Gestisci il tuo nome visualizzato e il nome utente.",
     "avatar": "Immagine del profilo",
     "loading": "Caricamento in corso…",
     "upload": "Carica immagine",
@@ -461,12 +481,14 @@
     "displayName": "Nome visualizzato",
     "username": "Nome utente",
     "usernameHint": "Lo usi per accedere, in alternativa al tuo indirizzo e-mail.",
+    "usernameHintDesktop": "Il nome del tuo account in questa istanza.",
     "usernameRules": "Lettere minuscole, cifre, punto, trattino e trattino basso, da 2 a 32 caratteri",
     "demoDisabled": "Disattivato nella demo",
     "currentPassword": "Password attuale (per conferma)",
     "danger": "Zona pericolosa",
     "deleteData": "Elimina tutti i miei dati",
     "deleteDataHint": "Elimina le tue note, cartelle, attività, pensieri e liste. Account, password e impostazioni rimangono invariati. I contenuti condivisi da altri vengono mantenuti.",
+    "deleteDataHintDesktop": "Elimina le tue note, cartelle, attività, pensieri e liste. Account e impostazioni rimangono invariati.",
     "deleteDataButton": "Elimina dati",
     "deleteAccount": "Elimina account definitivamente",
     "lastAdmin": "L'ultimo amministratore del server non può essere eliminato. Rendi prima un altro account amministratore.",
@@ -477,6 +499,7 @@
     "confirmPassword": "La tua password per confermare",
     "save": "Salva profilo",
     "avatarHint": "Mostrata come cerchio ovunque (es. barra superiore, liste di condivisione, attività).",
+    "avatarHintDesktop": "Mostrata come cerchio ovunque (es. barra superiore, attività).",
     "imageFailed": "Caricamento dell'immagine non riuscito",
     "avatarSaved": "Immagine del profilo salvata.",
     "avatarRemoved": "Immagine del profilo rimossa.",
@@ -662,7 +685,9 @@
     "verifyFixed": "Impostato da <c>REGISTRATION_VERIFY_EMAIL</c>.",
     "retentionNeverHint": "Se attivo, tutti possono scegliere «mai» in Impostazioni account → Conservazione per conservare elementi completati ed eliminati. Se disattivato, «mai» ricade sul valore predefinito dell'area (es. 30 giorni).",
     "mcpHint": "Se attivo, Claude Code, Codex e altri possono accedere a MindSift con una chiave API, e claude.ai o ChatGPT come connettore. Se disattivato, l'endpoint MCP e l'accesso tramite connettore vengono disattivati; le connessioni connettore esistenti vengono sospese, le chiavi API continuano a funzionare via curl.",
+    "mcpHintDesktop": "Se attivo, Claude Code, Codex e altri possono accedere a MindSift con una chiave API. Se disattivato, l'endpoint MCP viene disattivato; le chiavi API continuano a funzionare via curl.",
     "saved": "Impostazioni server salvate.",
+    "savedDesktop": "Impostazioni salvate.",
     "peopleSearch": "Ricerca persone",
     "peopleSearchHint": "Attiva, durante la condivisione e nei gruppi vengono suggeriti i nomi. Disattiva, bisogna conoscere l’indirizzo e-mail o il nome utente esatti; chi lavora già insieme a qualcosa continua a vedersi lì con il nome.",
     "publicLinks": "Link pubblici alle note",
@@ -671,6 +696,7 @@
     "calendarFeedsHint": "Ogni persona può abbonarsi alle proprie attività aperte con scadenza nella sua app di calendario tramite un link segreto (sola lettura). Disattivato, nessun link esistente funziona più.",
     "linkPreviews": "Anteprime dei link",
     "linkPreviewsHint": "Quando un punto contiene solo un indirizzo web, il server MindSift recupera la pagina e ne mostra titolo, descrizione e immagine come scheda. Disattivato, il server non recupera nessuna pagina e l'app non mostra né schede di anteprima né l'interruttore per dispositivo.",
+    "linkPreviewsHintDesktop": "Quando un punto contiene solo un indirizzo web, MindSift recupera la pagina e ne mostra titolo, descrizione e immagine come scheda. Disattivato, MindSift non recupera nessuna pagina e l'app non mostra né schede di anteprima né l'interruttore per dispositivo.",
     "imageQuality": "Qualità delle immagini",
     "imageQualityHint": "Prima del caricamento le immagini vengono ridotte a 2048 pixel al massimo e compresse nel browser. La dimensione resta la stessa a ogni livello, così il testo in screenshot e diagrammi resta leggibile; i livelli più bassi comprimono di più e risparmiano spazio. «Disattivata» carica le immagini nella dimensione originale, con metadati come il luogo. Vale solo per le nuove immagini; le GIF restano invariate.",
     "imageQualityHigh": "Alta (predefinita)",
@@ -752,7 +778,9 @@
   "admin": {
     "loadFailed": "Caricamento dei dati di amministrazione non riuscito",
     "title": "Amministrazione del server",
+    "titleDesktop": "Amministrazione",
     "subtitle": "Utenti, inviti, organizzazioni, condivisione e server di posta",
+    "subtitleDesktop": "Nome, fuso orario, backup, media e agenti IA di questa istanza",
     "badge": "Amministratore server",
     "nav": {
       "users": "Utenti e inviti",
@@ -763,7 +791,9 @@
       "sharing": "Condivisione",
       "sharingHint": "Modalità, ricerca persone, link e calendario",
       "server": "Server",
+      "serverDesktop": "Istanza",
       "serverHint": "Nome, fuso orario, versione e rete",
+      "serverHintDesktop": "Nome, lingua, fuso orario e versione",
       "data": "Dati",
       "dataHint": "Backup e conservazione",
       "media": "Media",
@@ -779,9 +809,11 @@
       "signinIntro": "Chi può registrarsi senza invito, chi ha bisogno di un secondo fattore e l’accesso tramite un provider (single sign-on).",
       "sharingIntro": "Chi può condividere con chi, se i nomi vengono suggeriti durante la digitazione, i link pubblici alle note e gli abbonamenti al calendario.",
       "serverIntro": "Nome, lingua predefinita e fuso orario di questa istanza, la versione installata e cosa il server può raggiungere in rete.",
+      "serverIntroDesktop": "Nome, lingua predefinita e fuso orario di questa istanza, la versione installata e dove possono andare gli allarmi.",
       "dataIntro": "Backup giornalieri e se ciò che è completato o eliminato può essere conservato per sempre.",
       "mediaIntro": "Se immagini e file audio sono ammessi nelle note, quanto vengono compressi, quanto possono essere grandi e quanto spazio ha ogni persona.",
-      "aiIntro": "Il riconoscimento vocale di questo server e se gli agenti IA possono collegarsi tramite MCP."
+      "aiIntro": "Il riconoscimento vocale di questo server e se gli agenti IA possono collegarsi tramite MCP.",
+      "aiIntroDesktop": "Il riconoscimento vocale di questa istanza e se gli agenti IA possono collegarsi tramite MCP."
     },
     "demo": "Disattivato nella demo: le impostazioni del server, le email e gli account possono essere solo visualizzati qui.",
     "userCreated": "L’utente «{{name}}» è stato creato.",
@@ -901,8 +933,11 @@
   "backups": {
     "restoreFailed": "Ripristino non riuscito",
     "serverTitle": "Backup del server",
+    "serverTitleDesktop": "Backup",
     "serverHint": "Backup automatici giornalieri dei tuoi dati sul server (se abilitati dall'amministrazione).",
+    "serverHintDesktop": "I backup giornalieri di questa istanza (si attivano e disattivano in Amministrazione → Dati).",
     "none": "Ancora nessun backup sul server.",
+    "noneDesktop": "Ancora nessun backup.",
     "restoreMode": "Tipo di ripristino",
     "replace": "Sostituisci",
     "mergeHint": "Conserva i dati esistenti, aggiungi il backup accanto ad essi.",
@@ -927,7 +962,17 @@
     "deletedHint": "Quando un amministratore o la gestione utenti elimina un account, i suoi backup restano qui fino alla fine del periodo di conservazione. Così chi è stato eliminato per errore riavrà i suoi dati: scarica un backup e importalo nel nuovo account in Impostazioni account → Esportazione e importazione. Se qualcuno elimina il proprio account, i suoi backup spariscono subito.",
     "deletedOn": "Eliminato il {{deleted}} · verrà rimosso il {{remove}}",
     "days_one": "giorno",
-    "days_other": "giorni"
+    "days_other": "giorni",
+    "folder": "Cartella",
+    "folderHint": "Vuoto per la cartella dell’istanza. Cambiandola, i backup esistenti restano nella cartella precedente; l’elenco e il ripristino mostrano quelli della nuova.",
+    "folderChoose": "Scegli cartella…",
+    "folderReset": "Predefinita",
+    "folderResetHint": "Salva di nuovo i backup nella cartella dell’istanza",
+    "folderPickUnavailable": "La scelta della cartella non è disponibile qui. Inserisci il percorso a mano.",
+    "folderPickFailed": "Impossibile aprire la scelta della cartella. Inserisci il percorso a mano.",
+    "folderFailed": "Impossibile usare la cartella",
+    "autoHintDesktop": "Ogni giorno un backup dell’intero database e dei tuoi dati nella cartella qui sotto mentre l’app è aperta (se a quell’ora era chiusa, al successivo avvio). Una cartella su un altro disco protegge anche da un disco guasto.",
+    "restoreHintDesktop": "Ripristinare una copia del database: chiudi l’istanza (aprine un’altra o esci dall’app), sostituisci <c>mindsift.db</c> nella cartella dell’istanza con il file decompresso (<c>gunzip</c>), poi riapri l’istanza. I soli tuoi dati si ripristinano nelle impostazioni dell’account."
   },
   "voiceStatus": {
     "loadFailed": "Impossibile caricare lo stato",
@@ -1158,6 +1203,7 @@
     "admin": {
       "title": "Versione di MindSift",
       "hint": "Una volta al giorno il server chiede a GitHub l’ultima versione. Non viene inviato nulla sulla tua istanza.",
+      "hintDesktop": "Una volta al giorno l'app chiede a GitHub l'ultima versione. Non viene inviato nulla sulla tua istanza.",
       "installed": "Installata",
       "latest": "Ultima",
       "checked": "Ultimo controllo",
@@ -1165,6 +1211,7 @@
       "available": "È disponibile MindSift {{version}}.",
       "whatsNew": "Novità",
       "howTo": "Aggiornare con Docker Compose (nella cartella con docker-compose.yml):",
+      "howToDesktop": "Scarica la nuova versione dell'app desktop e installala.",
       "notYet": "Ancora nessuna risposta da GitHub. Il primo controllo avviene pochi minuti dopo l’avvio.",
       "off": "La ricerca di nuove versioni è disattivata (UPDATE_CHECK=false).",
       "demo": "La demo non cerca nuove versioni.",
@@ -1174,6 +1221,7 @@
   "audit": {
     "title": "Registro attività",
     "intro": "Chi ha modificato account, ruoli e impostazioni del server, e quando: nell'amministrazione, dalla riga di comando o automaticamente dal provider di accesso. Le voci restano per un anno. Password e altri segreti non compaiono mai, solo il fatto che sono stati modificati; gli indirizzi IP non vengono salvati.",
+    "introDesktop": "Quali impostazioni di questa istanza sono state modificate, e quando. Le voci restano per un anno. Password e altri segreti non compaiono mai, solo il fatto che sono stati modificati; gli indirizzi IP non vengono salvati.",
     "loadFailed": "Impossibile caricare il registro",
     "loading": "Caricamento …",
     "empty": "Ancora nessuna voce.",
@@ -1302,6 +1350,7 @@
       "backupEnabled": "Backup giornalieri",
       "backupTime": "Ora del backup",
       "backupRetentionDays": "Conserva i backup (giorni)",
+      "backupDir": "Cartella dei backup",
       "retentionAllowNever": "Conservazione illimitata",
       "mcpEnabled": "Agenti IA (MCP)",
       "peopleSearch": "Ricerca persone",
@@ -1361,6 +1410,7 @@
     "allowBrowserHint": "Con un server Whisper proprio, ognuno può passare al riconoscimento del browser nelle impostazioni. Disattivato: solo il server Whisper (in modalità browser non ci sarebbe input vocale).",
     "server": "Server Whisper",
     "serverHint": "Un server Whisper compatibile con OpenAI, ad es. speaches (docker-compose.yml contiene un blocco pronto). La chiave solo se il server la richiede.",
+    "serverHintDesktop": "Un server Whisper compatibile con OpenAI, ad es. speaches. La chiave solo se il server la richiede.",
     "url": "Indirizzo del server Whisper",
     "key": "Chiave API",
     "keySet": "Salvata – lascia vuoto per mantenerla",

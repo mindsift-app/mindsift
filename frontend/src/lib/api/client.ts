@@ -1,5 +1,5 @@
 // Token, request() with offline cache and session renewal, and small helpers shared by the REST modules
-import { SharingMode } from '../types';
+import { DesktopInfo, SharingMode } from '../types';
 import { OfflineError, isOffline, isCacheablePath, readCached, writeCached, clearOfflineData } from '../offline';
 import i18n from '../../i18n';
 
@@ -197,7 +197,8 @@ let currentSharingMode: SharingMode = 'organizations';
 export const setCurrentSharingMode = (mode: SharingMode) => {
   currentSharingMode = mode;
 };
-export const isSharingDisabled = () => currentSharingMode === 'private';
+// Sharing off: the administration chose "private", or the desktop app (one person, nobody to share with)
+export const isSharingDisabled = () => currentSharingMode === 'private' || isDesktopApp();
 
 // People search (auth status): off, people are added by exact e-mail address or username only
 let currentPeopleSearch = true;
@@ -205,6 +206,15 @@ export const setCurrentPeopleSearch = (on: boolean) => {
   currentPeopleSearch = on;
 };
 export const isPeopleSearchOn = () => currentPeopleSearch;
+
+// Desktop app (AuthStatus.desktop, set with every status): no sign-in and sign-out, and the options that need
+// other people or a public address are hidden
+let currentDesktop: DesktopInfo | null = null;
+export const setCurrentDesktop = (d: DesktopInfo | null | undefined) => {
+  currentDesktop = d ?? null;
+};
+export const getDesktop = () => currentDesktop;
+export const isDesktopApp = () => currentDesktop !== null;
 
 // Authenticated binary download (archives); no JSON parsing and no request timeout
 export async function downloadBlob(path: string): Promise<Blob> {

@@ -5,6 +5,7 @@ import { SpeechSettingsCard } from './SpeechSettingsCard';
 import { AdminPage } from './AdminPage';
 import { useAdminSettings } from './useAdminSettings';
 import { useTranslation } from 'react-i18next';
+import { isDesktopApp } from '../../../lib/api';
 
 // Administration → Voice input & AI: the server's speech recognition and AI agents over MCP
 // (state in useAdminSettings)
@@ -22,7 +23,7 @@ export function AiSection({
     setStatusKey((k) => k + 1);
   };
   return (
-    <AdminPage title={t('admin.nav.ai')} intro={t('admin.pages.aiIntro')} demoMode={demoMode}>
+    <AdminPage title={t('admin.nav.ai')} intro={t(isDesktopApp() ? 'admin.pages.aiIntroDesktop' : 'admin.pages.aiIntro')} demoMode={demoMode}>
       <SpeechSettingsCard
         settings={settings}
         onSave={async (patch) => {
@@ -38,7 +39,7 @@ export function AiSection({
         <div className="pr-4">
           <p className="font-bold text-main">{t('server.mcp')}</p>
           <p className="text-[11px] text-muted mt-0.5">
-            {t('server.mcpHint')}
+            {t(isDesktopApp() ? 'server.mcpHintDesktop' : 'server.mcpHint')}
             {settings.mcpConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MCP_ENABLED' })}`}
           </p>
         </div>

@@ -126,6 +126,10 @@ func (s *Server) passkeyRP() (rpID, origin, reason string) {
 	if s.cfg.DemoMode {
 		return "", "", "demo"
 	}
+	if s.desktopMode() {
+		// The app's webview offers no passkeys, and there is no sign-in to use them for
+		return "", "", "desktop"
+	}
 	if !s.cfg.BaseURLSet {
 		return "", "", "no_base_url"
 	}

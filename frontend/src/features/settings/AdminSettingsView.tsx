@@ -20,6 +20,7 @@ import {
   User,
 } from '../../lib/types';
 import { StatusToast } from '../../components/StatusToast';
+import { isDesktopApp } from '../../lib/api';
 import { useAdminSettings } from './admin/useAdminSettings';
 import { UsersSection } from './admin/UsersSection';
 import { OrganizationsSection } from './admin/OrganizationsSection';
@@ -55,7 +56,9 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
 }) => {
   const { t } = useTranslation('settings');
   const isServerAdmin = currentUser.role === 'admin';
-  const [section, setSection] = useState<AdminSection>('users');
+  // The desktop app has one person and no sign-in: people, sign-in, organizations, sharing and mail are gone
+  const desktop = isDesktopApp();
+  const [section, setSection] = useState<AdminSection>(desktop ? 'server' : 'users');
 
   // Users, invites, organizations, server and mail settings (admin/useAdminSettings.ts)
   const admin = useAdminSettings(currentUser, isServerAdmin);
@@ -63,16 +66,22 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
 
   // The left column, top to bottom. User managers look after people only; the server's settings, mail
   // and the audit log are for server admins.
-  const navItems: { id: AdminSection; icon: LucideIcon; label: string; hint: string; serverAdminOnly?: boolean }[] = [
-    { id: 'users', icon: Users, label: t('admin.nav.users'), hint: t('admin.nav.usersHint') },
-    { id: 'signin', icon: KeyRound, label: t('admin.nav.signin'), hint: t('admin.nav.signinHint'), serverAdminOnly: true },
-    { id: 'organizations', icon: BuildingComplex, label: t('orgs.title'), hint: t('admin.nav.orgsHint') },
-    { id: 'sharing', icon: Share2, label: t('admin.nav.sharing'), hint: t('admin.nav.sharingHint'), serverAdminOnly: true },
-    { id: 'server', icon: Server, label: t('admin.nav.server'), hint: t('admin.nav.serverHint'), serverAdminOnly: true },
+  const navItems: { id: AdminSection; icon: LucideIcon; label: string; hint: string; serverAdminOnly?: boolean; notInDesktop?: boolean }[] = [
+    { id: 'users', icon: Users, label: t('admin.nav.users'), hint: t('admin.nav.usersHint'), notInDesktop: true },
+    { id: 'signin', icon: KeyRound, label: t('admin.nav.signin'), hint: t('admin.nav.signinHint'), serverAdminOnly: true, notInDesktop: true },
+    { id: 'organizations', icon: BuildingComplex, label: t('orgs.title'), hint: t('admin.nav.orgsHint'), notInDesktop: true },
+    { id: 'sharing', icon: Share2, label: t('admin.nav.sharing'), hint: t('admin.nav.sharingHint'), serverAdminOnly: true, notInDesktop: true },
+    {
+      id: 'server',
+      icon: Server,
+      label: desktop ? t('admin.nav.serverDesktop') : t('admin.nav.server'),
+      hint: desktop ? t('admin.nav.serverHintDesktop') : t('admin.nav.serverHint'),
+      serverAdminOnly: true,
+    },
     { id: 'data', icon: Database, label: t('admin.nav.data'), hint: t('admin.nav.dataHint'), serverAdminOnly: true },
     { id: 'media', icon: Images, label: t('admin.nav.media'), hint: t('admin.nav.mediaHint'), serverAdminOnly: true },
     { id: 'ai', icon: Mic, label: t('admin.nav.ai'), hint: t('admin.nav.aiHint'), serverAdminOnly: true },
-    { id: 'smtp', icon: Mail, label: t('admin.nav.smtp'), hint: t('admin.nav.smtpHint'), serverAdminOnly: true },
+    { id: 'smtp', icon: Mail, label: t('admin.nav.smtp'), hint: t('admin.nav.smtpHint'), serverAdminOnly: true, notInDesktop: true },
     { id: 'audit', icon: ScrollText, label: t('admin.nav.audit'), hint: t('admin.nav.auditHint'), serverAdminOnly: true },
   ];
 
@@ -94,15 +103,16 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           <div>
             <h1 className="text-base font-bold text-main tracking-tight flex items-center gap-2">
               <Shield className="w-4 h-4 text-accent" />
-              <span>{t('admin.title')}</span>
+              <span>{desktop ? t('admin.titleDesktop') : t('admin.title')}</span>
             </h1>
             <p className="text-xs text-muted">
-              {t('admin.subtitle')}
+              {desktop ? t('admin.subtitleDesktop') : t('admin.subtitle')}
             </p>
           </div>
         </div>
 
-        <span className="badge-accent">{t(`common:role.${currentUser.role}`)}</span>
+        {/* One person in the desktop app: no role to show */}
+        {!desktop && <span className="badge-accent">{t(`common:role.${currentUser.role}`)}</span>}
       </div>
 
       {/* Answers to saves float above the page, so nothing in it moves */}
@@ -113,7 +123,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         {/* Left Navigation Sidebar */}
         <aside className="panel-surface divide-y divide-border overflow-hidden">
           {navItems
-            .filter((item) => !item.serverAdminOnly || isServerAdmin)
+            .filter((item) => (!item.serverAdminOnly || isServerAdmin) && !(desktop && item.notInDesktop))
             .map(({ id, icon: Icon, label, hint }) => (
               <button
                 key={id}

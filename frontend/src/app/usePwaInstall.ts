@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { triggerHaptic } from '../lib/api';
+import { isDesktopApp, triggerHaptic } from '../lib/api';
 import { isPhoneWidth } from '../lib/breakpoints';
 
 // Installing MindSift as a web app (PWA): whether it already runs installed, the browser's install
@@ -51,7 +51,7 @@ export function usePwaInstall(userId: string | undefined) {
 
   // Immediately offer Web-App installation on mobile if not yet running as installed standalone app
   useEffect(() => {
-    if (!userId || isStandaloneApp) return;
+    if (!userId || isStandaloneApp || isDesktopApp()) return;
     if (isPhoneWidth() && !sessionStorage.getItem('mindsift_pwa_dismissed')) {
       // Screen width and sessionStorage are read after mounting, not during render
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -88,7 +88,8 @@ export function usePwaInstall(userId: string | undefined) {
   };
 
   return {
-    isStandaloneApp,
+    // The desktop app is an installed app already: no install offer, button or menu entry
+    isStandaloneApp: isStandaloneApp || isDesktopApp(),
     deferredPwaPrompt,
     showPwaInstallModal,
     setShowPwaInstallModal,

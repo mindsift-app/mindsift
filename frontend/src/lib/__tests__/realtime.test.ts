@@ -219,6 +219,43 @@ describe('realtime fallback', () => {
     expect(api.isRealtimeConnected()).toBe(false);
   });
 
+  // The desktop app's window has no WebSocket: the server's status names the transport, nothing else is tried
+  const desktopFetch = (platform: 'linux' | 'windows', realtime: 'sse' | 'poll') =>
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === '/api/v1/auth/status')
+        return new Response(JSON.stringify({ needsSetup: false, allowRegistration: false, instanceName: 'MindSift', desktop: { platform, realtime } }), { status: 200 });
+      if (url === '/api/v1/events/poll') return new Response('{"pollId":"poll_1"}', { status: 200 });
+      if (url.startsWith('/api/v1/events/poll/poll_1'))
+        return new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('aborted'))));
+      return new Response('{"ticket":"t1"}', { status: 200 });
+    });
+
+  it('desktop app on Linux: server-sent events, never a WebSocket', async () => {
+    vi.stubGlobal('fetch', desktopFetch('linux', 'sse'));
+    const api = await loadApi();
+    await api.api.getAuthStatus();
+    expect(api.isDesktopApp()).toBe(true);
+    await api.connectWebSocket();
+    FakeEventSource.instances[0].emit('SSE_CONNECTED', { sseId: 's1' });
+    expect(FakeWebSocket.instances).toHaveLength(0);
+    expect(api.getRealtimeTransport()).toBe('sse');
+    expect(await api.tryWebSocket(500)).toBe(false);
+    expect(FakeWebSocket.instances).toHaveLength(0);
+    api.disconnectWebSocket();
+  });
+
+  it('desktop app on Windows: long polling right away (the webview buffers streams)', async () => {
+    vi.stubGlobal('fetch', desktopFetch('windows', 'poll'));
+    const api = await loadApi();
+    await api.api.getAuthStatus();
+    await api.connectWebSocket();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(FakeWebSocket.instances).toHaveLength(0);
+    expect(FakeEventSource.instances).toHaveLength(0);
+    expect(api.getRealtimeTransport()).toBe('poll');
+    api.disconnectWebSocket();
+  });
+
   it('a session that ended elsewhere (signed out at the provider) drops back to the sign-in instead of retrying', async () => {
     const calls: string[] = [];
     vi.stubGlobal(

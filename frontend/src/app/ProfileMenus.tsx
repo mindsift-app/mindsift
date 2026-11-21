@@ -1,11 +1,12 @@
-import { Brain, CircleQuestionMark, LogOut, Palette, Settings, Shield, Smartphone, Users, X } from 'lucide-react';
+import { ArrowLeftRight, Brain, CircleQuestionMark, LogOut, Palette, Settings, Shield, Smartphone, Users, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../lib/types';
-import { isSharingDisabled, triggerHaptic } from '../lib/api';
+import { isDesktopApp, isSharingDisabled, triggerHaptic } from '../lib/api';
 import { ThemeId, ThemeOption } from '../lib/theme';
 import { UserAvatar } from '../components/UserAvatar';
 import { ThemeQuickPicker } from '../components/ThemeQuickPicker';
 import { APP_VERSION } from '../version';
+import { openDesktopStart } from '../lib/desktopStart';
 import { ActiveTab } from './appTabs';
 import { usePwaInstall } from './usePwaInstall';
 
@@ -45,10 +46,15 @@ export function ProfileDropdown({
         <UserAvatar user={user} size="md" className="border" />
         <div className="min-w-0 flex-1">
           <p className="font-bold text-main truncate">{user.displayName}</p>
-          <p className="text-[11px] text-muted truncate">{user.email || user.username}</p>
-          <span className="inline-block mt-1 px-1.5 py-0.5 bg-panel border border-border rounded-btn text-[10px] text-accent font-semibold">
-            {roleLabel}
-          </span>
+          {/* The desktop app has one account: its name once, no login name, no role */}
+          {!isDesktopApp() && (
+            <>
+              <p className="text-[11px] text-muted truncate">{user.email || user.username}</p>
+              <span className="inline-block mt-1 px-1.5 py-0.5 bg-panel border border-border rounded-btn text-[10px] text-accent font-semibold">
+                {roleLabel}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -122,15 +128,25 @@ export function ProfileDropdown({
         )}
       </div>
 
-      {/* Logout */}
+      {/* Logout; the desktop app has no sign-in to return to, it goes back to its start view instead */}
       <div className="py-1">
-        <button
-          onClick={handleLogout}
-          className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 text-status-err hover:bg-status-err-bg transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>{t('profile.logout')}</span>
-        </button>
+        {isDesktopApp() ? (
+          <button
+            onClick={openDesktopStart}
+            className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 text-main hover:bg-panel-elevated transition-colors"
+          >
+            <ArrowLeftRight className="w-4 h-4 text-accent" />
+            <span>{t('profile.switchInstance')}</span>
+          </button>
+        ) : (
+          <button
+            onClick={handleLogout}
+            className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 text-status-err hover:bg-status-err-bg transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t('profile.logout')}</span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -173,10 +189,14 @@ export function MobileProfileSheet({
             <UserAvatar user={user} size="lg" className="border shadow-xs" />
             <div>
               <p className="font-bold text-sm text-main">{user.displayName}</p>
-              <p className="text-xs text-muted">{user.email || user.username}</p>
-              <span className="inline-block mt-1 px-1.5 py-0.5 bg-canvas border border-border rounded-btn text-[10px] text-accent font-semibold">
-                {roleLabel}
-              </span>
+              {!isDesktopApp() && (
+                <>
+                  <p className="text-xs text-muted">{user.email || user.username}</p>
+                  <span className="inline-block mt-1 px-1.5 py-0.5 bg-canvas border border-border rounded-btn text-[10px] text-accent font-semibold">
+                    {roleLabel}
+                  </span>
+                </>
+              )}
             </div>
           </div>
           <button
@@ -292,19 +312,30 @@ export function MobileProfileSheet({
           )}
         </div>
 
-        {/* Logout */}
+        {/* Logout; in the desktop app back to its start view */}
         <div className="pt-3">
-          <button
-            type="button"
-            onClick={() => {
-              setShowMobileProfile(false);
-              handleLogout();
-            }}
-            className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-status-err hover:bg-status-err-bg transition-colors text-xs font-medium cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>{t('profile.logout')}</span>
-          </button>
+          {isDesktopApp() ? (
+            <button
+              type="button"
+              onClick={openDesktopStart}
+              className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-main hover:bg-panel-elevated transition-colors text-xs cursor-pointer"
+            >
+              <ArrowLeftRight className="w-4 h-4 text-accent" />
+              <span>{t('profile.switchInstance')}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setShowMobileProfile(false);
+                handleLogout();
+              }}
+              className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-status-err hover:bg-status-err-bg transition-colors text-xs font-medium cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>{t('profile.logout')}</span>
+            </button>
+          )}
         </div>
 
         {/* Version & About Hint on Mobile */}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AuthStatus, DashboardStats, SharedList, Thought, User, WSMessage } from '../lib/types';
-import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken, lastLocalWriteAt } from '../lib/api';
+import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken, isDesktopApp, lastLocalWriteAt } from '../lib/api';
 import { clearOfflineData, outboxCount } from '../lib/offline';
 import { flushClosedNotes } from '../lib/docSync/flushClosed';
 import { finishOidcReturn, oidcReturnPending } from '../lib/oidc';
@@ -135,6 +135,9 @@ export function useSessionBootstrap(onSignedOut: () => void) {
         // Back from the OIDC provider: the ticket gives the session (or confirms this one) before anything else
         await finishOidcReturn();
 
+        // Desktop app: no sign-in, the window gets the session of the app's one account
+        if (st.desktop && !getToken()) await api.desktopSignIn();
+
         if (getToken() && account) {
           // Loading since main.tsx; nothing was waiting in the outbox then
           void flushClosedNotes();
@@ -155,6 +158,16 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     checkBootAndAuth();
 
     const onUnauthorized = async () => {
+      // Desktop app: the session ended (idle for a month), so the window simply gets a new one
+      if (isDesktopApp()) {
+        try {
+          await api.desktopSignIn();
+          await refreshAll();
+          return;
+        } catch {
+          // falls through to the signed-out state
+        }
+      }
       setUser(null);
       onSignedOutRef.current();
       try {

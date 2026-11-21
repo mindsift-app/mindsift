@@ -26,6 +26,7 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
+import { InDesktop, NotInDesktop } from './desktop';
 
 const kbd = 'px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent';
 
@@ -38,6 +39,7 @@ const en: HelpContent = {
       category: 'workspace',
       title: 'Hierarchical outliner & offline sync',
       subtitle: 'Atomic storage with collaborative real-time sync',
+      desktop: { title: 'Hierarchical outliner', subtitle: 'Atomic storage, local on your computer' },
       icon: FileText,
       keywords: ['title', 'paste', 'chatgpt', 'claude', 'code', 'workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'export', 'markdown', 'save'],
       content: (
@@ -48,10 +50,12 @@ const en: HelpContent = {
             <strong className="text-main">IndexedDB</strong>.
           </p>
           <ul className="space-y-1 list-disc list-inside">
-            <li>
-              <strong className="text-main">Fully offline-capable:</strong> you can keep working without an internet connection;
-              changes sync automatically once you are back online.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Fully offline-capable:</strong> you can keep working without an internet connection;
+                changes sync automatically once you are back online.
+              </li>
+            </NotInDesktop>
             <li>
               <strong className="text-main">Title:</strong> A note title has at most 60 characters, so it fits on one line and stays a usable file name on export. Close to the limit the field shows the count.
             </li>
@@ -223,9 +227,11 @@ const en: HelpContent = {
             <li>
               <strong className="text-main">In the note:</strong> The drawing fills the width of the note. Click into it, then dragging moves the view and Ctrl + mouse wheel or two fingers zoom; the wheel alone keeps scrolling the page. Another click ends this, a view not saved glides back. Drag the lower edge to change the height. “Save view” keeps section, zoom and height for everyone, The size button switches between the recommended size and “all large” (tall drawings) or the recommended height to move sideways (wide drawings). Double-click or “Edit” opens the editor; it starts with the hand (only the view moves), choose another tool to change things. The button with the arrows next to “Done” leaves without saving and asks first if there are changes.
             </li>
-            <li>
-              <strong className="text-main">Drawing together:</strong> Whoever opens a drawing draws alone; the others see the bullet locked (“… is editing”) and can only look at the drawing. In shared notes, “Draw together” at the top of the editor starts a live drawing with what is there so far (on phones the people icon); whoever starts it is the host, and the note shows “Live drawing: …”. Whoever opens it then chooses “Draw along” or “Watch” and sees the others' shapes, pointers and selections in their colour, with everyone taking part at the top of the editor. The host saves with “Done” for everyone; the others have “Leave”. Closing without saving while others draw along only leaves the drawing, also for the host: whoever has been there longest takes over. Only the last one to go discards (asked first when there are changes) and can bring it back with “Undo” for a few seconds afterwards. Undo only takes back your own changes. Drawing together needs a WebSocket connection; without one (some company proxies) you can watch live.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Drawing together:</strong> Whoever opens a drawing draws alone; the others see the bullet locked (“… is editing”) and can only look at the drawing. In shared notes, “Draw together” at the top of the editor starts a live drawing with what is there so far (on phones the people icon); whoever starts it is the host, and the note shows “Live drawing: …”. Whoever opens it then chooses “Draw along” or “Watch” and sees the others' shapes, pointers and selections in their colour, with everyone taking part at the top of the editor. The host saves with “Done” for everyone; the others have “Leave”. Closing without saving while others draw along only leaves the drawing, also for the host: whoever has been there longest takes over. Only the last one to go discards (asked first when there are changes) and can bring it back with “Undo” for a few seconds afterwards. Undo only takes back your own changes. Drawing together needs a WebSocket connection; without one (some company proxies) you can watch live.
+              </li>
+            </NotInDesktop>
             <li>
               <strong className="text-main">Offline and drafts:</strong> What you draw offline is saved once the connection is back; an unsaved draft is offered for restoring the next time you open the drawing. If everyone leaves a live drawing without “Done”, the server keeps its state for about 10 minutes; whoever chooses “Draw together” again within that time carries on.
             </li>
@@ -504,6 +510,7 @@ const en: HelpContent = {
       category: 'triage',
       title: 'API: curl, smart home & AI agents (MCP)',
       subtitle: 'Read and change tasks and lists via curl or Home Assistant, deliver thoughts, connect AI agents like Claude Code.',
+      desktop: { title: 'API: curl & AI agents (MCP)', subtitle: 'Read and change tasks and lists via curl, deliver thoughts, connect AI agents like Claude Code.' },
       icon: Bell,
       keywords: ['webhooks', 'api', 'token', 'home assistant', 'siri', 'shortcuts', 'automation', 'curl', 'mcp', 'ai', 'agent', 'claude', 'codex'],
       content: (
@@ -511,6 +518,11 @@ const en: HelpContent = {
           <p>
             MindSift has an API. Under <em className="text-main">Account settings → API</em> you create personal keys and use switches to decide what each may do: read, create or change tasks, lists, notes and the inbox. These permissions apply to both kinds of access alike; notes as well as reading and sorting the inbox are available over MCP only. A key never reaches settings.
           </p>
+          <InDesktop>
+            <p>
+              <strong className="text-main">In the desktop app:</strong> the API is at first only there for the app itself. Under <em className="text-main">Account settings → API</em> switch on “Reachable for local programs”, and programs on this computer reach MCP and the REST API at <code className="font-mono">127.0.0.1</code> (the port and ready examples are shown there). It is not reachable from the network, e.g. from Home Assistant on another device, and there is no connection via claude.ai or ChatGPT.
+            </p>
+          </InDesktop>
           <p>
             <strong className="text-main">curl and smart home:</strong> with read access, <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> returns everything due today, e.g. for a Home Assistant sensor. More filters: <code className="font-mono">due=overdue</code>, a date, <code className="font-mono">taskListId</code>. Lists come via <code className="font-mono">GET /api/v1/lists</code>. With change access you check things off via <code className="font-mono">PATCH /api/v1/thoughts/ID</code>. The settings show ready-made examples.
           </p>
@@ -577,33 +589,60 @@ const en: HelpContent = {
             <li>
               <strong className="text-main">Priorities & notes:</strong> set priorities (<em className="text-accent">Urgent</em>, <em className="text-main">Important</em>, <em>Normal</em>) and add detailed Markdown notes.
             </li>
-            <li>
-              <strong className="text-main">Assigning:</strong> in shared task lists you assign a task to one or more people with access (type a name, Enter). The assignees appear as small profile pictures on the task; whoever loses access to the list is removed automatically.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Assigning:</strong> in shared task lists you assign a task to one or more people with access (type a name, Enter). The assignees appear as small profile pictures on the task; whoever loses access to the list is removed automatically.
+              </li>
+            </NotInDesktop>
             <li>
               <strong className="text-main">Recurring tasks:</strong> choose a repeat in the detail window (daily, weekdays from Monday to Friday, weekly, monthly or yearly). Checking it off creates the next task automatically in the rhythm of the old date; checked off late, the missed dates are skipped (daily, due Saturday, checked off Monday: the next one is due Tuesday). You recognize it by the 🔁 icon.
             </li>
             <li>
               <strong className="text-main">Due date with time:</strong> in the detail window you can set a time next to the date; “✕ Time” makes the task all-day again. It shows e.g. “Today, 14:30”, overdue items in red.
             </li>
-            <li>
-              <strong className="text-main">Automatic alarms:</strong> at the due time (all-day tasks at 9:00, minus your advance warning) MindSift notifies you by <strong className="text-main">email</strong>, <strong className="text-main">Discord webhook</strong> or your own HTTP webhook. Move the due date or reopen the task and the alarm comes again. Configurable in your account settings. Email alarms go to your sign-in address. A new sign-in address counts only once you click the link in the confirmation e-mail sent to it; until then the previous one stays. All times are in the server's time zone, which a server admin sets under <em>Server administration → Server</em>.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Automatic alarms:</strong> at the due time (all-day tasks at 9:00, minus your advance warning) MindSift notifies you by <strong className="text-main">email</strong>, <strong className="text-main">Discord webhook</strong> or your own HTTP webhook. Move the due date or reopen the task and the alarm comes again. Configurable in your account settings. Email alarms go to your sign-in address. A new sign-in address counts only once you click the link in the confirmation e-mail sent to it; until then the previous one stays. All times are in the server's time zone, which a server admin sets under <em>Server administration → Server</em>.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Automatic alarms:</strong> at the due time (all-day tasks at 9:00, minus your advance warning) MindSift notifies you by <strong className="text-main">Discord webhook</strong> or a custom HTTP webhook, as long as the desktop app is running. If you move the due date or reopen the task, the alarm fires again. Configurable in your account settings under “Alarms”. All times use the instance’s time zone, which you set under <em>Administration → Instance</em> (otherwise the system’s).
+              </li>
+            </InDesktop>
             <li>
               <strong className="text-main">Reminders per task:</strong> In the detail window, tick one or more times under “Reminder”, e.g. 2 weeks before and on the due day. For this task they replace your lead time and apply to everyone who gets its due alarm; “Default” goes back to the lead time from the settings. Without a time, MindSift reminds whole days ahead at 9 am. Tasks with their own reminders carry a small 🔔.
             </li>
-            <li>
-              <strong className="text-main">More notifications:</strong> When someone assigns a task to you, a new task lands in a shared list or one there is completed, MindSift can let you know; switch each event on or off in the settings under “Alarms”. Tasks you <strong className="text-main">watch</strong> report every change (status, priority, due date, text, description, subtasks, assignment …), also when they are ticked in a note. MindSift never notifies you about what you did yourself. Several events arrive bundled in one message. The <strong className="text-main">bell</strong> (desktop: at the bottom of the bar on the left; phones: next to search) collects everything of the last 14 days, even without any channel switched on; click an entry to open the task or note.
-            </li>
-            <li>
-              <strong className="text-main">Calendar subscription:</strong> Under <em className="text-main">Account settings → Calendar subscription</em> you get a secret link to subscribe to in Google Calendar, Apple Calendar, Thunderbird or Outlook. It shows your open tasks with a due date and those of shared task lists (due from 30 days ago up to a year ahead): all-day tasks as all-day events, tasks with a time as 30-minute events, repeating tasks with their next date. The calendar only shows them, you edit in MindSift; calendar apps fetch the subscription only every few hours. Anyone who knows the link sees your tasks: “Create new link” invalidates the old one, switching off deletes it.
-            </li>
-            <li>
-              <strong className="text-main">@-mentions:</strong> In a task's description, in subtasks and in notes, <strong className="text-main">@</strong> opens a list of people (arrow keys, Enter). People without access are shown greyed out. The person mentioned gets a notification (Settings → Alarms, “I was mentioned”), even from a muted list; saving again does not send a second one.
-            </li>
-            <li>
-              <strong className="text-main">List menu (⋯):</strong> On the right above the list: <strong className="text-main">Mute</strong> (shared lists only: no notifications from this list, assignments, mentions and watched tasks still come), Share, Rename and Delete. If not all lists fit in the row, the rest are behind “⋯ n”. In a shared list a new task is first assigned to you; the due alarm goes to the people assigned, or to every member if nobody is.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">More notifications:</strong> When someone assigns a task to you, a new task lands in a shared list or one there is completed, MindSift can let you know; switch each event on or off in the settings under “Alarms”. Tasks you <strong className="text-main">watch</strong> report every change (status, priority, due date, text, description, subtasks, assignment …), also when they are ticked in a note. MindSift never notifies you about what you did yourself. Several events arrive bundled in one message. The <strong className="text-main">bell</strong> (desktop: at the bottom of the bar on the left; phones: next to search) collects everything of the last 14 days, even without any channel switched on; click an entry to open the task or note.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">More notifications:</strong> The <strong className="text-main">bell</strong> (at the bottom of the bar on the left) collects the last 14 days of notices, such as due tasks; a click on an entry opens the task or note. Tasks you <strong className="text-main">watch</strong> also report your own changes if you switch that on in the settings under “Alarms”.
+              </li>
+            </InDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Calendar subscription:</strong> Under <em className="text-main">Account settings → Calendar subscription</em> you get a secret link to subscribe to in Google Calendar, Apple Calendar, Thunderbird or Outlook. It shows your open tasks with a due date and those of shared task lists (due from 30 days ago up to a year ahead): all-day tasks as all-day events, tasks with a time as 30-minute events, repeating tasks with their next date. The calendar only shows them, you edit in MindSift; calendar apps fetch the subscription only every few hours. Anyone who knows the link sees your tasks: “Create new link” invalidates the old one, switching off deletes it.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">@-mentions:</strong> In a task's description, in subtasks and in notes, <strong className="text-main">@</strong> opens a list of people (arrow keys, Enter). People without access are shown greyed out. The person mentioned gets a notification (Settings → Alarms, “I was mentioned”), even from a muted list; saving again does not send a second one.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">List menu (⋯):</strong> On the right above the list: <strong className="text-main">Mute</strong> (shared lists only: no notifications from this list, assignments, mentions and watched tasks still come), Share, Rename and Delete. If not all lists fit in the row, the rest are behind “⋯ n”. In a shared list a new task is first assigned to you; the due alarm goes to the people assigned, or to every member if nobody is.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">List menu (⋯):</strong> On the right above the list: Rename and Delete. If not all lists fit in the row, the rest are behind “⋯ n”.
+              </li>
+            </InDesktop>
             <li>
               <strong className="text-main">Calendar:</strong> A third view next to list and Kanban: month or week on the desktop, the week on phones. Tasks without a date are under “Unscheduled”; drag one onto a day to set its date (a time stays), back to “Unscheduled” to remove it, <strong className="text-main">Ctrl + Z</strong> takes it back. Repeating tasks also show their coming dates, greyed with ↻. A column on the left switches between the chosen day (today until you click one) with its tasks and the unscheduled tasks. ← → leaf through, T jumps to today. On the desktop Monday to Friday fill the width; scroll sideways or use “Sat – Sun ›” for the weekend. Month or week is at the right of the hashtags; one wheel step scrolls the bars above away.
             </li>
@@ -618,11 +657,19 @@ const en: HelpContent = {
       category: 'lists',
       title: 'Shared lists, quantities & hashtag categories',
       subtitle: 'Real-time shopping lists, packing lists and checklists',
+      desktop: { title: 'Lists, quantities & hashtag categories', subtitle: 'Shopping lists, packing lists and checklists' },
       icon: ShoppingCart,
       keywords: ['lists', 'shopping', 'groceries', 'checklist', 'quantities', 'categories', 'hashtag', 'realtime', 'suggestions'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
-          <p>Shared lists are perfect for shopping, packing lists and errands together:</p>
+          <NotInDesktop>
+            <p>Shared lists are perfect for shopping, packing lists and errands together:</p>
+          </NotInDesktop>
+          <InDesktop>
+            <p>
+              Lists are perfect for shopping, packing lists and errands:
+            </p>
+          </InDesktop>
           <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Type the quantity along with it:</strong> With <code className="text-accent font-mono">2x organic milk</code>, <code className="text-accent font-mono">500g pasta</code>, <code className="text-accent font-mono">3 apples</code> or <code className="text-accent font-mono">tomatoes 2 cans</code> the field marks the quantity and fills it into the quantity field right away; a small speech bubble at the quantity field points it out. When you add the item, the name goes onto the list without it. Tap the × in the bubble or empty the quantity field to keep the text as typed; a quantity you type into the field yourself wins. Recognized are a number with x, a number with a unit (g, kg, l, ml, pcs, pack, can, bottle, bunch …) and a number at the start. A number at the end without a unit belongs to the name (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">cola 0.5</code>), and so does one attached to a word (<code className="text-accent font-mono">7up</code>). The quantity field takes units too, such as <code className="text-accent font-mono">500 g</code>. The switch <em>Recognize dates and quantities while typing</em> under Account settings → Language turns this off as well.
@@ -631,11 +678,18 @@ const en: HelpContent = {
               <strong className="text-main">Categories by hashtag:</strong> add a hashtag like <code className="text-accent font-mono">#fridge</code> or <code className="text-accent font-mono">#vegetables</code>. The list groups the items into matching sections automatically.
             </li>
             <li>
-              <strong className="text-main">Suggestions while typing:</strong> from two letters on, the list shows below the field what you have added here before, also items checked and cleared long ago: first what starts that way, then what contains it, frequent and recent purchases first. Items already open on the list are left out. Tap one, or pick it with the arrow keys and Enter, to add it with its hashtag; Escape closes the suggestions, and typing on works as before. While you type a #hashtag, the hashtag suggestions show instead. Shared lists share one history; it works offline too and goes when the list is deleted.
+              <strong className="text-main">Suggestions while typing:</strong> from two letters on, the list shows below the field what you have added here before, also items checked and cleared long ago: first what starts that way, then what contains it, frequent and recent purchases first. Items already open on the list are left out. Tap one, or pick it with the arrow keys and Enter, to add it with its hashtag; Escape closes the suggestions, and typing on works as before. While you type a #hashtag, the hashtag suggestions show instead. <NotInDesktop>{' '}Shared lists share one history; it works offline too and goes when the list is deleted.</NotInDesktop>
             </li>
-            <li>
-              <strong className="text-main">Live sync & clearing checked items:</strong> checked items sync in real time and show who checked them. The clear button removes checked items all at once.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Live sync & clearing checked items:</strong> checked items sync in real time and show who checked them. The clear button removes checked items all at once.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Clearing checked items:</strong> The clear button removes checked items all at once.
+              </li>
+            </InDesktop>
           </ul>
         </div>
       ),
@@ -669,32 +723,52 @@ const en: HelpContent = {
       category: 'account',
       title: 'Offline, backups & password',
       subtitle: 'Keep working without internet, restore backups, reset your password',
+      desktop: { title: 'Backups', subtitle: 'Create backups and restore them' },
       icon: CloudOff,
       keywords: ['offline', 'internet', 'backup', 'restore', 'password', 'forgot', 'account', 'two-factor', '2fa', 'authenticator', 'security', 'passkey', 'fingerprint', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
-            <li>
-              <strong className="text-main">Server backups:</strong> if the administration has switched on automatic backups, you find the daily backups of your data under <em>Account settings → Export &amp; import</em>. You can download or restore them, also for single areas like lists or tasks. Every backup also holds your notes, tasks and lists as Markdown in the <em>Obsidian</em> folder, readable in Obsidian or any text editor, even without MindSift.
-            </li>
-            <li>
-              <strong className="text-main">Without internet:</strong> installed as an app (or in the browser), MindSift also starts offline with the last loaded state. Capturing thoughts and checking off tasks and list items keeps working; a hint at the bottom shows how many changes are waiting, and they are sent automatically once the connection is back.
-            </li>
-            <li>
-              <strong className="text-main">Where offline changes are kept:</strong> Notes you have opened on this device before can be read and edited offline. Anything not sent yet is stored only in this browser: it survives closing, restarting and shutting down, and is sent automatically the next time MindSift starts with a connection. It is lost if you sign out (MindSift asks first), clear the browser data or work in a private window. So after working offline, come back online with the same device soon. If someone changed the same bullet in the meantime, nothing is lost: your version appears as a conflict copy below it.
-            </li>
-            <li>
-              <strong className="text-main">Forgot your password:</strong> if the administration has set up mail delivery, the sign-in window shows “Forgot your password?”. You get a link valid for one hour; with the new password you are signed out on all devices.
-            </li>
-            <li>
-              <strong className="text-main">Two-factor sign-in:</strong> under <em>Account settings → Security</em> you connect an authenticator app (scan the QR code, enter the first code); from then on signing in asks for the app's six-digit code after the password. The ten recovery codes shown once along the way help when the phone is missing: each works once. With “Trust this device for 30 days” a device of your own asks for no code for a month. “Forgot your password” does not switch two-factor sign-in off.
-            </li>
-            <li>
-              <strong className="text-main">Passkeys:</strong> under <em>Account settings → Security → Passkeys</em> you create a passkey (confirm your password, give it a name, fingerprint, face or device PIN). From then on “Sign in with a passkey” signs you in without any password; some browsers also offer it right in the login field. Signing in with the password asks for the passkey afterwards: a passkey counts as second factor, even without an authenticator app. The recovery codes appear with the first passkey. Removing the last second factor switches two-factor sign-in off again. Passkeys are only available when the server has a fixed https address (BASE_URL).
-            </li>
-            <li>
-              <strong className="text-main">Signing in with a provider (SSO):</strong> When the administration has set up a provider such as Authentik, Authelia or Keycloak, the login shows “Sign in with …”. The first time, your account is created, or an existing one with the same verified address is linked; you link an account with a different address under <em>Account settings → Security</em>. Two-factor sign-in is then up to the provider. You confirm sensitive changes such as a new address, a password, API keys or deleting by signing in there again; after that you have five minutes. With the password sign-in switched off there is only this button, and the administration has emergency access at <em>/?login=password</em>.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Server backups:</strong> if the administration has switched on automatic backups, you find the daily backups of your data under <em>Account settings → Export &amp; import</em>. You can download or restore them, also for single areas like lists or tasks. Every backup also holds your notes, tasks and lists as Markdown in the <em>Obsidian</em> folder, readable in Obsidian or any text editor, even without MindSift.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Backups:</strong> under <em>Administration → Data</em> you switch on daily backups and choose the folder they go to. Under <em>Account settings → Export &amp; import</em> you find them; download them or restore them, also only for single areas such as lists or tasks. Every backup also holds your notes, tasks and lists as Markdown in the <em>Obsidian</em> folder, readable in Obsidian or any text editor, even without MindSift. A backup can also be restored on a server if you move there later.
+              </li>
+            </InDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Without internet:</strong> installed as an app (or in the browser), MindSift also starts offline with the last loaded state. Capturing thoughts and checking off tasks and list items keeps working; a hint at the bottom shows how many changes are waiting, and they are sent automatically once the connection is back.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Where offline changes are kept:</strong> Notes you have opened on this device before can be read and edited offline. Anything not sent yet is stored only in this browser: it survives closing, restarting and shutting down, and is sent automatically the next time MindSift starts with a connection. It is lost if you sign out (MindSift asks first), clear the browser data or work in a private window. So after working offline, come back online with the same device soon. If someone changed the same bullet in the meantime, nothing is lost: your version appears as a conflict copy below it.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Forgot your password:</strong> if the administration has set up mail delivery, the sign-in window shows “Forgot your password?”. You get a link valid for one hour; with the new password you are signed out on all devices.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Two-factor sign-in:</strong> under <em>Account settings → Security</em> you connect an authenticator app (scan the QR code, enter the first code); from then on signing in asks for the app's six-digit code after the password. The ten recovery codes shown once along the way help when the phone is missing: each works once. With “Trust this device for 30 days” a device of your own asks for no code for a month. “Forgot your password” does not switch two-factor sign-in off.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Passkeys:</strong> under <em>Account settings → Security → Passkeys</em> you create a passkey (confirm your password, give it a name, fingerprint, face or device PIN). From then on “Sign in with a passkey” signs you in without any password; some browsers also offer it right in the login field. Signing in with the password asks for the passkey afterwards: a passkey counts as second factor, even without an authenticator app. The recovery codes appear with the first passkey. Removing the last second factor switches two-factor sign-in off again. Passkeys are only available when the server has a fixed https address (BASE_URL).
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Signing in with a provider (SSO):</strong> When the administration has set up a provider such as Authentik, Authelia or Keycloak, the login shows “Sign in with …”. The first time, your account is created, or an existing one with the same verified address is linked; you link an account with a different address under <em>Account settings → Security</em>. Two-factor sign-in is then up to the provider. You confirm sensitive changes such as a new address, a password, API keys or deleting by signing in there again; after that you have five minutes. With the password sign-in switched off there is only this button, and the administration has emergency access at <em>/?login=password</em>.
+              </li>
+            </NotInDesktop>
           </ul>
         </div>
       ),

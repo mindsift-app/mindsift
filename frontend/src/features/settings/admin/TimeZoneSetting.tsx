@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SystemSettings } from '../../../lib/types';
+import { isDesktopApp } from '../../../lib/api';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { formatDateTime } from '../../../lib/format';
 import { serverWallClock, timeZoneLabel, timeZoneList } from '../../../lib/timeZones';
@@ -19,6 +20,8 @@ export function TimeZoneSetting({
   onSave: (patch: Partial<SystemSettings>) => void;
 }) {
   const { t } = useTranslation('settings');
+  // The desktop app: one instance on this computer, its time zone comes from the system (TZ set by the app)
+  const desktop = isDesktopApp();
   const st = settings.serverTime;
   const setting = settings.timeZone || '';
   const fallback = st?.fallback || 'UTC';
@@ -49,10 +52,10 @@ export function TimeZoneSetting({
     <div className="p-4 flex flex-wrap items-center justify-between gap-4" data-admin-time-zone>
       <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
         <p className="font-bold text-main">{t('timeZone.title')}</p>
-        <p className="text-[11px] text-muted mt-0.5">{t('timeZone.hint')}</p>
+        <p className="text-[11px] text-muted mt-0.5">{desktop ? t('timeZone.hintDesktop') : t('timeZone.hint')}</p>
         {st && wall && (
           <p className="text-[11px] text-main mt-1.5" data-server-time>
-            {t('timeZone.now', {
+            {t(desktop ? 'timeZone.nowDesktop' : 'timeZone.now', {
               time: formatDateTime(wall.wall, { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' }),
               // "Europe/Berlin, UTC+01:00", for UTC itself only "UTC"
               zone: wall.offset === st.zone ? st.zone : `${timeZoneLabel(st.zone)}, ${wall.offset}`,
@@ -61,7 +64,7 @@ export function TimeZoneSetting({
         )}
         {st && (
           <p className={`text-[11px] mt-0.5 ${st.source === 'default' ? 'text-status-warn' : 'text-muted'}`}>
-            {t(`timeZone.source.${st.source}`)}
+            {desktop && st.source !== 'setting' ? t(`timeZone.source.${st.source}Desktop`) : t(`timeZone.source.${st.source}`)}
           </p>
         )}
       </div>

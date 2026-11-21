@@ -114,6 +114,32 @@
         }
       }
     },
+    "/api/v1/admin/backups/location": {
+      "get": {
+        "summary": "Backup folder (desktop app only)",
+        "description": "Where the backups go: dir, defaultDir (backups/ in the instance's folder), custom. Desktop app only; 404 on a server",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Set the backup folder (desktop app only)",
+        "description": "{dir}: an absolute path, created when missing; \"\" goes back to the default. 400 for a relative path, the instance's own folder or a folder that cannot be written to. Backups already written stay in the old folder; the lists and restore read the new one. Answers like GET. Desktop app only; 404 on a server",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/admin/backups/deleted": {
       "get": {
         "summary": "Kept backups of deleted accounts",
@@ -437,7 +463,7 @@
     "/api/v1/admin/setup": {
       "post": {
         "summary": "Finish the first-time setup after an admin from ADMIN_USER",
-        "description": "The setup wizard's instance settings for an administrator created by ADMIN_USER/ADMIN_PASSWORD (instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage, backupEnabled, backupTime, backupRetentionDays, timeZone, smtp, as in /auth/setup, with the same 400s), and email for an account without one: it waits for the click on the confirmation link like a changed login address (400 invalid, 409 in use; ignored when the account has an address). Answers done, plus pendingEmail and confirmationSent with an email. Only while GET /auth/me says setupPending, once; afterwards 409",
+        "description": "The setup wizard's instance settings for an administrator created by ADMIN_USER/ADMIN_PASSWORD (instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage, backupEnabled, backupTime, backupRetentionDays, timeZone, smtp, as in /auth/setup, with the same 400s), and email for an account without one: it waits for the click on the confirmation link like a changed login address (400 invalid, 409 in use; ignored when the account has an address). Answers done, plus pendingEmail and confirmationSent with an email. Only while GET /auth/me says setupPending, once; afterwards 409. In the desktop app it finishes the short wizard of a local instance's first start: email, smtp, allowRegistration and sharingMode are ignored (sharing stays private, registration closed), and backupDir sets the backup folder as PUT /admin/backups/location (same checks and 400s); ignored on a server",
         "tags": [
           "Administration"
         ],
@@ -1199,6 +1225,21 @@
       "post": {
         "summary": "Create the first administrator",
         "description": "First administrator account (email, password, displayName, instanceName, allowRegistration, sharingMode, createSampleData (adds the MindSift help as notes in a folder, in the server's language; no other sample data, that is demo mode only), defaultLanguage: becomes the server's default language and the admin's own, 400 for unknown codes; backupEnabled, backupTime (HH:MM, server time zone), backupRetentionDays (1–365): daily backups as in the admin settings, left out = unchanged (off, 03:00, 3 days on a new server), 400 for another time format or retention, before the account is created; timeZone: the server's time zone as in the admin settings (IANA name, \"\" = not set), in effect at once, left out = unchanged, 400 for an unknown zone); only while no accounts exist (403 afterwards, also when ADMIN_USER/ADMIN_PASSWORD created the admin at startup). setupCode: the one-time code from the server log (XXXX-XXXX-XXXX, case, spaces and dashes do not matter), required while setupCodeRequired is true: without it 403 setup_code_required, wrong 403 setup_code_invalid, three wrong codes from one address 429 for 15 minutes; gone once the admin exists. The body must be sent as Content-Type: application/json (415 otherwise). Sample data comes in German for German accounts, otherwise in English",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/desktop": {
+      "post": {
+        "summary": "Session of the desktop app",
+        "description": "Only in the desktop app (404 on a server): a session for the app's one account, answered like a sign-in ({token, user}). The app calls it whenever it has no session; there is no sign-in screen. Refused (403) for another Origin than the app window's or a cross-site Sec-Fetch-Site; the body must be sent as Content-Type: application/json (415 otherwise)",
         "tags": [
           "Public"
         ],

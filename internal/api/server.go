@@ -101,6 +101,10 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	}
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
 	srv.prepareSetupCode()
+	if srv.desktopMode() {
+		// The window asks again (handleDesktopSession) if this fails
+		logFailed("Creating the desktop account", srv.prepareDesktopAccount())
+	}
 	srv.metrics = newAPIMetrics(srv)
 	var oidcOff string
 	srv.oidc, oidcOff = newOIDCService(cfg)
@@ -235,6 +239,10 @@ func (s *Server) Router() http.Handler {
 	if s.cfg.BaseURLSet {
 		allowedOrigins = []string{strings.TrimRight(s.cfg.BaseURL, "/")}
 	}
+	if s.desktopMode() {
+		// Only the app's own window (desktop.go)
+		allowedOrigins = []string{s.cfg.Desktop.Origin}
+	}
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -255,11 +263,13 @@ func (s *Server) Router() http.Handler {
 	}
 	r.Get("/api/v1/auth/status", s.handleAuthStatus)
 	r.Get("/api/v1/legal/{type}", s.handleLegalText)
-	r.Post("/api/v1/auth/setup", s.handleFirstBootSetup)
+	r.Post("/api/v1/auth/setup", s.notInDesktop(s.handleFirstBootSetup))
+	// The desktop app's window signs its one account in (desktop.go; 404 on a normal server)
+	r.Post("/api/v1/auth/desktop", s.handleDesktopSession)
 	r.Post("/api/v1/auth/verify-email", s.handleVerifyEmail)
 	r.Post("/api/v1/auth/confirm-email", s.handleConfirmEmailChange)
 	r.Post("/api/v1/auth/resend-verification", s.handleResendVerification)
-	r.Post("/api/v1/auth/register", s.handleRegister)
+	r.Post("/api/v1/auth/register", s.notInDesktop(s.handleRegister))
 	r.Post("/api/v1/auth/login", s.handleLogin)
 	r.Post("/api/v1/auth/login/mfa", s.handleLoginMFA)
 	r.Post("/api/v1/auth/login/mfa/passkey/options", s.passkeysOnly(s.handleMFAPasskeyOptions))
@@ -430,11 +440,11 @@ func (s *Server) Router() http.Handler {
 		r.Put("/api/v1/workspace/tags/{tag}/note", s.handleUpdateTagPageNote)
 
 		r.Get("/api/v1/journal", s.handleGetJournal)
-		r.Get("/api/v1/push/key", s.handlePushKey)
+		r.Get("/api/v1/push/key", s.notInDesktop(s.handlePushKey))
 		r.Get("/api/v1/push/devices", s.handlePushDevices)
-		r.Post("/api/v1/push/subscribe", s.handlePushSubscribe)
+		r.Post("/api/v1/push/subscribe", s.notInDesktop(s.handlePushSubscribe))
 		r.Post("/api/v1/push/unsubscribe", s.handlePushUnsubscribe)
-		r.Post("/api/v1/push/test", s.handlePushTest)
+		r.Post("/api/v1/push/test", s.notInDesktop(s.handlePushTest))
 		r.Post("/api/v1/journal/{date}", s.handleOpenJournalDay)
 		r.Get("/api/v1/documents", s.handleGetDocuments)
 		r.Get("/api/v1/documents/todos", s.handleGetNoteTodos)
@@ -519,15 +529,15 @@ func (s *Server) Router() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(s.staffMiddleware)
 			r.Get("/api/v1/admin/users", s.handleAdminGetUsers)
-			r.Post("/api/v1/admin/users", s.notInDemo(s.handleAdminCreateUser))
+			r.Post("/api/v1/admin/users", s.notInDesktop(s.notInDemo(s.handleAdminCreateUser)))
 			r.Patch("/api/v1/admin/users/{id}", s.notInDemo(s.handleAdminUpdateUser))
 			r.Delete("/api/v1/admin/users/{id}", s.notInDemo(s.handleAdminDeleteUser))
-			r.Post("/api/v1/admin/users/{id}/approve", s.notInDemo(s.handleAdminApproveUser))
+			r.Post("/api/v1/admin/users/{id}/approve", s.notInDesktop(s.notInDemo(s.handleAdminApproveUser)))
 
 			r.Get("/api/v1/admin/invites", s.handleAdminGetInvites)
-			r.Post("/api/v1/admin/invites", s.handleAdminCreateInvite)
+			r.Post("/api/v1/admin/invites", s.notInDesktop(s.handleAdminCreateInvite))
 			r.Delete("/api/v1/admin/invites/{id}", s.handleAdminDeleteInvite)
-			r.Post("/api/v1/admin/invites/{id}/send", s.notInDemo(s.handleAdminSendInvite))
+			r.Post("/api/v1/admin/invites/{id}/send", s.notInDesktop(s.notInDemo(s.handleAdminSendInvite)))
 
 			// Organizations decide who may share with whom
 			r.Get("/api/v1/admin/organizations", s.handleAdminGetOrganizations)
@@ -551,6 +561,8 @@ func (s *Server) Router() http.Handler {
 			r.Post("/api/v1/admin/backups", s.notInDemo(s.handleAdminRunBackup))
 			r.Get("/api/v1/admin/backups/{name}", s.handleAdminDownloadBackup)
 			r.Delete("/api/v1/admin/backups/{name}", s.notInDemo(s.handleAdminDeleteBackup))
+			r.Get("/api/v1/admin/backups/location", s.onlyInDesktop(s.handleBackupLocation))
+			r.Put("/api/v1/admin/backups/location", s.onlyInDesktop(s.handleSetBackupLocation))
 			r.Get("/api/v1/admin/backups/deleted", s.handleAdminDeletedBackups)
 			r.Get("/api/v1/admin/backups/deleted/{userId}/{name}", s.handleAdminDownloadDeletedBackup)
 			r.Put("/api/v1/admin/settings", s.notInDemo(s.handleAdminUpdateSettings))

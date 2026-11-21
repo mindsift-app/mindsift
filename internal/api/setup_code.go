@@ -83,7 +83,7 @@ func (c *setupCodeState) clear() {
 // and without ADMIN_USER. A database that cannot be asked counts as empty: the setup then needs a code
 // rather than being open.
 func (s *Server) prepareSetupCode() {
-	if s.cfg.DemoMode || s.cfg.InitialAdmin.Set() {
+	if s.cfg.DemoMode || s.cfg.InitialAdmin.Set() || s.desktopMode() {
 		return
 	}
 	if count, err := s.store.CountUsers(); err == nil && count > 0 {
