@@ -66,7 +66,7 @@ import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
 import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
 import { ownClipboardText } from '../../lib/outlineMarkdown';
-import { caretAfterChange, caretAtPoint, caretInElementAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
+import { caretAfterChange, caretAtPoint, mapRenderedOffsetToRaw, rawOffsetAtPoint } from '../../lib/caret';
 import { keepOutlineRowNear, observeOutlineRow } from '../../lib/outlineNear';
 import { droppedText, transferText } from '../../lib/dropText';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
@@ -571,13 +571,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   const focusAtPoint = (clientX: number, clientY: number) => {
     const ta = textareaRef.current;
     if (!ta) return;
-    let pos = ta.value.length;
     const span = renderedTextRef.current;
-    if (span) {
-      const at = caretAtPoint(clientX, clientY);
-      const inText = at && span.contains(at.node) ? at : caretInElementAtPoint(span, clientX, clientY);
-      if (inText) pos = rawOffsetAt(inText.node, inText.offset);
-    }
+    const pos = (span && rawOffsetAtPoint(span, ta.value, clientX, clientY)?.offset) ?? ta.value.length;
     ta.focus();
     ta.setSelectionRange(pos, pos);
   };
@@ -1146,11 +1141,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     const at = caretAtPoint(e.clientX, e.clientY);
     if (at?.node === ta) pos = Math.min(at.offset, pos);
     else if (intoField) pos = ta.selectionStart ?? pos;
-    else if (span) {
-      // The hit test of WebKit stops at the row (content-visibility, index.css): then the nearest character
-      const inText = at && span.contains(at.node) ? at : caretInElementAtPoint(span, e.clientX, e.clientY);
-      if (inText) pos = rawOffsetAt(inText.node, inText.offset);
-    }
+    // On the rendered text; WebKit's hit test may stop at the row (content-visibility, index.css)
+    else if (span) pos = rawOffsetAtPoint(span, ta.value, e.clientX, e.clientY)?.offset ?? pos;
     ta.focus();
     ta.setSelectionRange(pos, pos);
     insertTransferText(e.dataTransfer, pos, pos, null, false);

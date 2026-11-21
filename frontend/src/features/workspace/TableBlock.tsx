@@ -16,7 +16,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { ActionMenu, ActionMenuItem } from '../../components/ActionMenu';
 import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown';
-import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
+import { rawOffsetAtPoint } from '../../lib/caret';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
 import { ownClipboardText } from '../../lib/outlineMarkdown';
 import {
@@ -408,15 +408,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
     const ta = cellRefs.current.get(cellKey(r, c));
     if (!ta) return;
     const text = rows[r][c];
-    let pos = text.length;
-    const view = e.currentTarget;
-    const at = caretAtPoint(e.clientX, e.clientY);
-    if (at && view.contains(at.node)) {
-      const range = document.createRange();
-      range.setStart(view, 0);
-      range.setEnd(at.node, at.offset);
-      pos = mapRenderedOffsetToRaw(text, view.textContent || '', range.toString().length);
-    }
+    const pos = rawOffsetAtPoint(e.currentTarget, text, e.clientX, e.clientY)?.offset ?? text.length;
     ta.focus();
     ta.setSelectionRange(pos, pos);
   };
