@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import i18n from '../../../i18n';
 import { Organization, SharingMode, SystemSettings, User, UserInvite, UserRole } from '../../../lib/types';
-import { api, setCurrentPeopleSearch, setCurrentSharingMode, triggerHaptic } from '../../../lib/api';
+import { api, isDesktopApp, setCurrentPeopleSearch, setCurrentSharingMode, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
 import { DEFAULT_BACKUP_RETENTION_DAYS, DEFAULT_BACKUP_TIME } from '../../../lib/backupDefaults';
 import { askConfirm } from '../../../components/askConfirm';
@@ -555,7 +555,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       if (saved.audioCompression) {
         setServerAudioSettings({ compression: saved.audioCompression, bitrate: saved.audioBitrate, limitMB: saved.audioLimitMB, uploads: saved.audioUploads });
       }
-      setStatusMsg({ type: 'ok', text: i18n.t('settings:server.saved') });
+      setStatusMsg({ type: 'ok', text: isDesktopApp() ? i18n.t('settings:server.savedDesktop') : i18n.t('settings:server.saved') });
     } catch (err) {
       setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:profile.saveFailed')) });
     }

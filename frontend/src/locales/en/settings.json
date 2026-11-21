@@ -17,12 +17,16 @@
     "title": "Time zone",
     "notSet": "Not set ({{zone}})",
     "now": "Server time now: {{time}} ({{zone}})",
+    "nowDesktop": "Time now: {{time}} ({{zone}})",
     "source": {
       "setting": "Source: this setting",
       "env": "Source: environment variable TZ",
-      "default": "Source: default UTC – no time zone is set here or through TZ"
+      "envDesktop": "Source: the system’s time zone",
+      "default": "Source: default UTC – no time zone is set here or through TZ",
+      "defaultDesktop": "Source: default UTC – the system names no time zone, please choose one here"
     },
-    "hint": "One time zone for the whole server: due dates, alarms, the daily summary, backups and dates in emails follow it. A change applies at once."
+    "hint": "One time zone for the whole server: due dates, alarms, the daily summary, backups and dates in emails follow it. A change applies at once.",
+    "hintDesktop": "The time zone of this instance: due dates, alarms, the daily summary and backups follow it. When not set, the system’s applies. A change takes effect at once."
   },
   "user": {
     "backTitle": "Back to the overview",
@@ -440,6 +444,7 @@
   "data": {
     "title": "Export & import",
     "intro": "Download your data as a backup or Markdown archive, restore server backups or import MindSift data and Obsidian vaults.",
+    "introDesktop": "Download your data as a backup or Markdown archive, restore backups of this instance, or import MindSift data and Obsidian vaults.",
     "backupTitle": "Full backup (.zip)",
     "backupHint": "All your thoughts, tasks, notes and lists as JSON, with the images and voice notes of your notes, packed into a ZIP file. “Import MindSift data” restores it completely. The <c>Obsidian</c> folder holds everything as Markdown as well, which Obsidian or any text editor opens directly, even without MindSift.",
     "vaultTitle": "Markdown archive for Obsidian (.zip)",
@@ -670,6 +675,7 @@
     "retentionNeverHint": "When on, everyone can choose “never” under Account settings → Retention and keep done and deleted things. When off, “never” falls back to the area's default (e.g. 30 days).",
     "mcpHint": "When on, Claude Code, Codex & co. can access MindSift with an API key, and claude.ai or ChatGPT as a connector. When off, the MCP endpoint and the connector sign-in are switched off; existing connector connections pause, API keys keep working via curl.",
     "saved": "Server settings saved.",
+    "savedDesktop": "Settings saved.",
     "peopleSearch": "People search",
     "peopleSearchHint": "On, matching names are suggested when sharing and in groups. Off, people need the exact e-mail address or username; those already working on something together still see each other’s names there.",
     "publicLinks": "Public links to notes",
@@ -759,7 +765,9 @@
   "admin": {
     "loadFailed": "Loading the administration data failed",
     "title": "Server administration",
+    "titleDesktop": "Administration",
     "subtitle": "Users, invites, organizations, sharing & mail server",
+    "subtitleDesktop": "Name, time zone, backups, media and AI agents of this instance",
     "badge": "Server administrator",
     "nav": {
       "users": "Users & invitations",
@@ -770,7 +778,9 @@
       "sharing": "Sharing",
       "sharingHint": "Mode, people search, links & calendar",
       "server": "Server",
+      "serverDesktop": "Instance",
       "serverHint": "Name, time zone, version & network",
+      "serverHintDesktop": "Name, language, time zone & version",
       "data": "Data",
       "dataHint": "Backups & retention",
       "media": "Media",
@@ -786,6 +796,7 @@
       "signinIntro": "Who may register without an invitation, who needs a second factor, and signing in through a provider (single sign-on).",
       "sharingIntro": "Who may share with whom, whether names are suggested while typing, public links to notes and calendar subscriptions.",
       "serverIntro": "This instance's name, default language and time zone, the installed version and what the server may reach on the network.",
+      "serverIntroDesktop": "Name, default language and time zone of this instance, the installed version and where alarms may go.",
       "dataIntro": "Daily backups, and whether done and deleted things may be kept for good.",
       "mediaIntro": "Whether images and audio files may go into notes, how strongly they are compressed, how large they may be and how much storage each person has for them.",
       "aiIntro": "This server's speech recognition and whether AI agents may connect over MCP."
@@ -908,8 +919,11 @@
   "backups": {
     "restoreFailed": "Restoring failed",
     "serverTitle": "Server backups",
+    "serverTitleDesktop": "Backups",
     "serverHint": "Automatic daily backups of your data on the server (if the administration has switched them on).",
+    "serverHintDesktop": "The daily backups of this instance (switched on and off under Administration → Data).",
     "none": "No server backups yet.",
+    "noneDesktop": "No backups yet.",
     "restoreMode": "Kind of restore",
     "replace": "Replace",
     "mergeHint": "Keep what exists, add the backup next to it.",

@@ -166,7 +166,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
 
       <div className="border border-border divide-y divide-border bg-panel">
         {files.length === 0 ? (
-          <p className="p-3 text-[11px] text-faint">{t('backups.none')}</p>
+          <p className="p-3 text-[11px] text-faint">{desktop ? t('backups.noneDesktop') : t('backups.none')}</p>
         ) : (
           files.map((f) => (
             <div key={f.name} className="px-3 py-2 flex items-center justify-between gap-3">
