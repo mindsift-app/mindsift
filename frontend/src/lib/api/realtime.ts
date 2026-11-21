@@ -1,6 +1,8 @@
-// Realtime transport: WebSocket, with SSE and long polling as fallbacks behind proxies
+// Realtime transport: WebSocket, with SSE and long polling as fallbacks behind proxies. The desktop app's
+// window has no WebSocket at all (the webview hands requests to the server in-process): there the server
+// names the transport (AuthStatus.desktop.realtime) and nothing else is tried.
 import { WSMessage } from '../types';
-import { ApiError, authHeaders, getToken, request } from './client';
+import { ApiError, authHeaders, getDesktop, getToken, request } from './client';
 import { api } from './rest';
 
 // poll: long polling, when a proxy lets neither WebSocket nor event streams through
@@ -205,7 +207,7 @@ function wsAttemptFailed(reason: string) {
 // in needs one); the SSE stream stays until it opens. Resolves whether a WebSocket is open within timeoutMs.
 export function tryWebSocket(timeoutMs = 4000): Promise<boolean> {
   if (isWebSocketConnected()) return Promise.resolve(true);
-  if (!getToken()) return Promise.resolve(false);
+  if (!getToken() || getDesktop()) return Promise.resolve(false);
   isWsBlockedByProxy = false;
   void connectWebSocket();
   return new Promise((resolve) => {
@@ -228,7 +230,7 @@ export async function connectSSE(rooms?: string[]): Promise<void> {
   clearTimeout(wsConnectionWatchdog);
   clearTimeout(sseFirstEventWatchdog);
 
-  if (isSseBufferedByProxy) {
+  if (isSseBufferedByProxy || getDesktop()?.realtime === 'poll') {
     void connectPoll();
     return;
   }
@@ -422,6 +424,12 @@ export async function connectWebSocket(): Promise<void> {
   const token = getToken();
   if (!token) return;
   manualDisconnect = false;
+
+  // Desktop app: SSE (Linux) or long polling (Windows, connectSSE hands over), never a WebSocket
+  if (getDesktop()) {
+    if (isRealtimeConnected() || activeGlobalSSE || pollRunning) return;
+    return connectSSE();
+  }
 
   // If a proxy blocked the WebSocket a short while ago, do not try it again yet; stay on SSE
   if (isWsBlockedByProxy && wsBlockedSince() > Date.now() - WS_BLOCK_RETRY_MS) {

@@ -24,6 +24,13 @@ export interface SetupInfo {
   serverTime?: ServerTime;
 }
 
+// Desktop mode of the server (AuthStatus.desktop): the platform and the realtime transport of the window
+// (Linux streams server-sent events, Windows' webview buffers responses, so long polling there)
+export interface DesktopInfo {
+  platform: 'linux' | 'windows';
+  realtime: 'sse' | 'poll';
+}
+
 export interface AuthStatus {
   needsSetup: boolean;
   // The wizard asks for the one-time setup code the server wrote to its log (not in the demo, not with ADMIN_USER)
@@ -38,6 +45,9 @@ export interface AuthStatus {
   emailVerification?: boolean;
   instanceName: string;
   demoMode?: boolean;
+  // The server runs inside the desktop app: one account, no sign-in (POST /auth/desktop gives the session),
+  // nothing that needs other people or a public address; realtime is the transport the window can use
+  desktop?: DesktopInfo;
   sharingMode?: SharingMode;
   // "Passwort vergessen?" works (SMTP and BASE_URL configured)
   passwordReset?: boolean;

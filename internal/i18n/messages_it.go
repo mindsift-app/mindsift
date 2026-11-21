@@ -151,6 +151,7 @@ var messagesIT = map[string]string{
 	"Geräte konnten nicht geladen werden":                                                       "Non è stato possibile caricare i dispositivi",
 	"Im Archiv wurden keine Markdown-Notizen gefunden":                                          "Nell’archivio non sono state trovate note Markdown",
 	"Import abgebrochen, nichts übernommen":                                                     "Importazione annullata, non è stato conservato nulla",
+	"In der Desktop-App nicht verfügbar":                                                        "Non disponibile nell’app desktop",
 	"In der Demo deaktiviert":                                                                   "Disattivato nella demo",
 	"In der URL sind nur API-Keys erlaubt; Sitzungs-Tokens gehören in den Authorization-Header": "Nell’URL sono ammesse solo chiavi API; i token di sessione vanno nell’intestazione Authorization",
 	"Jemand anderes bearbeitet gerade einen Punkt in diesem Ast. Bitte kurz warten.":            "Qualcun altro sta modificando un punto di questo ramo. Attendi un momento.",

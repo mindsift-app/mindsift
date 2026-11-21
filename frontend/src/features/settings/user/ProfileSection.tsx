@@ -6,7 +6,7 @@ import { FormSheet } from '../../../components/FormSheet';
 import { StatusToast } from '../../../components/StatusToast';
 import { useProfileSettings } from './useProfileSettings';
 import { PendingEmailNote } from './PendingEmailNote';
-import { getCurrentOidc } from '../../../lib/api';
+import { getCurrentOidc, isDesktopApp } from '../../../lib/api';
 
 // Kontoeinstellungen → Profil (state in useProfileSettings); password, two-factor sign-in and sessions
 // are in Sicherheit (SecuritySection)
@@ -172,6 +172,8 @@ export function ProfileSection({
             <p className="mt-1 text-[10px] text-faint">{t('profile.usernameHint')}</p>
           </div>
 
+          {/* The desktop app sends no mail and has no sign-in: no address */}
+          {!isDesktopApp() && (
           <div>
             <label className="block text-muted font-medium mb-1">
               {t('settings:profile.emailLogin')}
@@ -191,6 +193,7 @@ export function ProfileSection({
             )}
             <PendingEmailNote user={currentUser} onUserUpdated={onUserUpdated} />
           </div>
+          )}
         </div>
 
         {needsCurrentPassword && (

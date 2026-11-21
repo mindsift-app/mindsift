@@ -385,7 +385,8 @@ func (s *Server) mfaRequiredFor(user *domain.User) bool {
 // mfaSetupMissing: required but not set up yet. Until it is, the account's sessions reach only what
 // mfaSetupPath lets through. Never in the demo, whose accounts cannot set it up.
 func (s *Server) mfaSetupMissing(user *domain.User) bool {
-	return !s.cfg.DemoMode && s.mfaRequiredFor(user) && !s.store.MFAActive(user.ID)
+	// The desktop app has no sign-in, so no second factor either
+	return !s.cfg.DemoMode && !s.desktopMode() && s.mfaRequiredFor(user) && !s.store.MFAActive(user.ID)
 }
 
 // mfaSetupMissingFor: mfaSetupMissing for the account's session sessionID. A session started through the OIDC
@@ -494,7 +495,7 @@ func (s *Server) handleMFAStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	_, _, passkeysOff := s.passkeyRP()
 	writeJSON(w, http.StatusOK, map[string]any{
-		"available": !s.cfg.DemoMode,
+		"available": !s.cfg.DemoMode && !s.desktopMode(),
 		// enabled: the account signs in with a second factor (app or passkey)
 		"enabled":  totp["enabled"] == true || len(passkeys) > 0,
 		"totp":     totp,

@@ -1,7 +1,7 @@
 import { Brain, CircleQuestionMark, LogOut, Palette, Settings, Shield, Smartphone, Users, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../lib/types';
-import { isSharingDisabled, triggerHaptic } from '../lib/api';
+import { isDesktopApp, isSharingDisabled, triggerHaptic } from '../lib/api';
 import { ThemeId, ThemeOption } from '../lib/theme';
 import { UserAvatar } from '../components/UserAvatar';
 import { ThemeQuickPicker } from '../components/ThemeQuickPicker';
@@ -122,16 +122,18 @@ export function ProfileDropdown({
         )}
       </div>
 
-      {/* Logout */}
-      <div className="py-1">
-        <button
-          onClick={handleLogout}
-          className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 text-status-err hover:bg-status-err-bg transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>{t('profile.logout')}</span>
-        </button>
-      </div>
+      {/* Logout; not in the desktop app, which has no sign-in to return to */}
+      {!isDesktopApp() && (
+        <div className="py-1">
+          <button
+            onClick={handleLogout}
+            className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 text-status-err hover:bg-status-err-bg transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t('profile.logout')}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -292,20 +294,22 @@ export function MobileProfileSheet({
           )}
         </div>
 
-        {/* Logout */}
-        <div className="pt-3">
-          <button
-            type="button"
-            onClick={() => {
-              setShowMobileProfile(false);
-              handleLogout();
-            }}
-            className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-status-err hover:bg-status-err-bg transition-colors text-xs font-medium cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>{t('profile.logout')}</span>
-          </button>
-        </div>
+        {/* Logout; not in the desktop app */}
+        {!isDesktopApp() && (
+          <div className="pt-3">
+            <button
+              type="button"
+              onClick={() => {
+                setShowMobileProfile(false);
+                handleLogout();
+              }}
+              className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-status-err hover:bg-status-err-bg transition-colors text-xs font-medium cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>{t('profile.logout')}</span>
+            </button>
+          </div>
+        )}
 
         {/* Version & About Hint on Mobile */}
         <div className="pt-2 text-center text-[10px] text-faint font-mono">

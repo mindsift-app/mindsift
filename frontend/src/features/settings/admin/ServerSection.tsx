@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
 import { SelectMenu } from '../../../components/SelectMenu';
+import { isDesktopApp } from '../../../lib/api';
 
 // Administration → Server: the instance itself, its version and what the server may reach outside
 // (state in useAdminSettings)
@@ -71,8 +72,8 @@ export function ServerSection({
         <TimeZoneSetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
       </div>
 
-      {/* Imprint, privacy notice and the footer's own link */}
-      <LegalSettingsCard settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
+      {/* Imprint, privacy notice and the footer's own link; the desktop app has no public pages */}
+      {!isDesktopApp() && <LegalSettingsCard settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />}
 
       {/* Link previews for the whole server: off, nothing is fetched and the app shows no cards */}
       <LinkPreviewSetting settings={settings} demoMode={demoMode} onSave={(patch) => handleSaveSystemSettings(patch)} />

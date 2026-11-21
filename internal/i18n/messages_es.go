@@ -151,6 +151,7 @@ var messagesES = map[string]string{
 	"Geräte konnten nicht geladen werden":                                                       "No se pudieron cargar los dispositivos",
 	"Im Archiv wurden keine Markdown-Notizen gefunden":                                          "No se encontraron notas Markdown en el archivo",
 	"Import abgebrochen, nichts übernommen":                                                     "Importación cancelada, no se ha conservado nada",
+	"In der Desktop-App nicht verfügbar":                                                        "No disponible en la aplicación de escritorio",
 	"In der Demo deaktiviert":                                                                   "Desactivado en la demo",
 	"In der URL sind nur API-Keys erlaubt; Sitzungs-Tokens gehören in den Authorization-Header": "En la URL solo se permiten claves API; los tokens de sesión van en la cabecera Authorization",
 	"Jemand anderes bearbeitet gerade einen Punkt in diesem Ast. Bitte kurz warten.":            "Otra persona está editando un punto de esta rama. Espera un momento.",
