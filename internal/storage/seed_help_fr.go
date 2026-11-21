@@ -4,27 +4,27 @@ import "github.com/mindsift-app/mindsift/internal/domain"
 
 // seedHelpNotesFR: the help notes in French, see seedHelpNotes. Same notes, blocks and links as the English
 // ones (seed_en.go), without the parts that only fit the online demo (which has its help in English).
-func (s *Store) seedHelpNotesFR(user *domain.User) {
+func (s *Store) seedHelpNotesFR(user *domain.User, desktop bool) {
 	const folder = "Aide MindSift"
 	_, _ = s.CreateFolder(user.ID, folder)
 	help := func(title, icon string, spec []seedBlock) {
-		_, _ = s.CreateDocument(user.ID, "", title, icon, folder, seedBlocks(spec), []string{"aide"}, false)
+		_, _ = s.CreateDocument(user.ID, "", title, icon, folder, seedBlocks(forEdition(spec, desktop)), []string{"aide"}, false)
 	}
 	help("Premiers pas", "", []seedBlock{
 		{typ: "callout", text: "Bienvenue ! Ces notes t'expliquent MindSift. Tout ce qui se trouve ici est du contenu d'exemple – tu peux le modifier, le déplacer et le supprimer sans hésiter. #aide"},
 		{typ: "h2", text: "L'idée en trois étapes"},
 		{typ: "numbered", text: "**Capturer :** tout ce qui te passe par la tête va directement dans la barre du haut (Quick Dump) – touche `C` ou `/`, le + sur le téléphone."},
 		{typ: "numbered", text: "**Trier :** plus tard, tu passes tes pensées en revue dans le Triage : jeter, tâche, note ou élément de liste."},
-		{typ: "numbered", text: "**Approfondir :** les tâches reçoivent des sous-tâches et des échéances, les notes deviennent des plans, les listes se partagent avec la famille."},
+		{typ: "numbered", text: orDesktop(desktop, "**Approfondir :** les tâches reçoivent des sous-tâches et des échéances, les notes deviennent des plans, les listes se partagent avec la famille.", "**Approfondir :** les tâches reçoivent des sous-tâches et des échéances, les notes deviennent des plans, les listes aident pour les courses et les bagages.")},
 		{typ: "h2", text: "Pour continuer"},
 		{level: 1, text: "[[Notes et outliner]] – puces, niveaux, zoom et liens"},
 		{level: 1, text: "[[Essayer le zoom]] – un plan sur dix niveaux"},
 		{level: 1, text: "[[Tâches et Kanban]] – listes, colonnes, corbeille"},
-		{level: 1, text: "[[Listes et courses]] – faire les courses et la valise à plusieurs"},
+		{level: 1, text: "[[Listes et courses]] – " + orDesktop(desktop, "faire les courses et la valise à plusieurs", "faire les courses et la valise")},
 		{level: 1, text: "[[Raccourcis clavier]] – travailler plus vite"},
 		{level: 1, text: "[[Saisie vocale]] – dicter au lieu de taper"},
-		{level: 1, text: "[[Partager et modifier à plusieurs]]"},
-		{level: 1, text: "[[API et domotique]] – connecter Home Assistant et des agents IA"},
+		{serverOnly: true, level: 1, text: "[[Partager et modifier à plusieurs]]"},
+		{level: 1, text: "[[API et domotique]] – " + orDesktop(desktop, "connecter Home Assistant et des agents IA", "connecter des agents IA et des scripts")},
 	})
 	help("Notes et outliner", "", []seedBlock{
 		{typ: "h2", text: "Puces et niveaux"},
@@ -82,7 +82,7 @@ func (s *Store) seedHelpNotesFR(user *domain.User) {
 	help("Listes et courses", "🛒", []seedBlock{
 		{text: "Les catégories viennent des hashtags : `lait d'avoine #frais` atterrit sous « frais »"},
 		{text: "Les quantités vont dans leur propre champ, p. ex. `500 g` ou `3x`"},
-		{text: "Les listes partagées montrent immédiatement ce qui est coché à tout le monde – idéal pour les courses de la semaine"},
+		{serverOnly: true, text: "Les listes partagées montrent immédiatement ce qui est coché à tout le monde – idéal pour les courses de la semaine"},
 		{text: "Les éléments cochés disparaissent d'eux-mêmes au bout d'une semaine (réglable sous Rétention)"},
 	})
 	help("Raccourcis clavier", "⌨️", []seedBlock{
@@ -102,15 +102,20 @@ func (s *Store) seedHelpNotesFR(user *domain.User) {
 		{text: "Sur le téléphone : maintenir le + appuyé lance tout de suite un enregistrement"},
 		{text: "Avec ton propre serveur Whisper, l'enregistrement reste sur ton serveur ; sous Paramètres du compte → Saisie vocale, tu choisis Whisper ou la reconnaissance du navigateur"},
 	})
-	help("Partager et modifier à plusieurs", "🤝", []seedBlock{
-		{text: "Les notes, dossiers, listes de tâches et listes peuvent être partagés avec des personnes ou des groupes – en modification ou en lecture seule"},
-		{text: "Plusieurs personnes écrivent en même temps dans une note partagée ; celui qui tape dans une puce la réserve un instant"},
-		{text: "Les tâches des listes partagées peuvent être attribuées à des personnes et suivies"},
-	})
+	// Nobody to share with in the desktop app
+	if !desktop {
+		help("Partager et modifier à plusieurs", "🤝", []seedBlock{
+			{text: "Les notes, dossiers, listes de tâches et listes peuvent être partagés avec des personnes ou des groupes – en modification ou en lecture seule"},
+			{text: "Plusieurs personnes écrivent en même temps dans une note partagée ; celui qui tape dans une puce la réserve un instant"},
+			{text: "Les tâches des listes partagées peuvent être attribuées à des personnes et suivies"},
+		})
+	}
 	help("API et domotique", "🔌", []seedBlock{
 		{text: "Sous Paramètres du compte → API, tu crées des clés avec exactement les droits dont un appareil a besoin"},
+		{desktopOnly: true, text: "Dans l'application de bureau, l'API n'est d'abord disponible que pour l'application elle-même : sous Paramètres du compte → API, active « Accessible aux programmes locaux », puis les programmes de cet ordinateur l'atteignent sur 127.0.0.1 (le port y figure)"},
 		{typ: "h3", text: "Interroger les tâches du jour"},
-		{typ: "code", lang: "bash", text: "curl -H \"X-API-Key: mindsift_sec_…\" \\\n  \"https://mindsift.example.com/api/v1/tasks?due=today&status=open\""},
+		{serverOnly: true, typ: "code", lang: "bash", text: "curl -H \"X-API-Key: mindsift_sec_…\" \\\n  \"https://mindsift.example.com/api/v1/tasks?due=today&status=open\""},
+		{desktopOnly: true, typ: "code", lang: "bash", text: "curl -H \"X-API-Key: mindsift_sec_…\" \\\n  \"http://127.0.0.1:18890/api/v1/tasks?due=today&status=open\""},
 		{typ: "h3", text: "Agents IA (MCP)"},
 		{text: "Claude Code, Codex et d'autres agents lisent et gèrent les tâches, listes et notes via `/api/v1/mcp`"},
 		{text: "Tout ce qu'une clé crée ou modifie porte un petit badge avec son nom"},

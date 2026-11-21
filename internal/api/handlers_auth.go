@@ -340,7 +340,7 @@ func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupCh
 	}
 
 	if c.CreateSampleData {
-		logFailed("Creating the help notes", s.store.SeedHelpNotes(user), "user_id", user.ID)
+		logFailed("Creating the help notes", s.store.SeedHelpNotes(user, s.desktopMode()), "user_id", user.ID)
 	}
 	return nil
 }

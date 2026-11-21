@@ -22,15 +22,18 @@ export function AlarmsSection({
   demoMode: boolean;
 }) {
   const { t } = useTranslation('settings');
-  const NOTIFICATION_EVENT_ROWS: { key: keyof NotificationEvents; label: string }[] = [
+  // The desktop app has one person and no sharing: nothing is shared, assigned or mentioned there
+  const desktop = isDesktopApp();
+  const eventRows: { key: keyof NotificationEvents; label: string; sharing?: boolean }[] = [
     { key: 'due', label: t('alarms.event.due') },
-    { key: 'shared', label: t('alarms.event.shared') },
-    { key: 'assigned', label: t('alarms.event.assigned') },
-    { key: 'mentioned', label: t('alarms.event.mentioned') },
-    { key: 'taskCreated', label: t('alarms.event.taskCreated') },
-    { key: 'taskDone', label: t('alarms.event.taskDone') },
+    { key: 'shared', label: t('alarms.event.shared'), sharing: true },
+    { key: 'assigned', label: t('alarms.event.assigned'), sharing: true },
+    { key: 'mentioned', label: t('alarms.event.mentioned'), sharing: true },
+    { key: 'taskCreated', label: t('alarms.event.taskCreated'), sharing: true },
+    { key: 'taskDone', label: t('alarms.event.taskDone'), sharing: true },
     { key: 'watched', label: t('alarms.event.watched') },
   ];
+  const NOTIFICATION_EVENT_ROWS = eventRows.filter((row) => !(desktop && row.sharing));
   const {
     notificationSettings,
     setNotificationSettings,
@@ -81,7 +84,7 @@ export function AlarmsSection({
             <div>
               <p className="font-semibold text-main">{t('alarms.pauseAll')}</p>
               <p className="text-[11px] text-muted">
-                {t('alarms.pauseAllHint')}
+                {t(desktop ? 'alarms.pauseAllHintDesktop' : 'alarms.pauseAllHint')}
               </p>
             </div>
             <ToggleSwitch
@@ -113,7 +116,7 @@ export function AlarmsSection({
           const hasCustomWebhook = Boolean(customWebhookUrl.trim());
           const hasPush = pushDevices.length > 0;
           // The desktop app sends no mail and has no web push: only Discord and the own webhook
-          const mailPush = !isDesktopApp();
+          const mailPush = !desktop;
           const matrixCols = mailPush ? 'grid-cols-[1fr_auto_auto_auto_auto]' : 'grid-cols-[1fr_auto_auto]';
           return (
             <>

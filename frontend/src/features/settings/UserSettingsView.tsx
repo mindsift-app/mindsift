@@ -157,7 +157,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             <UserIcon className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('user.nav.profile')}</p>
-              <p className="text-[10px] text-faint">{t('user.nav.profileHint')}</p>
+              <p className="text-[10px] text-faint">{t(desktop ? 'user.nav.profileHintDesktop' : 'user.nav.profileHint')}</p>
             </div>
           </button>
 
@@ -219,7 +219,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             <Bell className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('user.nav.alarms')}</p>
-              <p className="text-[10px] text-faint">{t('user.nav.alarmsHint')}</p>
+              <p className="text-[10px] text-faint">{t(desktop ? 'user.nav.alarmsHintDesktop' : 'user.nav.alarmsHint')}</p>
             </div>
           </button>
 

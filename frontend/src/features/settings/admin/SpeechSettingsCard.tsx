@@ -4,6 +4,7 @@ import { SelectMenu } from '../../../components/SelectMenu';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { SpeechSettings, SystemSettings } from '../../../lib/types';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
+import { isDesktopApp } from '../../../lib/api';
 import { NumberField } from '../../../components/NumberField';
 import { SpeechModelPicker } from './SpeechModelPicker';
 
@@ -111,7 +112,7 @@ export function SpeechSettingsCard({
       {/* The Whisper server: address and key, then its models */}
       <div className={`space-y-2 pt-3 border-t border-border ${mode === 'server' ? '' : 'opacity-50'}`}>
         <p className="text-main font-semibold">{t('speech.server')}</p>
-        <p className="text-[11px] text-muted">{t('speech.serverHint')}</p>
+        <p className="text-[11px] text-muted">{t(isDesktopApp() ? 'speech.serverHintDesktop' : 'speech.serverHint')}</p>
         <div className="flex flex-col sm:flex-row gap-2">
           <input
             {...NO_AUTOFILL}

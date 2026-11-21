@@ -61,7 +61,7 @@ export function ServerSection({
         <div className="p-4 flex flex-wrap items-center justify-between gap-4">
           <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
             <p className="font-bold text-main">{t('defaultLanguage.title')}</p>
-            <p className="text-[11px] text-muted mt-0.5">{t('defaultLanguage.hint')}</p>
+            <p className="text-[11px] text-muted mt-0.5">{isDesktopApp() ? t('defaultLanguage.hintDesktop') : t('defaultLanguage.hint')}</p>
           </div>
           <SelectMenu
             size="sm"
@@ -98,21 +98,23 @@ export function ServerSection({
         />
       </div>
 
-      {/* Web push only via the push services of the big browsers */}
-      <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
-        <div className="pr-4">
-          <p className="font-bold text-main">{t('server.pushKnownOnly')}</p>
-          <p className="text-[11px] text-muted mt-0.5">
-            {t('server.pushKnownOnlyHint')}
-            {settings.pushKnownServicesOnlyConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'PUSH_KNOWN_SERVICES_ONLY' })}`}
-          </p>
+      {/* Web push only via the push services of the big browsers; the desktop app has no web push */}
+      {!isDesktopApp() && (
+        <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
+          <div className="pr-4">
+            <p className="font-bold text-main">{t('server.pushKnownOnly')}</p>
+            <p className="text-[11px] text-muted mt-0.5">
+              {t('server.pushKnownOnlyHint')}
+              {settings.pushKnownServicesOnlyConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'PUSH_KNOWN_SERVICES_ONLY' })}`}
+            </p>
+          </div>
+          <ToggleSwitch
+            checked={Boolean(settings.pushKnownServicesOnly)}
+            disabled={Boolean(settings.pushKnownServicesOnlyConfiguredViaEnv)}
+            onChange={(pushKnownServicesOnly) => handleSaveSystemSettings({ pushKnownServicesOnly })}
+          />
         </div>
-        <ToggleSwitch
-          checked={Boolean(settings.pushKnownServicesOnly)}
-          disabled={Boolean(settings.pushKnownServicesOnlyConfiguredViaEnv)}
-          onChange={(pushKnownServicesOnly) => handleSaveSystemSettings({ pushKnownServicesOnly })}
-        />
-      </div>
+      )}
     </AdminPage>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CircleArrowUp, Check, ExternalLink, Info } from 'lucide-react';
-import { api } from '../../../lib/api';
+import { api, isDesktopApp } from '../../../lib/api';
 import type { UpdateStatus } from '../../../lib/types';
 import { formatDate } from '../../../lib/format';
 import { APP_VERSION } from '../../../version';
@@ -13,6 +13,8 @@ const UPDATE_COMMAND = 'docker compose pull && docker compose up -d';
 export const UpdateStatusCard: React.FC = () => {
   const { t } = useTranslation('settings');
   const [status, setStatus] = useState<UpdateStatus | null>(null);
+  // The desktop app is updated by installing its new version, not with Docker Compose
+  const desktop = isDesktopApp();
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +55,7 @@ export const UpdateStatusCard: React.FC = () => {
           <span>{t('update.admin.title')}</span>
         </p>
         <p className="text-[11px] text-muted mt-0.5">
-          {status.enabled ? t('update.admin.hint') : t(`update.admin.${status.reason ?? 'off'}`)}
+          {status.enabled ? t(desktop ? 'update.admin.hintDesktop' : 'update.admin.hint') : t(`update.admin.${status.reason ?? 'off'}`)}
         </p>
       </div>
       <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-xs">
@@ -94,10 +96,12 @@ export const UpdateStatusCard: React.FC = () => {
               </a>
             )}
           </div>
-          <p className="text-[11px] text-muted">{t('update.admin.howTo')}</p>
-          <code className="block w-fit max-w-full overflow-x-auto px-2 py-1 rounded-btn bg-panel border border-border font-mono text-[11px] text-main select-all">
-            {UPDATE_COMMAND}
-          </code>
+          <p className="text-[11px] text-muted">{t(desktop ? 'update.admin.howToDesktop' : 'update.admin.howTo')}</p>
+          {!desktop && (
+            <code className="block w-fit max-w-full overflow-x-auto px-2 py-1 rounded-btn bg-panel border border-border font-mono text-[11px] text-main select-all">
+              {UPDATE_COMMAND}
+            </code>
+          )}
         </div>
       )}
     </div>

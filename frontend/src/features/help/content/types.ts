@@ -7,6 +7,8 @@ export interface DocCard {
   category: HelpCategory;
   title: string;
   subtitle?: string;
+  // Title and subtitle in the desktop app, where a card's topic differs (parts of its content: desktop.tsx)
+  desktop?: { title?: string; subtitle?: string };
   icon: React.ComponentType<{ className?: string }>;
   keywords: string[];
   content: React.ReactNode;

@@ -26,6 +26,7 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
+import { InDesktop, NotInDesktop } from './desktop';
 
 const kbd = 'px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent';
 
@@ -38,6 +39,7 @@ const fr: HelpContent = {
       category: 'workspace',
       title: 'Outliner hiérarchique & synchronisation hors ligne',
       subtitle: 'Stockage atomique avec synchronisation collaborative en temps réel',
+      desktop: { title: 'Outliner hiérarchique', subtitle: 'Stockage atomique, en local sur ton ordinateur' },
       icon: FileText,
       keywords: ['titre', 'coller', 'chatgpt', 'claude', 'code', 'workspace', 'outliner', 'base de données', 'sqlite', 'hors ligne', 'indexeddb', 'export', 'markdown', 'sauvegarde'],
       content: (
@@ -48,10 +50,12 @@ const fr: HelpContent = {
             <strong className="text-main">IndexedDB</strong>.
           </p>
           <ul className="space-y-1 list-disc list-inside">
-            <li>
-              <strong className="text-main">Entièrement utilisable hors ligne :</strong> tu peux continuer à travailler sans connexion Internet ;
-              les modifications se synchronisent automatiquement dès que tu te reconnectes.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Entièrement utilisable hors ligne :</strong> tu peux continuer à travailler sans connexion Internet ;
+                les modifications se synchronisent automatiquement dès que tu te reconnectes.
+              </li>
+            </NotInDesktop>
             <li>
               <strong className="text-main">Titre :</strong> Un titre de note compte au plus 60 caractères, pour tenir sur une ligne et rester un nom de fichier utilisable à l'export. Près de la limite, le champ affiche le décompte.
             </li>
@@ -229,9 +233,11 @@ const fr: HelpContent = {
             <li>
               <strong className="text-main">Dans la note :</strong> Le dessin occupe la largeur de la note. Clique dedans, puis faire glisser déplace la vue, Ctrl + molette ou deux doigts zooment ; la molette seule fait toujours défiler la page. Un autre clic y met fin, une vue non enregistrée revient en douceur. Tire le bord inférieur pour changer la hauteur. « Enregistrer la vue » fixe cadrage, zoom et hauteur pour tout le monde, Le bouton de taille passe de la taille recommandée à « tout en grand » (dessins hauts) ou à la hauteur recommandée à déplacer sur le côté (dessins larges). Double-clic ou « Modifier » ouvre l’éditeur ; il démarre avec la main (seule la vue bouge), choisis un autre outil pour modifier. Le bouton aux flèches à côté de « Terminé » quitte sans enregistrer et demande d’abord s’il y a des modifications.
             </li>
-            <li>
-              <strong className="text-main">Dessiner à plusieurs :</strong> Qui ouvre un dessin dessine seul ; les autres voient le point verrouillé (« … modifie ») et peuvent seulement regarder le dessin. Dans les notes partagées, « Dessiner ensemble » en haut de l’éditeur lance un dessin en direct avec l’état actuel (sur téléphone, l’icône de personnes) ; qui le lance en est l’hôte, et la note affiche « Dessin en direct : … ». Qui l’ouvre ensuite choisit « Dessiner aussi » ou « Regarder » et voit les formes, les pointeurs et les sélections des autres dans leur couleur, avec tous les participants en haut de l’éditeur. L’hôte enregistre avec « Terminé » pour tous ; les autres ont « Quitter ». Fermer sans enregistrer pendant que d’autres dessinent ne fait que quitter le dessin, même pour l’hôte : celui qui est là depuis le plus longtemps prend le relais. Seul le dernier à partir abandonne (avec une question s’il y a des modifications) et peut le récupérer quelques secondes avec « Annuler ». Annuler ne reprend que tes propres modifications. Dessiner ensemble demande une connexion WebSocket ; sans elle (certains proxys d’entreprise), tu peux regarder en direct.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Dessiner à plusieurs :</strong> Qui ouvre un dessin dessine seul ; les autres voient le point verrouillé (« … modifie ») et peuvent seulement regarder le dessin. Dans les notes partagées, « Dessiner ensemble » en haut de l’éditeur lance un dessin en direct avec l’état actuel (sur téléphone, l’icône de personnes) ; qui le lance en est l’hôte, et la note affiche « Dessin en direct : … ». Qui l’ouvre ensuite choisit « Dessiner aussi » ou « Regarder » et voit les formes, les pointeurs et les sélections des autres dans leur couleur, avec tous les participants en haut de l’éditeur. L’hôte enregistre avec « Terminé » pour tous ; les autres ont « Quitter ». Fermer sans enregistrer pendant que d’autres dessinent ne fait que quitter le dessin, même pour l’hôte : celui qui est là depuis le plus longtemps prend le relais. Seul le dernier à partir abandonne (avec une question s’il y a des modifications) et peut le récupérer quelques secondes avec « Annuler ». Annuler ne reprend que tes propres modifications. Dessiner ensemble demande une connexion WebSocket ; sans elle (certains proxys d’entreprise), tu peux regarder en direct.
+              </li>
+            </NotInDesktop>
             <li>
               <strong className="text-main">Hors ligne et brouillons :</strong> Ce que tu dessines hors ligne est enregistré dès le retour de la connexion ; un brouillon non enregistré est proposé à la restauration à la prochaine ouverture. Si tout le monde quitte un dessin en direct sans « Terminé », le serveur garde son état environ 10 minutes ; qui choisit de nouveau « Dessiner ensemble » dans ce délai reprend là où il en était.
             </li>
@@ -514,6 +520,7 @@ const fr: HelpContent = {
       category: 'triage',
       title: 'API : curl, domotique & agents IA (MCP)',
       subtitle: 'Lire et modifier tâches et listes via curl ou Home Assistant, injecter des pensées, connecter des agents IA comme Claude Code.',
+      desktop: { title: 'API : curl & agents IA (MCP)', subtitle: 'Lire et modifier tâches et listes via curl, injecter des pensées, connecter des agents IA comme Claude Code.' },
       icon: Bell,
       keywords: ['webhooks', 'api', 'jeton', 'home assistant', 'siri', 'raccourcis', 'automatisation', 'curl', 'mcp', 'ia', 'agent', 'claude', 'codex'],
       content: (
@@ -521,6 +528,11 @@ const fr: HelpContent = {
           <p>
             MindSift dispose d'une API. Dans <em className="text-main">Paramètres du compte → API</em>, crée des clés personnelles et définis précisément par interrupteur ce que chacune peut faire : lire, créer ou modifier tâches, listes, notes et boîte de réception. Ces autorisations s'appliquent aux deux modes d'accès ; les notes ainsi que la lecture et le tri de la boîte de réception ne sont accessibles que via MCP. Une clé n'accède jamais aux paramètres.
           </p>
+          <InDesktop>
+            <p>
+              <strong className="text-main">Dans l'application de bureau :</strong> l'API n'est d'abord disponible que pour l'application elle-même. Dans <em className="text-main">Paramètres du compte → API</em>, active « Accessible aux programmes locaux » : les programmes de cet ordinateur atteignent alors MCP et l'API REST sur <code className="font-mono">127.0.0.1</code> (le port et des exemples prêts à l'emploi y figurent). Elle n'est pas joignable depuis le réseau, par ex. par Home Assistant sur un autre appareil, et il n'y a pas de connexion via claude.ai ou ChatGPT.
+            </p>
+          </InDesktop>
           <p>
             <strong className="text-main">curl et domotique :</strong> avec les droits de lecture, <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">GET /api/v1/thoughts?due=today</code> renvoie les tâches du jour au format JSON (par ex. pour un capteur Home Assistant) ; avec les droits de modification, tu peux cocher des tâches. Via <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code>, Home Assistant, n8n ou des scripts peuvent injecter directement des alertes ou des points dans la boîte de réception, les tâches ou les listes.
           </p>
@@ -581,27 +593,52 @@ const fr: HelpContent = {
             <li>
               <strong className="text-main">Répétition :</strong> sous <em>Répétition</em>, choisis quotidien, hebdomadaire, mensuel ou annuel. Cocher la tâche crée automatiquement la suivante pour la prochaine occurrence.
             </li>
-            <li>
-              <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par e-mail, webhook Discord ou notifications push sur tes appareils à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant). Les alertes par e-mail vont à ton adresse de connexion. Une nouvelle adresse de connexion ne compte qu'après un clic sur le lien de l'e-mail de confirmation qui lui est envoyé ; d'ici là, l'ancienne reste valable. Toutes les heures suivent le fuseau horaire du serveur, que l'administrateur du serveur règle sous <em>Administration du serveur → Serveur</em>.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par e-mail, webhook Discord ou notifications push sur tes appareils à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant). Les alertes par e-mail vont à ton adresse de connexion. Une nouvelle adresse de connexion ne compte qu'après un clic sur le lien de l'e-mail de confirmation qui lui est envoyé ; d'ici là, l'ancienne reste valable. Toutes les heures suivent le fuseau horaire du serveur, que l'administrateur du serveur règle sous <em>Administration du serveur → Serveur</em>.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par <strong className="text-main">webhook Discord</strong> ou webhook HTTP personnalisé à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant), tant que l'application de bureau est ouverte. À régler dans tes paramètres, sous « Alarmes ». Toutes les heures suivent le fuseau horaire de l'instance, réglé sous <em>Administration → Instance</em> (sinon celui du système).
+              </li>
+            </InDesktop>
             <li>
               <strong className="text-main">Tâches récurrentes :</strong> Choisis une répétition dans la fenêtre de détail (quotidienne, jours ouvrables du lundi au vendredi, hebdomadaire, mensuelle ou annuelle). En la cochant, la tâche suivante est créée automatiquement au rythme de l’ancienne date ; cochée en retard, les dates manquées sont sautées (quotidienne, échéance samedi, cochée lundi : la suivante est due mardi). Tu la reconnais à l’icône 🔁.
             </li>
             <li>
               <strong className="text-main">Rappels par tâche :</strong> Dans la fenêtre de détail, coche une ou plusieurs heures sous « Rappel », p. ex. 2 semaines avant et le jour de l’échéance. Pour cette tâche, ils remplacent ton délai et valent pour tous ceux qui reçoivent son alarme d’échéance ; « Par défaut » revient au délai des paramètres. Sans heure, MindSift rappelle des jours entiers avant, à 9 h. Les tâches avec leurs propres rappels portent une petite 🔔.
             </li>
-            <li>
-              <strong className="text-main">Autres notifications :</strong> Quand quelqu’un t’attribue une tâche, qu’une nouvelle tâche arrive dans une liste partagée ou qu’une tâche y est terminée, MindSift peut te prévenir ; chaque événement s’active ou se désactive séparément dans les paramètres, sous « Alarmes ». Les tâches que tu <strong className="text-main">suis</strong> signalent chaque modification (statut, priorité, échéance, texte, description, sous-tâches, attribution …), même cochées dans une note. MindSift ne te signale jamais ce que tu fais toi-même. Plusieurs événements arrivent regroupés dans un seul message. La <strong className="text-main">cloche</strong> (ordinateur : en bas de la barre de gauche ; mobile : à côté de la recherche) rassemble tout ce qui s’est passé ces 14 derniers jours, même sans canal activé ; un clic sur une entrée ouvre la tâche ou la note.
-            </li>
-            <li>
-              <strong className="text-main">Abonnement au calendrier :</strong> Dans <em className="text-main">Paramètres du compte → Abonnement calendrier</em>, tu obtiens un lien secret à ajouter comme abonnement dans Google Agenda, Calendrier d’Apple, Thunderbird ou Outlook. Il affiche tes tâches ouvertes avec échéance et celles des listes de tâches partagées (échues depuis 30 jours jusqu’à dans un an) : les tâches sur la journée comme événements sur la journée, celles avec heure comme événements de 30 minutes, les tâches récurrentes avec leur prochaine date. Le calendrier ne fait qu’afficher, les modifications se font dans MindSift ; les applications de calendrier ne rechargent l’abonnement que toutes les quelques heures. Toute personne qui connaît le lien voit tes tâches : « Créer un nouveau lien » invalide l’ancien, désactiver le supprime.
-            </li>
-            <li>
-              <strong className="text-main">Mentions avec @ :</strong> Dans la description d’une tâche, dans les sous-tâches et dans les notes, <strong className="text-main">@</strong> ouvre une liste de personnes (flèches, Entrée). Celles sans accès apparaissent grisées. La personne mentionnée reçoit une notification (Paramètres → Alarmes, « On m’a mentionné »), même depuis une liste en sourdine ; enregistrer à nouveau n’en envoie pas une deuxième.
-            </li>
-            <li>
-              <strong className="text-main">Menu de la liste (⋯) :</strong> À droite au-dessus de la liste : <strong className="text-main">Mettre en sourdine</strong> (listes partagées seulement : aucune notification de cette liste ; attributions, mentions et tâches suivies arrivent toujours), Partager, Renommer et Supprimer. Si toutes les listes ne tiennent pas dans la ligne, les autres sont derrière « ⋯ n ». Dans une liste partagée, une nouvelle tâche t’est d’abord attribuée ; l’alerte d’échéance va aux personnes attribuées, ou à tous les membres si personne ne l’est.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Autres notifications :</strong> Quand quelqu’un t’attribue une tâche, qu’une nouvelle tâche arrive dans une liste partagée ou qu’une tâche y est terminée, MindSift peut te prévenir ; chaque événement s’active ou se désactive séparément dans les paramètres, sous « Alarmes ». Les tâches que tu <strong className="text-main">suis</strong> signalent chaque modification (statut, priorité, échéance, texte, description, sous-tâches, attribution …), même cochées dans une note. MindSift ne te signale jamais ce que tu fais toi-même. Plusieurs événements arrivent regroupés dans un seul message. La <strong className="text-main">cloche</strong> (ordinateur : en bas de la barre de gauche ; mobile : à côté de la recherche) rassemble tout ce qui s’est passé ces 14 derniers jours, même sans canal activé ; un clic sur une entrée ouvre la tâche ou la note.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Autres notifications :</strong> La <strong className="text-main">cloche</strong> (en bas de la barre de gauche) rassemble les notifications des 14 derniers jours, par ex. les tâches échues ; un clic sur une entrée ouvre la tâche ou la note. Les tâches que tu <strong className="text-main">suis</strong> signalent aussi tes propres modifications si tu l'actives dans les paramètres, sous « Alarmes ».
+              </li>
+            </InDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Abonnement au calendrier :</strong> Dans <em className="text-main">Paramètres du compte → Abonnement calendrier</em>, tu obtiens un lien secret à ajouter comme abonnement dans Google Agenda, Calendrier d’Apple, Thunderbird ou Outlook. Il affiche tes tâches ouvertes avec échéance et celles des listes de tâches partagées (échues depuis 30 jours jusqu’à dans un an) : les tâches sur la journée comme événements sur la journée, celles avec heure comme événements de 30 minutes, les tâches récurrentes avec leur prochaine date. Le calendrier ne fait qu’afficher, les modifications se font dans MindSift ; les applications de calendrier ne rechargent l’abonnement que toutes les quelques heures. Toute personne qui connaît le lien voit tes tâches : « Créer un nouveau lien » invalide l’ancien, désactiver le supprime.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Mentions avec @ :</strong> Dans la description d’une tâche, dans les sous-tâches et dans les notes, <strong className="text-main">@</strong> ouvre une liste de personnes (flèches, Entrée). Celles sans accès apparaissent grisées. La personne mentionnée reçoit une notification (Paramètres → Alarmes, « On m’a mentionné »), même depuis une liste en sourdine ; enregistrer à nouveau n’en envoie pas une deuxième.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Menu de la liste (⋯) :</strong> À droite au-dessus de la liste : <strong className="text-main">Mettre en sourdine</strong> (listes partagées seulement : aucune notification de cette liste ; attributions, mentions et tâches suivies arrivent toujours), Partager, Renommer et Supprimer. Si toutes les listes ne tiennent pas dans la ligne, les autres sont derrière « ⋯ n ». Dans une liste partagée, une nouvelle tâche t’est d’abord attribuée ; l’alerte d’échéance va aux personnes attribuées, ou à tous les membres si personne ne l’est.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Menu de la liste (⋯) :</strong> À droite au-dessus de la liste : Renommer et Supprimer. Si toutes les listes ne tiennent pas dans la ligne, les autres sont derrière « ⋯ n ».
+              </li>
+            </InDesktop>
             <li>
               <strong className="text-main">Calendrier :</strong> Une troisième vue à côté de la liste et du Kanban : mois ou semaine sur ordinateur, la semaine sur téléphone. Les tâches sans date sont dans « Non planifiées » ; glisse-en une sur un jour pour lui donner une date (l’heure reste), de retour dans « Non planifiées » pour l’enlever, <strong className="text-main">Ctrl + Z</strong> annule. Les tâches répétées montrent aussi leurs prochaines dates, grisées avec ↻. À gauche, une colonne bascule entre le jour choisi (aujourd’hui tant que tu n’en as pas choisi un) avec ses tâches et les tâches non planifiées. ← → pour feuilleter, T revient à aujourd’hui. Sur ordinateur, du lundi au vendredi occupent la largeur ; le week-end s’atteint en faisant défiler sur le côté ou avec « sam. – dim. › ». Mois ou semaine se choisit à droite des hashtags ; un cran de molette fait défiler les barres du dessus.
             </li>
@@ -619,11 +656,19 @@ const fr: HelpContent = {
       category: 'lists',
       title: 'Listes partagées, quantités & catégories par hashtag',
       subtitle: 'Listes de courses en temps réel, listes de bagages et check-lists',
+      desktop: { title: 'Listes, quantités & catégories par hashtag', subtitle: 'Listes de courses, listes de bagages et check-lists' },
       icon: ShoppingCart,
       keywords: ['listes', 'courses', 'achats', 'checklist', 'quantités', 'catégories', 'hashtag', 'temps réel', 'suggestions'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
-          <p>Les listes partagées sont idéales pour les courses communes, les valises et les listes de choses à faire à plusieurs :</p>
+          <NotInDesktop>
+            <p>Les listes partagées sont idéales pour les courses communes, les valises et les listes de choses à faire à plusieurs :</p>
+          </NotInDesktop>
+          <InDesktop>
+            <p>
+              Les listes sont idéales pour les courses, les valises et les commissions :
+            </p>
+          </InDesktop>
           <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Saisir la quantité avec l’article :</strong> avec <code className="text-accent font-mono">2x lait bio</code>, <code className="text-accent font-mono">500g pâtes</code>, <code className="text-accent font-mono">3 pommes</code> ou <code className="text-accent font-mono">tomates 2 boîtes</code>, le champ surligne la quantité et la reporte aussitôt dans le champ quantité ; une petite bulle près du champ quantité te la signale. À l’ajout, le nom va sur la liste sans elle. Touche le × de la bulle ou vide le champ quantité pour garder le texte tel quel ; une quantité que tu saisis toi-même dans ce champ l’emporte. Sont reconnus un nombre suivi de x, un nombre avec une unité (g, kg, l, ml, pièce, paquet, boîte, bouteille, botte …) et un nombre au début. Un nombre à la fin sans unité fait partie du nom (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">cola 0,5</code>), tout comme un nombre collé à un mot (<code className="text-accent font-mono">7up</code>). Le champ quantité accepte aussi les unités, par exemple <code className="text-accent font-mono">500 g</code>. L’interrupteur <em>Reconnaître dates et quantités à la saisie</em> sous Paramètres du compte → Langue le désactive aussi.
@@ -632,11 +677,18 @@ const fr: HelpContent = {
               <strong className="text-main">Catégories par hashtag :</strong> ajoute un hashtag comme <code className="text-accent font-mono">#frais</code> ou <code className="text-accent font-mono">#légumes</code>. La liste regroupe automatiquement les articles dans les sections correspondantes.
             </li>
             <li>
-              <strong className="text-main">Suggestions pendant la saisie :</strong> dès deux lettres, la liste affiche sous le champ ce que tu as déjà ajouté ici, y compris des articles cochés et nettoyés depuis longtemps : d'abord ce qui commence ainsi, puis ce qui le contient, les achats fréquents et récents en tête. Ce qui est déjà ouvert sur la liste n'apparaît pas. Touche une suggestion, ou choisis-la avec les flèches et Entrée, pour l'ajouter avec son hashtag ; Échap ferme les suggestions, et continuer à taper fonctionne comme avant. Pendant que tu tapes un #hashtag, ce sont les suggestions de hashtags qui s'affichent. Les listes partagées ont un historique commun ; il fonctionne aussi hors ligne et disparaît avec la liste.
+              <strong className="text-main">Suggestions pendant la saisie :</strong> dès deux lettres, la liste affiche sous le champ ce que tu as déjà ajouté ici, y compris des articles cochés et nettoyés depuis longtemps : d'abord ce qui commence ainsi, puis ce qui le contient, les achats fréquents et récents en tête. Ce qui est déjà ouvert sur la liste n'apparaît pas. Touche une suggestion, ou choisis-la avec les flèches et Entrée, pour l'ajouter avec son hashtag ; Échap ferme les suggestions, et continuer à taper fonctionne comme avant. Pendant que tu tapes un #hashtag, ce sont les suggestions de hashtags qui s'affichent. <NotInDesktop>{' '}Les listes partagées ont un historique commun ; il fonctionne aussi hors ligne et disparaît avec la liste.</NotInDesktop>
             </li>
-            <li>
-              <strong className="text-main">Synchronisation en direct &amp; nettoyage :</strong> les éléments cochés se synchronisent en temps réel et indiquent qui les a cochés. Le bouton de nettoyage supprime tous les éléments cochés d'un seul coup.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Synchronisation en direct &amp; nettoyage :</strong> les éléments cochés se synchronisent en temps réel et indiquent qui les a cochés. Le bouton de nettoyage supprime tous les éléments cochés d'un seul coup.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Nettoyage :</strong> Le bouton de nettoyage supprime d'un coup les articles cochés.
+              </li>
+            </InDesktop>
           </ul>
         </div>
       ),
@@ -670,32 +722,52 @@ const fr: HelpContent = {
       category: 'account',
       title: 'Hors ligne, sauvegardes et mot de passe',
       subtitle: 'Continuer sans Internet, restaurer des sauvegardes, réinitialiser le mot de passe',
+      desktop: { title: 'Sauvegardes', subtitle: 'Créer des sauvegardes et les restaurer' },
       icon: CloudOff,
       keywords: ['hors ligne', 'offline', 'internet', 'sauvegarde', 'restaurer', 'mot de passe', 'oublié', 'compte', 'deux facteurs', '2fa', 'authentification', 'sécurité', "clé d'accès", 'passkey', 'empreinte', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
-            <li>
-              <strong className="text-main">Sauvegardes du serveur :</strong> si l'administration a activé les sauvegardes automatiques, tu trouveras les sauvegardes quotidiennes de tes données sous <em>Paramètres du compte → Export &amp; import</em>. Tu peux les télécharger ou les restaurer, y compris pour des domaines individuels comme les listes ou les tâches. Chaque sauvegarde contient aussi tes notes, tâches et listes en Markdown dans le dossier <em>Obsidian</em>, lisibles dans Obsidian ou n'importe quel éditeur de texte, même sans MindSift.
-            </li>
-            <li>
-              <strong className="text-main">Sans connexion Internet :</strong> installée comme application (ou dans le navigateur), MindSift démarre également hors ligne avec le dernier état chargé. La capture de pensées et la validation de tâches ou de listes continuent de fonctionner ; un indicateur en bas affiche le nombre de modifications en attente, qui sont synchronisées dès le rétablissement de la connexion.
-            </li>
-            <li>
-              <strong className="text-main">Où restent les modifications hors ligne :</strong> Les notes que tu as déjà ouvertes sur cet appareil peuvent être lues et modifiées hors ligne. Ce qui n’est pas encore envoyé n’est enregistré que dans ce navigateur : cela survit à la fermeture, au redémarrage et à l’extinction, et est envoyé automatiquement au prochain démarrage de MindSift avec une connexion. Cela disparaît si tu te déconnectes (MindSift demande avant), effaces les données du navigateur ou travailles dans une fenêtre privée. Après avoir travaillé hors ligne, reconnecte-toi donc bientôt avec le même appareil. Si quelqu’un a modifié la même puce entre-temps, rien n’est perdu : ta version apparaît en dessous comme copie de conflit.
-            </li>
-            <li>
-              <strong className="text-main">Mot de passe oublié :</strong> si l'administration a configuré l'envoi d'e-mails, la fenêtre de connexion affiche « Mot de passe oublié ? ». Tu reçois un lien valable une heure ; la définition du nouveau mot de passe te déconnecte de tous les appareils.
-            </li>
-            <li>
-              <strong className="text-main">Connexion à deux facteurs :</strong> sous <em>Paramètres du compte → Sécurité</em>, tu relies une application d'authentification (scanner le code QR, saisir le premier code) ; ensuite, la connexion demande après le mot de passe le code à six chiffres de l'application. Les dix codes de récupération affichés une seule fois servent si le téléphone manque : chacun fonctionne une fois. Avec « Faire confiance à cet appareil pendant 30 jours », un appareil à toi ne demande pas de code pendant un mois. « Mot de passe oublié » ne désactive pas la connexion à deux facteurs.
-            </li>
-            <li>
-              <strong className="text-main">Clés d'accès :</strong> sous <em>Paramètres du compte → Sécurité → Clés d'accès</em>, tu crées une clé d'accès (confirmer le mot de passe, lui donner un nom, empreinte digitale, visage ou code PIN de l'appareil). Ensuite, « Se connecter avec une clé d'accès » te connecte sans aucun mot de passe ; certains navigateurs la proposent aussi directement dans le champ de connexion. Si tu te connectes avec le mot de passe, la clé d'accès est demandée ensuite : une clé d'accès compte comme second facteur, même sans application d'authentification. Les codes de récupération apparaissent avec la première clé d'accès. Retirer le dernier second facteur désactive de nouveau la connexion à deux facteurs. Les clés d'accès ne sont disponibles que si le serveur a une adresse https fixe (BASE_URL).
-            </li>
-            <li>
-              <strong className="text-main">Connexion via un fournisseur (SSO) :</strong> Si l'administration a configuré un fournisseur comme Authentik, Authelia ou Keycloak, l'écran de connexion affiche « Se connecter avec … ». La première fois, ton compte est créé, ou un compte existant avec la même adresse vérifiée est lié ; tu lies un compte avec une autre adresse sous <em>Paramètres du compte → Sécurité</em>. La connexion à deux facteurs revient alors au fournisseur. Tu confirmes les modifications sensibles comme une nouvelle adresse, un mot de passe, des clés d'API ou la suppression en te reconnectant chez lui ; tu as ensuite cinq minutes. Si la connexion avec mot de passe est désactivée, il ne reste que ce bouton, et l'administration dispose d'un accès de secours sous <em>/?login=password</em>.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Sauvegardes du serveur :</strong> si l'administration a activé les sauvegardes automatiques, tu trouveras les sauvegardes quotidiennes de tes données sous <em>Paramètres du compte → Export &amp; import</em>. Tu peux les télécharger ou les restaurer, y compris pour des domaines individuels comme les listes ou les tâches. Chaque sauvegarde contient aussi tes notes, tâches et listes en Markdown dans le dossier <em>Obsidian</em>, lisibles dans Obsidian ou n'importe quel éditeur de texte, même sans MindSift.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Sauvegardes :</strong> sous <em>Administration → Données</em>, tu actives des sauvegardes quotidiennes et choisis leur dossier. Tu les retrouves sous <em>Paramètres du compte → Export &amp; import</em> ; tu peux les télécharger ou les restaurer, aussi pour certaines parties seulement comme les listes ou les tâches. Chaque sauvegarde contient en plus, dans le dossier <em>Obsidian</em>, tes notes, tâches et listes en Markdown, lisibles dans Obsidian ou n'importe quel éditeur de texte, même sans MindSift. Une sauvegarde peut aussi être restaurée sur un serveur si tu passes plus tard à l'un d'eux.
+              </li>
+            </InDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Sans connexion Internet :</strong> installée comme application (ou dans le navigateur), MindSift démarre également hors ligne avec le dernier état chargé. La capture de pensées et la validation de tâches ou de listes continuent de fonctionner ; un indicateur en bas affiche le nombre de modifications en attente, qui sont synchronisées dès le rétablissement de la connexion.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Où restent les modifications hors ligne :</strong> Les notes que tu as déjà ouvertes sur cet appareil peuvent être lues et modifiées hors ligne. Ce qui n’est pas encore envoyé n’est enregistré que dans ce navigateur : cela survit à la fermeture, au redémarrage et à l’extinction, et est envoyé automatiquement au prochain démarrage de MindSift avec une connexion. Cela disparaît si tu te déconnectes (MindSift demande avant), effaces les données du navigateur ou travailles dans une fenêtre privée. Après avoir travaillé hors ligne, reconnecte-toi donc bientôt avec le même appareil. Si quelqu’un a modifié la même puce entre-temps, rien n’est perdu : ta version apparaît en dessous comme copie de conflit.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Mot de passe oublié :</strong> si l'administration a configuré l'envoi d'e-mails, la fenêtre de connexion affiche « Mot de passe oublié ? ». Tu reçois un lien valable une heure ; la définition du nouveau mot de passe te déconnecte de tous les appareils.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Connexion à deux facteurs :</strong> sous <em>Paramètres du compte → Sécurité</em>, tu relies une application d'authentification (scanner le code QR, saisir le premier code) ; ensuite, la connexion demande après le mot de passe le code à six chiffres de l'application. Les dix codes de récupération affichés une seule fois servent si le téléphone manque : chacun fonctionne une fois. Avec « Faire confiance à cet appareil pendant 30 jours », un appareil à toi ne demande pas de code pendant un mois. « Mot de passe oublié » ne désactive pas la connexion à deux facteurs.
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Clés d'accès :</strong> sous <em>Paramètres du compte → Sécurité → Clés d'accès</em>, tu crées une clé d'accès (confirmer le mot de passe, lui donner un nom, empreinte digitale, visage ou code PIN de l'appareil). Ensuite, « Se connecter avec une clé d'accès » te connecte sans aucun mot de passe ; certains navigateurs la proposent aussi directement dans le champ de connexion. Si tu te connectes avec le mot de passe, la clé d'accès est demandée ensuite : une clé d'accès compte comme second facteur, même sans application d'authentification. Les codes de récupération apparaissent avec la première clé d'accès. Retirer le dernier second facteur désactive de nouveau la connexion à deux facteurs. Les clés d'accès ne sont disponibles que si le serveur a une adresse https fixe (BASE_URL).
+              </li>
+            </NotInDesktop>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Connexion via un fournisseur (SSO) :</strong> Si l'administration a configuré un fournisseur comme Authentik, Authelia ou Keycloak, l'écran de connexion affiche « Se connecter avec … ». La première fois, ton compte est créé, ou un compte existant avec la même adresse vérifiée est lié ; tu lies un compte avec une autre adresse sous <em>Paramètres du compte → Sécurité</em>. La connexion à deux facteurs revient alors au fournisseur. Tu confirmes les modifications sensibles comme une nouvelle adresse, un mot de passe, des clés d'API ou la suppression en te reconnectant chez lui ; tu as ensuite cinq minutes. Si la connexion avec mot de passe est désactivée, il ne reste que ce bouton, et l'administration dispose d'un accès de secours sous <em>/?login=password</em>.
+              </li>
+            </NotInDesktop>
           </ul>
         </div>
       ),

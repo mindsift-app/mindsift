@@ -55,7 +55,12 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
   const help = content === 'failed' ? undefined : content;
   const desktop = isDesktopApp();
   const cards: DocCard[] = useMemo(
-    () => (desktop ? (help?.cards ?? []).filter((card) => !DESKTOP_HIDDEN_CARDS.has(card.id)) : (help?.cards ?? [])),
+    () =>
+      desktop
+        ? (help?.cards ?? [])
+            .filter((card) => !DESKTOP_HIDDEN_CARDS.has(card.id))
+            .map((card) => (card.desktop ? { ...card, ...card.desktop } : card))
+        : (help?.cards ?? []),
     [help, desktop]
   );
 
@@ -114,7 +119,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
               <span>{t('title')}</span>
             </h1>
             <p className="text-xs text-muted">
-              {t('subtitle')}
+              {t(desktop ? 'subtitleDesktop' : 'subtitle')}
             </p>
           </div>
         </div>

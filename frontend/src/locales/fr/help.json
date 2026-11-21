@@ -2,6 +2,7 @@
   "back": "Retour",
   "title": "Aide & documentation",
   "subtitle": "Utilisation du clavier, notes outliner, triage, tableau Kanban et collaboration",
+  "subtitleDesktop": "Utilisation du clavier, notes outliner, triage et tableau Kanban",
   "search": "Rechercher dans l'aide & les raccourcis…",
   "clearSearch": "Effacer la recherche",
   "cat": {
