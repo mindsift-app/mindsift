@@ -108,6 +108,13 @@
       "tools": "Tools:",
       "toolsHint": "The agent only sees the tools the key or connection is allowed to use; access works as it does for you."
     },
+    "local": {
+      "title": "Reachable for local programs",
+      "intro": "Programs on this computer, such as an AI agent, can then reach this instance's MCP and REST API with an API key. Only via 127.0.0.1, not from the network; there is no sign-in and no app there.",
+      "port": "Port",
+      "changePort": "Change port",
+      "hint": "In your AI agent, add an MCP server of type HTTP with this address and pass an API key in the <c>X-API-Key</c> header (examples below). The instance is reachable only while it is open in the desktop app."
+    },
     "defaultKeyName": "Home Assistant",
     "confirmDisconnect": "Really disconnect “{{name}}”?",
     "confirmRevoke": "Really revoke this API key?",

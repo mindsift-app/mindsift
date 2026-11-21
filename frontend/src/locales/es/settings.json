@@ -230,6 +230,13 @@
       "tools": "Herramientas:",
       "toolsHint": "El agente solo ve las herramientas autorizadas para la clave o conexión; el acceso funciona igual que para ti."
     },
+    "local": {
+      "title": "Accesible para programas locales",
+      "intro": "Los programas de este ordenador, como un agente de IA, acceden entonces al MCP y a la API REST de esta instancia con una clave de API. Solo a través de 127.0.0.1, no desde la red; allí no hay inicio de sesión ni la propia app.",
+      "port": "Puerto",
+      "changePort": "Cambiar puerto",
+      "hint": "En el agente de IA, añade un servidor MCP de tipo HTTP con esta dirección y envía una clave de API en la cabecera <c>X-API-Key</c> (ejemplos abajo). La instancia solo es accesible mientras está abierta en la app de escritorio."
+    },
     "defaultKeyName": "Home Assistant",
     "confirmDisconnect": "¿De verdad quieres desconectar «{{name}}»?",
     "confirmRevoke": "¿De verdad quieres revocar esta clave API?",

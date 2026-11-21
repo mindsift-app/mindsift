@@ -35,6 +35,8 @@ type Entry struct {
 	Path       string    `json:"path,omitempty"` // local: the instance's folder
 	URL        string    `json:"url,omitempty"`  // server: its address, ending in "/"
 	LastOpened time.Time `json:"lastOpened,omitzero"`
+	// LocalAPI: local: reachable for local programs (localapi.go)
+	LocalAPI *LocalAPI `json:"localApi,omitempty"`
 }
 
 // fileFormat is desktop.json. Mode and ServerURL are the format of phase 1, read only to convert it.
@@ -190,6 +192,24 @@ func (s *Settings) Add(e Entry) (Entry, error) {
 // Rename gives an entry a new name
 func (s *Settings) Rename(id, name string) error {
 	return s.update(id, func(e *Entry) { e.Name = name })
+}
+
+// SetLocalAPI stores an instance's setting for local programs
+func (s *Settings) SetLocalAPI(id string, a LocalAPI) error {
+	return s.update(id, func(e *Entry) { e.LocalAPI = &a })
+}
+
+// LocalAPIPorts: the ports of every instance but id for local programs (on or off), so each keeps its own
+func (s *Settings) LocalAPIPorts(except string) map[int]bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	used := map[int]bool{}
+	for _, e := range s.f.Entries {
+		if e.ID != except && e.LocalAPI != nil && e.LocalAPI.Port != 0 {
+			used[e.LocalAPI.Port] = true
+		}
+	}
+	return used
 }
 
 // Opened marks an entry as opened now; the next start opens it

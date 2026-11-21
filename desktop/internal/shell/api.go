@@ -19,6 +19,9 @@ type request struct {
 	Name string `json:"name"`
 	Path string `json:"path"`
 	URL  string `json:"url"`
+	// local-api-set: the setting for local programs and its port (0: keep it, or choose one)
+	Enabled bool `json:"enabled"`
+	Port    int  `json:"port"`
 }
 
 // stateAnswer: what the start view shows
@@ -61,16 +64,16 @@ func (s *Shell) api(w http.ResponseWriter, r *http.Request, op string) {
 		writeJSON(w, http.StatusOK, s.state())
 	case "create":
 		a, err := s.createLocal(req.Name)
-		s.answerOpen(w, a, err)
+		s.answer(w, a, err)
 	case "open":
 		a, err := s.openEntry(req.ID)
-		s.answerOpen(w, a, err)
+		s.answer(w, a, err)
 	case "open-found":
 		a, err := s.openFound(req.Path)
-		s.answerOpen(w, a, err)
+		s.answer(w, a, err)
 	case "add-server":
 		a, err := s.addServer(r, req.Name, req.URL)
-		s.answerOpen(w, a, err)
+		s.answer(w, a, err)
 	case "rename":
 		name, err := entryName(req.Name)
 		if err == nil {
@@ -79,6 +82,12 @@ func (s *Shell) api(w http.ResponseWriter, r *http.Request, op string) {
 		s.answerDone(w, err)
 	case "remove":
 		s.answerDone(w, s.Settings.Remove(req.ID))
+	case "local-api":
+		st, err := s.localAPIState()
+		s.answer(w, st, err)
+	case "local-api-set":
+		st, err := s.setLocalAPI(req.Enabled, req.Port)
+		s.answer(w, st, err)
 	case "show-base":
 		err := CreateFolder(s.Base)
 		if err == nil && s.ShowFolder != nil {
@@ -90,7 +99,7 @@ func (s *Shell) api(w http.ResponseWriter, r *http.Request, op string) {
 	}
 }
 
-func (s *Shell) answerOpen(w http.ResponseWriter, a openAnswer, err error) {
+func (s *Shell) answer(w http.ResponseWriter, a any, err error) {
 	if err != nil {
 		writeProblem(w, err)
 		return
@@ -202,7 +211,7 @@ func (s *Shell) open(e Entry) (openAnswer, error) {
 			return openAnswer{}, problem("folderGone", e.Path)
 		}
 	}
-	if err := s.Local.Open(e.ID, e.Path); err != nil {
+	if err := s.openLocal(e); err != nil {
 		return openAnswer{}, err
 	}
 	if err := s.Settings.Opened(e.ID); err != nil {

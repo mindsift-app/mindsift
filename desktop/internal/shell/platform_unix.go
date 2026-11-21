@@ -21,3 +21,6 @@ func lockFile(f *os.File) error {
 	}
 	return err
 }
+
+// errAddrInUse: the error of a port another program listens on
+var errAddrInUse error = unix.EADDRINUSE

@@ -49,6 +49,10 @@
     "locked": "Diese Instanz ist schon in einem anderen MindSift-Fenster geöffnet, vielleicht unter einem anderen Benutzerkonto. Schließ sie dort, dann lässt sie sich hier öffnen.",
     "openFailed": "Die Datenbank der Instanz ließ sich nicht öffnen.",
     "notFound": "Diese Instanz gibt es nicht mehr.",
-    "folderGone": "Der Ordner dieser Instanz fehlt. Wurde er verschoben oder gelöscht?"
+    "folderGone": "Der Ordner dieser Instanz fehlt. Wurde er verschoben oder gelöscht?",
+    "portInUse": "Port {{detail}} ist schon von einem anderen Programm belegt. Wähle einen anderen Port.",
+    "portInvalid": "Bitte einen Port zwischen 1024 und 65535 angeben.",
+    "notOpen": "Keine lokale Instanz geöffnet.",
+    "listenFailed": "Die Instanz ließ sich nicht für lokale Programme öffnen: {{detail}}"
   }
 }

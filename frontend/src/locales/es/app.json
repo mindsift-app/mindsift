@@ -43,6 +43,7 @@
     "help": "Ayuda y guía",
     "admin": "Administración",
     "logout": "Cerrar sesión",
+    "switchInstance": "Cambiar de instancia",
     "installApp": "Instalar app web en el móvil"
   },
   "capture": {

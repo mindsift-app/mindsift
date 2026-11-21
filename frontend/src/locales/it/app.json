@@ -43,6 +43,7 @@
     "help": "Guida e aiuto",
     "admin": "Amministrazione",
     "logout": "Disconnetti",
+    "switchInstance": "Cambia istanza",
     "installApp": "Installa web app sullo smartphone"
   },
   "capture": {

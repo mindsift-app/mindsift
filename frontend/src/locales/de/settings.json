@@ -108,6 +108,13 @@
       "tools": "Werkzeuge:",
       "toolsHint": "Der Agent sieht nur die Werkzeuge, für die der Schlüssel bzw. die Verbindung berechtigt ist; Freigaben gelten wie für dich selbst."
     },
+    "local": {
+      "title": "Für lokale Programme erreichbar",
+      "intro": "Programme auf diesem Computer, etwa ein KI-Agent, erreichen MCP und die REST-API dieser Instanz dann mit einem API-Schlüssel. Nur über 127.0.0.1, nicht aus dem Netzwerk; Anmelden oder die App selbst gibt es dort nicht.",
+      "port": "Port",
+      "changePort": "Port ändern",
+      "hint": "Im KI-Agenten einen MCP-Server vom Typ HTTP mit dieser Adresse eintragen und einen API-Schlüssel im Header <c>X-API-Key</c> mitgeben (Beispiele unten). Erreichbar ist die Instanz nur, solange sie in der Desktop-App geöffnet ist."
+    },
     "defaultKeyName": "Home Assistant",
     "confirmDisconnect": "Die Verbindung „{{name}}“ wirklich trennen?",
     "confirmRevoke": "Diesen API-Schlüssel wirklich widerrufen?",

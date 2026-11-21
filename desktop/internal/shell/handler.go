@@ -42,11 +42,15 @@ type Shell struct {
 	Base string
 	// ShowFolder opens a folder in the system's file manager. Set by main.go.
 	ShowFolder func(dir string) error
-	// Opened: an entry was opened (main.go sets the window title)
-	Opened func(Entry)
+	// Opened: an entry was opened; StartShown: the start view was loaded, from the tray, the shortcut or
+	// the app's profile menu (main.go sets the window title)
+	Opened     func(Entry)
+	StartShown func()
 
 	mu      sync.Mutex
 	problem *Problem // why the entry opened last did not open at the start (shown once)
+	// localAPIProblem: why the open instance's listener for local programs is not up (localapi.go)
+	localAPIProblem *Problem
 }
 
 // StartURL opens the entry used last: a local instance right here (its address is "/"), a server at its
@@ -60,7 +64,7 @@ func (s *Shell) StartURL() string {
 		s.opened(e)
 		return e.URL
 	}
-	if err := s.Local.Open(e.ID, e.Path); err != nil {
+	if err := s.openLocal(e); err != nil {
 		slog.Warn("Opening the instance used last failed", "path", e.Path, "error", err)
 		s.mu.Lock()
 		s.problem = asProblem(err)
@@ -69,6 +73,15 @@ func (s *Shell) StartURL() string {
 	}
 	s.opened(e)
 	return "/"
+}
+
+// openLocal opens a local instance (closing the one running) with its listener for local programs, if on
+func (s *Shell) openLocal(e Entry) error {
+	if err := s.Local.Open(e.ID, e.Path); err != nil {
+		return err
+	}
+	s.applyLocalAPI(e)
+	return nil
 }
 
 func (s *Shell) opened(e Entry) {
@@ -81,6 +94,9 @@ func (s *Shell) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
 	switch {
 	case p == StartPath:
+		if s.StartShown != nil {
+			s.StartShown()
+		}
 		s.startPage(w)
 		return
 	case strings.HasPrefix(p, apiPrefix):

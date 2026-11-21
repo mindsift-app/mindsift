@@ -39,6 +39,9 @@ type running struct {
 	cancel  context.CancelFunc
 	shut    func()
 	lock    *instanceLock
+	// api: the listener for local programs while the setting is on (localapi.go), guarded by Local.mu
+	api     *http.Server
+	apiPort int
 
 	mu      sync.Mutex
 	closing bool
@@ -117,6 +120,7 @@ func (r *running) close() {
 	r.closing = true
 	r.mu.Unlock()
 	r.cancel()
+	r.stopLocalAPI()
 	done := make(chan struct{})
 	go func() {
 		r.active.Wait()

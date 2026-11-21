@@ -43,6 +43,7 @@
     "help": "Help & guide",
     "admin": "Administration",
     "logout": "Sign out",
+    "switchInstance": "Switch instance",
     "installApp": "Install web app on your phone"
   },
   "capture": {

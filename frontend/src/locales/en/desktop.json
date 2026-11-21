@@ -49,6 +49,10 @@
     "locked": "This instance is already open in another MindSift window, perhaps under another user account. Close it there, then it opens here.",
     "openFailed": "The instance's database could not be opened.",
     "notFound": "This instance no longer exists.",
-    "folderGone": "This instance's folder is missing. Was it moved or deleted?"
+    "folderGone": "This instance's folder is missing. Was it moved or deleted?",
+    "portInUse": "Port {{detail}} is already used by another program. Choose another port.",
+    "portInvalid": "Please enter a port between 1024 and 65535.",
+    "notOpen": "No local instance is open.",
+    "listenFailed": "The instance could not be opened for local programs: {{detail}}"
   }
 }

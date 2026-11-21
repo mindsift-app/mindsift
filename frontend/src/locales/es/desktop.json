@@ -49,6 +49,10 @@
     "locked": "Esta instancia ya está abierta en otra ventana de MindSift, quizá con otra cuenta de usuario. Ciérrala allí y podrás abrirla aquí.",
     "openFailed": "No se pudo abrir la base de datos de la instancia.",
     "notFound": "Esta instancia ya no existe.",
-    "folderGone": "Falta la carpeta de esta instancia. ¿Se ha movido o borrado?"
+    "folderGone": "Falta la carpeta de esta instancia. ¿Se ha movido o borrado?",
+    "portInUse": "El puerto {{detail}} ya lo usa otro programa. Elige otro puerto.",
+    "portInvalid": "Indica un puerto entre 1024 y 65535.",
+    "notOpen": "No hay ninguna instancia local abierta.",
+    "listenFailed": "No se pudo abrir la instancia para programas locales: {{detail}}"
   }
 }

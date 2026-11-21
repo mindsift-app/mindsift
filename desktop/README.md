@@ -11,7 +11,8 @@ release yet.
   (name and address, checked with `GET /api/v1/health`). Entries can be renamed and removed from the list;
   removing never deletes data. The entry opened last opens directly at the next start. The tray menu has
   "MindSift öffnen", "Instanz wechseln…" (the start view, also Ctrl+Shift+O for desktops without a
-  tray) and "Beenden", in the system’s language (`internal/shell/texts.go`).
+  tray) and "Beenden", in the system’s language (`internal/shell/texts.go`). In a local instance the
+  profile menu has "Instanz wechseln" where sign-out would be; it loads the start view too.
 - **Base folder:** `$XDG_DATA_HOME/MindSift` (`~/.local/share/MindSift`; under Flatpak `XDG_DATA_HOME`
   already points into the sandbox) or `%APPDATA%\MindSift`; `MINDSIFT_DESKTOP_DIR` overrides it. It holds
   `desktop.json` and every local instance in `instances/<Name>/`; the single data folder of phase 1,
@@ -23,6 +24,8 @@ release yet.
   switching closes the running server cleanly (requests, hub, background jobs, database) and opens the
   next in the same process. `mindsift.lock` in the instance folder (flock / LockFileEx, dropped by the
   system when the process ends) keeps a second app process from opening the same database.
+- **Reachable for local programs** (settings, API; per instance, off by default): the running instance
+  also listens on `127.0.0.1:<port>` for an AI agent's MCP client or a script, see below.
 - **Servers:** the window loads a MindSift server's web app, offline behaviour as in the browser.
 - **Cloud sync:** when the base folder lies in a synced folder (Nextcloud, ownCloud, Dropbox, OneDrive,
   Google Drive, iCloud, Syncthing, pCloud, MEGA …), the start view warns that syncing an open SQLite
@@ -34,7 +37,7 @@ release yet.
 {
   "version": 1,
   "entries": [
-    {"id": "3f…", "kind": "local", "name": "Privat", "path": "/home/anna/.local/share/MindSift/instances/Privat", "lastOpened": "2026-11-21T10:00:00Z"},
+    {"id": "3f…", "kind": "local", "name": "Privat", "path": "/home/anna/.local/share/MindSift/instances/Privat", "lastOpened": "2026-11-21T10:00:00Z", "localApi": {"enabled": true, "port": 18890}},
     {"id": "9a…", "kind": "server", "name": "Arbeit", "url": "https://notes.example.com/"}
   ],
   "last": "3f…"
@@ -49,7 +52,8 @@ as `desktop.json.broken`.
 ## The shell's endpoints
 
 `POST /__desktop/api/<op>` with a JSON body (`state`, `create`, `open`, `open-found`, `add-server`,
-`rename`, `remove`, `show-base`), code in `desktop/internal/shell`. They answer only requests with the
+`rename`, `remove`, `show-base`, and for the app's settings `local-api` and `local-api-set`), code in
+`desktop/internal/shell`. They answer only requests with the
 header `X-MindSift-Desktop: 1`, `Content-Type: application/json`, no foreign `Origin` and no cross-site
 `Sec-Fetch-Site`. A server's page shown in the window (or any other origin) cannot send that header
 without a CORS preflight, which the shell never allows, so its requests never arrive. Errors come back as
@@ -58,6 +62,35 @@ without a CORS preflight, which the shell never allows, so its requests never ar
 All local instances share the window's origin, so the frontend remembers which instance the window's
 storage belongs to (`mindsift:desktop-instance`) and clears the session, the offline cache and stored
 notes before another instance opens (`lib/desktopShell.ts`); the new one signs itself in.
+
+## Reachable for local programs
+
+A local instance has no port; for programs on the same computer (Claude Code, Codex, Cursor, a script) it
+can get one. Switched on in the settings (API; `local-api-set {enabled, port}`), the shell starts an
+`http.Server` on `127.0.0.1` only (`tcp4`, never a wildcard or IPv6 address) whose handler is the
+instance's own router behind `api.LocalAPIOnly` (`internal/api/localapi.go`, `internal/shell/localapi.go`):
+
+- **Reachable:** only what an API key may call anyway: `/api/v1/mcp`, the REST routes of `keyRoutes`
+  (`internal/api/apikey_access.go`: tasks, lists, inbox) and `POST /api/v1/webhooks/ingest`. Every
+  request needs an API key (`X-API-Key`, `Authorization: Bearer mindsift_sec_…`, `?token=` for the
+  webhook) and must carry no other credential; the key's rights are then checked as on every server.
+- **Not reachable:** everything else answers `404` (the app and its files, `/auth/*` including
+  `/auth/desktop` and sign-in, notes over REST, settings, keys, live streams); a session token gets `401`.
+  There is no OAuth (no `BASE_URL`), so MCP clients send the key as a header.
+- **DNS rebinding and browsers:** a `Host` other than `127.0.0.1` or `localhost` is refused (`421`), any
+  request with `Origin` or `Sec-Fetch-Site` too (`403`): no CORS, browsers get nothing.
+- **Port:** stored per instance (`localApi.port` in `desktop.json`), so an agent's configuration always
+  reaches the same instance. Switched on the first time, the shell takes 18890 or the next port no other
+  instance has and no program holds; the settings show the address (`http://127.0.0.1:18890/api/v1/mcp`)
+  and let the port be changed. A port held by another program is refused (`portInUse`); when that happens
+  while the instance opens, the instance opens anyway and the settings say why.
+- **Lifetime:** the listener belongs to the running instance: it starts when the instance opens with the
+  setting on, stops when the setting goes off, and closes with the instance (switching instances, a
+  server, quitting) before the database does.
+
+Claude Code, for example: `claude mcp add --transport http mindsift http://127.0.0.1:18890/api/v1/mcp
+--header "X-API-Key: mindsift_sec_…"`; the settings show this and the variants for Codex and JSON
+configurations with the instance's address.
 
 ## Desktop mode of the server
 
@@ -68,12 +101,13 @@ normal server neither). Details in [Doku/architecture.md](../Doku/architecture.m
   system's user, no password of its own) with the help notes; there is no setup wizard and no setup code.
   The window asks `POST /api/v1/auth/desktop` for a session whenever it has none (first start, a session
   idle for a month); a restart keeps the stored one. Only the window's own origin gets a session, and no
-  secret is in any address. Sign-out is hidden, since there is no sign-in to go back to.
+  secret is in any address. Sign-out is hidden, since there is no sign-in to go back to ("Instanz
+  wechseln" takes its place); the profile menu shows the name once and no role.
 - **Off:** registration and invites, mail, OIDC, passkeys, public links, calendar feeds, web push, demo
   mode, the setup code, `BASE_URL` (so no OAuth connectors). The administration hides people, sign-in,
   organizations, sharing, mail and legal texts; the settings hide Sicherheit, the calendar subscription,
   the address and the mail and push channels of alarms.
-- **Kept:** MCP with API keys (local AI agents), daily backups (on from the first start), export and
+- **Kept:** MCP with API keys (local AI agents, over the listener above), daily backups (on from the first start), export and
   import. Moving to a server later is a backup restored there.
 - **Realtime without WebSocket:** server-sent events on Linux, long polling on Windows (Wails buffers
   responses there). The server names the transport in `/auth/status` (`desktop.realtime`).
