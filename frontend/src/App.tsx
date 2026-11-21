@@ -136,21 +136,6 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (resetToken) window.history.replaceState(null, '', window.location.pathname);
   }, [resetToken]);
-  // A file dropped where nothing takes it (sidebar, header) would make the browser open it and leave the
-  // app; places that take files (notes, the image picker) handle the event first and prevent this already
-  useEffect(() => {
-    const keep = (e: DragEvent) => {
-      if (e.defaultPrevented || !e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
-      e.preventDefault();
-      if (e.type === 'dragover') e.dataTransfer.dropEffect = 'none';
-    };
-    window.addEventListener('dragover', keep);
-    window.addEventListener('drop', keep);
-    return () => {
-      window.removeEventListener('dragover', keep);
-      window.removeEventListener('drop', keep);
-    };
-  }, []);
   // Mentions of oneself show one's own name (the directory leaves oneself out)
   useEffect(() => {
     if (user) rememberMentionNames([user]);

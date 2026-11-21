@@ -7,9 +7,13 @@ import { resolveLanguage, startI18n, startLanguage } from './i18n';
 import { getToken } from './lib/api';
 import { prefetchAuthStatus } from './app/useSessionBootstrap';
 import { MobileActionProvider } from './context/MobileActionContext';
+import { installDropGuard } from './lib/dropGuard';
 // Inter ships with the app (no external font service); the variable font covers all weights
 import '@fontsource-variable/inter';
 import './index.css';
+
+// A file or link dropped where nothing takes it must not replace the app (lib/dropGuard.ts)
+installDropGuard();
 
 // A note shared by public link (/p/<token>) opens without the app around it and without login,
 // in the visitor's browser language

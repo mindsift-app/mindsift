@@ -45,3 +45,27 @@ export function caretAtPoint(x: number, y: number): { node: Node; offset: number
   }
   return null;
 }
+
+/** The text position in el nearest to a point, found from the boxes of its characters: for a point the hit
+ *  test does not take into el (WebKit does not look into rows with content-visibility: auto, so
+ *  caretAtPoint gives the row). Lines decide before columns; null when el has no text. */
+export function caretInElementAtPoint(el: Node, x: number, y: number): { node: Node; offset: number } | null {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  if (typeof range.getClientRects !== 'function') return null;
+  let best: { node: Node; offset: number; dist: number } | null = null;
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const length = node.textContent?.length ?? 0;
+    for (let i = 0; i < length; i++) {
+      range.setStart(node, i);
+      range.setEnd(node, i + 1);
+      for (const r of Array.from(range.getClientRects())) {
+        const dy = y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
+        const dx = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
+        const dist = dy * 1e6 + dx;
+        if (!best || dist < best.dist) best = { node, offset: x > (r.left + r.right) / 2 ? i + 1 : i, dist };
+      }
+    }
+  }
+  return best && { node: best.node, offset: best.offset };
+}
