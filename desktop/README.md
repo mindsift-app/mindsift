@@ -29,7 +29,12 @@ release yet.
   system when the process ends) keeps a second app process from opening the same database.
 - **Reachable for local programs** (settings, API; per instance, off by default): the running instance
   also listens on `127.0.0.1:<port>` for an AI agent's MCP client or a script, see below.
-- **Servers:** the window loads a MindSift server's web app, offline behaviour as in the browser.
+- **Servers:** the window loads a MindSift server's web app, offline behaviour as in the browser. The
+  shell marks such a page (see "The window and its pages"), so MindSift's frontend (from the version with
+  this change on the server) offers "Instanz wechseln" on its sign-in page and next to sign-out in the
+  profile menu; sign-out itself stays.
+- **Keys:** Alt+Left / Alt+Right (back, forward), F5 / Ctrl+R (reload the page) and Ctrl+Shift+O (start
+  view) work on every page, the shell's own and a server's.
 - **Cloud sync:** when the base folder lies in a synced folder (Nextcloud, ownCloud, Dropbox, OneDrive,
   Google Drive, iCloud, Syncthing, pCloud, MEGA …), the start view warns that syncing an open SQLite
   database can destroy it and recommends a server for several machines.
@@ -96,6 +101,58 @@ instance's own router behind `api.LocalAPIOnly` (`internal/api/localapi.go`, `in
 Claude Code, for example: `claude mcp add --transport http mindsift http://127.0.0.1:18890/api/v1/mcp
 --header "X-API-Key: mindsift_sec_…"`; the settings show this and the variants for Codex and JSON
 configurations with the instance's address.
+
+## The window and its pages
+
+The window shows the shell's own pages (start view, local instances) on its own origin
+(`wails://localhost`, `http://wails.localhost`) and servers' pages on theirs, possibly a server the person
+does not run. Wails gives a page its runtime (`window._wails`, a wrapper around the engine's message
+channel) and answers calls under `/wails/` itself, ahead of the asset handler: `POST /wails/runtime` with
+`{object, method, args}` reaches window control (title, size, close, reload, dev tools, zoom), the
+clipboard (read and write), dialogs (open/save, which return the chosen path), `Browser.OpenURL`,
+application hide/quit, events and screens. A desktop build of Wails checks no origin there, and the
+engine sends a server page's request to the window's origin without a preflight: checked under Xvfb, a
+page on another origin set the window's title through a form posted to
+`wails://localhost/wails/runtime` (a no-cors `fetch` gets through too). So:
+
+- **`/wails/` only for the window's own pages** (`shell.GuardWailsRoutes`, the outermost asset
+  middleware): `runtime.js`/`transport.js` stay readable, every other route needs `Origin` equal to the
+  window's origin and no cross-site `Sec-Fetch-Site`; otherwise 403. The app itself calls none of them
+  (the frontend uses no Wails runtime).
+- **Runtime only on own pages.** Linux (`webview_linux.go`): a hook on `WindowLoadFinished`, registered
+  before Wails' own, reads the page's address from the webview (`shell.OwnPage`); for any other page it
+  cancels the event, which keeps Wails' runtime hook, the `JS` option and the event's listeners away, and
+  runs the window's scripts (drop guard, file drop) and the marker itself. Windows
+  (`webview_windows.go`): Wails injects its runtime straight from WebView2's `NavigationCompleted`, before
+  any hook of the app, so it cannot be kept out; the hook of the event Wails sends next removes
+  `window._wails`/`window.wails` again on other origins. What a page's scripts can grab in between is
+  `chrome.webview.postMessage`, which WebView2 gives every page anyway. Still open on both platforms: the
+  engine's own message channel (`window.webkit.messageHandlers.external`, `chrome.webview.postMessage`)
+  exists on every page, and Wails acts on a few messages from it without an origin check (`wails:drag`,
+  `wails:resize:*`, `wails:drag:doubleclick` = maximise, `wails:runtime:ready`; on Windows also
+  `wails:non-client-region:*`): moving, resizing or maximising the window, nothing else.
+- **Marker on servers' pages** (`shellMarker` in `main.go`): `window.__msDesktopShell` holds the start
+  view's address and `mindsift:desktop-shell` fires; `lib/useDesktopShellStart.ts` takes only the two
+  start view addresses. Loading the start view from a server's page is a normal top-level navigation
+  (checked under WebKitGTK; not yet checked on Windows).
+- **Keys and scripts:** Wails' `ExecJS` waits for `wails:runtime:ready`, which only its full runtime
+  (`runtime.js`) sends and no page here loads, so `ExecJS("history.back()")` never ran; its Linux
+  `Reload` loads `wails://` instead of the page. On Linux the keys call WebKit directly
+  (`webkit_web_view_go_back/go_forward/reload`). On Windows the shell sends `wails:runtime:ready` itself
+  once (`HandleMessage`), so `ExecJS` works, and Wails' `Reload` is `location.reload()`. Wails' `JS`
+  option reaches only pages given as HTML on Windows, so there the hook above runs the window's scripts
+  on every page (before this, the drop guard and `dropScripts` never ran on Windows).
+- **The webview's storage** (local storage, IndexedDB, cookies, service workers, caches) lies in
+  `<base>/webview/` (caches in `webview/cache/`, cookies in `webview/cookies.sqlite`), whatever the binary
+  is called: Windows through `WindowsOptions.WebviewUserDataPath`; Linux by wrapping the constructor of
+  `WebKitWebView` (at GApplication's `startup`, before the window exists) so a webview created without a
+  network session gets one with these folders. Before, WebKit used `~/.local/share/app.mindsift.MindSift`
+  and `~/.cache/app.mindsift.MindSift` (named after the application id, shared by every base folder) and
+  WebView2 a folder next to the exe; nothing is moved. Wails still asks for WebKit's default session
+  (unused), which leaves empty folders there.
+- **Stale session:** a session stored for a database that is gone (instance folder deleted, a new base
+  folder in old storage) is refused with 401; `useSessionBootstrap` then signs the window in again instead
+  of showing the sign-in page, also when the 401 arrives before the status said desktop.
 
 ## Desktop mode of the server
 

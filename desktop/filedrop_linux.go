@@ -20,8 +20,6 @@ extern int msFileDragMotion(char **paths, double x, double y);
 extern void msFileDragLeave(void);
 extern int msFileDrop(char **paths, double x, double y);
 
-static WebKitWebView *ms_webview = NULL;
-
 // The local paths of a file list (NULL-terminated, g_strfreev); NULL when it is empty or holds anything that
 // is no local file (a link dragged out of a browser).
 static char **ms_local_paths(const GValue *value) {
@@ -86,21 +84,8 @@ static gboolean ms_drop(GtkDropTarget *target, const GValue *value, double x, do
 	return ok;
 }
 
-static GtkWidget *ms_find_webview(GtkWidget *widget) {
-	if (widget == NULL) return NULL;
-	if (WEBKIT_IS_WEB_VIEW(widget)) return widget;
-	for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
-		GtkWidget *found = ms_find_webview(child);
-		if (found != NULL) return found;
-	}
-	return NULL;
-}
-
 // Puts the drop target in front of WebKit's own (capture phase) on the window's webview
-static int ms_attach_file_drop(void *window) {
-	GtkWidget *webview = ms_find_webview(GTK_WIDGET(window));
-	if (webview == NULL) return 0;
-	ms_webview = WEBKIT_WEB_VIEW(webview);
+static void ms_attach_file_drop(void *webview) {
 	GtkDropTarget *target = gtk_drop_target_new(GDK_TYPE_FILE_LIST, GDK_ACTION_COPY);
 	gtk_drop_target_set_preload(target, TRUE);
 	gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(target), GTK_PHASE_CAPTURE);
@@ -109,46 +94,21 @@ static int ms_attach_file_drop(void *window) {
 	g_signal_connect(target, "motion", G_CALLBACK(ms_motion), NULL);
 	g_signal_connect(target, "leave", G_CALLBACK(ms_leave), NULL);
 	g_signal_connect(target, "drop", G_CALLBACK(ms_drop), NULL);
-	gtk_widget_add_controller(webview, GTK_EVENT_CONTROLLER(target));
-	return 1;
-}
-
-// Runs a script in the page directly: Wails' ExecJS waits for its runtime, which a page may not have
-static void ms_eval(const char *js) {
-	if (ms_webview != NULL) webkit_web_view_evaluate_javascript(ms_webview, js, -1, NULL, NULL, NULL, NULL, NULL);
+	gtk_widget_add_controller(GTK_WIDGET(webview), GTK_EVENT_CONTROLLER(target));
 }
 */
 import "C"
 
 import (
-	"log/slog"
-	"sync"
 	"unsafe"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
-	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
-// setupFileDrop adds the drop target once the window's webview exists (its first page load).
-func setupFileDrop(window *application.WebviewWindow) {
-	var once sync.Once
-	window.RegisterHook(events.Linux.WindowLoadFinished, func(*application.WindowEvent) {
-		once.Do(func() {
-			application.InvokeSync(func() {
-				native := window.NativeWindow()
-				if native == nil || C.ms_attach_file_drop(native) == 0 {
-					slog.Warn("Desktop: no webview for dropped files")
-				}
-			})
-		})
-	})
-}
-
-// evalInPage runs js in the window's page; only on the main thread.
-func evalInPage(js string) {
-	cjs := C.CString(js)
-	defer C.free(unsafe.Pointer(cjs))
-	C.ms_eval(cjs)
+// attachFileDrop adds the drop target to the window's webview (webview_linux.go, at the first page load);
+// only on the main thread.
+func attachFileDrop(webview unsafe.Pointer) {
+	C.ms_attach_file_drop(webview)
 }
 
 func goPaths(paths **C.char) []string {

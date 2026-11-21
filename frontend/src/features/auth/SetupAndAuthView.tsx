@@ -11,6 +11,7 @@ import {
   CircleAlert,
   FingerprintPattern,
   ShieldCheck,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { conditionalPasskeysAvailable, getPasskey, passkeyCancelled, passkeysSupported } from '../../lib/webauthn';
 import { AuthStatus, MfaMethod, User } from '../../lib/types';
@@ -22,6 +23,7 @@ import { demoHintText } from '../../components/DemoHint';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
 import { startOidcLogin, takeOidcResult } from '../../lib/oidc';
 import { errorMessage } from '../../lib/errorMessage';
+import { openDesktopShellStart, useDesktopShellStart } from '../../lib/useDesktopShellStart';
 
 interface SetupAndAuthViewProps {
   authStatus: AuthStatus;
@@ -39,6 +41,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   onResetCancel,
 }) => {
   const { t } = useTranslation('auth');
+  // A server's sign-in in the desktop app's window: the way back to the app's start view
+  const shellStart = useDesktopShellStart();
   // The keyboard must not cover the fields (phones)
   const keyboardRoom = useKeyboardRoom();
 
@@ -750,6 +754,16 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
           )}
         </div>
       </div>
+      {shellStart && (
+        <button
+          type="button"
+          onClick={() => openDesktopShellStart(shellStart)}
+          className="mt-4 h-11 sm:h-9 px-3 rounded-btn flex items-center gap-2 text-xs text-muted hover:text-main hover:bg-panel transition-colors"
+        >
+          <ArrowLeftRight className="w-4 h-4 text-accent" />
+          <span>{t('app:profile.switchInstance')}</span>
+        </button>
+      )}
       <LegalLinks legal={authStatus.legal} className="mt-4" />
     </div>
   );

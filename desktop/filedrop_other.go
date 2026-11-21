@@ -2,7 +2,5 @@
 
 package main
 
-import "github.com/wailsapp/wails/v3/pkg/application"
-
-// setupFileDrop: on Windows WebView2 hands dropped files to the page itself (see dropScripts).
-func setupFileDrop(*application.WebviewWindow) {}
+// Files dragged in from other programs: WebView2 on Windows hands them to the page itself, as a browser
+// does (the drop target of filedrop_linux.go is only needed for WebKitGTK).

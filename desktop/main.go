@@ -11,6 +11,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"io/fs"
 	"log"
 	"log/slog"
@@ -63,6 +64,8 @@ func main() {
 
 	// Before the window opens, so the desktop finds the entry and its icon when it maps the window
 	registerDesktopEntry()
+	webviewDir := filepath.Join(base, "webview")
+	useWebviewDataDir(webviewDir)
 
 	var window *application.WebviewWindow
 	app := application.New(application.Options{
@@ -73,9 +76,14 @@ func main() {
 		// desktop matches to app.mindsift.MindSift.desktop (and with it the icon)
 		Linux: application.LinuxOptions{ApplicationID: shell.DesktopEntryID},
 		Assets: application.AssetOptions{
-			Handler:        sh,
+			Handler: sh,
+			// Outermost, before Wails' own routes: those only for the window's own pages (shell/pages.go)
+			Middleware:     shell.GuardWailsRoutes(windowOrigin()),
 			DisableLogging: true,
 		},
+		// The webview's storage (local storage, IndexedDB, cookies, service workers, caches) in the base
+		// folder, whatever the program's file is called; on Linux useWebviewDataDir below
+		Windows: application.WindowsOptions{WebviewUserDataPath: webviewDir},
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "app.mindsift.MindSift",
 			OnSecondInstanceLaunch: func(application.SecondInstanceData) {
@@ -126,21 +134,24 @@ func main() {
 		URL:    startURL,
 		// Developer tools (right click → Inspect) help to see what the engine does while this is a spike
 		DevToolsEnabled: true,
-		// Runs after every page load, the server's pages included
-		JS: dropGuard + dropScripts,
+		// Runs after every load of the window's own pages on Linux; setupPages gives it to every other page
+		// (and on Windows to all of them)
+		JS: windowScripts,
+		// On any page, a server's too (webview_*.go: Wails' ExecJS and Reload do not do it)
 		KeyBindings: map[string]func(application.Window){
-			"alt+left":     func(w application.Window) { w.ExecJS("history.back()") },
-			"alt+right":    func(w application.Window) { w.ExecJS("history.forward()") },
-			"f5":           func(w application.Window) { w.Reload() },
-			"ctrl+r":       func(w application.Window) { w.Reload() },
+			"alt+left":     goBack,
+			"alt+right":    goForward,
+			"f5":           reload,
+			"ctrl+r":       reload,
 			"ctrl+shift+o": func(application.Window) { showStart() },
 		},
 	})
 	if e, ok := settings.Last(); ok && startURL != shell.StartPath {
 		window.SetTitle(e.Name + " – MindSift")
 	}
-	// Files dragged in from other programs (Linux; filedrop_linux.go)
-	setupFileDrop(window)
+	// Wails' runtime only on the window's own pages, the window's scripts on all, the marker on servers'
+	// pages; on Linux also the drop target for files (filedrop_linux.go)
+	setupPages(window, windowOrigin(), windowScripts, shellMarker(windowOrigin()))
 
 	tray := app.SystemTray.New()
 	tray.SetIcon(trayIcon)
@@ -157,6 +168,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+// windowScripts: what every page of the window gets after it loaded
+const windowScripts = dropGuard + dropScripts
+
+// shellMarker: on a server's page, the address of the app's start view (window.__msDesktopShell) and the
+// event mindsift:desktop-shell: MindSift's frontend then offers "Instanz wechseln" on its sign-in page and
+// in the profile menu (lib/useDesktopShellStart.ts), e.g. after signing out of the server. Only an address,
+// no way into the app; the page could open that address anyway.
+func shellMarker(origin string) string {
+	start, _ := json.Marshal(origin + shell.StartPath)
+	return `(function(){window.__msDesktopShell=` + string(start) + `;window.dispatchEvent(new Event('mindsift:desktop-shell'))})();`
 }
 
 // dropGuard: a file (or link) dropped where the page does not take it would make the engine open it in
