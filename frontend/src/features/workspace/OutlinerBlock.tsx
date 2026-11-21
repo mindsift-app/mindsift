@@ -39,7 +39,6 @@ import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
 import { SecretChip, NewSecretSheet } from './SecretChip';
 import { CodeBlockEditor, resolveLanguageId, isUnambiguousLanguageShortcut } from './CodeBlockEditor';
-import { htmlHasCodeBlock, htmlToMarkdown } from '../../lib/pasteHtml';
 import { TableBlock } from './TableBlock';
 import { emptyTable, serializeMarkdownTable, TableLines } from '../../lib/markdownTable';
 import { useLatestCallback } from '../../lib/useLatestCallback';
@@ -67,7 +66,8 @@ import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
 import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
 import { ownClipboardText } from '../../lib/outlineMarkdown';
-import { caretAfterChange, mapRenderedOffsetToRaw } from '../../lib/caret';
+import { caretAfterChange, caretAtPoint, caretInElementAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
+import { droppedText, transferText } from '../../lib/dropText';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
@@ -1072,40 +1072,34 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       (delta) => setPastingImages((n) => Math.max(0, n + delta))
     );
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    if (!canEdit || block.type === 'code') return;
+  // Text pasted or dropped between start and end of the field. Bullets copied in MindSift and several lines
+  // become bullets (onPasteMultiLines); one plain line is left to the browser when browserInserts (paste).
+  // images: pasted along with the text, they follow it. Returns whether the text was put in here.
+  const insertTransferText = (
+    data: DataTransfer,
+    start: number,
+    end: number,
+    images: PastedImages | null,
+    browserInserts: boolean
+  ): boolean => {
     // Bullets copied from a note with hidden values: the app's own format has their references where the
-    // plain text has the mask (lib/outlineMarkdown.ts)
-    const own = ownClipboardText(e.clipboardData);
-    // Pasted images (screenshot, copied picture) become image bullets; bullets copied in MindSift (own) bring
-    // their image bullets as text already
-    const images = own || !onPasteImages ? null : pastedImages(e.clipboardData);
-    if (images && !images.keepText) {
-      e.preventDefault();
-      void pasteImages(images, block.id);
-      return;
-    }
-    // Code blocks from other pages (ChatGPT, Claude, documentation): only their HTML says where code starts
-    // and in which language, the plain text has it without a fence
-    const html = own ? '' : e.clipboardData.getData('text/html');
-    const fromHtml = html && htmlHasCodeBlock(html) ? htmlToMarkdown(html) : '';
-    const pastedText = own || fromHtml || e.clipboardData.getData('text');
-    const start = e.currentTarget.selectionStart ?? localContent.length;
-    const end = e.currentTarget.selectionEnd ?? start;
+    // plain text has the mask (lib/outlineMarkdown.ts). Code blocks from other pages (ChatGPT, Claude,
+    // documentation): only their HTML says where code starts and in which language (lib/dropText.ts)
+    const { own, text: pastedText } = transferText(data);
     const textBefore = localContent.slice(0, start);
     const textAfter = localContent.slice(end);
     if (own && !own.includes('\n')) {
-      e.preventDefault();
       applyFormattingChange(textBefore + own + textAfter, start + own.length, start + own.length);
-      return;
+      return true;
     }
     if (!pastedText || !pastedText.includes('\n')) {
       // One line goes in through the browser; the images follow the bullet
       if (images) void pasteImages(images, block.id);
-      return;
+      if (browserInserts || !pastedText) return false;
+      applyFormattingChange(textBefore + pastedText + textAfter, start + pastedText.length, start + pastedText.length);
+      return true;
     }
 
-    e.preventDefault();
     const rawLines = pastedText.split(/\r?\n/);
 
     if (debounceTimerRef.current !== null) {
@@ -1119,6 +1113,51 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     const lastPasted = onPasteMultiLinesRef.current?.(block.id, textBefore, textAfter, rawLines);
     // Images that came with the text follow its last line
     if (images) void pasteImages(images, lastPasted || block.id);
+    return true;
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!canEdit || block.type === 'code') return;
+    // Pasted images (screenshot, copied picture) become image bullets; bullets copied in MindSift (own) bring
+    // their image bullets as text already
+    const images = ownClipboardText(e.clipboardData) || !onPasteImages ? null : pastedImages(e.clipboardData);
+    if (images && !images.keepText) {
+      e.preventDefault();
+      void pasteImages(images, block.id);
+      return;
+    }
+    const start = e.currentTarget.selectionStart ?? localContent.length;
+    const end = e.currentTarget.selectionEnd ?? start;
+    if (insertTransferText(e.clipboardData, start, end, images, true)) e.preventDefault();
+  };
+
+  // Text dragged onto the bullet from another program (or marked elsewhere on the page) goes in where it was
+  // dropped, as if pasted there; the app's own drags and files are left to their handlers (lib/dropText.ts).
+  // One plain line dropped onto the field itself (it has the cursor) is put in by the browser (which also
+  // moves text dragged within the field). Returns whether the drop was taken.
+  const handleTextDrop = (e: React.DragEvent): boolean => {
+    const ta = textareaRef.current;
+    if (!canEdit || !fieldOverText || !ta || !droppedText(e.dataTransfer)) return false;
+    const intoField = e.target === ta;
+    if (intoField) {
+      const { own, text } = transferText(e.dataTransfer);
+      if (!own && !text.includes('\n')) return true;
+    }
+    e.preventDefault();
+    let pos = localContent.length;
+    const span = renderedTextRef.current;
+    const at = caretAtPoint(e.clientX, e.clientY);
+    if (at?.node === ta) pos = Math.min(at.offset, pos);
+    else if (intoField) pos = ta.selectionStart ?? pos;
+    else if (span) {
+      // The hit test of WebKit stops at the row (content-visibility, index.css): then the nearest character
+      const inText = at && span.contains(at.node) ? at : caretInElementAtPoint(span, e.clientX, e.clientY);
+      if (inText) pos = rawOffsetAt(inText.node, inText.offset);
+    }
+    ta.focus();
+    ta.setSelectionRange(pos, pos);
+    insertTransferText(e.dataTransfer, pos, pos, null, false);
+    return true;
   };
 
   // Ctrl/Cmd+Z undoes the user's own changes in the whole note (not the browser's per-field undo)
@@ -1493,7 +1532,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         minWidth: `calc(var(--outline-indent) * ${visualLevel} + var(--outline-min-text))`,
       }}
       onDragOver={(e) => onDragOverBlock?.(e, block.id)}
-      onDrop={() => onDropBlock?.(block.id)}
+      onDrop={(e) => {
+        if (!handleTextDrop(e)) onDropBlock?.(block.id);
+      }}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('button, a, input, select')) return;
         if (!activeFocus && canFocus && textareaRef.current) {

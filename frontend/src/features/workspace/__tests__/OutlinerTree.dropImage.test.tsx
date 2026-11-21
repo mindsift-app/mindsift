@@ -235,3 +235,55 @@ describe('dragging image files onto a note', () => {
     expect(screen.queryByTestId('pasting-images')).toBeNull();
   });
 });
+
+// Text dragged in from another program (lib/dropText.ts): goes in like pasted text
+describe('dragging text onto a note', () => {
+  it('puts text dropped onto a bullet into its text', async () => {
+    render(<Harness initial={[mk('a', 'Hallo'), mk('b', 'Danach')]} />);
+    // jsdom knows no caret under the pointer: the text goes to the end
+    expect(await dropOn(rowOf('a'), clipboard({ text: ' Welt', html: '<b> Welt</b>' }))).toBe(true);
+    await waitFor(() => expect(summary()).toEqual(['text:Hallo Welt', 'text:Danach']));
+    expect(media.uploads).toHaveLength(0);
+  });
+
+  it('makes bullets of several dropped lines, as pasting does', async () => {
+    render(<Harness initial={[mk('a', 'Liste: '), mk('b', 'Danach')]} />);
+    await dropOn(rowOf('a'), clipboard({ text: 'Milch\n\nBrot\n\nButter' }));
+    await waitFor(() => expect(summary()).toEqual(['text:Liste: Milch', 'text:Brot', 'text:Butter', 'text:Danach']));
+  });
+
+  it('adds text dropped below the last bullet as a new bullet at the end', async () => {
+    render(<Harness initial={[mk('a', 'Oben')]} />);
+    const below = rowOf('a').parentElement!.lastElementChild!;
+    expect(await dropOn(below, clipboard({ text: 'Ganz unten' }))).toBe(true);
+    await waitFor(() => expect(summary()).toEqual(['text:Oben', 'text:Ganz unten']));
+  });
+
+  it('fills an empty last bullet instead of adding one', async () => {
+    render(<Harness initial={[mk('a', 'Oben'), mk('b', '')]} />);
+    const below = rowOf('a').parentElement!.lastElementChild!;
+    await dropOn(below, clipboard({ text: 'Hinein' }));
+    await waitFor(() => expect(summary()).toEqual(['text:Oben', 'text:Hinein']));
+  });
+
+  it('offers to copy, not to move text from another program', async () => {
+    render(<Harness initial={[mk('a', 'Hallo')]} />);
+    const data = clipboard({ text: 'Welt' });
+    expect(await drag('dragOver', rowOf('a'), data)).toBe(true);
+    expect(data.dropEffect).toBe('copy');
+  });
+
+  it('ignores the ids other parts of the app drag along as text', async () => {
+    render(<Harness initial={[mk('a', 'Hallo')]} />);
+    await dropOn(rowOf('a'), clipboard({ text: 'doc_1', extra: { 'application/mindsift-doc-id': 'doc_1' } }));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(summary()).toEqual(['text:Hallo']);
+  });
+
+  it('takes no text in a read-only note', async () => {
+    render(<Harness initial={[mk('a', 'Nur lesen')]} canEdit={false} />);
+    expect(await dropOn(rowOf('a'), clipboard({ text: 'Neu' }))).toBe(false);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(summary()).toEqual(['text:Nur lesen']);
+  });
+});

@@ -19,6 +19,7 @@ import { useLatestRef } from '../../lib/useLatestRef';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
 import { draggedFiles, droppedImages, insertImages, type PastedImages } from '../../lib/pasteImages';
+import { draggedText, droppedText, transferText } from '../../lib/dropText';
 import i18n from '../../i18n';
 
 export interface OutlinerTreeHandle {
@@ -908,6 +909,15 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
 
   const handleDragOverBlock = useCallback(
     (e: React.DragEvent, index: number) => {
+      if (draggedIndex === null && draggedText(e.dataTransfer)) {
+        // Text over the field with the cursor stays the browser's: Chromium and WebKit drop nothing into a
+        // field when the page took the dragover, and text dragged within the field still moves. Elsewhere on
+        // the row it is copied in (OutlinerBlock), never moved away from the other program.
+        if (e.target instanceof HTMLTextAreaElement) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        return;
+      }
       e.preventDefault();
       if (draggedIndex === null) return;
       e.dataTransfer.dropEffect = 'move';
@@ -949,6 +959,45 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     },
     [blocks, draggedIndex, levelOffset, clearDrag, onMoveBlock, lockHolder, onLockedAction]
   );
+
+  // Text dragged in below the last bullet (lib/dropText.ts): its lines become bullets at the end, on the top
+  // level of what is shown, as if pasted into a new bullet there; an empty last text bullet takes them itself
+  const dropTextAtEnd = (e: React.DragEvent): boolean => {
+    const last = blocks[blocks.length - 1];
+    if (!canEdit || !last || !droppedText(e.dataTransfer)) return false;
+    const { text } = transferText(e.dataTransfer);
+    if (!text) return false;
+    e.preventDefault();
+    const rawLines = text.split(/\r?\n/);
+    if (last.type === 'text' && !(last.content || '').trim()) {
+      handlePasteMultiLines(last.id, '', '', rawLines);
+      return true;
+    }
+    const parsed = parsePastedLines(rawLines);
+    if (parsed.length === 0) return true;
+    const baseLevel = levelOffset || 0;
+    const nowBase = Date.now().toString(36);
+    const newBlocks: DocumentBlock[] = parsed.map((p, j) => ({
+      id: `blk_${nowBase}_${j}_${Math.random().toString(36).slice(2, 6)}`,
+      documentId: docId,
+      type: p.type,
+      checked: p.checked || false,
+      content: p.content,
+      ...(p.type === 'code' ? { lang: p.lang || '' } : {}),
+      level: Math.max(baseLevel, baseLevel + p.indent - parsed[0].indent),
+      collapsed: false,
+      position: (last.position || 1000) + (j + 1) * 10,
+    }));
+    const lastNew = newBlocks[newBlocks.length - 1];
+    pendingFocusRef.current = { blockId: lastNew.id, cursor: 'end' };
+    setFocusedBlockId(lastNew.id);
+    if (onInsertBlocks) {
+      onInsertBlocks(last.id, last, newBlocks);
+    } else {
+      newBlocks.forEach((b, k) => onCreateBlock(b, k === 0 ? last.id : newBlocks[k - 1].id));
+    }
+    return true;
+  };
 
   // Phone bar: runs the action at once and puts the focus back into the same bullet within the same tap
   // (React may move the field in the DOM, which drops the focus; iOS reopens the keyboard only inside a tap)
@@ -1656,8 +1705,11 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onDragOver={(e) => {
             e.preventDefault();
             if (draggedIndex !== null) handleDragOverBlock(e, blocks.length);
+            else if (draggedText(e.dataTransfer)) e.dataTransfer.dropEffect = 'copy';
           }}
-          onDrop={() => handleDropBlock(blocks.length)}
+          onDrop={(e) => {
+            if (draggedIndex !== null || !dropTextAtEnd(e)) handleDropBlock(blocks.length);
+          }}
         >
           {/* Where a bullet dragged below the last one lands, indented to the level it would take (like the
               line in a row, OutlinerBlock) */}
