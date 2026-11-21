@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Added
+- Desktop app for Linux and Windows (`desktop/`): MindSift in its own window, either **local** without a server (the server runs inside the app and opens no port; several local instances, each a folder in the app's data directory) or **connected to a MindSift server** (several servers can be listed). A start view lists instances and servers; a new local instance asks a few setup questions (backups and their folder, language, time zone) and signs in on its own, without an account to set up. Things that need a server or other people (sharing, invitations, email, push, passkeys) are hidden in a local instance. A switch in Settings → API makes a local instance reachable for programs on the same computer (MCP and the API with a key, on 127.0.0.1 only), off by default. Linux builds come as a Flatpak and as a program file, Windows as an exe.
+
 ### Fixed
 - Text dragged onto a note from another program (a browser, an editor) now lands in it: dropped onto a bullet it goes in where it was dropped, several lines become bullets as when pasting, and dropped below the last bullet it becomes a new bullet at the end. Before, nothing happened, in the browser as in the desktop app.
 - A file or link dropped somewhere in the app that does not take it (sidebar, header, sign-in page) is now refused instead of opening in place of the app, which left no way back in the installed app.
