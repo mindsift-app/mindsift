@@ -104,9 +104,15 @@ func main() {
 		}
 	}
 
-	// "Instanz wechseln…": the start view, from the tray or with Ctrl+Shift+O (desktops without a tray)
+	sh.StartShown = func() {
+		if window != nil {
+			window.SetTitle("MindSift")
+		}
+	}
+
+	// "Instanz wechseln…": the start view, from the tray or with Ctrl+Shift+O (desktops without a tray);
+	// the app's profile menu goes there itself
 	showStart := func() {
-		window.SetTitle("MindSift")
 		window.SetURL(shell.StartPath)
 		window.Show()
 		window.Focus()

@@ -43,6 +43,7 @@
     "help": "Hilfe & Anleitung",
     "admin": "Administration",
     "logout": "Abmelden",
+    "switchInstance": "Instanz wechseln",
     "installApp": "Web-App auf Smartphone installieren"
   },
   "capture": {

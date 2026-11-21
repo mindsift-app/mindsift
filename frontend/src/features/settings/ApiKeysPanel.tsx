@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { APIKey, ApiKeyScope, PriorityLevel, SharedList, TaskList } from '../../lib/types';
 import { SCOPES, scopeGroups, scopeChip, toggleScopeIn } from '../../lib/apiScopes';
-import { api, ApiError, triggerHaptic } from '../../lib/api';
+import { api, ApiError, isDesktopApp, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatDate } from '../../lib/format';
 import { askConfirm } from '../../components/askConfirm';
@@ -23,6 +23,7 @@ import { showError } from '../../components/ErrorNotice';
 import { withSecondFactor } from './user/askSecondFactor';
 import { SelectMenu } from '../../components/SelectMenu';
 import { errorMessage } from '../../lib/errorMessage';
+import { DEFAULT_LOCAL_API_PORT, DesktopLocalAccess, localApiBase } from './DesktopLocalAccess';
 
 interface ApiKeysPanelProps {
   onIngested?: () => void;
@@ -78,7 +79,10 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   const [newKeyScopes, setNewKeyScopes] = useState<ApiKeyScope[]>(['webhook:triage']);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
-  const [mcpClient, setMcpClient] = useState<McpClient>('connector');
+  // Desktop app: no address others reach (no connectors); local programs use 127.0.0.1 (DesktopLocalAccess)
+  const desktop = isDesktopApp();
+  const [localBase, setLocalBase] = useState<string | null>(null);
+  const [mcpClient, setMcpClient] = useState<McpClient>(desktop ? 'claude' : 'connector');
   // Address for claude.ai / ChatGPT connectors; empty while the server has no OAuth (no BASE_URL)
   const [connectorUrl, setConnectorUrl] = useState('');
   const [copiedConnector, setCopiedConnector] = useState(false);
@@ -239,7 +243,7 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   };
 
   const exampleToken = newlyCreatedKey || t('api.example.token');
-  const baseUrl = window.location.origin;
+  const baseUrl = desktop ? (localBase ?? localApiBase(DEFAULT_LOCAL_API_PORT)) : window.location.origin;
   const examplePayload =
     simTarget === 'task'
       ? `{
@@ -423,6 +427,8 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
 
       {/* How to connect: one API, two accesses (tabs only while both take keys) */}
       <div className={keysUsable ? 'pt-4 border-t border-border space-y-4' : 'hidden'}>
+        {desktop && <DesktopLocalAccess onBaseChange={setLocalBase} />}
+
         {mcpEnabled && restKeys && (
           <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t('api.access')}>
             {(
@@ -628,7 +634,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                   ['codex', 'OpenAI Codex'],
                   ['json', 'Claude Desktop / Cursor'],
                 ] as const
-              ).map(([value, label]) => (
+              ).filter(([value]) => !desktop || value !== 'connector').map(([value, label]) => (
                 <button
                   key={value}
                   type="button"

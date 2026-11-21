@@ -17,12 +17,16 @@
     "title": "Zeitzone",
     "notSet": "Nicht festgelegt ({{zone}})",
     "now": "Serverzeit jetzt: {{time}} ({{zone}})",
+    "nowDesktop": "Uhrzeit jetzt: {{time}} ({{zone}})",
     "source": {
       "setting": "Quelle: diese Einstellung",
       "env": "Quelle: Umgebungsvariable TZ",
-      "default": "Quelle: Standard UTC – weder hier noch über TZ ist eine Zeitzone festgelegt"
+      "envDesktop": "Quelle: Zeitzone des Systems",
+      "default": "Quelle: Standard UTC – weder hier noch über TZ ist eine Zeitzone festgelegt",
+      "defaultDesktop": "Quelle: Standard UTC – das System nennt keine Zeitzone, bitte hier eine wählen"
     },
-    "hint": "Eine Zeitzone für den ganzen Server: Danach richten sich Fälligkeiten, Alarme, die Tageszusammenfassung, Backups und Datumsangaben in E-Mails. Eine Änderung gilt sofort."
+    "hint": "Eine Zeitzone für den ganzen Server: Danach richten sich Fälligkeiten, Alarme, die Tageszusammenfassung, Backups und Datumsangaben in E-Mails. Eine Änderung gilt sofort.",
+    "hintDesktop": "Die Zeitzone dieser Instanz: Danach richten sich Fälligkeiten, Alarme, die Tageszusammenfassung und Backups. Nicht festgelegt gilt die des Systems. Eine Änderung gilt sofort."
   },
   "user": {
     "backTitle": "Zurück zur Übersicht",
@@ -107,6 +111,13 @@
       "needsBaseUrl": "Verbinden über claude.ai und ChatGPT braucht OAuth, und das setzt <c>BASE_URL</c> in der Server-Konfiguration voraus. Bitte die Person, die MindSift betreibt, sie zu setzen.",
       "tools": "Werkzeuge:",
       "toolsHint": "Der Agent sieht nur die Werkzeuge, für die der Schlüssel bzw. die Verbindung berechtigt ist; Freigaben gelten wie für dich selbst."
+    },
+    "local": {
+      "title": "Für lokale Programme erreichbar",
+      "intro": "Programme auf diesem Computer, etwa ein KI-Agent, erreichen MCP und die REST-API dieser Instanz dann mit einem API-Schlüssel. Nur über 127.0.0.1, nicht aus dem Netzwerk; Anmelden oder die App selbst gibt es dort nicht.",
+      "port": "Port",
+      "changePort": "Port ändern",
+      "hint": "Im KI-Agenten einen MCP-Server vom Typ HTTP mit dieser Adresse eintragen und einen API-Schlüssel im Header <c>X-API-Key</c> mitgeben (Beispiele unten). Erreichbar ist die Instanz nur, solange sie in der Desktop-App geöffnet ist."
     },
     "defaultKeyName": "Home Assistant",
     "confirmDisconnect": "Die Verbindung „{{name}}“ wirklich trennen?",
@@ -433,6 +444,7 @@
   "data": {
     "title": "Export & Import",
     "intro": "Lade deine Daten als Backup oder Markdown-Archiv herunter, spiele Server-Backups zurück oder importiere MindSift-Daten und Obsidian-Vaults.",
+    "introDesktop": "Lade deine Daten als Backup oder Markdown-Archiv herunter, spiele Backups dieser Instanz zurück oder importiere MindSift-Daten und Obsidian-Vaults.",
     "backupTitle": "Vollständiges Backup (.zip)",
     "backupHint": "Alle deine Gedanken, Aufgaben, Notizen und Listen als JSON, mit den Bildern und Sprachnotizen deiner Notizen, gepackt in eine ZIP-Datei. Über „MindSift-Daten importieren“ lässt es sich vollständig zurückspielen. Im Ordner <c>Obsidian</c> liegt alles zusätzlich als Markdown, das Obsidian oder jeder Texteditor direkt öffnet, auch ohne MindSift.",
     "vaultTitle": "Markdown-Archiv für Obsidian (.zip)",
@@ -663,6 +675,7 @@
     "retentionNeverHint": "Eingeschaltet kann jede Person unter Kontoeinstellungen → Aufbewahrung „nie“ wählen, also Erledigtes und Gelöschtes behalten. Ausgeschaltet gilt dort für „nie“ die Voreinstellung des Bereichs (z. B. 30 Tage).",
     "mcpHint": "Eingeschaltet können Claude Code, Codex & Co. per API-Schlüssel und claude.ai oder ChatGPT als Connector auf MindSift zugreifen. Ausgeschaltet ist der MCP-Endpunkt samt Connector-Anmeldung abgeschaltet; bestehende Connector-Verbindungen ruhen, API-Schlüssel funktionieren per curl weiter.",
     "saved": "Server-Einstellungen erfolgreich gespeichert.",
+    "savedDesktop": "Einstellungen gespeichert.",
     "peopleSearch": "Personensuche",
     "peopleSearchHint": "Eingeschaltet werden beim Teilen und in Gruppen passende Namen vorgeschlagen. Ausgeschaltet muss man die genaue E-Mail-Adresse oder den Benutzernamen kennen; wer schon gemeinsam an etwas arbeitet, sieht sich dort weiter mit Namen.",
     "publicLinks": "Öffentliche Links zu Notizen",
@@ -752,7 +765,9 @@
   "admin": {
     "loadFailed": "Fehler beim Laden der Administrationsdaten",
     "title": "Server-Administration",
+    "titleDesktop": "Administration",
     "subtitle": "Benutzer, Einladungen, Organisationen, Teilen & Mail-Server",
+    "subtitleDesktop": "Name, Zeitzone, Backups, Medien und KI-Agenten dieser Instanz",
     "badge": "Server-Administrator",
     "nav": {
       "users": "Benutzer & Einladungen",
@@ -763,7 +778,9 @@
       "sharing": "Teilen",
       "sharingHint": "Modus, Personensuche, Links & Kalender",
       "server": "Server",
+      "serverDesktop": "Instanz",
       "serverHint": "Name, Zeitzone, Version & Netzwerk",
+      "serverHintDesktop": "Name, Sprache, Zeitzone & Version",
       "data": "Daten",
       "dataHint": "Backups & Aufbewahrung",
       "media": "Medien",
@@ -779,6 +796,7 @@
       "signinIntro": "Wer sich ohne Einladung registrieren darf, wer einen zweiten Faktor braucht und die Anmeldung über einen Anbieter (Single Sign-on).",
       "sharingIntro": "Wer mit wem teilen darf, ob Namen beim Tippen vorgeschlagen werden, öffentliche Links zu Notizen und Kalender-Abos.",
       "serverIntro": "Name, Standardsprache und Zeitzone dieser Instanz, die installierte Version und was der Server im Netz erreichen darf.",
+      "serverIntroDesktop": "Name, Standardsprache und Zeitzone dieser Instanz, die installierte Version und wohin Alarme gehen dürfen.",
       "dataIntro": "Tägliche Backups und ob Erledigtes und Gelöschtes für immer bleiben darf.",
       "mediaIntro": "Ob Bilder und Audiodateien in Notizen dürfen, wie stark sie komprimiert werden, wie groß sie sein dürfen und wie viel Speicher jede Person dafür hat.",
       "aiIntro": "Die Spracherkennung dieses Servers und ob KI-Agenten über MCP zugreifen dürfen."
@@ -900,8 +918,11 @@
   "backups": {
     "restoreFailed": "Wiederherstellen fehlgeschlagen",
     "serverTitle": "Server-Backups",
+    "serverTitleDesktop": "Backups",
     "serverHint": "Automatische tägliche Sicherungen deiner Daten auf dem Server (falls die Administration sie eingeschaltet hat).",
+    "serverHintDesktop": "Die täglichen Sicherungen dieser Instanz (unter Administration → Daten ein- und auszuschalten).",
     "none": "Noch keine Server-Backups vorhanden.",
+    "noneDesktop": "Noch keine Backups vorhanden.",
     "restoreMode": "Art der Wiederherstellung",
     "replace": "Ersetzen",
     "mergeHint": "Bestehendes behalten, Backup daneben anlegen.",

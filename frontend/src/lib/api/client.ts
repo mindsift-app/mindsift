@@ -197,7 +197,8 @@ let currentSharingMode: SharingMode = 'organizations';
 export const setCurrentSharingMode = (mode: SharingMode) => {
   currentSharingMode = mode;
 };
-export const isSharingDisabled = () => currentSharingMode === 'private';
+// Sharing off: the administration chose "private", or the desktop app (one person, nobody to share with)
+export const isSharingDisabled = () => currentSharingMode === 'private' || isDesktopApp();
 
 // People search (auth status): off, people are added by exact e-mail address or username only
 let currentPeopleSearch = true;

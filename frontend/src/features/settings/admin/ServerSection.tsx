@@ -22,7 +22,11 @@ export function ServerSection({
   const { t } = useTranslation('settings');
   const { settings, demoMode, handleSaveSystemSettings, setSettings } = admin;
   return (
-    <AdminPage title={t('admin.nav.server')} intro={t('admin.pages.serverIntro')} demoMode={demoMode}>
+    <AdminPage
+      title={isDesktopApp() ? t('admin.nav.serverDesktop') : t('admin.nav.server')}
+      intro={isDesktopApp() ? t('admin.pages.serverIntroDesktop') : t('admin.pages.serverIntro')}
+      demoMode={demoMode}
+    >
       {/* Installed and latest release (read only) */}
       <UpdateStatusCard />
 

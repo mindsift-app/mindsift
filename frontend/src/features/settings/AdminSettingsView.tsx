@@ -71,7 +71,13 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
     { id: 'signin', icon: KeyRound, label: t('admin.nav.signin'), hint: t('admin.nav.signinHint'), serverAdminOnly: true, notInDesktop: true },
     { id: 'organizations', icon: BuildingComplex, label: t('orgs.title'), hint: t('admin.nav.orgsHint'), notInDesktop: true },
     { id: 'sharing', icon: Share2, label: t('admin.nav.sharing'), hint: t('admin.nav.sharingHint'), serverAdminOnly: true, notInDesktop: true },
-    { id: 'server', icon: Server, label: t('admin.nav.server'), hint: t('admin.nav.serverHint'), serverAdminOnly: true },
+    {
+      id: 'server',
+      icon: Server,
+      label: desktop ? t('admin.nav.serverDesktop') : t('admin.nav.server'),
+      hint: desktop ? t('admin.nav.serverHintDesktop') : t('admin.nav.serverHint'),
+      serverAdminOnly: true,
+    },
     { id: 'data', icon: Database, label: t('admin.nav.data'), hint: t('admin.nav.dataHint'), serverAdminOnly: true },
     { id: 'media', icon: Images, label: t('admin.nav.media'), hint: t('admin.nav.mediaHint'), serverAdminOnly: true },
     { id: 'ai', icon: Mic, label: t('admin.nav.ai'), hint: t('admin.nav.aiHint'), serverAdminOnly: true },
@@ -97,15 +103,16 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           <div>
             <h1 className="text-base font-bold text-main tracking-tight flex items-center gap-2">
               <Shield className="w-4 h-4 text-accent" />
-              <span>{t('admin.title')}</span>
+              <span>{desktop ? t('admin.titleDesktop') : t('admin.title')}</span>
             </h1>
             <p className="text-xs text-muted">
-              {t('admin.subtitle')}
+              {desktop ? t('admin.subtitleDesktop') : t('admin.subtitle')}
             </p>
           </div>
         </div>
 
-        <span className="badge-accent">{t(`common:role.${currentUser.role}`)}</span>
+        {/* One person in the desktop app: no role to show */}
+        {!desktop && <span className="badge-accent">{t(`common:role.${currentUser.role}`)}</span>}
       </div>
 
       {/* Answers to saves float above the page, so nothing in it moves */}

@@ -17,12 +17,16 @@
     "title": "Fuseau horaire",
     "notSet": "Non défini ({{zone}})",
     "now": "Heure du serveur : {{time}} ({{zone}})",
+    "nowDesktop": "Heure actuelle : {{time}} ({{zone}})",
     "source": {
       "setting": "Source : ce réglage",
       "env": "Source : variable d'environnement TZ",
-      "default": "Source : UTC par défaut – aucun fuseau horaire n'est défini ici ni par TZ"
+      "envDesktop": "Source : fuseau horaire du système",
+      "default": "Source : UTC par défaut – aucun fuseau horaire n'est défini ici ni par TZ",
+      "defaultDesktop": "Source : UTC par défaut – le système n’indique aucun fuseau, choisis-en un ici"
     },
-    "hint": "Un seul fuseau horaire pour tout le serveur : les échéances, les alarmes, le résumé quotidien, les sauvegardes et les dates dans les e-mails en dépendent. Un changement s'applique immédiatement."
+    "hint": "Un seul fuseau horaire pour tout le serveur : les échéances, les alarmes, le résumé quotidien, les sauvegardes et les dates dans les e-mails en dépendent. Un changement s'applique immédiatement.",
+    "hintDesktop": "Le fuseau horaire de cette instance : échéances, alarmes, résumé du jour et sauvegardes s’y réfèrent. S’il n’est pas défini, celui du système s’applique. Un changement s’applique tout de suite."
   },
   "user": {
     "backTitle": "Retour à la vue d'ensemble",
@@ -107,6 +111,13 @@
       "needsBaseUrl": "La connexion via claude.ai et ChatGPT nécessite OAuth, ce qui requiert <c>BASE_URL</c> dans la configuration du serveur. Demande à l'administrateur de MindSift de le définir.",
       "tools": "Outils :",
       "toolsHint": "L'agent ne voit que les outils autorisés par la clé ou la connexion ; l'accès s'applique comme pour toi."
+    },
+    "local": {
+      "title": "Accessible aux programmes locaux",
+      "intro": "Les programmes de cet ordinateur, par exemple un agent IA, accèdent alors au MCP et à l’API REST de cette instance avec une clé d’API. Uniquement via 127.0.0.1, pas depuis le réseau ; ni connexion ni application à cette adresse.",
+      "port": "Port",
+      "changePort": "Changer de port",
+      "hint": "Dans l’agent IA, ajoute un serveur MCP de type HTTP avec cette adresse et transmets une clé d’API dans l’en-tête <c>X-API-Key</c> (exemples ci-dessous). L’instance n’est accessible que tant qu’elle est ouverte dans l’application de bureau."
     },
     "defaultKeyName": "Home Assistant",
     "confirmDisconnect": "Déconnecter vraiment « {{name}} » ?",
@@ -433,6 +444,7 @@
   "data": {
     "title": "Export & import",
     "intro": "Télécharge tes données sous forme de sauvegarde ou d'archive Markdown, restaure des sauvegardes du serveur ou importe des données MindSift et des coffres Obsidian.",
+    "introDesktop": "Télécharge tes données en sauvegarde ou en archive Markdown, restaure des sauvegardes de cette instance ou importe des données MindSift et des coffres Obsidian.",
     "backupTitle": "Sauvegarde complète (.zip)",
     "backupHint": "Toutes tes pensées, tâches, notes et listes au format JSON, avec les images et notes vocales de tes notes, compressées dans un fichier ZIP. « Importer des données MindSift » la restaure intégralement. Le dossier <c>Obsidian</c> contient en plus tout en Markdown, qu'Obsidian ou n'importe quel éditeur de texte ouvre directement, même sans MindSift.",
     "vaultTitle": "Archive Markdown pour Obsidian (.zip)",
@@ -663,6 +675,7 @@
     "retentionNeverHint": "Si activé, chacun peut choisir « jamais » sous Paramètres du compte → Rétention et conserver les éléments terminés et supprimés. Si désactivé, « jamais » revient à la valeur par défaut du domaine (par ex. 30 jours).",
     "mcpHint": "Si activé, Claude Code, Codex & Cie peuvent accéder à MindSift avec une clé API, et claude.ai ou ChatGPT comme connecteur. Si désactivé, le point de terminaison MCP et la connexion connecteur sont désactivés ; les connexions existantes sont suspendues, les clés API continuent de fonctionner via curl.",
     "saved": "Paramètres du serveur enregistrés.",
+    "savedDesktop": "Réglages enregistrés.",
     "peopleSearch": "Recherche de personnes",
     "peopleSearchHint": "Activée, des noms correspondants sont suggérés lors du partage et dans les groupes. Désactivée, il faut connaître l’adresse e-mail ou le nom d’utilisateur exacts ; celles et ceux qui travaillent déjà ensemble sur quelque chose continuent d’y voir leurs noms.",
     "publicLinks": "Liens publics vers les notes",
@@ -752,7 +765,9 @@
   "admin": {
     "loadFailed": "Échec du chargement des données d'administration",
     "title": "Administration du serveur",
+    "titleDesktop": "Administration",
     "subtitle": "Utilisateurs, invitations, organisations, partage et serveur e-mail",
+    "subtitleDesktop": "Nom, fuseau horaire, sauvegardes, médias et agents IA de cette instance",
     "badge": "Administrateur du serveur",
     "nav": {
       "users": "Utilisateurs & invitations",
@@ -763,7 +778,9 @@
       "sharing": "Partage",
       "sharingHint": "Mode, recherche de personnes, liens & calendrier",
       "server": "Serveur",
+      "serverDesktop": "Instance",
       "serverHint": "Nom, fuseau horaire, version & réseau",
+      "serverHintDesktop": "Nom, langue, fuseau horaire et version",
       "data": "Données",
       "dataHint": "Sauvegardes et conservation",
       "media": "Médias",
@@ -779,6 +796,7 @@
       "signinIntro": "Qui peut s’inscrire sans invitation, qui a besoin d’un second facteur, et la connexion via un fournisseur (authentification unique).",
       "sharingIntro": "Qui peut partager avec qui, si des noms sont suggérés pendant la saisie, les liens publics vers les notes et les abonnements de calendrier.",
       "serverIntro": "Le nom, la langue par défaut et le fuseau horaire de cette instance, la version installée et ce que le serveur peut joindre sur le réseau.",
+      "serverIntroDesktop": "Nom, langue par défaut et fuseau horaire de cette instance, la version installée et où les alarmes peuvent aller.",
       "dataIntro": "Sauvegardes quotidiennes, et si les éléments terminés et supprimés peuvent être conservés pour toujours.",
       "mediaIntro": "Si les images et fichiers audio sont permis dans les notes, leur compression, leur taille maximale et le stockage dont chaque personne dispose.",
       "aiIntro": "La reconnaissance vocale de ce serveur et si des agents IA peuvent se connecter via MCP."
@@ -901,8 +919,11 @@
   "backups": {
     "restoreFailed": "Échec de la restauration",
     "serverTitle": "Sauvegardes du serveur",
+    "serverTitleDesktop": "Sauvegardes",
     "serverHint": "Sauvegardes quotidiennes automatiques de tes données sur le serveur (si l'administration les a activées).",
+    "serverHintDesktop": "Les sauvegardes quotidiennes de cette instance (à activer ou désactiver sous Administration → Données).",
     "none": "Aucune sauvegarde sur le serveur pour le moment.",
+    "noneDesktop": "Aucune sauvegarde pour l’instant.",
     "restoreMode": "Type de restauration",
     "replace": "Remplacer",
     "mergeHint": "Conserver ce qui existe, ajouter la sauvegarde à côté.",

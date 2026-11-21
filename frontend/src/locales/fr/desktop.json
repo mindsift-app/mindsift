@@ -49,6 +49,10 @@
     "locked": "Cette instance est déjà ouverte dans une autre fenêtre MindSift, peut-être sous un autre compte utilisateur. Ferme-la là-bas, elle s’ouvrira ici.",
     "openFailed": "La base de données de l’instance n’a pas pu être ouverte.",
     "notFound": "Cette instance n’existe plus.",
-    "folderGone": "Le dossier de cette instance est introuvable. A-t-il été déplacé ou supprimé ?"
+    "folderGone": "Le dossier de cette instance est introuvable. A-t-il été déplacé ou supprimé ?",
+    "portInUse": "Le port {{detail}} est déjà utilisé par un autre programme. Choisis un autre port.",
+    "portInvalid": "Indique un port entre 1024 et 65535.",
+    "notOpen": "Aucune instance locale n’est ouverte.",
+    "listenFailed": "Impossible d’ouvrir l’instance aux programmes locaux : {{detail}}"
   }
 }

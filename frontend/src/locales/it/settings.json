@@ -17,12 +17,16 @@
     "title": "Fuso orario",
     "notSet": "Non impostato ({{zone}})",
     "now": "Ora del server: {{time}} ({{zone}})",
+    "nowDesktop": "Ora attuale: {{time}} ({{zone}})",
     "source": {
       "setting": "Origine: questa impostazione",
       "env": "Origine: variabile d'ambiente TZ",
-      "default": "Origine: UTC predefinito – nessun fuso orario impostato qui o tramite TZ"
+      "envDesktop": "Fonte: fuso orario del sistema",
+      "default": "Origine: UTC predefinito – nessun fuso orario impostato qui o tramite TZ",
+      "defaultDesktop": "Fonte: UTC predefinito – il sistema non indica un fuso orario, scegline uno qui"
     },
-    "hint": "Un unico fuso orario per tutto il server: scadenze, allarmi, riepilogo giornaliero, backup e date nelle e-mail lo seguono. Una modifica vale subito."
+    "hint": "Un unico fuso orario per tutto il server: scadenze, allarmi, riepilogo giornaliero, backup e date nelle e-mail lo seguono. Una modifica vale subito.",
+    "hintDesktop": "Il fuso orario di questa istanza: scadenze, allarmi, riepilogo giornaliero e backup seguono questo. Se non impostato, vale quello del sistema. Una modifica vale subito."
   },
   "user": {
     "backTitle": "Torna alla panoramica",
@@ -107,6 +111,13 @@
       "needsBaseUrl": "La connessione tramite claude.ai e ChatGPT richiede OAuth, che a sua volta necessita di <c>BASE_URL</c> nella configurazione del server. Chiedi all'amministratore di MindSift di impostarlo.",
       "tools": "Strumenti:",
       "toolsHint": "L'agente vede solo gli strumenti autorizzati dalla chiave o dalla connessione; l'accesso corrisponde a quello del tuo utente."
+    },
+    "local": {
+      "title": "Raggiungibile dai programmi locali",
+      "intro": "I programmi su questo computer, ad esempio un agente IA, raggiungono così l’MCP e l’API REST di questa istanza con una chiave API. Solo tramite 127.0.0.1, non dalla rete; lì non ci sono né accesso né l’app.",
+      "port": "Porta",
+      "changePort": "Cambia porta",
+      "hint": "Nell’agente IA aggiungi un server MCP di tipo HTTP con questo indirizzo e passa una chiave API nell’intestazione <c>X-API-Key</c> (esempi sotto). L’istanza è raggiungibile solo finché è aperta nell’app desktop."
     },
     "defaultKeyName": "Home Assistant",
     "confirmDisconnect": "Vuoi davvero disconnettere «{{name}}»?",
@@ -433,6 +444,7 @@
   "data": {
     "title": "Esportazione e importazione",
     "intro": "Scarica i tuoi dati come backup o archivio Markdown, ripristina backup del server o importa dati MindSift e vault di Obsidian.",
+    "introDesktop": "Scarica i tuoi dati come backup o archivio Markdown, ripristina i backup di questa istanza o importa dati MindSift e vault di Obsidian.",
     "backupTitle": "Backup completo (.zip)",
     "backupHint": "Tutti i tuoi pensieri, attività, note e liste in formato JSON, con le immagini e le note vocali delle tue note, inclusi in un file ZIP. «Importa dati MindSift» ripristina tutto completamente. La cartella <c>Obsidian</c> contiene inoltre tutto in Markdown, che Obsidian o qualsiasi editor di testo apre direttamente, anche senza MindSift.",
     "vaultTitle": "Archivio Markdown per Obsidian (.zip)",
@@ -663,6 +675,7 @@
     "retentionNeverHint": "Se attivo, tutti possono scegliere «mai» in Impostazioni account → Conservazione per conservare elementi completati ed eliminati. Se disattivato, «mai» ricade sul valore predefinito dell'area (es. 30 giorni).",
     "mcpHint": "Se attivo, Claude Code, Codex e altri possono accedere a MindSift con una chiave API, e claude.ai o ChatGPT come connettore. Se disattivato, l'endpoint MCP e l'accesso tramite connettore vengono disattivati; le connessioni connettore esistenti vengono sospese, le chiavi API continuano a funzionare via curl.",
     "saved": "Impostazioni server salvate.",
+    "savedDesktop": "Impostazioni salvate.",
     "peopleSearch": "Ricerca persone",
     "peopleSearchHint": "Attiva, durante la condivisione e nei gruppi vengono suggeriti i nomi. Disattiva, bisogna conoscere l’indirizzo e-mail o il nome utente esatti; chi lavora già insieme a qualcosa continua a vedersi lì con il nome.",
     "publicLinks": "Link pubblici alle note",
@@ -752,7 +765,9 @@
   "admin": {
     "loadFailed": "Caricamento dei dati di amministrazione non riuscito",
     "title": "Amministrazione del server",
+    "titleDesktop": "Amministrazione",
     "subtitle": "Utenti, inviti, organizzazioni, condivisione e server di posta",
+    "subtitleDesktop": "Nome, fuso orario, backup, media e agenti IA di questa istanza",
     "badge": "Amministratore server",
     "nav": {
       "users": "Utenti e inviti",
@@ -763,7 +778,9 @@
       "sharing": "Condivisione",
       "sharingHint": "Modalità, ricerca persone, link e calendario",
       "server": "Server",
+      "serverDesktop": "Istanza",
       "serverHint": "Nome, fuso orario, versione e rete",
+      "serverHintDesktop": "Nome, lingua, fuso orario e versione",
       "data": "Dati",
       "dataHint": "Backup e conservazione",
       "media": "Media",
@@ -779,6 +796,7 @@
       "signinIntro": "Chi può registrarsi senza invito, chi ha bisogno di un secondo fattore e l’accesso tramite un provider (single sign-on).",
       "sharingIntro": "Chi può condividere con chi, se i nomi vengono suggeriti durante la digitazione, i link pubblici alle note e gli abbonamenti al calendario.",
       "serverIntro": "Nome, lingua predefinita e fuso orario di questa istanza, la versione installata e cosa il server può raggiungere in rete.",
+      "serverIntroDesktop": "Nome, lingua predefinita e fuso orario di questa istanza, la versione installata e dove possono andare gli allarmi.",
       "dataIntro": "Backup giornalieri e se ciò che è completato o eliminato può essere conservato per sempre.",
       "mediaIntro": "Se immagini e file audio sono ammessi nelle note, quanto vengono compressi, quanto possono essere grandi e quanto spazio ha ogni persona.",
       "aiIntro": "Il riconoscimento vocale di questo server e se gli agenti IA possono collegarsi tramite MCP."
@@ -901,8 +919,11 @@
   "backups": {
     "restoreFailed": "Ripristino non riuscito",
     "serverTitle": "Backup del server",
+    "serverTitleDesktop": "Backup",
     "serverHint": "Backup automatici giornalieri dei tuoi dati sul server (se abilitati dall'amministrazione).",
+    "serverHintDesktop": "I backup giornalieri di questa istanza (si attivano e disattivano in Amministrazione → Dati).",
     "none": "Ancora nessun backup sul server.",
+    "noneDesktop": "Ancora nessun backup.",
     "restoreMode": "Tipo di ripristino",
     "replace": "Sostituisci",
     "mergeHint": "Conserva i dati esistenti, aggiungi il backup accanto ad essi.",

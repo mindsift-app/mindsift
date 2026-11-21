@@ -35,6 +35,15 @@ export interface DesktopState {
   version?: string;
 }
 
+// "Make reachable for local programs" of the open local instance (desktop/internal/shell/localapi.go):
+// port stays stored while it is off; listening is false while off or when the port could not be taken
+export interface DesktopLocalApi {
+  enabled: boolean;
+  port?: number;
+  listening: boolean;
+  problem?: DesktopProblem;
+}
+
 interface OpenAnswer {
   url: string;
   id: string;
@@ -48,7 +57,7 @@ export class DesktopShellError extends Error {
   }
 }
 
-async function call<T>(op: string, body: Record<string, string> = {}): Promise<T> {
+async function call<T>(op: string, body: Record<string, string | number | boolean> = {}): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`/__desktop/api/${op}`, {
@@ -77,6 +86,9 @@ export const desktopShell = {
   showBase: () => call<{ ok: boolean }>('show-base'),
   // The system's folder dialog (opened at path when it exists); '' when cancelled
   pickFolder: (path: string) => call<{ path: string }>('pick-folder', { path }),
+  localApi: () => call<DesktopLocalApi>('local-api'),
+  // port 0: keep the instance's port, or let the shell choose one when switched on for the first time
+  setLocalApi: (enabled: boolean, port = 0) => call<DesktopLocalApi>('local-api-set', { enabled, port }),
 };
 
 // Which local instance the window's storage belongs to. All local instances share the window's origin, so

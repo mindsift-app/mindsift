@@ -17,12 +17,16 @@
     "title": "Zona horaria",
     "notSet": "Sin definir ({{zone}})",
     "now": "Hora del servidor ahora: {{time}} ({{zone}})",
+    "nowDesktop": "Hora actual: {{time}} ({{zone}})",
     "source": {
       "setting": "Origen: este ajuste",
       "env": "Origen: variable de entorno TZ",
-      "default": "Origen: UTC por defecto; no hay zona horaria definida ni aquí ni mediante TZ"
+      "envDesktop": "Origen: zona horaria del sistema",
+      "default": "Origen: UTC por defecto; no hay zona horaria definida ni aquí ni mediante TZ",
+      "defaultDesktop": "Origen: UTC por defecto – el sistema no indica zona horaria, elige una aquí"
     },
-    "hint": "Una zona horaria para todo el servidor: de ella dependen los vencimientos, las alarmas, el resumen diario, las copias de seguridad y las fechas de los correos. Un cambio se aplica al instante."
+    "hint": "Una zona horaria para todo el servidor: de ella dependen los vencimientos, las alarmas, el resumen diario, las copias de seguridad y las fechas de los correos. Un cambio se aplica al instante.",
+    "hintDesktop": "La zona horaria de esta instancia: de ella dependen los vencimientos, las alarmas, el resumen diario y las copias de seguridad. Sin fijar, se usa la del sistema. Un cambio se aplica al instante."
   },
   "user": {
     "backTitle": "Volver a la vista general",
@@ -69,7 +73,9 @@
   "admin": {
     "loadFailed": "Error al cargar los datos de administración",
     "title": "Administración del servidor",
+    "titleDesktop": "Administración",
     "subtitle": "Usuarios, invitaciones, organizaciones, compartir y servidor de correo",
+    "subtitleDesktop": "Nombre, zona horaria, copias de seguridad, multimedia y agentes de IA de esta instancia",
     "badge": "Administrador del servidor",
     "nav": {
       "users": "Usuarios e invitaciones",
@@ -80,7 +86,9 @@
       "sharing": "Compartir",
       "sharingHint": "Modo, búsqueda de personas, enlaces y calendario",
       "server": "Servidor",
+      "serverDesktop": "Instancia",
       "serverHint": "Nombre, zona horaria, versión y red",
+      "serverHintDesktop": "Nombre, idioma, zona horaria y versión",
       "data": "Datos",
       "dataHint": "Copias y conservación",
       "media": "Multimedia",
@@ -96,6 +104,7 @@
       "signinIntro": "Quién puede registrarse sin invitación, quién necesita un segundo factor y el inicio de sesión a través de un proveedor (inicio de sesión único).",
       "sharingIntro": "Quién puede compartir con quién, si se sugieren nombres al escribir, los enlaces públicos a notas y las suscripciones de calendario.",
       "serverIntro": "Nombre, idioma predeterminado y zona horaria de esta instancia, la versión instalada y a qué puede acceder el servidor en la red.",
+      "serverIntroDesktop": "Nombre, idioma predeterminado y zona horaria de esta instancia, la versión instalada y adónde pueden ir las alarmas.",
       "dataIntro": "Copias de seguridad diarias y si lo terminado y lo eliminado puede conservarse para siempre.",
       "mediaIntro": "Si se permiten imágenes y archivos de audio en las notas, cuánto se comprimen, qué tamaño pueden tener y cuánto almacenamiento tiene cada persona.",
       "aiIntro": "El reconocimiento de voz de este servidor y si los agentes de IA pueden conectarse por MCP."
@@ -229,6 +238,13 @@
       "needsBaseUrl": "Conectar a través de claude.ai y ChatGPT requiere OAuth, lo que necesita <c>BASE_URL</c> en la configuración del servidor. Solicita a la persona que administra MindSift que lo configure.",
       "tools": "Herramientas:",
       "toolsHint": "El agente solo ve las herramientas autorizadas para la clave o conexión; el acceso funciona igual que para ti."
+    },
+    "local": {
+      "title": "Accesible para programas locales",
+      "intro": "Los programas de este ordenador, como un agente de IA, acceden entonces al MCP y a la API REST de esta instancia con una clave de API. Solo a través de 127.0.0.1, no desde la red; allí no hay inicio de sesión ni la propia app.",
+      "port": "Puerto",
+      "changePort": "Cambiar puerto",
+      "hint": "En el agente de IA, añade un servidor MCP de tipo HTTP con esta dirección y envía una clave de API en la cabecera <c>X-API-Key</c> (ejemplos abajo). La instancia solo es accesible mientras está abierta en la app de escritorio."
     },
     "defaultKeyName": "Home Assistant",
     "confirmDisconnect": "¿De verdad quieres desconectar «{{name}}»?",
@@ -498,6 +514,7 @@
   "data": {
     "title": "Exportar e importar",
     "intro": "Descarga tus datos como copia de seguridad o archivo Markdown, restaura copias del servidor o importa datos de MindSift y bóvedas de Obsidian.",
+    "introDesktop": "Descarga tus datos como copia de seguridad o archivo Markdown, restaura copias de esta instancia o importa datos de MindSift y bóvedas de Obsidian.",
     "backupTitle": "Copia de seguridad completa (.zip)",
     "backupHint": "Todos tus pensamientos, tareas, notas y listas en formato JSON, junto con las imágenes y notas de voz de tus notas, comprimidos en un archivo ZIP. «Importar datos de MindSift» lo restaura por completo. La carpeta <c>Obsidian</c> contiene además todo en Markdown, que Obsidian o cualquier editor de texto abre directamente, incluso sin MindSift.",
     "vaultTitle": "Archivo Markdown para Obsidian (.zip)",
@@ -782,6 +799,7 @@
     "retentionNeverHint": "Si está activado, todos pueden elegir «nunca» en Ajustes de la cuenta → Retención y conservar elementos completados y eliminados. Si está desactivado, «nunca» vuelve al valor predeterminado del área (p. ej. 30 días).",
     "mcpHint": "Si está activado, Claude Code, Codex y similares pueden acceder a MindSift con una clave API, y claude.ai o ChatGPT como conector. Si se desactiva, se apagan el endpoint MCP y el inicio de sesión por conector; las conexiones existentes se pausan y las claves API siguen funcionando vía curl.",
     "saved": "Ajustes del servidor guardados.",
+    "savedDesktop": "Ajustes guardados.",
     "peopleSearch": "Búsqueda de personas",
     "peopleSearchHint": "Activada, al compartir y en los grupos se sugieren nombres. Desactivada, hay que conocer la dirección de correo o el nombre de usuario exactos; quienes ya trabajan juntos en algo se siguen viendo allí con su nombre.",
     "publicLinks": "Enlaces públicos a notas",
@@ -901,8 +919,11 @@
   "backups": {
     "restoreFailed": "Error al restaurar",
     "serverTitle": "Copias de seguridad del servidor",
+    "serverTitleDesktop": "Copias de seguridad",
     "serverHint": "Copias de seguridad diarias automáticas de tus datos en el servidor (si la administración las ha activado).",
+    "serverHintDesktop": "Las copias diarias de esta instancia (se activan y desactivan en Administración → Datos).",
     "none": "Aún no hay copias de seguridad del servidor.",
+    "noneDesktop": "Aún no hay copias de seguridad.",
     "restoreMode": "Tipo de restauración",
     "replace": "Reemplazar",
     "mergeHint": "Conserva lo que existe y añade la copia de seguridad junto a ello.",

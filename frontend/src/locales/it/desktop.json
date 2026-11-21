@@ -49,6 +49,10 @@
     "locked": "Questa istanza è già aperta in un’altra finestra di MindSift, forse con un altro account utente. Chiudila lì e potrai aprirla qui.",
     "openFailed": "Non è stato possibile aprire il database dell’istanza.",
     "notFound": "Questa istanza non esiste più.",
-    "folderGone": "Manca la cartella di questa istanza. È stata spostata o eliminata?"
+    "folderGone": "Manca la cartella di questa istanza. È stata spostata o eliminata?",
+    "portInUse": "La porta {{detail}} è già usata da un altro programma. Scegli un’altra porta.",
+    "portInvalid": "Indica una porta tra 1024 e 65535.",
+    "notOpen": "Nessuna istanza locale aperta.",
+    "listenFailed": "Impossibile aprire l’istanza ai programmi locali: {{detail}}"
   }
 }
