@@ -69,3 +69,28 @@ export function caretInElementAtPoint(el: Node, x: number, y: number): { node: N
   }
   return best && { node: best.node, offset: best.offset };
 }
+
+/** Where a click or drop at a point lands in the raw (markdown) text shown rendered in el (a bullet's text
+ *  layer, a table cell): the hit test, or for a point it does not take into el (WebKit, rows with
+ *  content-visibility: auto) the nearest character of el, mapped back to raw. onlyInside: the nearest
+ *  character only for a point inside el's box, else null (the caller decides between start and end).
+ *  node/nodeOffset: the position in the rendered text. Null when el has no text to hit. */
+export function rawOffsetAtPoint(
+  el: Node,
+  raw: string,
+  x: number,
+  y: number,
+  onlyInside = false
+): { offset: number; node: Node; nodeOffset: number } | null {
+  let at = caretAtPoint(x, y);
+  if (!at || !el.contains(at.node)) {
+    at = null;
+    const box = onlyInside && el instanceof Element ? el.getBoundingClientRect() : null;
+    if (!box || (x >= box.left && x <= box.right && y >= box.top && y <= box.bottom)) at = caretInElementAtPoint(el, x, y);
+  }
+  if (!at) return null;
+  const range = document.createRange();
+  range.setStart(el, 0);
+  range.setEnd(at.node, at.offset);
+  return { offset: mapRenderedOffsetToRaw(raw, el.textContent || '', range.toString().length), node: at.node, nodeOffset: at.offset };
+}

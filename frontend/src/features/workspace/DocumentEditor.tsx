@@ -873,6 +873,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     <div
       ref={scrollRef}
       className={embedded ? 'flex flex-col bg-editor' : 'flex-1 flex flex-col h-full min-h-0 bg-editor overflow-y-auto overscroll-y-contain'}
+      // Bullets within a screen of the view are laid out ahead (lib/outlineNear.ts)
+      data-outline-scroll={embedded ? undefined : ''}
       data-tour="note-editor"
       data-sync-channel={engineState?.channel}
     >

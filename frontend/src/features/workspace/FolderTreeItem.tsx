@@ -5,6 +5,7 @@ import { Document, SharedFolder } from '../../lib/types';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
 import { isFolderShared } from './workspaceListing';
 import { TemplateMark } from './NoteTemplates';
+import { isFolderDrop } from './useDocDragDrop';
 import { useTranslation } from 'react-i18next';
 
 interface FolderTreeItemProps {
@@ -153,6 +154,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
         draggable
         onDragStart={(e) => handleFolderDragStart(e, node.fullPath)}
         onDragOver={(e) => {
+          if (!isFolderDrop(e.dataTransfer)) return;
           e.preventDefault();
           e.stopPropagation();
           setDragOverFolder(node.fullPath);
@@ -161,7 +163,9 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
           e.preventDefault();
           if (dragOverFolder === node.fullPath) setDragOverFolder(null);
         }}
-        onDrop={(e) => handleDropOnFolder(node.fullPath, e)}
+        onDrop={(e) => {
+          if (isFolderDrop(e.dataTransfer)) handleDropOnFolder(node.fullPath, e);
+        }}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         className={`group relative flex items-center justify-between pr-1.5 h-11 sm:h-7 rounded-btn text-sm sm:text-xs cursor-pointer border-l-2 transition-colors ${
           isDragOver
