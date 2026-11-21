@@ -10,6 +10,7 @@ import { TaskList, TaskListMember, Thought, User } from '../../lib/types';
 import { ViewMode } from './taskViewTypes';
 import { useTaskDrag } from './useTaskDrag';
 import { useTabReorder } from '../../lib/useTabReorder';
+import { isDesktopApp } from '../../lib/api';
 import { TabDropMarker } from '../../components/TabDropMarker';
 import { AvatarPerson } from '../../components/AvatarStack';
 import { ActionMenu } from '../../components/ActionMenu';
@@ -233,12 +234,17 @@ export function TaskListTabs({
                     disabled: !isTaskListShared(currentSelectedList),
                     onSelect: () => onToggleMute(currentSelectedList),
                   },
-                  {
-                    key: 'share',
-                    icon: <Users className="w-3.5 h-3.5" />,
-                    label: t('common:listMenu.share'),
-                    onSelect: () => handleOpenShareModal(currentSelectedList),
-                  },
+                  // Nobody to share with in the desktop app
+                  ...(isDesktopApp()
+                    ? []
+                    : [
+                        {
+                          key: 'share',
+                          icon: <Users className="w-3.5 h-3.5" />,
+                          label: t('common:listMenu.share'),
+                          onSelect: () => handleOpenShareModal(currentSelectedList),
+                        },
+                      ]),
                   {
                     key: 'rename',
                     icon: <Pencil className="w-3.5 h-3.5" />,

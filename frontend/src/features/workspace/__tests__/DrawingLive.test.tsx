@@ -37,6 +37,7 @@ vi.mock('../../../lib/api', async (importOriginal) => {
 import { DrawingBlock } from '../drawing/DrawingBlock';
 import { NoteSharedContext } from '../drawing/noteShared';
 import { DrawingEditor } from '../drawing/DrawingEditor';
+import { setCurrentDesktop } from '../../../lib/api/client';
 import { parseDrawing } from '../../../lib/drawing/model';
 
 const CONTENT = JSON.stringify({ v: 1, els: [{ id: 'a', ver: 1, t: 'rect', x: 0, y: 0, w: 120, h: 60, s: 'main', f: 'none', sw: 2, txt: 'Kasten' }] });
@@ -140,6 +141,18 @@ describe('Drawing alone, and starting to draw together', () => {
     fireEvent.doubleClick(screen.getByRole('img'));
     await editorOpen();
     expect(screen.queryByRole('button', { name: 'Gemeinsam zeichnen' })).toBeNull();
+  });
+
+  it('does not offer "Gemeinsam zeichnen" in the desktop app, even in a shared note', async () => {
+    setCurrentDesktop({ platform: 'linux', realtime: 'sse' });
+    try {
+      openBlock(true);
+      fireEvent.doubleClick(screen.getByRole('img'));
+      await editorOpen();
+      expect(screen.queryByRole('button', { name: 'Gemeinsam zeichnen' })).toBeNull();
+    } finally {
+      setCurrentDesktop(null);
+    }
   });
 
   it('"Gemeinsam zeichnen" starts a session with the drawing so far', async () => {
