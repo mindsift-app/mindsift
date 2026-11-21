@@ -189,3 +189,33 @@ func TestNormalizeServerURL(t *testing.T) {
 		}
 	}
 }
+
+// The folder dialog: opened at the given folder or its nearest existing parent, the choice handed back, a
+// cancelled dialog an empty path, and without a dialog (tests, no window) a problem the view can show.
+func TestShellPickFolder(t *testing.T) {
+	sh := newTestShell(t)
+	if _, out := call(t, sh, "pick-folder", map[string]string{}); out["error"] == nil {
+		t.Errorf("without a dialog: %v, want an error", out)
+	}
+	var gotStart string
+	answer := "/media/disk/MindSift"
+	sh.PickFolder = func(start string) (string, error) { gotStart = start; return answer, nil }
+	existing := t.TempDir()
+	if code, out := call(t, sh, "pick-folder", map[string]string{"path": existing}); code != http.StatusOK || out["path"] != answer || gotStart != existing {
+		t.Errorf("pick: %d %v, start %q", code, out, gotStart)
+	}
+	for start, want := range map[string]string{filepath.Join(existing, "fehlt", "tief"): existing, "relativ": "", "": ""} {
+		call(t, sh, "pick-folder", map[string]string{"path": start})
+		if gotStart != want {
+			t.Errorf("start %q handed to the dialog as %q, want %q", start, gotStart, want)
+		}
+	}
+	answer = ""
+	if _, out := call(t, sh, "pick-folder", map[string]string{}); out["path"] != "" || out["error"] != nil {
+		t.Errorf("cancelled: %v", out)
+	}
+	other := func(r *http.Request) { r.Header.Set("Origin", "https://evil.example") }
+	if code, _ := call(t, sh, "pick-folder", map[string]string{}, other); code != http.StatusForbidden {
+		t.Errorf("other origin: %d", code)
+	}
+}

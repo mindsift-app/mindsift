@@ -84,6 +84,8 @@ export const desktopShell = {
   rename: (id: string, name: string) => call<{ ok: boolean }>('rename', { id, name }),
   remove: (id: string) => call<{ ok: boolean }>('remove', { id }),
   showBase: () => call<{ ok: boolean }>('show-base'),
+  // The system's folder dialog (opened at path when it exists); '' when cancelled
+  pickFolder: (path: string) => call<{ path: string }>('pick-folder', { path }),
   localApi: () => call<DesktopLocalApi>('local-api'),
   // port 0: keep the instance's port, or let the shell choose one when switched on for the first time
   setLocalApi: (enabled: boolean, port = 0) => call<DesktopLocalApi>('local-api-set', { enabled, port }),

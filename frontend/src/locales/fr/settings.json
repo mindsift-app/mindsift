@@ -934,7 +934,17 @@
     "deletedHint": "Quand un administrateur ou la gestion des utilisateurs supprime un compte, ses sauvegardes restent ici jusqu’à la fin de la durée de conservation. Ainsi, une personne supprimée par erreur récupère ses données : télécharge une sauvegarde et importe-la dans le nouveau compte sous Paramètres du compte → Export & import. Si quelqu’un supprime son propre compte, ses sauvegardes disparaissent aussitôt.",
     "deletedOn": "Supprimé le {{deleted}} · retiré le {{remove}}",
     "days_one": "jour",
-    "days_other": "jours"
+    "days_other": "jours",
+    "folder": "Dossier",
+    "folderHint": "Vide pour le dossier de l’instance. Lors d’un changement, les sauvegardes existantes restent dans l’ancien dossier ; la liste et la restauration montrent celles du nouveau.",
+    "folderChoose": "Choisir un dossier…",
+    "folderReset": "Par défaut",
+    "folderResetHint": "Sauvegarder à nouveau dans le dossier de l’instance",
+    "folderPickUnavailable": "Le choix de dossier n’est pas disponible ici. Saisissez le chemin à la main.",
+    "folderPickFailed": "Le choix de dossier n’a pas pu s’ouvrir. Saisissez le chemin à la main.",
+    "folderFailed": "Le dossier n’a pas pu être utilisé",
+    "autoHintDesktop": "Chaque jour une sauvegarde de toute la base de données et de vos données dans le dossier ci-dessous tant que l’application est ouverte (si elle était fermée à cette heure, au prochain démarrage). Un dossier sur un autre disque protège aussi d’un disque en panne.",
+    "restoreHintDesktop": "Restaurer une copie de la base de données : fermez l’instance (ouvrez-en une autre ou quittez l’application), remplacez <c>mindsift.db</c> dans le dossier de l’instance par le fichier décompressé (<c>gunzip</c>), puis rouvrez l’instance. Vos seules données se restaurent dans les paramètres du compte."
   },
   "voiceStatus": {
     "loadFailed": "Impossible de charger le statut",
@@ -1309,6 +1319,7 @@
       "backupEnabled": "Sauvegardes quotidiennes",
       "backupTime": "Heure de sauvegarde",
       "backupRetentionDays": "Conserver les sauvegardes (jours)",
+      "backupDir": "Dossier des sauvegardes",
       "retentionAllowNever": "Conservation illimitée",
       "mcpEnabled": "Agents IA (MCP)",
       "peopleSearch": "Recherche de personnes",

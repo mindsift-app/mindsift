@@ -12,9 +12,10 @@ import (
 )
 
 // Desktop mode (config.Desktop, set by the desktop app): the server runs inside the app for one person and
-// only the app's own window reaches it, in-process, without any port. There is no sign-in and no setup
+// only the app's own window reaches it, in-process, without any port. There is no sign-in and no first-boot
 // wizard: the server creates the one account on the first start (prepareDesktopAccount) and the window asks
-// for a session with POST /api/v1/auth/desktop whenever it has none. What needs other people or an address
+// for a session with POST /api/v1/auth/desktop whenever it has none. A short setup wizard without the
+// account and the server's questions follows once (setup_pending, handleFinishSetup). What needs other people or an address
 // others can reach (registration, invites, mail, OIDC, passkeys, public links, web push, calendar feeds) is
 // off; config.ApplyDesktop switches the settings, notInDesktop the routes, /auth/status tells the app.
 
@@ -41,8 +42,9 @@ func (s *Server) desktopStatus() map[string]string {
 }
 
 // prepareDesktopAccount creates the one account of the desktop app on its first start: an administrator
-// named after the system's user, without a password of its own (the app signs it in), with the MindSift help
-// as notes. A database that already has an account (a later start, or a restored backup) stays as it is.
+// named after the system's user, without a password of its own (the app signs it in), with the desktop
+// app's short setup wizard still to come (setup_pending). A database that already has an account (a later
+// start, or a restored backup) stays as it is.
 func (s *Server) prepareDesktopAccount() error {
 	s.setupMu.Lock()
 	defer s.setupMu.Unlock()
@@ -69,15 +71,15 @@ func (s *Server) prepareDesktopAccount() error {
 	}
 	s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountCreated, auditUserTarget(user),
 		map[string]string{"role": user.Role, "via": "desktop"})
-	logFailed("Creating the help notes", s.store.SeedHelpNotes(user), "user_id", user.ID)
-	// One person: nothing to share with anyone (the sharing options disappear); daily backups on, since no
-	// administrator sets them up
+	// One person: nothing to share with anyone (the sharing options disappear), no registration
 	if sys, err := s.store.GetSystemSettings(); err == nil && sys != nil {
 		sys.SharingMode = storage.SharingPrivate
 		sys.RegistrationMode = storage.RegistrationClosed
-		sys.BackupEnabled = true
 		logFailed("Storing the desktop app's settings", s.store.UpdateSystemSettings(sys))
 	}
+	// The short setup wizard of the desktop app follows (FinishSetupView): language, time zone, name,
+	// backups and the help notes, all with defaults that one click accepts (handleFinishSetup)
+	logFailed("Marking the setup as unfinished", s.store.SetSetupPending(true), "user_id", user.ID)
 	slog.Info("Desktop account created", "username", user.Username, "user_id", user.ID)
 	return nil
 }

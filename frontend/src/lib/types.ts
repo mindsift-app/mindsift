@@ -655,6 +655,13 @@ export interface BackupFile {
   createdAt: string;
 }
 
+/** Desktop app: where the backups go; defaultDir is backups/ in the instance's folder, custom: chosen. */
+export interface BackupLocation {
+  dir: string;
+  defaultDir: string;
+  custom: boolean;
+}
+
 /** Parts of the own data a backup can be restored for. */
 export type DataSection = 'notes' | 'tasks' | 'lists' | 'inbox' | 'themes';
 const dataSection = (id: DataSection) => ({

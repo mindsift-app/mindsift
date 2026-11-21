@@ -1,6 +1,7 @@
 #!/bin/sh
 # Builds the desktop spike in containers: the frontend once, then the shell for Linux
-# (GTK4 + WebKitGTK 6.0, needs cgo) and Windows (WebView2, no cgo). Output: desktop/out/.
+# (GTK4 + WebKitGTK 6.0, needs cgo) and Windows (WebView2, no cgo, with icon and version resources from
+# desktop/packaging, see tools/mksyso). Output: desktop/out/.
 #   desktop/build.sh            both
 #   desktop/build.sh linux      only Linux
 #   desktop/build.sh windows    only Windows
@@ -51,7 +52,9 @@ if [ "$TARGET" = all ] || [ "$TARGET" = linux ]; then
     go mod tidy && CGO_ENABLED=1 go build -trimpath -ldflags '-s -w -X main.version=v$VERSION' -o out/mindsift-desktop-linux-amd64 ."
 fi
 if [ "$TARGET" = all ] || [ "$TARGET" = windows ]; then
-  run_in "$GO_IMAGE" desktop desktop/out "go mod tidy && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags '-s -w -H windowsgui -X main.version=v$VERSION' -o out/mindsift-desktop-windows-amd64.exe ."
+  # The .syso (icon, version information, manifest) is linked in by go build and removed again afterwards
+  run_in "$GO_IMAGE" desktop desktop/out "go mod tidy && go run ./tools/mksyso -ico packaging/windows/app.ico -version $VERSION -out resource_windows_amd64.syso && \
+    CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags '-s -w -H windowsgui -X main.version=v$VERSION' -o out/mindsift-desktop-windows-amd64.exe . ; status=\$?; rm -f resource_windows_amd64.syso; exit \$status"
 fi
 # The placeholder page goes back, so the checkout stays clean
 rm -rf desktop/dist && mkdir desktop/dist && cp cmd/server/dist/index.html desktop/dist/

@@ -6,7 +6,7 @@
 // window goes straight from the webview into the router inside this process (wails://localhost/ on Linux,
 // http://wails.localhost/ on Windows, both served by the webview itself). Nothing else on the machine can
 // reach it. The server runs in desktop mode (config.ApplyDesktop): one account, created on the first start
-// and signed in by the window itself, no sign-in screen and no setup wizard.
+// and signed in by the window itself, no sign-in screen and only a short setup wizard on its first start.
 package main
 
 import (
@@ -32,6 +32,12 @@ var embeddedDist embed.FS
 //go:embed icon.png
 var trayIcon []byte
 
+// The app icon (the window's icon on Windows when the exe has no resource, the about box); on Linux the
+// window's icon comes from the desktop entry, see desktopentry_linux.go
+//
+//go:embed packaging/linux/icons/hicolor/512x512/apps/app.mindsift.MindSift.png
+var appIcon []byte
+
 var version = ""
 
 func main() {
@@ -55,10 +61,17 @@ func main() {
 	}
 	sh := &shell.Shell{Settings: settings, Local: local, Static: staticFS, Origin: windowOrigin(), Version: version, Base: base}
 
+	// Before the window opens, so the desktop finds the entry and its icon when it maps the window
+	registerDesktopEntry()
+
 	var window *application.WebviewWindow
 	app := application.New(application.Options{
 		Name:        "MindSift",
 		Description: "MindSift desktop",
+		Icon:        appIcon,
+		// The application id is also the Wayland app-id and the X11 WM_CLASS of the window, which the
+		// desktop matches to app.mindsift.MindSift.desktop (and with it the icon)
+		Linux: application.LinuxOptions{ApplicationID: shell.DesktopEntryID},
 		Assets: application.AssetOptions{
 			Handler:        sh,
 			DisableLogging: true,
@@ -74,6 +87,17 @@ func main() {
 		},
 	})
 	sh.ShowFolder = func(dir string) error { return app.Browser.OpenFile(dir) }
+	sh.PickFolder = func(start string) (string, error) {
+		d := app.Dialog.OpenFile().CanChooseDirectories(true).CanChooseFiles(false).CanCreateDirectories(true).
+			SetTitle(shell.Text("pickFolder")).SetButtonText(shell.Text("pickFolderButton"))
+		if start != "" {
+			d.SetDirectory(start)
+		}
+		if window != nil {
+			d.AttachToWindow(window)
+		}
+		return d.PromptForSingleSelection()
+	}
 	sh.Opened = func(e shell.Entry) {
 		if window != nil {
 			window.SetTitle(e.Name + " – MindSift")

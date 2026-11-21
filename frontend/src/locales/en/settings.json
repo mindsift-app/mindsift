@@ -934,7 +934,17 @@
     "deletedHint": "When an admin or user manager deletes an account, its backups stay here until the retention period ends. So someone deleted by mistake gets their data back: download a backup and import it in the new account under Account settings → Export & import. Accounts their owners delete lose their backups at once.",
     "deletedOn": "Deleted on {{deleted}} · removed on {{remove}}",
     "days_one": "day",
-    "days_other": "days"
+    "days_other": "days",
+    "folder": "Folder",
+    "folderHint": "Empty for the instance’s folder. When you switch, existing backups stay in the old folder; the list and restore show those of the new one.",
+    "folderChoose": "Choose folder…",
+    "folderReset": "Default",
+    "folderResetHint": "Back up to the instance’s folder again",
+    "folderPickUnavailable": "The folder dialog is not available here. Type the path instead.",
+    "folderPickFailed": "The folder dialog could not be opened. Type the path instead.",
+    "folderFailed": "The folder could not be used",
+    "autoHintDesktop": "Every day a backup of the whole database and of your data into the folder below while the app is running (if it was closed at that time, at the next start). A folder on another drive also protects against a broken disk.",
+    "restoreHintDesktop": "Restoring a database snapshot: close the instance (open another one or quit the app), replace <c>mindsift.db</c> in the instance’s folder with the unpacked file (<c>gunzip</c>), open the instance again. Your own data alone is restored in the account settings."
   },
   "voiceStatus": {
     "loadFailed": "The status could not be loaded",
@@ -1309,6 +1319,7 @@
       "backupEnabled": "Daily backups",
       "backupTime": "Backup time",
       "backupRetentionDays": "Keep backups (days)",
+      "backupDir": "Backup folder",
       "retentionAllowNever": "Keep forever",
       "mcpEnabled": "AI agents (MCP)",
       "peopleSearch": "People search",

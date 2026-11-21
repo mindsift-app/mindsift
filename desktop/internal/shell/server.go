@@ -49,9 +49,33 @@ func NormalizeServerURL(raw string) (string, error) {
 	return u.String(), nil
 }
 
-// CheckServer: the address answers like a MindSift server (GET api/v1/health)
+// Timing of the connection check: a slow first answer (a cold start of the server or its proxy, a DNS
+// lookup) is common, so the first try gets most of the time and one more follows after a short pause.
+var (
+	checkTotal = 15 * time.Second // the whole check, both tries
+	checkFirst = 9 * time.Second  // the first try; the second gets what is left
+	checkPause = time.Second
+)
+
+// CheckServer: the address answers like a MindSift server (GET api/v1/health). A failure to connect is
+// tried once more after a short pause; a wrong answer (not MindSift) is final at once.
 func CheckServer(ctx context.Context, base string) error {
-	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, checkTotal)
+	defer cancel()
+	err := checkServerOnce(ctx, base, checkFirst)
+	if p, ok := err.(*Problem); !ok || p.Code != "serverUnreachable" {
+		return err
+	}
+	select {
+	case <-ctx.Done():
+		return err
+	case <-time.After(checkPause):
+	}
+	return checkServerOnce(ctx, base, checkTotal)
+}
+
+func checkServerOnce(ctx context.Context, base string, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"api/v1/health", nil)
 	if err != nil {

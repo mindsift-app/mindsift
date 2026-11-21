@@ -934,7 +934,17 @@
     "deletedHint": "Quando un amministratore o la gestione utenti elimina un account, i suoi backup restano qui fino alla fine del periodo di conservazione. Così chi è stato eliminato per errore riavrà i suoi dati: scarica un backup e importalo nel nuovo account in Impostazioni account → Esportazione e importazione. Se qualcuno elimina il proprio account, i suoi backup spariscono subito.",
     "deletedOn": "Eliminato il {{deleted}} · verrà rimosso il {{remove}}",
     "days_one": "giorno",
-    "days_other": "giorni"
+    "days_other": "giorni",
+    "folder": "Cartella",
+    "folderHint": "Vuoto per la cartella dell’istanza. Cambiandola, i backup esistenti restano nella cartella precedente; l’elenco e il ripristino mostrano quelli della nuova.",
+    "folderChoose": "Scegli cartella…",
+    "folderReset": "Predefinita",
+    "folderResetHint": "Salva di nuovo i backup nella cartella dell’istanza",
+    "folderPickUnavailable": "La scelta della cartella non è disponibile qui. Inserisci il percorso a mano.",
+    "folderPickFailed": "Impossibile aprire la scelta della cartella. Inserisci il percorso a mano.",
+    "folderFailed": "Impossibile usare la cartella",
+    "autoHintDesktop": "Ogni giorno un backup dell’intero database e dei tuoi dati nella cartella qui sotto mentre l’app è aperta (se a quell’ora era chiusa, al successivo avvio). Una cartella su un altro disco protegge anche da un disco guasto.",
+    "restoreHintDesktop": "Ripristinare una copia del database: chiudi l’istanza (aprine un’altra o esci dall’app), sostituisci <c>mindsift.db</c> nella cartella dell’istanza con il file decompresso (<c>gunzip</c>), poi riapri l’istanza. I soli tuoi dati si ripristinano nelle impostazioni dell’account."
   },
   "voiceStatus": {
     "loadFailed": "Impossibile caricare lo stato",
@@ -1309,6 +1319,7 @@
       "backupEnabled": "Backup giornalieri",
       "backupTime": "Ora del backup",
       "backupRetentionDays": "Conserva i backup (giorni)",
+      "backupDir": "Cartella dei backup",
       "retentionAllowNever": "Conservazione illimitata",
       "mcpEnabled": "Agenti IA (MCP)",
       "peopleSearch": "Ricerca persone",

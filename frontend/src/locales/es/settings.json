@@ -934,7 +934,17 @@
     "deletedHint": "Cuando la administración o la gestión de usuarios elimina una cuenta, sus copias se quedan aquí hasta que termine el periodo de conservación. Así, quien fue eliminado por error recupera sus datos: descarga una copia e impórtala en la nueva cuenta en Ajustes de la cuenta → Exportar e importar. Si alguien elimina su propia cuenta, sus copias desaparecen al instante.",
     "deletedOn": "Eliminada el {{deleted}} · se quitará el {{remove}}",
     "days_one": "día",
-    "days_other": "días"
+    "days_other": "días",
+    "folder": "Carpeta",
+    "folderHint": "Vacío para la carpeta de la instancia. Al cambiarla, las copias existentes se quedan en la carpeta anterior; la lista y la restauración muestran las de la nueva.",
+    "folderChoose": "Elegir carpeta…",
+    "folderReset": "Predeterminada",
+    "folderResetHint": "Volver a guardar las copias en la carpeta de la instancia",
+    "folderPickUnavailable": "La selección de carpetas no está disponible aquí. Escribe la ruta a mano.",
+    "folderPickFailed": "No se pudo abrir la selección de carpetas. Escribe la ruta a mano.",
+    "folderFailed": "No se pudo usar la carpeta",
+    "autoHintDesktop": "Cada día una copia de toda la base de datos y de tus datos en la carpeta de abajo mientras la aplicación está abierta (si estaba cerrada a esa hora, en el siguiente inicio). Una carpeta en otro disco protege también contra un disco averiado.",
+    "restoreHintDesktop": "Restaurar una copia de la base de datos: cierra la instancia (abre otra o sal de la aplicación), sustituye <c>mindsift.db</c> en la carpeta de la instancia por el archivo descomprimido (<c>gunzip</c>) y vuelve a abrir la instancia. Solo tus datos se restauran en los ajustes de la cuenta."
   },
   "voiceStatus": {
     "loadFailed": "No se pudo cargar el estado",
@@ -1309,6 +1319,7 @@
       "backupEnabled": "Copias diarias",
       "backupTime": "Hora de la copia",
       "backupRetentionDays": "Conservar copias (días)",
+      "backupDir": "Carpeta de copias de seguridad",
       "retentionAllowNever": "Conservar para siempre",
       "mcpEnabled": "Agentes de IA (MCP)",
       "peopleSearch": "Búsqueda de personas",
