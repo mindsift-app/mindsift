@@ -1113,11 +1113,14 @@ fieldset:disabled :is(button, input, select, textarea) {
    between rows. Coming back to a note and jumps to a bullet go by the bullet, not by the scroll offset
    (DocumentEditor, OutlinerTree): the heights of rows never shown are only estimated. The remembered height
    is kept on every row, also while it goes without: a row that just lost the cursor would otherwise drop to
-   one line for a moment and move everything below it (a click would land on the next bullet). */
+   one line for a moment and move everything below it (a click would land on the next bullet). The rows in
+   view when the note opens and rows that had the cursor go without until they are a screen away
+   (data-outline-near, lib/outlineNear.ts): WebKit takes a row on screen that goes back to auto for skipped,
+   and its hit test then stops at the row. */
 .outline-row {
   contain-intrinsic-height: auto 24px;
 }
-.outline-row:not([data-outline-live]):not(:focus-within):not(:has([data-outline-live])) {
+.outline-row:not([data-outline-near]):not([data-outline-live]):not(:focus-within):not(:has([data-outline-live])) {
   content-visibility: auto;
   overflow-clip-margin: 2px;
 }

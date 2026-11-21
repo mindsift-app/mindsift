@@ -138,6 +138,9 @@ const main = async () => {
         ],
       });
       created.push(doc.id);
+      // A folder in the sidebar for the folder checks at the end
+      const folder = `Ablage ${tag} ${stamp}`;
+      created.push((await api(admin, 'POST', '/api/v1/documents', { title: `Im Ordner ${stamp}`, folderPath: folder, blocks: [] })).id);
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
       await ctx.addInitScript((t) => {
         localStorage.setItem('mindsift_jwt_token', t);
@@ -277,6 +280,39 @@ const main = async () => {
       g = await dragOnto(page, '#drop-probe', ['text/uri-list']);
       check(!g.over && !g.drop, `${tag}: Link in ein Textfeld wird nicht abgewiesen`, g);
       check(page.url().startsWith(BASE), `${tag}: die App bleibt geöffnet`, page.url());
+
+      // A folder row takes only notes and folders of the sidebar: a file or text from outside is not allowed
+      // there (the guard refuses the file, text is left to the browser), a dragged note is
+      const overFolder = (types) =>
+        page.evaluate(
+          ({ folder, types }) => {
+            const row = [...document.querySelectorAll('aside[data-tour="note-list"] div[draggable="true"]')].find(
+              (el) => el.textContent.includes(folder) && !el.querySelector('div[draggable="true"]')
+            );
+            if (!row) return { found: false };
+            const r = row.getBoundingClientRect();
+            const dt = new DataTransfer();
+            if (types.includes('Files')) dt.items.add(new File(['x'], 'bild.png', { type: 'image/png' }));
+            for (const type of types.filter((t) => t !== 'Files')) dt.setData(type, type === 'text/plain' ? 'Hallo' : 'x');
+            const ev = new DragEvent('dragover', { bubbles: true, cancelable: true, clientX: r.left + 20, clientY: r.top + r.height / 2 });
+            Object.defineProperty(ev, 'dataTransfer', { value: dt });
+            // Taken by the folder: it stops there; else it reaches the window's guard (lib/dropGuard.ts)
+            let reachedWindow = false;
+            const seen = () => (reachedWindow = true);
+            window.addEventListener('dragover', seen);
+            row.dispatchEvent(ev);
+            window.removeEventListener('dragover', seen);
+            row.dispatchEvent(new DragEvent('dragleave', { bubbles: true }));
+            return { found: true, taken: !reachedWindow && ev.defaultPrevented, effect: dt.dropEffect };
+          },
+          { folder, types }
+        );
+      g = await overFolder(['Files']);
+      check(g.found && !g.taken && g.effect === 'none', `${tag}: Datei über einem Ordner zeigt „nicht erlaubt“`, g);
+      g = await overFolder(['text/plain']);
+      check(g.found && !g.taken, `${tag}: Text von außen über einem Ordner wird nicht angenommen`, g);
+      g = await overFolder(['application/mindsift-doc-id', 'application/mindsift-doc-ids', 'text/plain']);
+      check(g.found && g.taken, `${tag}: eine gezogene Notiz kann in den Ordner`, g);
 
       await ctx.close();
       await browser.close();
