@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useDocDragDrop } from '../useDocDragDrop';
+import { isFolderDrop, useDocDragDrop } from '../useDocDragDrop';
 import { BLOCK_DRAG_TYPE, MOVE_BRANCH_EVENT, setBlockDragSingle, type MoveBranchDetail } from '../moveBranchEvent';
 import type { Document } from '../../../lib/types';
 
@@ -93,5 +93,21 @@ describe('dropping a bullet onto the "new note" button', () => {
     expect(over.dataTransfer.dropEffect).toBe('move');
     drag.current.newNoteDropProps.onDrop!(event());
     expect(moved).toEqual([{ docId: 'd1', blockId: 'b1', targetId: '', targetTitle: '', single: true }]);
+  });
+});
+
+// Folders take only notes and folders of the sidebar; files and text from outside get "not allowed"
+describe('isFolderDrop', () => {
+  const data = (types: string[]) => ({ types } as unknown as DataTransfer);
+  it('takes notes and folders', () => {
+    expect(isFolderDrop(data(['application/mindsift-doc-id', 'application/mindsift-doc-ids', 'text/plain']))).toBe(true);
+    expect(isFolderDrop(data(['application/mindsift-folder-path', 'text/plain']))).toBe(true);
+  });
+  it('refuses files, outside text and other items of the app', () => {
+    expect(isFolderDrop(data(['Files']))).toBe(false);
+    expect(isFolderDrop(data(['text/plain', 'text/html']))).toBe(false);
+    expect(isFolderDrop(data(['text/uri-list']))).toBe(false);
+    expect(isFolderDrop(data([BLOCK_DRAG_TYPE, 'text/plain']))).toBe(false);
+    expect(isFolderDrop(null)).toBe(false);
   });
 });

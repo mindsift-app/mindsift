@@ -301,6 +301,8 @@ export const JournalView: React.FC<JournalViewProps> = ({
         ref={scrollRef}
         onScroll={onScroll}
         className="flex-1 min-h-0 overflow-y-auto"
+        // Bullets within a screen of the view are laid out ahead (lib/outlineNear.ts)
+        data-outline-scroll=""
         style={focusMode && focusTopGap > 0 ? { paddingTop: focusTopGap } : undefined}
       >
         {shown.map((date, idx) => {

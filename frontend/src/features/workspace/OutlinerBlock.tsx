@@ -67,6 +67,7 @@ import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
 import { ownClipboardText } from '../../lib/outlineMarkdown';
 import { caretAfterChange, caretAtPoint, caretInElementAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
+import { keepOutlineRowNear, observeOutlineRow } from '../../lib/outlineNear';
 import { droppedText, transferText } from '../../lib/dropText';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
 import { useTranslation } from 'react-i18next';
@@ -562,33 +563,29 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
 
   const renderedTextRef = useRef<HTMLSpanElement | null>(null);
+  const viewLayerRef = useRef<HTMLDivElement | null>(null);
 
-  // Focus the textarea and place the caret where the user clicked in the rendered (markdown) text layer
+  // Focus the textarea and place the caret where the user clicked in the rendered (markdown) text layer.
+  // A hit test that does not reach the text (WebKit on a row it takes for skipped, lib/outlineNear.ts) is
+  // answered by the nearest character instead of the end.
   const focusAtPoint = (clientX: number, clientY: number) => {
     const ta = textareaRef.current;
     if (!ta) return;
-    const raw = ta.value;
-    let pos = raw.length;
+    let pos = ta.value.length;
     const span = renderedTextRef.current;
-    const doc = document;
-    let node: Node | null = null;
-    let offset = 0;
-    if (typeof doc.caretPositionFromPoint === 'function') {
-      const p = doc.caretPositionFromPoint(clientX, clientY);
-      if (p) {
-        node = p.offsetNode;
-        offset = p.offset;
-      }
-    } else if (typeof doc.caretRangeFromPoint === 'function') {
-      const r = doc.caretRangeFromPoint(clientX, clientY);
-      if (r) {
-        node = r.startContainer;
-        offset = r.startOffset;
-      }
+    if (span) {
+      const at = caretAtPoint(clientX, clientY);
+      const inText = at && span.contains(at.node) ? at : caretInElementAtPoint(span, clientX, clientY);
+      if (inText) pos = rawOffsetAt(inText.node, inText.offset);
     }
-    if (span && node && span.contains(node)) pos = rawOffsetAt(node, offset);
     ta.focus();
     ta.setSelectionRange(pos, pos);
+  };
+
+  // Whether a point lies on the rendered text layer of a bullet without the cursor
+  const onViewLayer = (clientX: number, clientY: number) => {
+    const r = viewLayerRef.current?.getBoundingClientRect();
+    return !!r && clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
   };
 
   // Offset in the raw text for a point in the rendered text layer
@@ -1486,11 +1483,21 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   }, [activeFocus]);
   const showBubble = hasHover ? pointerMoving || pointerOnBubble : activeFocus && touchShown;
 
+  // Rows out of view are skipped by the browser (.outline-row in index.css); a row with the cursor or a menu
+  // stays rendered (data-outline-live), and afterwards until it is a screen away (lib/outlineNear.ts)
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const live = activeFocus || slashSearch !== null || mention.open || showLinkModal;
+  useEffect(() => (rowRef.current ? observeOutlineRow(rowRef.current) : undefined), []);
+  useEffect(() => {
+    if (live && rowRef.current) keepOutlineRowNear(rowRef.current);
+  }, [live]);
+
   return (
     <div
+      ref={rowRef}
       data-outline-block={block.id}
-      // Rows out of view are skipped by the browser (.outline-row in index.css); this one stays rendered
-      data-outline-live={activeFocus || slashSearch !== null || mention.open || showLinkModal ? '' : undefined}
+      data-outline-live={live ? '' : undefined}
+      onFocus={(e) => keepOutlineRowNear(e.currentTarget)}
       onMouseMove={handleRowMouseMove}
       onMouseLeave={handleRowMouseLeave}
       onTouchStart={showBubbleForTouch}
@@ -1538,6 +1545,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('button, a, input, select')) return;
         if (!activeFocus && canFocus && textareaRef.current) {
+          // A click on the text that the hit test gave to the row (WebKit, see focusAtPoint)
+          if (onViewLayer(e.clientX, e.clientY)) {
+            if (!focusWithRenderedSelection()) focusAtPoint(e.clientX, e.clientY);
+            return;
+          }
           textareaRef.current.focus();
           const len = textareaRef.current.value.length;
           textareaRef.current.setSelectionRange(len, len);
@@ -1956,6 +1968,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           <div className="relative w-full min-h-6">
             {/* View Layer with Inline Markdown */}
             <div
+              ref={viewLayerRef}
               onClick={(e) => {
                 if (!activeFocus && canFocus && textareaRef.current) {
                   // Keep the row's click handler from moving the caret back to the end

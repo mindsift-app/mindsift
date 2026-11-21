@@ -7,6 +7,12 @@ import { announceMoveBranch, BLOCK_DRAG_TYPE, isSingleBlockDrop } from './moveBr
 // A note a bullet can be moved into: writable and not in the trash
 export const canTakeBranch = (d: Document) => !d.isArchived && (d.isOwner || d.permission === 'owner' || d.permission === 'write');
 
+// A drag a folder takes: notes or a folder of the sidebar (types set in handleDocDragStart and
+// handleFolderDragStart). Files and text from outside, and the app's other items, get the "not allowed" cursor.
+const FOLDER_DROP_TYPES = ['application/mindsift-doc-id', 'application/mindsift-doc-ids', 'application/mindsift-folder-path'];
+export const isFolderDrop = (data: DataTransfer | null | undefined) =>
+  !!data && Array.from(data.types ?? []).some((t) => FOLDER_DROP_TYPES.includes(t));
+
 interface UseDocDragDropOptions {
   docs: Document[];
   setDocs: React.Dispatch<React.SetStateAction<Document[]>>;

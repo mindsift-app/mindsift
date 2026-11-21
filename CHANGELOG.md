@@ -11,6 +11,8 @@ Versions without a git tag were development states and were never published as a
 ### Fixed
 - Text dragged onto a note from another program (a browser, an editor) now lands in it: dropped onto a bullet it goes in where it was dropped, several lines become bullets as when pasting, and dropped below the last bullet it becomes a new bullet at the end. Before, nothing happened, in the browser as in the desktop app.
 - A file or link dropped somewhere in the app that does not take it (sidebar, header, sign-in page) is now refused instead of opening in place of the app, which left no way back in the installed app.
+- Clicking into the text of a bullet in Safari (and other WebKit browsers) now puts the cursor where you clicked; before, it often went to the end of the bullet, and the buttons of a bullet you had just left (bullet, checkbox, collapse) did not react.
+- Files and text dragged in from outside over a folder in the sidebar now show that they cannot be dropped there; before, the folder looked like it would take them, though nothing happened.
 
 ## [0.97.1] - 2026-11-20
 
