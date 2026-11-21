@@ -165,7 +165,7 @@ func main() {
 		// Developer tools (right click → Inspect) help to see what the engine does in this spike
 		DevToolsEnabled: true,
 		// Runs after every page load, the server's pages included
-		JS: dropGuard,
+		JS: dropGuard + dropScripts,
 		KeyBindings: map[string]func(application.Window){
 			"alt+left":  func(w application.Window) { w.ExecJS("history.back()") },
 			"alt+right": func(w application.Window) { w.ExecJS("history.forward()") },
@@ -174,6 +174,8 @@ func main() {
 		},
 	})
 	shell.setURL = func(u string) { window.SetURL(u) }
+	// Files dragged in from other programs (Linux; filedrop_linux.go)
+	setupFileDrop(window)
 
 	tray := app.SystemTray.New()
 	tray.SetIcon(trayIcon)

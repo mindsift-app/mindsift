@@ -19,7 +19,7 @@ import { useLatestRef } from '../../lib/useLatestRef';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
 import { draggedFiles, droppedImages, insertImages, type PastedImages } from '../../lib/pasteImages';
-import { draggedText, droppedText, transferText } from '../../lib/dropText';
+import { draggedText, droppedText, textDropEffect, transferText } from '../../lib/dropText';
 import i18n from '../../i18n';
 
 export interface OutlinerTreeHandle {
@@ -912,10 +912,11 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       if (draggedIndex === null && draggedText(e.dataTransfer)) {
         // Text over the field with the cursor stays the browser's: Chromium and WebKit drop nothing into a
         // field when the page took the dragover, and text dragged within the field still moves. Elsewhere on
-        // the row it is copied in (OutlinerBlock), never moved away from the other program.
+        // the row it is copied in (OutlinerBlock); moved away from the other program only when that one allows
+        // nothing else (textDropEffect).
         if (e.target instanceof HTMLTextAreaElement) return;
         e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
+        e.dataTransfer.dropEffect = textDropEffect(e.dataTransfer);
         return;
       }
       e.preventDefault();
@@ -1705,7 +1706,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onDragOver={(e) => {
             e.preventDefault();
             if (draggedIndex !== null) handleDragOverBlock(e, blocks.length);
-            else if (draggedText(e.dataTransfer)) e.dataTransfer.dropEffect = 'copy';
+            else if (draggedText(e.dataTransfer)) e.dataTransfer.dropEffect = textDropEffect(e.dataTransfer);
           }}
           onDrop={(e) => {
             if (draggedIndex !== null || !dropTextAtEnd(e)) handleDropBlock(blocks.length);
