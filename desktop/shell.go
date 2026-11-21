@@ -105,7 +105,7 @@ func (h *shellHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if h.current().Mode != "local" {
-		http.Redirect(w, r, startPath, http.StatusSeeOther)
+		navigate(w, startPath)
 		return
 	}
 	handler, err := h.local()
@@ -119,7 +119,7 @@ func (h *shellHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *shellHandler) choose(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Redirect(w, r, startPath, http.StatusSeeOther)
+		navigate(w, startPath)
 		return
 	}
 	_ = r.ParseForm()
@@ -148,13 +148,17 @@ func (h *shellHandler) choose(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("Saving the desktop settings failed", "error", err)
 	}
 	if next.Mode == "local" {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		navigate(w, "/")
 		return
 	}
-	// Leaving the shell's origin for the server: a page that navigates, as a redirect from the webview's
-	// own scheme to https is not followed by every engine
-	writeHTML(w, `<!doctype html><meta charset="utf-8"><title>MindSift</title><p style="font-family:sans-serif">Verbinde mit `+
-		html.EscapeString(next.ServerURL)+` …</p><script>location.replace(`+jsString(next.ServerURL)+`)</script>`)
+	navigate(w, next.ServerURL)
+}
+
+// navigate answers with a page that moves on to target. WebKitGTK does not follow redirects of the
+// webview's own scheme (a POST answered with 303 stays a blank page), so the shell never redirects.
+func navigate(w http.ResponseWriter, target string) {
+	writeHTML(w, `<!doctype html><meta charset="utf-8"><title>MindSift</title><body style="background:#16181d">`+
+		`<script>location.replace(`+jsString(target)+`)</script>`)
 }
 
 func normalizeServerURL(raw string) (string, error) {

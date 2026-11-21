@@ -151,6 +151,14 @@ func main() {
 		URL:    shell.startURL(),
 		// Developer tools (right click → Inspect) help to see what the engine does in this spike
 		DevToolsEnabled: true,
+		// Runs after every page load, the server's pages included
+		JS: dropGuard,
+		KeyBindings: map[string]func(application.Window){
+			"alt+left":  func(w application.Window) { w.ExecJS("history.back()") },
+			"alt+right": func(w application.Window) { w.ExecJS("history.forward()") },
+			"f5":        func(w application.Window) { w.Reload() },
+			"ctrl+r":    func(w application.Window) { w.Reload() },
+		},
 	})
 	shell.setURL = func(u string) { window.SetURL(u) }
 
@@ -173,6 +181,13 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+// dropGuard: a file (or link) dropped where the page does not take it would make the engine open it in
+// place of the app, with no way back in a window without a back button. Unhandled drops do nothing.
+const dropGuard = `(function(){if(window.__msDropGuard)return;window.__msDropGuard=true;
+function outside(e){var t=e.dataTransfer?Array.from(e.dataTransfer.types||[]):[];return !e.defaultPrevented&&(t.indexOf('Files')>=0||t.indexOf('text/uri-list')>=0)}
+window.addEventListener('dragover',function(e){if(outside(e)){e.preventDefault();e.dataTransfer.dropEffect='none'}});
+window.addEventListener('drop',function(e){if(outside(e))e.preventDefault()});})();`
 
 // appDataDir: where the shell keeps its settings and the local database
 // (Linux: $XDG_DATA_HOME/MindSift or ~/.local/share/MindSift; Windows: %APPDATA%\MindSift).
