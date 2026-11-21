@@ -128,6 +128,8 @@ export const authApi = {
     backupRetentionDays?: number;
     smtp?: SmtpForm;
     email?: string;
+    // Desktop app only: the backup folder ('' = backups/ in the instance's folder)
+    backupDir?: string;
   }): Promise<void> {
     await request<{ done: boolean }>('/api/v1/admin/setup', {
       method: 'POST',

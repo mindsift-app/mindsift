@@ -42,6 +42,9 @@ type Shell struct {
 	Base string
 	// ShowFolder opens a folder in the system's file manager. Set by main.go.
 	ShowFolder func(dir string) error
+	// PickFolder shows the system's folder dialog (at start, if set) and returns the chosen folder, "" when
+	// cancelled. Set by main.go.
+	PickFolder func(start string) (string, error)
 	// Opened: an entry was opened (main.go sets the window title)
 	Opened func(Entry)
 

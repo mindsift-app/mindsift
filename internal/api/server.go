@@ -561,6 +561,8 @@ func (s *Server) Router() http.Handler {
 			r.Post("/api/v1/admin/backups", s.notInDemo(s.handleAdminRunBackup))
 			r.Get("/api/v1/admin/backups/{name}", s.handleAdminDownloadBackup)
 			r.Delete("/api/v1/admin/backups/{name}", s.notInDemo(s.handleAdminDeleteBackup))
+			r.Get("/api/v1/admin/backups/location", s.onlyInDesktop(s.handleBackupLocation))
+			r.Put("/api/v1/admin/backups/location", s.onlyInDesktop(s.handleSetBackupLocation))
 			r.Get("/api/v1/admin/backups/deleted", s.handleAdminDeletedBackups)
 			r.Get("/api/v1/admin/backups/deleted/{userId}/{name}", s.handleAdminDownloadDeletedBackup)
 			r.Put("/api/v1/admin/settings", s.notInDemo(s.handleAdminUpdateSettings))

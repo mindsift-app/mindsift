@@ -28,8 +28,15 @@ import (
 
 var backupRunMu sync.Mutex
 
+// backupRoot: where the backups go, backups/ next to the database; in the desktop app the folder chosen
+// in its setup or settings, if any (desktop_backup.go).
 func (s *Server) backupRoot() string {
-	return filepath.Join(filepath.Dir(s.cfg.DatabasePath), "backups")
+	if s.desktopMode() {
+		if dir := s.store.BackupDir(); dir != "" {
+			return dir
+		}
+	}
+	return s.defaultBackupRoot()
 }
 
 // runBackups makes one full run; returns the name of the system snapshot. The result goes into the metrics.

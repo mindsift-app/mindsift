@@ -657,6 +657,24 @@ func (s *Store) SetSetupPending(pending bool) error {
 	return err
 }
 
+// BackupDir: the folder the desktop app writes its backups to, chosen in its setup wizard or settings
+// (api.backupRoot; a normal server ignores it and always writes next to the database). "" = the default
+// folder, also when it cannot be read.
+func (s *Store) BackupDir() string {
+	var v string
+	if err := s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'backup_dir'`).Scan(&v); dbFailed(err) || err != nil {
+		return ""
+	}
+	return v
+}
+
+// SetBackupDir stores the desktop app's backup folder ("" = the default). The caller has checked it.
+func (s *Store) SetBackupDir(dir string) error {
+	_, err := s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('backup_dir', ?)
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value`, dir)
+	return err
+}
+
 // Who must sign in with a second factor (domain.SystemSettings.MFARequired)
 const (
 	MFARequiredNobody = ""

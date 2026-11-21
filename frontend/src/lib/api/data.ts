@@ -3,6 +3,7 @@ import {
   APIKey,
   OAuthAuthorizeInfo,
   BackupFile,
+  BackupLocation,
   DataSection,
   ApiKeyScope,
   PriorityLevel,
@@ -150,6 +151,16 @@ export const dataApi = {
   // --- Automatic server backups ---
   async adminListBackups(): Promise<BackupFile[]> {
     return ensureArray(await request<BackupFile[]>('/api/v1/admin/backups'));
+  },
+
+  // Desktop app only: where the backups go (the default is backups/ in the instance's folder)
+  async adminGetBackupLocation(): Promise<BackupLocation> {
+    return request<BackupLocation>('/api/v1/admin/backups/location');
+  },
+
+  // Desktop app only: '' goes back to the default folder; the server checks the folder and creates it
+  async adminSetBackupLocation(dir: string): Promise<BackupLocation> {
+    return request<BackupLocation>('/api/v1/admin/backups/location', { method: 'PUT', body: JSON.stringify({ dir }) });
   },
 
   async adminRunBackup(): Promise<BackupFile[]> {

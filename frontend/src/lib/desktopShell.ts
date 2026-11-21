@@ -75,6 +75,8 @@ export const desktopShell = {
   rename: (id: string, name: string) => call<{ ok: boolean }>('rename', { id, name }),
   remove: (id: string) => call<{ ok: boolean }>('remove', { id }),
   showBase: () => call<{ ok: boolean }>('show-base'),
+  // The system's folder dialog (opened at path when it exists); '' when cancelled
+  pickFolder: (path: string) => call<{ path: string }>('pick-folder', { path }),
 };
 
 // Which local instance the window's storage belongs to. All local instances share the window's origin, so

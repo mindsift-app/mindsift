@@ -16,7 +16,9 @@ release yet.
   already points into the sandbox) or `%APPDATA%\MindSift`; `MINDSIFT_DESKTOP_DIR` overrides it. It holds
   `desktop.json` and every local instance in `instances/<Name>/`; the single data folder of phase 1,
   `data/`, stays where it is and becomes the instance "MindSift". The start view names the folder and opens
-  it in the file manager. No other folder is ever opened, so no folder dialog and no portal are needed.
+  it in the file manager. The only folder dialog is the backup folder's (`pick-folder`, the system's dialog
+  through Wails, under Flatpak through the portal); the shell hands the choice to the window, the server
+  checks it.
 - **Local instances:** the MindSift server runs inside the app. Its router is the Wails asset handler, so
   no port is opened and nothing but the app's own window can reach it (`wails://localhost/` on Linux,
   `http://wails.localhost/` on Windows are served by the webview itself). One instance at a time:
@@ -49,9 +51,11 @@ as `desktop.json.broken`.
 ## The shell's endpoints
 
 `POST /__desktop/api/<op>` with a JSON body (`state`, `create`, `open`, `open-found`, `add-server`,
-`rename`, `remove`, `show-base`), code in `desktop/internal/shell`. They answer only requests with the
-header `X-MindSift-Desktop: 1`, `Content-Type: application/json`, no foreign `Origin` and no cross-site
-`Sec-Fetch-Site`. A server's page shown in the window (or any other origin) cannot send that header
+`rename`, `remove`, `show-base`, `pick-folder`), code in `desktop/internal/shell`. `pick-folder {path}`
+opens the system's folder dialog at `path` (or its nearest existing parent) and answers `{path}`, empty when
+cancelled; the setup wizard and the administration use it for the backup folder. The endpoints answer
+only requests with the header `X-MindSift-Desktop: 1`, `Content-Type: application/json`, no foreign
+`Origin` and no cross-site `Sec-Fetch-Site`. A server's page shown in the window (or any other origin) cannot send that header
 without a CORS preflight, which the shell never allows, so its requests never arrive. Errors come back as
 `{"error": {"code", "detail"}}` and are shown from the locale files (`desktop:errors.<code>`).
 
@@ -65,7 +69,9 @@ notes before another instance opens (`lib/desktopShell.ts`); the new one signs i
 normal server neither). Details in [Doku/architecture.md](../Doku/architecture.md#desktop-mode).
 
 - **No sign-in, one person.** The first start creates the one account (administrator, named after the
-  system's user, no password of its own) with the help notes; there is no setup wizard and no setup code.
+  system's user, no password of its own); there is no setup code and no account step. A short setup wizard
+  follows once per instance: name, language, time zone, help notes, daily backups and their folder, all
+  with defaults that one click accepts.
   The window asks `POST /api/v1/auth/desktop` for a session whenever it has none (first start, a session
   idle for a month); a restart keeps the stored one. Only the window's own origin gets a session, and no
   secret is in any address. Sign-out is hidden, since there is no sign-in to go back to.
@@ -73,8 +79,8 @@ normal server neither). Details in [Doku/architecture.md](../Doku/architecture.m
   mode, the setup code, `BASE_URL` (so no OAuth connectors). The administration hides people, sign-in,
   organizations, sharing, mail and legal texts; the settings hide Sicherheit, the calendar subscription,
   the address and the mail and push channels of alarms.
-- **Kept:** MCP with API keys (local AI agents), daily backups (on from the first start), export and
-  import. Moving to a server later is a backup restored there.
+- **Kept:** MCP with API keys (local AI agents), daily backups (on unless switched off in the wizard; into
+  `backups/` of the instance or a folder chosen in the wizard or the administration), export and import. Moving to a server later is a backup restored there.
 - **Realtime without WebSocket:** server-sent events on Linux, long polling on Windows (Wails buffers
   responses there). The server names the transport in `/auth/status` (`desktop.realtime`).
 - **Time zone and language** come from the system unless `TZ` or `DEFAULT_LANGUAGE` are set: on Linux
