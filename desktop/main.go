@@ -2,9 +2,10 @@
 // this process ("local") or loads the web app from a MindSift server ("remote").
 //
 // Local mode opens no port. The server's router is the Wails asset handler, so every request of the
-// window goes straight from the webview into the router inside this process (wails://wails/ on Linux,
+// window goes straight from the webview into the router inside this process (wails://localhost/ on Linux,
 // http://wails.localhost/ on Windows, both served by the webview itself). Nothing else on the machine can
-// reach it.
+// reach it. The server runs in desktop mode (config.ApplyDesktop): one account, created on the first start
+// and signed in by the window itself, no sign-in screen and no setup wizard.
 package main
 
 import (
@@ -15,7 +16,10 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/user"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"sync"
 	_ "time/tzdata"
 
@@ -53,9 +57,23 @@ func (l *localServer) get(dataDir string) (http.Handler, error) {
 			return
 		}
 		_ = os.Setenv("DATA_DIR", dataDir)
+		// The server's time zone until the administration sets one: the system's, not UTC
+		if os.Getenv("TZ") == "" {
+			if zone := systemTimeZone(); zone != "" {
+				_ = os.Setenv("TZ", zone)
+			}
+		}
 		_, _ = clock.Apply("")
+		// The server's default language: the system's, when MindSift speaks it
+		if os.Getenv("DEFAULT_LANGUAGE") == "" {
+			if lang := systemLanguage(); i18n.Valid(lang) {
+				_ = os.Setenv("DEFAULT_LANGUAGE", lang)
+			}
+		}
 		cfg := config.Load()
 		cfg.AppVersion = version
+		login, name := systemUser()
+		cfg.ApplyDesktop(config.Desktop{Platform: runtime.GOOS, Origin: windowOrigin(), Username: login, DisplayName: name})
 		store, err := storage.NewStore(cfg.DatabasePath, storage.WithSecretsKey(cfg.SecretsKey), storage.WithDefaultInstanceName(cfg.InstanceName))
 		if err != nil {
 			l.err = err
@@ -71,11 +89,6 @@ func (l *localServer) get(dataDir string) (http.Handler, error) {
 		srv := api.NewServer(cfg, store, hub, staticFS)
 		srv.ApplyTimeZone()
 		srv.CheckSecretsKey()
-		srv.DisableSetupCode()
-		// ADMIN_USER / ADMIN_PASSWORD as on the server (spike: lets a test start signed up)
-		if err := srv.CreateInitialAdmin(); err != nil {
-			slog.Warn("Creating the first administrator failed", "error", err)
-		}
 		ctx, cancel := context.WithCancel(context.Background())
 		router := srv.Router()
 		l.handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +121,7 @@ func mergeDone(req, app context.Context) context.Context {
 }
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo, ReplaceAttr: i18n.LogInEnglish}))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: config.LogLevelFromEnv(), ReplaceAttr: i18n.LogInEnglish}))
 	slog.SetDefault(logger)
 
 	base := appDataDir()
@@ -128,7 +141,7 @@ func main() {
 
 	app := application.New(application.Options{
 		Name:        "MindSift",
-		Description: "MindSift desktop (spike)",
+		Description: "MindSift desktop",
 		Assets: application.AssetOptions{
 			Handler:        shell,
 			DisableLogging: true,
@@ -189,22 +202,79 @@ function outside(e){var t=e.dataTransfer?Array.from(e.dataTransfer.types||[]):[]
 window.addEventListener('dragover',function(e){if(outside(e)){e.preventDefault();e.dataTransfer.dropEffect='none'}});
 window.addEventListener('drop',function(e){if(outside(e))e.preventDefault()});})();`
 
-// appDataDir: where the shell keeps its settings and the local database
-// (Linux: $XDG_DATA_HOME/MindSift or ~/.local/share/MindSift; Windows: %APPDATA%\MindSift).
+// appDataDir: where the shell keeps its settings and the local database (Linux: $XDG_DATA_HOME/MindSift or
+// ~/.local/share/MindSift, under Flatpak XDG_DATA_HOME already points into the sandbox; Windows:
+// %APPDATA%\MindSift). MINDSIFT_DESKTOP_DIR overrides it.
 func appDataDir() string {
 	if d := os.Getenv("MINDSIFT_DESKTOP_DIR"); d != "" {
 		return d
 	}
-	if d := os.Getenv("XDG_DATA_HOME"); d != "" {
-		return filepath.Join(d, "MindSift")
-	}
-	if os.PathSeparator == '\\' {
-		if d, err := os.UserConfigDir(); err == nil {
+	if runtime.GOOS == "windows" {
+		if d, err := os.UserConfigDir(); err == nil { // %APPDATA%
 			return filepath.Join(d, "MindSift")
 		}
+		return "MindSift"
+	}
+	if d := os.Getenv("XDG_DATA_HOME"); d != "" {
+		return filepath.Join(d, "MindSift")
 	}
 	if home, err := os.UserHomeDir(); err == nil {
 		return filepath.Join(home, ".local", "share", "MindSift")
 	}
 	return "MindSift"
+}
+
+// windowOrigin: the origin of the window's pages, which the server alone answers in desktop mode. Wails
+// serves its assets on a custom scheme on Linux (WebKitGTK) and on http://wails.localhost on Windows
+// (WebView2).
+func windowOrigin() string {
+	if runtime.GOOS == "windows" {
+		return "http://wails.localhost"
+	}
+	return "wails://localhost"
+}
+
+// systemUser: login name and full name of the system's user, for the account of the first start.
+func systemUser() (login, name string) {
+	u, err := user.Current()
+	if err != nil {
+		return os.Getenv("USER"), ""
+	}
+	login = u.Username
+	if i := strings.LastIndexAny(login, `\/`); i >= 0 { // Windows: DOMAIN\user
+		login = login[i+1:]
+	}
+	// GECOS may carry more fields after the name ("Full Name,Room,Phone")
+	name, _, _ = strings.Cut(u.Name, ",")
+	return login, strings.TrimSpace(name)
+}
+
+// systemLanguage: the language of the system's locale (LC_ALL, LC_MESSAGES, LANG: "de_DE.UTF-8" → "de");
+// empty on Windows, where the server keeps its default.
+func systemLanguage() string {
+	for _, v := range []string{"LC_ALL", "LC_MESSAGES", "LANG"} {
+		if l := os.Getenv(v); l != "" && l != "C" && l != "POSIX" {
+			l, _, _ = strings.Cut(l, ".")
+			l, _, _ = strings.Cut(l, "_")
+			return strings.ToLower(l)
+		}
+	}
+	return ""
+}
+
+// systemTimeZone: the IANA name of the system's time zone on Linux (/etc/localtime links into the zoneinfo
+// folder; /etc/timezone on Debian-like systems); empty where unknown, e.g. on Windows.
+func systemTimeZone() string {
+	if runtime.GOOS == "windows" {
+		return ""
+	}
+	if target, err := os.Readlink("/etc/localtime"); err == nil {
+		if _, zone, ok := strings.Cut(filepath.ToSlash(target), "/zoneinfo/"); ok && zone != "" {
+			return zone
+		}
+	}
+	if data, err := os.ReadFile("/etc/timezone"); err == nil {
+		return strings.TrimSpace(string(data))
+	}
+	return ""
 }

@@ -151,6 +151,7 @@ var messagesEN = map[string]string{
 	"Geräte konnten nicht geladen werden":                                                       "The devices could not be loaded",
 	"Im Archiv wurden keine Markdown-Notizen gefunden":                                          "No Markdown notes were found in the archive",
 	"Import abgebrochen, nichts übernommen":                                                     "Import aborted, nothing was kept",
+	"In der Desktop-App nicht verfügbar":                                                        "Not available in the desktop app",
 	"In der Demo deaktiviert":                                                                   "Disabled in the demo",
 	"In der URL sind nur API-Keys erlaubt; Sitzungs-Tokens gehören in den Authorization-Header": "Only API keys are allowed in the URL; session tokens belong in the Authorization header",
 	"Jemand anderes bearbeitet gerade einen Punkt in diesem Ast. Bitte kurz warten.":            "Someone else is editing a bullet in this branch right now. Please wait a moment.",

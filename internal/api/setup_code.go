@@ -83,7 +83,7 @@ func (c *setupCodeState) clear() {
 // and without ADMIN_USER. A database that cannot be asked counts as empty: the setup then needs a code
 // rather than being open.
 func (s *Server) prepareSetupCode() {
-	if s.cfg.DemoMode || s.cfg.InitialAdmin.Set() {
+	if s.cfg.DemoMode || s.cfg.InitialAdmin.Set() || s.desktopMode() {
 		return
 	}
 	if count, err := s.store.CountUsers(); err == nil && count > 0 {
@@ -141,7 +141,3 @@ func writeSetupLocked(w http.ResponseWriter, wait time.Duration) {
 	}
 	writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": msg, "code": "setup_locked"})
 }
-
-// DisableSetupCode: the setup wizard asks for no code. Only for the desktop app, whose server no one but
-// its own window can reach, so whoever opens the wizard is the person at the machine.
-func (s *Server) DisableSetupCode() { s.setupCode.clear() }

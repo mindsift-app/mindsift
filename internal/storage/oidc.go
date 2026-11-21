@@ -19,6 +19,8 @@ const (
 	SessionViaPassword = "password"
 	SessionViaPasskey  = "passkey"
 	SessionViaOIDC     = "oidc"
+	// SessionViaDesktop: the desktop app signed its one account in (api/desktop.go)
+	SessionViaDesktop = "desktop"
 )
 
 var (

@@ -1210,6 +1210,21 @@
         }
       }
     },
+    "/api/v1/auth/desktop": {
+      "post": {
+        "summary": "Session of the desktop app",
+        "description": "Only in the desktop app (404 on a server): a session for the app's one account, answered like a sign-in ({token, user}). The app calls it whenever it has no session; there is no sign-in screen. Refused (403) for another Origin than the app window's or a cross-site Sec-Fetch-Site; the body must be sent as Content-Type: application/json (415 otherwise)",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/auth/status": {
       "get": {
         "summary": "Server status before signing in (setup, registration, demo, language)",

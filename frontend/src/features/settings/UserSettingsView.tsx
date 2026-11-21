@@ -15,7 +15,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { AuthStatus, User, UserTheme } from '../../lib/types';
 import { ApiKeysPanel } from './ApiKeysPanel';
-import { api } from '../../lib/api';
+import { api, isDesktopApp } from '../../lib/api';
 import { EffectiveVoiceMode, loadVoiceConfig, voiceChoiceAvailable } from '../../lib/voice';
 import {
   ThemeId,
@@ -61,6 +61,9 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   onDataChanged,
   onBack }) => {
   const [section, setSection] = useState<UserSettingsSection>('profile');
+  // The desktop app has no sign-in (Sicherheit: password, second factor, passkeys, devices) and no address
+  // a calendar app could subscribe to
+  const desktop = isDesktopApp();
   // Voice input: the language whenever there is voice input; the choice Whisper/browser only with a
   // Whisper server that allows the browser
   const [voiceChoice, setVoiceChoice] = useState(false);
@@ -155,6 +158,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             </div>
           </button>
 
+          {!desktop && (
           <button
             onClick={() => setSection('security')}
             className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
@@ -169,6 +173,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
               <p className="text-[10px] text-faint">{t('security.navHint')}</p>
             </div>
           </button>
+          )}
 
           <button
             onClick={() => setSection('appearance')}
@@ -247,6 +252,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             </div>
           </button>
 
+          {!desktop && (
           <button
             onClick={() => setSection('calendar')}
             className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
@@ -261,6 +267,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
               <p className="text-[10px] text-faint">{t('user.nav.calendarHint')}</p>
             </div>
           </button>
+          )}
 
           <button
             onClick={() => setSection('webhooks')}
