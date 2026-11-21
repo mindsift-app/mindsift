@@ -16,6 +16,7 @@ import {
   triggerHaptic,
   disconnectWebSocket,
   isSharingDisabled,
+  isDesktopApp,
 } from './lib/api';
 import {
   AVAILABLE_THEMES,
@@ -66,6 +67,7 @@ import { useQuickDumpShortcut } from './app/useQuickDumpShortcut';
 // Views only the first start of a server or an OAuth connect needs: chunks of their own, not in the sign-in page
 const SetupWizardView = lazy(() => import('./features/auth/SetupWizardView').then((m) => ({ default: m.SetupWizardView })));
 const FinishSetupView = lazy(() => import('./features/auth/FinishSetupView').then((m) => ({ default: m.FinishSetupView })));
+const DesktopSetupView = lazy(() => import('./features/auth/DesktopSetupView').then((m) => ({ default: m.DesktopSetupView })));
 const OAuthConsentView = lazy(() => import('./features/auth/OAuthConsentView').then((m) => ({ default: m.OAuthConsentView })));
 // The administration only admins open: a chunk of its own, not in the app's chunk (app/mainViews.ts)
 const AdminSettingsView = lazy(() => import('./features/settings/AdminSettingsView').then((m) => ({ default: m.AdminSettingsView })));
@@ -660,18 +662,27 @@ export const App: React.FC = () => {
     );
   }
 
-  // The first admin came from ADMIN_USER / ADMIN_PASSWORD: the wizard's instance settings come first
+  // The first admin came from ADMIN_USER / ADMIN_PASSWORD: the wizard's instance settings come first. In the
+  // desktop app, the short wizard of a local instance's first start (no account, nothing server-specific)
   if (setupPending && user.role === 'admin') {
+    const finished = () => {
+      setSetupPending(false);
+      api.getAuthStatus().then(setAuthStatus).catch(() => {});
+      void refreshAll();
+    };
+    if (isDesktopApp()) {
+      return (
+        <Suspense fallback={<AppLoading />}>
+          <DesktopSetupView user={user} authStatus={authStatus} onDone={finished} />
+        </Suspense>
+      );
+    }
     return (
       <Suspense fallback={<AppLoading />}>
       <FinishSetupView
         user={user}
         authStatus={authStatus}
-        onDone={() => {
-          setSetupPending(false);
-          api.getAuthStatus().then(setAuthStatus).catch(() => {});
-          void refreshAll();
-        }}
+        onDone={finished}
         onLogout={handleLogout}
       />
       </Suspense>

@@ -81,6 +81,11 @@ func exists(p string) bool {
 	return err == nil
 }
 
+func isDir(p string) bool {
+	info, err := os.Stat(p)
+	return err == nil && info.IsDir()
+}
+
 // CreateFolder makes the folder of a new instance (only the person may read it, as the server's data
 // folder).
 func CreateFolder(dir string) error {

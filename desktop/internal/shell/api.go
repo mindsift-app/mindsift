@@ -85,6 +85,15 @@ func (s *Shell) api(w http.ResponseWriter, r *http.Request, op string) {
 			err = s.ShowFolder(s.Base)
 		}
 		s.answerDone(w, err)
+	case "pick-folder":
+		// The system's folder dialog, for the backup folder of a local instance (setup wizard and
+		// administration); the server checks and stores the folder, the shell only asks the person
+		dir, err := s.pickFolder(req.Path)
+		if err != nil {
+			writeProblem(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"path": dir})
 	default:
 		http.NotFound(w, r)
 	}
@@ -127,6 +136,32 @@ func (s *Shell) state() stateAnswer {
 	a.Problem, s.problem = s.problem, nil
 	s.mu.Unlock()
 	return a
+}
+
+// pickFolder: the folder the person chose in the system's dialog, opened at start or, while that does not
+// exist yet (the default backups/ before the first backup), at its nearest existing parent; "" when the
+// dialog was cancelled. "unavailable" where the app has no dialog (tests).
+func (s *Shell) pickFolder(start string) (string, error) {
+	if s.PickFolder == nil {
+		return "", problem("unavailable")
+	}
+	start = filepath.Clean(strings.TrimSpace(start))
+	if !filepath.IsAbs(start) {
+		start = ""
+	}
+	for start != "" && !isDir(start) {
+		parent := filepath.Dir(start)
+		if parent == start {
+			start = ""
+			break
+		}
+		start = parent
+	}
+	dir, err := s.PickFolder(start)
+	if err != nil {
+		return "", problem("failed", err)
+	}
+	return dir, nil
 }
 
 // entryName: a name as typed, trimmed; required, at most maxNameLength characters

@@ -45,9 +45,9 @@ func desktopSession(t *testing.T, router http.Handler, origin string) *httptest.
 	return rec
 }
 
-// The first start creates the one account (admin, named after the system's user, no password of its own,
-// the help as notes); the window gets a session for it without any sign-in, and a restart neither adds an
-// account nor asks for a setup.
+// The first start creates the one account (admin, named after the system's user, no password of its own)
+// with the short setup wizard still to come; the window gets a session for it without any sign-in, and a
+// restart adds no account.
 func TestDesktopFirstStartCreatesAccountAndSignsIn(t *testing.T) {
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
@@ -64,11 +64,11 @@ func TestDesktopFirstStartCreatesAccountAndSignsIn(t *testing.T) {
 	if setupCodeOf(srv) != "" {
 		t.Error("the desktop app must not make a setup code")
 	}
-	if store.SetupPending() {
-		t.Error("no setup wizard in the desktop app")
+	if !store.SetupPending() {
+		t.Error("the desktop app's short setup wizard must follow the first start")
 	}
-	if sys, _ := store.GetSystemSettings(); store.SharingMode() != storage.SharingPrivate || sys == nil || !sys.BackupEnabled {
-		t.Errorf("first start: sharing %q, backups on %v; want private with daily backups", store.SharingMode(), sys != nil && sys.BackupEnabled)
+	if sys, _ := store.GetSystemSettings(); store.SharingMode() != storage.SharingPrivate || sys == nil || sys.RegistrationMode != storage.RegistrationClosed {
+		t.Errorf("first start: sharing %q, registration %v; want private and closed", store.SharingMode(), sys)
 	}
 
 	st := authStatusOf(t, router)

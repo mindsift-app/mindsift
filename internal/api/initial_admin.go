@@ -116,7 +116,8 @@ func checkInitialAdmin(user, password, email string) (username, cleanEmail strin
 }
 
 // handleFinishSetup: POST /admin/setup – the wizard's instance settings for an administrator who came from
-// ADMIN_USER. Only once, while the setup is unfinished; afterwards the admin settings change them. Without
+// ADMIN_USER, and for the desktop app's one account (without address, mail, registration and sharing, but
+// with the backup folder). Only once, while the setup is unfinished; afterwards the admin settings change them. Without
 // ADMIN_EMAIL the admin may give an address here: like any new login address it waits for the click on the
 // link mailed to it (email_change.go), which goes out once a mail server and BASE_URL are set.
 func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
@@ -129,6 +130,8 @@ func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		setupChoices
 		Email string `json:"email"`
+		// The desktop app's backup folder ("" = backups/ in the instance's folder); ignored on a server
+		BackupDir *string `json:"backupDir"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
@@ -137,6 +140,21 @@ func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
 	if err := req.check(); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
+	}
+	// The desktop app's wizard asks neither for an address nor about mail, registration or sharing: one
+	// person, nobody to share with, whatever the request says
+	var backupDir *string
+	if s.desktopMode() {
+		req.Email, req.SMTP = "", nil
+		req.AllowRegistration, req.SharingMode = false, storage.SharingPrivate
+		if req.BackupDir != nil {
+			dir, err := s.checkBackupDir(*req.BackupDir)
+			if err != nil {
+				writeErrorFrom(w, http.StatusBadRequest, err)
+				return
+			}
+			backupDir = &dir
+		}
 	}
 	user, err := s.store.GetUserByID(auth.GetUserID(r.Context()))
 	if err != nil || user == nil {
@@ -156,11 +174,17 @@ func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Einstellungen konnten nicht gespeichert werden: "+clientMessage(err))
 		return
 	}
+	if backupDir != nil {
+		if err := s.store.SetBackupDir(*backupDir); err != nil {
+			writeInternal(w, err)
+			return
+		}
+	}
 	if err := s.store.SetSetupPending(false); err != nil {
 		writeInternal(w, err)
 		return
 	}
-	slog.Info("Setup finished by the administrator from ADMIN_USER", "user_id", user.ID)
+	slog.Info("Setup finished by the first administrator", "user_id", user.ID, "desktop", s.desktopMode())
 	res := map[string]any{"done": true}
 	if email != "" {
 		// After the mail server of the wizard is stored, so the link goes out right away when it can

@@ -926,7 +926,17 @@
     "deletedHint": "Löscht ein Admin oder die Benutzerverwaltung ein Konto, bleiben dessen Backups bis zum Ende der Vorhaltezeit hier. So bekommt jemand, der versehentlich gelöscht wurde, seine Daten zurück: Backup herunterladen und im neuen Konto unter Kontoeinstellungen → Export & Import. Wer sein Konto selbst löscht, dessen Backups sind sofort weg.",
     "deletedOn": "Gelöscht am {{deleted}} · wird am {{remove}} entfernt",
     "days_one": "Tag",
-    "days_other": "Tage"
+    "days_other": "Tage",
+    "folder": "Ordner",
+    "folderHint": "Leer für den Ordner der Instanz. Vorhandene Backups bleiben beim Wechsel im alten Ordner; Liste und Wiederherstellen zeigen die des neuen.",
+    "folderChoose": "Ordner wählen…",
+    "folderReset": "Standard",
+    "folderResetHint": "Wieder in den Ordner der Instanz sichern",
+    "folderPickUnavailable": "Die Ordnerauswahl ist hier nicht verfügbar. Gib den Pfad von Hand ein.",
+    "folderPickFailed": "Die Ordnerauswahl ließ sich nicht öffnen. Gib den Pfad von Hand ein.",
+    "folderFailed": "Der Ordner ließ sich nicht übernehmen",
+    "autoHintDesktop": "Täglich eine Sicherung der ganzen Datenbank und deiner Daten in den Ordner unten, solange die App läuft (war sie zur Uhrzeit zu, beim nächsten Start). Ein Ordner auf einem anderen Datenträger schützt auch vor einer kaputten Platte.",
+    "restoreHintDesktop": "Einen Datenbank-Abzug zurückspielen: die Instanz schließen (eine andere öffnen oder die App beenden), <c>mindsift.db</c> im Ordner der Instanz durch die entpackte Datei ersetzen (<c>gunzip</c>), die Instanz wieder öffnen. Deine Daten allein stellst du in den Kontoeinstellungen wieder her."
   },
   "voiceStatus": {
     "loadFailed": "Status konnte nicht geladen werden",
@@ -1301,6 +1311,7 @@
       "backupEnabled": "Tägliche Backups",
       "backupTime": "Backup-Uhrzeit",
       "backupRetentionDays": "Backups aufbewahren (Tage)",
+      "backupDir": "Backup-Ordner",
       "retentionAllowNever": "Dauerhaftes Aufbewahren",
       "mcpEnabled": "KI-Agenten (MCP)",
       "peopleSearch": "Personensuche",

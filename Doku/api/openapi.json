@@ -114,6 +114,32 @@
         }
       }
     },
+    "/api/v1/admin/backups/location": {
+      "get": {
+        "summary": "Backup folder (desktop app only)",
+        "description": "Where the backups go: dir, defaultDir (backups/ in the instance's folder), custom. Desktop app only; 404 on a server",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Set the backup folder (desktop app only)",
+        "description": "{dir}: an absolute path, created when missing; \"\" goes back to the default. 400 for a relative path, the instance's own folder or a folder that cannot be written to. Backups already written stay in the old folder; the lists and restore read the new one. Answers like GET. Desktop app only; 404 on a server",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/admin/backups/deleted": {
       "get": {
         "summary": "Kept backups of deleted accounts",
@@ -437,7 +463,7 @@
     "/api/v1/admin/setup": {
       "post": {
         "summary": "Finish the first-time setup after an admin from ADMIN_USER",
-        "description": "The setup wizard's instance settings for an administrator created by ADMIN_USER/ADMIN_PASSWORD (instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage, backupEnabled, backupTime, backupRetentionDays, timeZone, smtp, as in /auth/setup, with the same 400s), and email for an account without one: it waits for the click on the confirmation link like a changed login address (400 invalid, 409 in use; ignored when the account has an address). Answers done, plus pendingEmail and confirmationSent with an email. Only while GET /auth/me says setupPending, once; afterwards 409",
+        "description": "The setup wizard's instance settings for an administrator created by ADMIN_USER/ADMIN_PASSWORD (instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage, backupEnabled, backupTime, backupRetentionDays, timeZone, smtp, as in /auth/setup, with the same 400s), and email for an account without one: it waits for the click on the confirmation link like a changed login address (400 invalid, 409 in use; ignored when the account has an address). Answers done, plus pendingEmail and confirmationSent with an email. Only while GET /auth/me says setupPending, once; afterwards 409. In the desktop app it finishes the short wizard of a local instance's first start: email, smtp, allowRegistration and sharingMode are ignored (sharing stays private, registration closed), and backupDir sets the backup folder as PUT /admin/backups/location (same checks and 400s); ignored on a server",
         "tags": [
           "Administration"
         ],
