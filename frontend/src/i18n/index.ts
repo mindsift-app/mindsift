@@ -29,6 +29,7 @@ export const NAMESPACES = [
   'help',
   'public',
   'tour',
+  'desktop',
 ] as const satisfies readonly (keyof typeof de)[];
 // Every language is a chunk of its own, German included: the start chunk holds no texts. Every language has
 // all keys (a test checks), so a start loads only its own; German comes only when that one fails. The page

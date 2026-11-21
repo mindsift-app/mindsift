@@ -1,17 +1,63 @@
 # MindSift desktop
 
 A Wails v3 shell around MindSift for Linux and Windows (no macOS). Phase 0 proved the approach, phase 1
-adds the server's desktop mode; it is not a release yet.
+added the server's desktop mode, phase 2 the start view with several instances and servers; it is not a
+release yet.
 
-- **Local mode:** the MindSift server runs inside the app. Its router is the Wails asset handler, so no
-  port is opened and nothing but the app's own window can reach it (`wails://localhost/` on Linux,
-  `http://wails.localhost/` on Windows are served by the webview itself). Data lives in
-  `$XDG_DATA_HOME/MindSift` (`~/.local/share/MindSift`; under Flatpak `XDG_DATA_HOME` already points into
-  the sandbox) or `%APPDATA%\MindSift`; `MINDSIFT_DESKTOP_DIR` overrides it.
-- **Remote mode:** the window loads a MindSift server's web app, offline behaviour as in the browser.
-- The start page (`/__desktop/start`) chooses the mode; the tray menu switches it and opens a check page
-  (`/__desktop/check`) that tests the web features MindSift relies on inside the window's engine.
-  `MINDSIFT_DESKTOP_START=/__desktop/check` opens that page first.
+- **Start view** (`/__desktop/start`): a view of the frontend (`features/desktop/DesktopStartView.tsx`),
+  in the look of the sign-in page and the system's language. It lists the entries used lately (local
+  instances and servers mixed, newest first), the instance folders found in the base folder that are not
+  listed (also ones copied there by hand), "Neue lokale Instanz…" (a name) and "Mit Server verbinden…"
+  (name and address, checked with `GET /api/v1/health`). Entries can be renamed and removed from the list;
+  removing never deletes data. The entry opened last opens directly at the next start. The tray menu has
+  "MindSift öffnen", "Instanz wechseln…" (the start view, also Ctrl+Shift+O for desktops without a
+  tray) and "Beenden", in the system’s language (`internal/shell/texts.go`).
+- **Base folder:** `$XDG_DATA_HOME/MindSift` (`~/.local/share/MindSift`; under Flatpak `XDG_DATA_HOME`
+  already points into the sandbox) or `%APPDATA%\MindSift`; `MINDSIFT_DESKTOP_DIR` overrides it. It holds
+  `desktop.json` and every local instance in `instances/<Name>/`; the single data folder of phase 1,
+  `data/`, stays where it is and becomes the instance "MindSift". The start view names the folder and opens
+  it in the file manager. No other folder is ever opened, so no folder dialog and no portal are needed.
+- **Local instances:** the MindSift server runs inside the app. Its router is the Wails asset handler, so
+  no port is opened and nothing but the app's own window can reach it (`wails://localhost/` on Linux,
+  `http://wails.localhost/` on Windows are served by the webview itself). One instance at a time:
+  switching closes the running server cleanly (requests, hub, background jobs, database) and opens the
+  next in the same process. `mindsift.lock` in the instance folder (flock / LockFileEx, dropped by the
+  system when the process ends) keeps a second app process from opening the same database.
+- **Servers:** the window loads a MindSift server's web app, offline behaviour as in the browser.
+- **Cloud sync:** when the base folder lies in a synced folder (Nextcloud, ownCloud, Dropbox, OneDrive,
+  Google Drive, iCloud, Syncthing, pCloud, MEGA …), the start view warns that syncing an open SQLite
+  database can destroy it and recommends a server for several machines.
+
+## Settings (`desktop.json`)
+
+```json
+{
+  "version": 1,
+  "entries": [
+    {"id": "3f…", "kind": "local", "name": "Privat", "path": "/home/anna/.local/share/MindSift/instances/Privat", "lastOpened": "2026-11-21T10:00:00Z"},
+    {"id": "9a…", "kind": "server", "name": "Arbeit", "url": "https://notes.example.com/"}
+  ],
+  "last": "3f…"
+}
+```
+
+A file of phase 1 (`{"mode": "local"|"remote", "serverUrl": …}`) or none is converted once on loading:
+`data/` becomes the entry "MindSift" (when it holds `mindsift.db` or local mode was chosen), a chosen
+server a server entry, and the mode chosen last the entry opened next. A file that cannot be parsed is kept
+as `desktop.json.broken`.
+
+## The shell's endpoints
+
+`POST /__desktop/api/<op>` with a JSON body (`state`, `create`, `open`, `open-found`, `add-server`,
+`rename`, `remove`, `show-base`), code in `desktop/internal/shell`. They answer only requests with the
+header `X-MindSift-Desktop: 1`, `Content-Type: application/json`, no foreign `Origin` and no cross-site
+`Sec-Fetch-Site`. A server's page shown in the window (or any other origin) cannot send that header
+without a CORS preflight, which the shell never allows, so its requests never arrive. Errors come back as
+`{"error": {"code", "detail"}}` and are shown from the locale files (`desktop:errors.<code>`).
+
+All local instances share the window's origin, so the frontend remembers which instance the window's
+storage belongs to (`mindsift:desktop-instance`) and clears the session, the offline cache and stored
+notes before another instance opens (`lib/desktopShell.ts`); the new one signs itself in.
 
 ## Desktop mode of the server
 
@@ -31,11 +77,13 @@ normal server neither). Details in [Doku/architecture.md](../Doku/architecture.m
   import. Moving to a server later is a backup restored there.
 - **Realtime without WebSocket:** server-sent events on Linux, long polling on Windows (Wails buffers
   responses there). The server names the transport in `/auth/status` (`desktop.realtime`).
-- **Time zone and language** come from the system on Linux (`/etc/localtime`, `LANG`) unless `TZ` or
-  `DEFAULT_LANGUAGE` are set; Windows stays on UTC and German until set in the administration.
+- **Time zone and language** come from the system unless `TZ` or `DEFAULT_LANGUAGE` are set: on Linux
+  `/etc/localtime` and `LANGUAGE`/`LC_ALL`/`LC_MESSAGES`/`LANG`, on Windows the display language (the
+  time zone stays UTC there until set in the administration).
 
 It is a module of its own (`desktop/go.mod`, replacing the main module with `../`), so Wails stays out of
-the server's dependencies.
+the server's dependencies. `desktop/internal/shell` needs no window and is tested without GTK:
+`go test ./internal/...` in `desktop/`.
 
 ## Build
 
