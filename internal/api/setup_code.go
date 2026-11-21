@@ -141,3 +141,7 @@ func writeSetupLocked(w http.ResponseWriter, wait time.Duration) {
 	}
 	writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": msg, "code": "setup_locked"})
 }
+
+// DisableSetupCode: the setup wizard asks for no code. Only for the desktop app, whose server no one but
+// its own window can reach, so whoever opens the wizard is the person at the machine.
+func (s *Server) DisableSetupCode() { s.setupCode.clear() }
