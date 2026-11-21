@@ -5,6 +5,7 @@
 #   desktop/build.sh            both
 #   desktop/build.sh linux      only Linux
 #   desktop/build.sh windows    only Windows
+#   desktop/build.sh frontend   only the frontend (frontend/dist), e.g. for packaging/flatpak/build.sh
 #   SKIP_FRONTEND=1 desktop/build.sh   reuse frontend/dist
 # Locally this runs with podman and bind mounts. The CI workflow (.gitea/workflows/desktop-spike.yaml)
 # sets ENGINE=docker COPY_MODE=1: the job may run in a container itself, where the paths of the Docker

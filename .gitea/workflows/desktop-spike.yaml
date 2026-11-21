@@ -1,8 +1,8 @@
 name: MindSift Desktop Spike (Gitea)
 
 # Builds the desktop spike (desktop/, Wails v3) for Linux and Windows and offers the binaries as artifacts
-# of the workflow run in the Gitea UI (Actions -> run -> Artifacts). Only for the desktop-spike branch and
-# manual runs; it builds no images and touches no registry.
+# of the workflow run in the Gitea UI (Actions -> run -> Artifacts), and the Flatpak bundle (job flatpak).
+# Only for the desktop-spike branch and manual runs; it builds no images and touches no registry.
 # The steps are desktop/build.sh, the same script as locally; in CI it runs with docker and copies the
 # sources into the build containers (node for the frontend, golang trixie with GTK4/WebKitGTK for Linux
 # and the cgo-free cross-compile for Windows), because the job may itself run in a container.
@@ -42,5 +42,26 @@ jobs:
         with:
           name: mindsift-desktop-windows-amd64
           path: desktop/out/mindsift-desktop-windows-amd64.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  flatpak:
+    # The Flatpak bundle (desktop/packaging/flatpak/build.sh): flatpak-builder runs in a privileged container
+    # on the runner's Docker host, since bubblewrap needs namespaces of its own. The runtimes are cached in
+    # the Docker volume mindsift-flatpak, so only the first run downloads the GNOME SDK (~1 GB).
+    name: Build Flatpak
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build frontend and Flatpak bundle
+        run: ENGINE=docker COPY_MODE=1 desktop/packaging/flatpak/build.sh
+
+      - name: Upload Flatpak bundle
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mindsift-desktop-flatpak
+          path: desktop/out/mindsift.flatpak
           if-no-files-found: error
           retention-days: 7
