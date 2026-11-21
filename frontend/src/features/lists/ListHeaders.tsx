@@ -14,6 +14,7 @@ import { canWriteList, deduplicateItems } from './listItems';
 import { useListDrag } from './useListDrag';
 import { useTabReorder } from '../../lib/useTabReorder';
 import { TabDropMarker } from '../../components/TabDropMarker';
+import { isDesktopApp } from '../../lib/api';
 
 // Desktop: the list tabs in one row (an entry dropped on a tab moves into that list; what does not fit goes
 // behind "⋯ n"), "Neue Liste" and on the right the status (live, shared) and the menu of the open list
@@ -169,12 +170,17 @@ export function ListTabsHeader({
                 buttonClassName="tool-icon"
                 label={t('common:listMenu.more')}
                 items={[
-                  {
-                    key: 'share',
-                    icon: <Users className="w-3.5 h-3.5" />,
-                    label: t('common:listMenu.share'),
-                    onSelect: openShareModal,
-                  },
+                  // Nobody to share with in the desktop app
+                  ...(isDesktopApp()
+                    ? []
+                    : [
+                        {
+                          key: 'share',
+                          icon: <Users className="w-3.5 h-3.5" />,
+                          label: t('common:listMenu.share'),
+                          onSelect: openShareModal,
+                        },
+                      ]),
                   {
                     key: 'rename',
                     icon: <Pencil className="w-3.5 h-3.5" />,
@@ -251,15 +257,19 @@ export function MobileListHeader({
         <LivePill />
         {activeList && (
           <>
-            <span className="w-px h-5 bg-border" aria-hidden />
-            <button
-              type="button"
-              onClick={openShareModal}
-              className="btn-icon min-h-[36px] min-w-[36px] flex items-center justify-center"
-              title={t('share')}
-            >
-              <Users className="w-4 h-4 text-accent" />
-            </button>
+            {!isDesktopApp() && (
+              <>
+                <span className="w-px h-5 bg-border" aria-hidden />
+                <button
+                  type="button"
+                  onClick={openShareModal}
+                  className="btn-icon min-h-[36px] min-w-[36px] flex items-center justify-center"
+                  title={t('share')}
+                >
+                  <Users className="w-4 h-4 text-accent" />
+                </button>
+              </>
+            )}
           </>
         )}
       </div>

@@ -14,6 +14,7 @@ import {
   LoaderCircle,
   CloudOff,
 } from 'lucide-react';
+import { isDesktopApp } from '../../lib/api';
 import { AboutModal } from '../../components/AboutModal';
 import { LegalLinks } from '../../components/LegalLinks';
 import type { AuthStatus } from '../../lib/types';
@@ -22,6 +23,9 @@ import { loadedHelpContent, loadHelpContent } from './content';
 import type { DocCard, HelpCategory, HelpContent } from './content/types';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { TourStartCard } from '../tour/TourStartCard';
+
+// Cards about working together with other people: the desktop app has one account and no sharing, no locks
+const DESKTOP_HIDDEN_CARDS = new Set(['workspace-collab-locks', 'collab-teams-sharing']);
 
 interface HelpViewProps {
   onBack?: () => void;
@@ -49,7 +53,11 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
     };
   }, [language]);
   const help = content === 'failed' ? undefined : content;
-  const cards: DocCard[] = useMemo(() => help?.cards ?? [], [help]);
+  const desktop = isDesktopApp();
+  const cards: DocCard[] = useMemo(
+    () => (desktop ? (help?.cards ?? []).filter((card) => !DESKTOP_HIDDEN_CARDS.has(card.id)) : (help?.cards ?? [])),
+    [help, desktop]
+  );
 
   // Filtered cards based on active category & search query
   const filteredCards = useMemo(() => {
@@ -149,7 +157,9 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
           { id: 'collaboration', label: t('cat.collaboration'), icon: Users },
           { id: 'account', label: t('cat.account'), icon: UserCog },
           { id: 'shortcuts', label: t('cat.shortcuts'), icon: Keyboard },
-        ].map((cat) => {
+        ]
+          .filter((cat) => !(desktop && cat.id === 'collaboration'))
+          .map((cat) => {
           const Icon = cat.icon;
           const isActive = activeCategory === cat.id;
           return (
