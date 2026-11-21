@@ -3,7 +3,7 @@ import { guideCounts } from './outlineGuides';
 import type { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { OutlinerBlock, BlockLock, PastingImagesNotice } from './OutlinerBlock';
-import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
+import { mapRenderedOffsetToRaw, rawOffsetAtPoint } from '../../lib/caret';
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToClipboard, putOnClipboard, rememberCopied, type OutlineClipboard } from '../../lib/outlineMarkdown';
 import { branchEnd, dropLevelRange, OutlineRow, outlineRows, sameOutlineShape, type BranchDrop } from '../../lib/outlineList';
@@ -1055,19 +1055,21 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const dragAnchorRef = useRef<{ id: string; offset: number } | null>(null);
   const highlightSupported = typeof CSS !== 'undefined' && 'highlights' in CSS && typeof window.Highlight === 'function';
 
-  // Position in the raw text of a bullet for a point in its rendered text (outside it: start or end).
+  // Position in the raw text of a bullet for a point in its rendered text (outside it: start or end; inside it where
+  // WebKit's hit test stops at the row: the nearest character).
   // Blocks without a text layer (code, tables …) count whole when `whole` says from which side
-  const rawOffsetAtPoint = (row: HTMLElement, id: string, x: number, y: number, whole?: 'start' | 'end') => {
+  const rowOffsetAtPoint = (
+    row: HTMLElement,
+    id: string,
+    x: number,
+    y: number,
+    whole?: 'start' | 'end'
+  ): { offset: number; node?: Node; nodeOffset?: number } => {
     const raw = textareaMapRef.current.get(id)?.value ?? blocks.find((b) => b.id === id)?.content ?? '';
     const span = row.querySelector<HTMLElement>('[data-outline-text]');
     if (!span && whole) return { offset: whole === 'start' ? 0 : raw.length };
-    const caret = caretAtPoint(x, y);
-    if (span && caret && span.contains(caret.node)) {
-      const range = document.createRange();
-      range.setStart(span, 0);
-      range.setEnd(caret.node, caret.offset);
-      return { offset: mapRenderedOffsetToRaw(raw, span.textContent || '', range.toString().length), node: caret.node, nodeOffset: caret.offset };
-    }
+    const at = span && rawOffsetAtPoint(span, raw, x, y, true);
+    if (at) return at;
     const rect = (span || row).getBoundingClientRect();
     const before = y < rect.top || (y <= rect.bottom && x < rect.left);
     return { offset: before ? 0 : raw.length };
@@ -1156,7 +1158,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       const raw = textareaMapRef.current.get(id)?.value ?? blocks.find((b) => b.id === id)?.content ?? '';
       const at = edge
         ? { offset: edge === 'start' ? 0 : raw.length }
-        : rawOffsetAtPoint(row, id, e.clientX, e.clientY, upwards ? 'start' : 'end');
+        : rowOffsetAtPoint(row, id, e.clientX, e.clientY, upwards ? 'start' : 'end');
       setRangeSel({ anchorId: start.id, anchorOffset: start.offset, focusId: id, focusOffset: at.offset, focusNode: at.node, focusNodeOffset: at.nodeOffset });
     };
     const onUp = () => {
@@ -1168,7 +1170,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-    // rawOffsetAtPoint only reads refs and blocks
+    // rowOffsetAtPoint only reads refs and blocks
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blocks]);
 
@@ -1195,7 +1197,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     }
     const id = row.dataset.outlineBlock!;
     // The bullet's own handler places the caret first; read it right after
-    dragAnchorRef.current = { id, offset: rawOffsetAtPoint(row, id, e.clientX, e.clientY).offset };
+    dragAnchorRef.current = { id, offset: rowOffsetAtPoint(row, id, e.clientX, e.clientY).offset };
     requestAnimationFrame(() => {
       const ta = textareaMapRef.current.get(id);
       if (dragAnchorRef.current?.id === id && ta && document.activeElement === ta) {

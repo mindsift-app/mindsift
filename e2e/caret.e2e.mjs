@@ -1,7 +1,8 @@
 // A click into the text of a bullet without the cursor puts the cursor where it was clicked (desktop, Chromium,
 // Firefox and WebKit): in the middle of a short bullet, behind rendered markdown, on the second line of a
 // wrapped bullet and in a bullet far down a long note (rows out of view are skipped by the browser,
-// content-visibility in index.css; WebKit's hit test then stops at the row instead of the text). Real mouse
+// content-visibility in index.css; WebKit's hit test then stops at the row instead of the text); the same for
+// table cells (right after opening, between cells and bullets, far down). Real mouse
 // clicks; the cursor is read from the bullet's text field. Needs a server in demo mode (account admin/admin);
 // see e2e/README.md.
 import { chromium, firefox, webkit } from 'playwright';
@@ -31,10 +32,48 @@ async function removeNotes(token, ids) {
   }
 }
 
+// Cells row by row: Artikel, Menge, Brot und Butter, **zwei** Stück
+const TABLE = '| Artikel | Menge |\n| --- | --- |\n| Brot und Butter | **zwei** Stück |';
+
 const LONG =
   'Ein langer Punkt, der über mehrere Zeilen umbricht, damit der Klick auf die zweite Zeile geprüft wird. ' +
   'Hier steht noch mehr Text, der die Zeile füllt und weiter umbricht, bis die Notiz breit genug belegt ist. ' +
   'Und noch ein Satz für die dritte Zeile, falls das Fenster sehr breit ist und alles andere auf zwei passt.';
+
+// Clicks with the mouse into the formatted text of cell n (row by row) of the table with the id, between rendered
+// characters at-1 and at; returns where the cursor is then and whether it is in that cell.
+async function clickCell(page, id, n, at, scroll = true) {
+  if (scroll) {
+    await page.locator(`[data-outline-block="${id}"]`).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200);
+  }
+  const p = await page.evaluate(
+    ({ id, n, at }) => {
+      const view = document.querySelectorAll(`[data-outline-block="${id}"] .nt-text`)[n];
+      const walker = document.createTreeWalker(view, NodeFilter.SHOW_TEXT);
+      const chars = [];
+      for (let t = walker.nextNode(); t; t = walker.nextNode()) {
+        for (let i = 0; i < t.textContent.length; i++) chars.push([t, i]);
+      }
+      const range = document.createRange();
+      range.setStart(chars[at - 1][0], chars[at - 1][1]);
+      range.setEnd(chars[at - 1][0], chars[at - 1][1] + 1);
+      const r = range.getClientRects()[0];
+      return { x: r.right - 1, y: r.top + r.height / 2 };
+    },
+    { id, n, at }
+  );
+  await page.mouse.click(p.x, p.y);
+  await page.waitForTimeout(150);
+  return page.evaluate(
+    ({ id, n }) => {
+      const ta = document.querySelectorAll(`[data-outline-block="${id}"] textarea[data-table-cell]`)[n];
+      const a = document.activeElement;
+      return { inCell: a === ta, start: a?.selectionStart, end: a?.selectionEnd, value: a?.value };
+    },
+    { id, n }
+  );
+}
 
 // Clicks with the mouse into the rendered text of the bullet with the id, between rendered characters at-1 and at
 // (at: index in the rendered text, or 'secondLine': the middle of the text's second line); returns where the
@@ -102,10 +141,12 @@ const main = async () => {
         { id: `ck0_${stamp}`, type: 'text', content: 'Hallo schöne Welt', level: 0 },
         { id: `ck1_${stamp}`, type: 'text', content: 'Mit **fettem** Wort und Rest', level: 0 },
         { id: `ck2_${stamp}`, type: 'text', content: LONG, level: 0 },
+        { id: `ckt_${stamp}`, type: 'table', content: TABLE, level: 0 },
       ];
       for (let i = 0; i < 150; i++) blocks.push({ id: `ckf${i}_${stamp}`, type: 'text', content: `Füllpunkt Nummer ${i}`, level: 0 });
       blocks.push({ id: `ckend_${stamp}`, type: 'text', content: 'Weit unten in der Notiz', level: 0 });
       blocks.push({ id: `ckwrap_${stamp}`, type: 'text', content: LONG, level: 1 });
+      blocks.push({ id: `cktend_${stamp}`, type: 'table', content: TABLE, level: 0 });
       const doc = await api(admin, 'POST', '/api/v1/documents', { title, blocks });
       created.push(doc.id);
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
@@ -114,10 +155,13 @@ const main = async () => {
         localStorage.setItem('mindsift:tour-offered', '1');
       }, admin);
       const page = await ctx.newPage();
-      await page.goto(BASE);
-      await page.getByRole('button', { name: /^Workspace/ }).locator('visible=true').first().click();
-      await page.getByText(title, { exact: true }).first().click();
-      await page.waitForFunction((n) => document.querySelectorAll('[data-outline-block]').length === n, blocks.length, { timeout: 10000 });
+      const openNote = async () => {
+        await page.goto(BASE);
+        await page.getByRole('button', { name: /^Workspace/ }).locator('visible=true').first().click();
+        await page.getByText(title, { exact: true }).first().click();
+        await page.waitForFunction((n) => document.querySelectorAll('[data-outline-block]').length === n, blocks.length, { timeout: 10000 });
+      };
+      await openNote();
 
       // Middle of a short bullet right after opening the note: behind "Hallo"
       let c = await clickAt(page, `ck0_${stamp}`, 5, false);
@@ -166,6 +210,76 @@ const main = async () => {
         };
       });
       check(rows.near >= 1 && rows.near < rows.total / 2 && rows.last === 'auto', `${tag}: weit entfernte Punkte werden übersprungen`, rows);
+
+      // Table cells, in a freshly opened note: a cell right after opening, another cell of the same table, a cell
+      // right after leaving a bullet, a bullet right after leaving a cell, cells far down
+      await openNote();
+      const cellAt = async (id, n, at, scroll, want, msg) => {
+        const got = await clickCell(page, id, n, at, scroll);
+        check(got.inCell && got.start === want && got.end === want, `${tag}: ${msg}`, got);
+      };
+      await cellAt(`ckt_${stamp}`, 2, 4, false, 4, 'Klick in eine Tabellenzelle gleich nach dem Öffnen');
+      // Behind "zwei St" of the rendered "zwei Stück": raw "**zwei** St"
+      await cellAt(`ckt_${stamp}`, 3, 7, false, 11, 'Klick in eine andere Zelle hinter Markdown');
+      c = await clickAt(page, `ck0_${stamp}`, 5, false);
+      await page.waitForTimeout(500);
+      await cellAt(`ckt_${stamp}`, 2, 9, false, 9, 'Klick in eine Zelle gleich nach dem Verlassen eines Punkts');
+      await page.waitForTimeout(500);
+      c = await clickAt(page, `ck1_${stamp}`, 3, false);
+      check(c.start === 3, `${tag}: Klick in einen Punkt gleich nach dem Verlassen einer Zelle`, c);
+      await page.waitForTimeout(500);
+      await cellAt(`ckt_${stamp}`, 1, 3, false, 3, 'Klick zurück in die eben verlassene Tabelle');
+      await cellAt(`cktend_${stamp}`, 1, 3, true, 3, 'Klick in eine Zelle weit unten in einer langen Notiz');
+      c = await clickAt(page, `ckend_${stamp}`, 4);
+      await page.waitForTimeout(500);
+      await cellAt(`cktend_${stamp}`, 2, 9, false, 9, 'Klick in eine Zelle weit unten nach dem Verlassen eines Punkts');
+
+      // A selection dragged from one bullet into the next ends where the mouse is let go
+      await page.keyboard.press('Escape');
+      await page.locator(`[data-outline-block="ck0_${stamp}"]`).scrollIntoViewIfNeeded();
+      await page.waitForTimeout(300);
+      const pointOf = (id, at) =>
+        page.evaluate(
+          ({ id, at }) => {
+            const span = document.querySelector(`[data-outline-block="${id}"] [data-outline-text]`);
+            const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+            let n = walker.nextNode();
+            let k = at - 1;
+            while (n && k >= n.textContent.length) {
+              k -= n.textContent.length;
+              n = walker.nextNode();
+            }
+            const range = document.createRange();
+            range.setStart(n, k);
+            range.setEnd(n, k + 1);
+            const r = range.getClientRects()[0];
+            return { x: r.right - 1, y: r.top + r.height / 2 };
+          },
+          { id, at }
+        );
+      const from = await pointOf(`ck0_${stamp}`, 3);
+      const to = await pointOf(`ck1_${stamp}`, 8);
+      await page.mouse.move(from.x, from.y);
+      await page.mouse.down();
+      await page.mouse.move(to.x, to.y, { steps: 10 });
+      await page.mouse.up();
+      await page.waitForTimeout(200);
+      const end = await page.evaluate((id) => {
+        const span = document.querySelector(`[data-outline-block="${id}"] [data-outline-text]`);
+        if (typeof CSS === 'undefined' || !CSS.highlights) return 'no highlights';
+        for (const h of CSS.highlights.values()) {
+          for (const r of h) {
+            if (!r.intersectsNode(span)) continue;
+            const upto = document.createRange();
+            upto.setStart(span, 0);
+            upto.setEnd(r.endContainer, r.endOffset);
+            return upto.toString().length;
+          }
+        }
+        return null;
+      }, `ck1_${stamp}`);
+      check(end === 8 || end === 'no highlights', `${tag}: eine Auswahl über zwei Punkte endet, wo die Maus losgelassen wird`, end);
+
 
       await browser.close();
     }
