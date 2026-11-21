@@ -642,4 +642,14 @@ var messagesIT = map[string]string{
 	"'data' ist kein gültiges base64 (eine data:-URL braucht ;base64,)":                           "'data' non è base64 valido (un URL data: richiede ;base64,)",
 	"Kein unterstütztes Bild (JPEG, PNG, GIF, WebP; kein SVG)":                                    "Immagine non supportata (JPEG, PNG, GIF, WebP; niente SVG)",
 	"Anfrage zu groß (höchstens {mb} MB; ein Bild für add_note_image höchstens {img} MB)":         "Richiesta troppo grande (al massimo {mb} MB; un’immagine per add_note_image al massimo {img} MB)",
+
+	// Desktop app: taking an account of a server's database snapshot over
+	"Keine Datei erhalten": "Nessun file ricevuto",
+	"Die Datei ist kein Datenbank-Abzug von MindSift (mindsift-db-….db.gz)":                              "Il file non è una copia del database di MindSift (mindsift-db-….db.gz)",
+	"Der Datenbank-Abzug ist zu groß (max. {gb} GB)":                                                     "La copia del database è troppo grande (max. {gb} GB)",
+	"Der Datenbank-Abzug stammt von einer neueren MindSift-Version. Bitte zuerst die App aktualisieren.": "La copia del database proviene da una versione più recente di MindSift. Aggiorna prima l’app.",
+	"Im Datenbank-Abzug ist kein Konto":                                                                  "La copia del database non contiene alcun account",
+	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                         "La copia del database non è più disponibile. Scegli di nuovo il file.",
+	"Dieses Konto ist nicht im Datenbank-Abzug":                                                          "Questo account non è nella copia del database",
+	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":             "I valori nascosti sono cifrati con la chiave del server e non vengono trasferiti",
 }

@@ -58,7 +58,7 @@ func (s *Store) ExportUserData(userID string) (*domain.FullExport, error) {
 	if err != nil {
 		return nil, err
 	}
-	thoughts, _ := s.GetThoughts(userID, "all", 5000)
+	thoughts, _ := s.exportThoughts(userID)
 	docs, _ := s.GetDocuments(userID)
 	lists, _ := s.GetAllListsForUser(userID)
 	taskLists, _ := s.GetTaskLists(userID)
@@ -74,6 +74,34 @@ func (s *Store) ExportUserData(userID string) (*domain.FullExport, error) {
 		TaskLists:  taskLists,
 		Themes:     themes,
 	}, nil
+}
+
+// exportThoughts: every inbox entry and task of the user, without the limit of GetThoughts (which caps a
+// page at 500 and took 200 here, so a backup lost every task beyond), plus the tasks other people added
+// to the user's own task lists: the lists come along, and restoring them would otherwise lose those tasks.
+func (s *Store) exportThoughts(userID string) ([]domain.Thought, error) {
+	rows, err := s.db.Query(
+		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
+		 FROM thoughts WHERE user_id = ? OR (task_list_id != '' AND task_list_id IN (SELECT id FROM task_lists WHERE user_id = ?))
+		 ORDER BY sort_order ASC, created_at DESC`,
+		userID, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]domain.Thought, 0)
+	for rows.Next() {
+		t, err := scanThought(rows)
+		if !dbFailed(err) {
+			result = append(result, *t)
+		}
+	}
+	err = rows.Err()
+	_ = rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // --- SYSTEM SETTINGS ---

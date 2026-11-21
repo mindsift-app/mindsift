@@ -972,7 +972,28 @@
     "folderPickFailed": "Le choix de dossier n’a pas pu s’ouvrir. Saisissez le chemin à la main.",
     "folderFailed": "Le dossier n’a pas pu être utilisé",
     "autoHintDesktop": "Chaque jour une sauvegarde de toute la base de données et de vos données dans le dossier ci-dessous tant que l’application est ouverte (si elle était fermée à cette heure, au prochain démarrage). Un dossier sur un autre disque protège aussi d’un disque en panne.",
-    "restoreHintDesktop": "Restaurer une copie de la base de données : fermez l’instance (ouvrez-en une autre ou quittez l’application), remplacez <c>mindsift.db</c> dans le dossier de l’instance par le fichier décompressé (<c>gunzip</c>), puis rouvrez l’instance. Vos seules données se restaurent dans les paramètres du compte."
+    "restoreHintDesktop": "Restaurer une copie de cette instance : fermez l’instance (ouvrez-en une autre ou quittez l’application), remplacez <c>mindsift.db</c> dans le dossier de l’instance par le fichier décompressé (<c>gunzip</c>), puis rouvrez l’instance. D’une copie de serveur, vous reprenez un compte ci-dessous ; vos seules données se restaurent dans les paramètres du compte.",
+    "snapshot": {
+      "title": "Reprendre un compte d’une sauvegarde de serveur",
+      "hint": "Une copie de la base de données d’un serveur (<c>mindsift-db-….db.gz</c> de <c>backups/system/</c>) contient tous ses comptes. Vous en choisissez un : seul ce qui appartient à ce compte (notes avec leurs dossiers, listes de tâches avec toutes leurs tâches, listes, pensées, thèmes) et, si vous le souhaitez, ses paramètres personnels arrivent dans cette instance. Les autres comptes, ce que d’autres ont partagé avec le compte et les paramètres du serveur restent dehors. Les images, enregistrements et valeurs masquées ne sont pas dans la copie ; pour les images et enregistrements, importez la sauvegarde personnelle (ZIP) du compte dans les paramètres du compte.",
+      "choose": "Choisir la copie de la base de données",
+      "reading": "Lecture de {{name}}…",
+      "pickAccount": "Quel compte reprendre ?",
+      "lists_one": "{{count}} liste",
+      "lists_other": "{{count}} listes",
+      "inbox_one": "{{count}} pensée",
+      "inbox_other": "{{count}} pensées",
+      "inactive": "bloqué",
+      "settings": "Reprendre les paramètres personnels",
+      "settingsHint": "Nom, langue, saisie vocale, conservation et notifications du compte. La connexion, le rôle et la photo de profil restent comme ici.",
+      "settingsToo": "Ainsi que les paramètres personnels du compte.",
+      "previewTitle": "Aperçu : {{name}}",
+      "replaceWarning": "<b>Attention :</b> vos données actuelles dans les domaines choisis ({{sections}}) sont remplacées par celles du compte et supprimées dès que celles-ci sont complètes (en cas d’échec, elles restent inchangées).",
+      "replaceNow": "Remplacer et reprendre",
+      "takeOver": "Reprendre",
+      "done": "{{name}} repris",
+      "reload": "Recharger l’application"
+    }
   },
   "voiceStatus": {
     "loadFailed": "Impossible de charger le statut",

@@ -662,6 +662,31 @@ export interface BackupLocation {
   custom: boolean;
 }
 
+/** Desktop app: one account of a server's database snapshot, with what it owns. */
+export interface SnapshotAccount {
+  id: string;
+  displayName: string;
+  username: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  notes: number;
+  tasks: number;
+  lists: number;
+  inbox: number;
+}
+
+export interface SnapshotStaged {
+  token: string;
+  accounts: SnapshotAccount[];
+}
+
+/** Preview or result of taking an account of a snapshot over. */
+export interface SnapshotTakeOver extends ImportSummary {
+  account: SnapshotAccount;
+  settings: boolean;
+}
+
 /** Parts of the own data a backup can be restored for. */
 export type DataSection = 'notes' | 'tasks' | 'lists' | 'inbox' | 'themes';
 const dataSection = (id: DataSection) => ({

@@ -172,7 +172,8 @@ normal server neither). Details in [Doku/architecture.md](../Doku/architecture.m
   organizations, sharing, mail and legal texts; the settings hide Sicherheit, the calendar subscription,
   the address and the mail and push channels of alarms.
 - **Kept:** MCP with API keys (local AI agents, over the listener above), daily backups (on unless switched off in the wizard; into
-  `backups/` of the instance or a folder chosen in the wizard or the administration), export and import. Moving to a server later is a backup restored there.
+  `backups/` of the instance or a folder chosen in the wizard or the administration), export and import. Moving to a server later is a backup restored there; the other way, Administration → Data takes one account
+  over from a server's database snapshot (see Desktop Mode in Doku/architecture.md).
 - **Realtime without WebSocket:** server-sent events on Linux, long polling on Windows (Wails buffers
   responses there). The server names the transport in `/auth/status` (`desktop.realtime`).
 - **Time zone and language** come from the system unless `TZ` or `DEFAULT_LANGUAGE` are set: on Linux

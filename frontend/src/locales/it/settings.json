@@ -972,7 +972,28 @@
     "folderPickFailed": "Impossibile aprire la scelta della cartella. Inserisci il percorso a mano.",
     "folderFailed": "Impossibile usare la cartella",
     "autoHintDesktop": "Ogni giorno un backup dell’intero database e dei tuoi dati nella cartella qui sotto mentre l’app è aperta (se a quell’ora era chiusa, al successivo avvio). Una cartella su un altro disco protegge anche da un disco guasto.",
-    "restoreHintDesktop": "Ripristinare una copia del database: chiudi l’istanza (aprine un’altra o esci dall’app), sostituisci <c>mindsift.db</c> nella cartella dell’istanza con il file decompresso (<c>gunzip</c>), poi riapri l’istanza. I soli tuoi dati si ripristinano nelle impostazioni dell’account."
+    "restoreHintDesktop": "Ripristinare una copia di questa istanza: chiudi l’istanza (aprine un’altra o esci dall’app), sostituisci <c>mindsift.db</c> nella cartella dell’istanza con il file decompresso (<c>gunzip</c>), poi riapri l’istanza. Dalla copia di un server riprendi un account qui sotto; i soli tuoi dati si ripristinano nelle impostazioni dell’account.",
+    "snapshot": {
+      "title": "Riprendere un account da un backup del server",
+      "hint": "La copia del database di un server (<c>mindsift-db-….db.gz</c> da <c>backups/system/</c>) contiene tutti i suoi account. Ne scegli uno: solo ciò che appartiene a quell’account (note con le loro cartelle, liste di attività con tutte le attività, liste, pensieri, temi) e, se vuoi, le sue impostazioni personali arrivano in questa istanza. Gli altri account, ciò che altri hanno condiviso con l’account e le impostazioni del server restano fuori. Immagini, registrazioni e valori nascosti non sono nella copia; per immagini e registrazioni importa il backup personale (ZIP) dell’account nelle impostazioni dell’account.",
+      "choose": "Scegli la copia del database",
+      "reading": "Lettura di {{name}}…",
+      "pickAccount": "Quale account riprendere?",
+      "lists_one": "{{count}} lista",
+      "lists_other": "{{count}} liste",
+      "inbox_one": "{{count}} pensiero",
+      "inbox_other": "{{count}} pensieri",
+      "inactive": "bloccato",
+      "settings": "Riprendere le impostazioni personali",
+      "settingsHint": "Nome, lingua, input vocale, conservazione e notifiche dell’account. Accesso, ruolo e immagine del profilo restano come qui.",
+      "settingsToo": "Inoltre le impostazioni personali dell’account.",
+      "previewTitle": "Anteprima: {{name}}",
+      "replaceWarning": "<b>Attenzione:</b> i tuoi dati attuali nelle aree scelte ({{sections}}) vengono sostituiti da quelli dell’account ed eliminati non appena questi sono completi (se non riesce, restano invariati).",
+      "replaceNow": "Sostituisci e riprendi",
+      "takeOver": "Riprendi",
+      "done": "{{name}} ripreso",
+      "reload": "Ricarica l’app"
+    }
   },
   "voiceStatus": {
     "loadFailed": "Impossibile caricare lo stato",
