@@ -315,9 +315,10 @@ type secondFactor struct {
 // confirmWithSecondFactor checks the current password and, when the account has a second factor, a
 // code or passkey of it for a sensitive change. Wrong guesses of either count like failed logins. Writes
 // the error itself. A session that signed in at the OIDC provider again a moment ago (oidc.go) is confirmed
-// without; an account without a password of its own can only be confirmed that way.
+// without; an account without a password of its own can only be confirmed that way. The desktop app's
+// account confirms without any of it (confirmsWithoutCredentials).
 func (s *Server) confirmWithSecondFactor(w http.ResponseWriter, r *http.Request, user *domain.User, password string, f secondFactor) bool {
-	if s.oidcConfirmed(r, user) {
+	if s.confirmsWithoutCredentials() || s.oidcConfirmed(r, user) {
 		return true
 	}
 	if !auth.HasPassword(user.PasswordHash) && s.oidcLinked(user) {
@@ -333,7 +334,7 @@ func (s *Server) confirmWithSecondFactor(w http.ResponseWriter, r *http.Request,
 // confirmSecondFactor: the second factor alone, for a change that needs no password (a new API key, whose
 // requests never ask for a second factor). True right away when the account has none.
 func (s *Server) confirmSecondFactor(w http.ResponseWriter, r *http.Request, user *domain.User, f secondFactor) bool {
-	if !s.store.MFAActive(user.ID) || s.oidcConfirmed(r, user) {
+	if s.confirmsWithoutCredentials() || !s.store.MFAActive(user.ID) || s.oidcConfirmed(r, user) {
 		return true
 	}
 	ip := clientIPFrom(r)

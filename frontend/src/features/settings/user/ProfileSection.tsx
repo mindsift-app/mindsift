@@ -296,9 +296,11 @@ export function ProfileSection({
   );
 }
 
-// Asks for the password before own data or the whole account is deleted
+// Asks for the password before own data or the whole account is deleted. In the desktop app the person at the
+// machine is the account (no password, no provider): the sheet is the plain confirmation.
 export function DangerConfirmSheet({ profile }: { profile: ReturnType<typeof useProfileSettings> }) {
   const { t } = useTranslation('settings');
+  const desktop = isDesktopApp();
   const {
     dangerAction,
     dangerPassword,
@@ -316,7 +318,7 @@ export function DangerConfirmSheet({ profile }: { profile: ReturnType<typeof use
       onSubmit={handleDangerSubmit}
       submitLabel={dangerAction === 'account' ? t('profile.deleteAccountButton') : t('profile.deleteDataButton')}
       danger
-      busy={dangerBusy || (!profile.currentUser.noPassword && !dangerPassword)}
+      busy={dangerBusy || (!desktop && !profile.currentUser.noPassword && !dangerPassword)}
     >
       <p className="text-xs text-muted">
         {dangerAction === 'account'
@@ -324,7 +326,7 @@ export function DangerConfirmSheet({ profile }: { profile: ReturnType<typeof use
           : t('profile.confirmData')}
       </p>
       {/* An account of the OIDC provider without a password confirms there (withSecondFactor) */}
-      {profile.currentUser.noPassword ? (
+      {desktop ? null : profile.currentUser.noPassword ? (
         <p className="text-xs text-muted">{t('security.oidc.confirmHint', { name: getCurrentOidc().name })}</p>
       ) : (
         <label className="block text-xs text-muted">
