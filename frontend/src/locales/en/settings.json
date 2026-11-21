@@ -972,7 +972,28 @@
     "folderPickFailed": "The folder dialog could not be opened. Type the path instead.",
     "folderFailed": "The folder could not be used",
     "autoHintDesktop": "Every day a backup of the whole database and of your data into the folder below while the app is running (if it was closed at that time, at the next start). A folder on another drive also protects against a broken disk.",
-    "restoreHintDesktop": "Restoring a database snapshot: close the instance (open another one or quit the app), replace <c>mindsift.db</c> in the instance’s folder with the unpacked file (<c>gunzip</c>), open the instance again. Your own data alone is restored in the account settings."
+    "restoreHintDesktop": "Restoring a snapshot of this instance: close the instance (open another one or quit the app), replace <c>mindsift.db</c> in the instance’s folder with the unpacked file (<c>gunzip</c>), open the instance again. From a server’s snapshot you take over one account below; your own data alone is restored in the account settings.",
+    "snapshot": {
+      "title": "Take over an account from a server backup",
+      "hint": "A server’s database snapshot (<c>mindsift-db-….db.gz</c> from <c>backups/system/</c>) holds every account of that server. You pick one: only what that account owns (notes with their folders, task lists with all their tasks, lists, thoughts, themes) and, if you like, its personal settings come into this instance. Other accounts, things others shared with the account and the server’s settings stay out. Pictures, recordings and hidden values are not in the snapshot; for pictures and recordings import the account’s personal backup (ZIP) in the account settings.",
+      "choose": "Choose database snapshot",
+      "reading": "Reading {{name}}…",
+      "pickAccount": "Which account to take over?",
+      "lists_one": "{{count}} list",
+      "lists_other": "{{count}} lists",
+      "inbox_one": "{{count}} thought",
+      "inbox_other": "{{count}} thoughts",
+      "inactive": "locked",
+      "settings": "Take over personal settings",
+      "settingsHint": "The account’s name, language, voice input, retention and notifications. Sign-in, role and profile picture stay as they are here.",
+      "settingsToo": "Plus the account’s personal settings.",
+      "previewTitle": "Preview: {{name}}",
+      "replaceWarning": "<b>Caution:</b> your current data in the chosen areas ({{sections}}) is replaced by the account’s and deleted once that is in completely (if it fails, it stays unchanged).",
+      "replaceNow": "Replace and take over",
+      "takeOver": "Take over",
+      "done": "{{name}} taken over",
+      "reload": "Reload app"
+    }
   },
   "voiceStatus": {
     "loadFailed": "The status could not be loaded",

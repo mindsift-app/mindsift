@@ -50,6 +50,7 @@ type Server struct {
 	streamTickets streamTickets // one-time tickets for WebSocket/SSE (streamticket.go)
 	loginGuard    *loginGuard   // brute-force protection (loginguard.go)
 	imports       importGate    // imports running at a time (importgate.go)
+	snapshot      snapshotStage // a server's database snapshot staged for the desktop app (desktop_restore.go)
 	mcpLarge      mcpLargeGate  // large MCP requests (images) handled at a time (mcp_image.go)
 	// docLists: note lists being built at a time (handleGetDocuments); a burst of sign-ins waits here
 	// instead of building hundreds of lists in memory at once
@@ -104,6 +105,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	if srv.desktopMode() {
 		// The window asks again (handleDesktopSession) if this fails
 		logFailed("Creating the desktop account", srv.prepareDesktopAccount())
+		srv.clearSnapshots() // a snapshot staged before the instance last closed (desktop_restore.go)
 	}
 	srv.metrics = newAPIMetrics(srv)
 	var oidcOff string
@@ -220,6 +222,9 @@ func (s *Server) taskAudience(th *domain.Thought) []string {
 func (s *Server) Close() {
 	s.stopOnce.Do(func() { close(s.stop) })
 	s.bg.Wait()
+	if s.desktopMode() {
+		s.clearSnapshots()
+	}
 }
 
 func (s *Server) Router() http.Handler {
@@ -563,6 +568,10 @@ func (s *Server) Router() http.Handler {
 			r.Delete("/api/v1/admin/backups/{name}", s.notInDemo(s.handleAdminDeleteBackup))
 			r.Get("/api/v1/admin/backups/location", s.onlyInDesktop(s.handleBackupLocation))
 			r.Put("/api/v1/admin/backups/location", s.onlyInDesktop(s.handleSetBackupLocation))
+			// A server's database snapshot: take one of its accounts over (desktop_restore.go)
+			r.Post("/api/v1/admin/backups/server-snapshot", s.onlyInDesktop(s.handleSnapshotUpload))
+			r.Post("/api/v1/admin/backups/server-snapshot/{token}", s.onlyInDesktop(s.handleSnapshotTakeOver))
+			r.Delete("/api/v1/admin/backups/server-snapshot/{token}", s.onlyInDesktop(s.handleSnapshotDiscard))
 			r.Get("/api/v1/admin/backups/deleted", s.handleAdminDeletedBackups)
 			r.Get("/api/v1/admin/backups/deleted/{userId}/{name}", s.handleAdminDownloadDeletedBackup)
 			r.Put("/api/v1/admin/settings", s.notInDemo(s.handleAdminUpdateSettings))

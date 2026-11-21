@@ -140,6 +140,46 @@
         }
       }
     },
+    "/api/v1/admin/backups/server-snapshot": {
+      "post": {
+        "summary": "Stage a server's database snapshot (desktop app only)",
+        "description": "Multipart field file: a server's database snapshot (mindsift-db-….db.gz, or the unpacked .db; max. 2 GB packed, 8 GB unpacked). It is unpacked next to the instance's database (restore-staging/), migrated there when older and never replaces the instance's database. Answers {token, accounts: [{id, displayName, username, email, role, isActive, notes, tasks, lists, inbox}]} (counts: what each account owns). 400 for another file, a snapshot of a newer MindSift or one without accounts. One snapshot is staged at a time (a new upload replaces it) for an hour. Desktop app only; 404 on a server",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/server-snapshot/{token}": {
+      "post": {
+        "summary": "Take one account of the staged snapshot over (desktop app only)",
+        "description": "?account=<id> with sections (notes,tasks,lists,inbox,themes), mode (restore replaces the chosen sections of the local account, merge adds), settings=0 (keep the local personal settings) and preview=1 (only the summary). The account's data goes through the export and import of a personal backup: only what it owns (task lists with every task in them); notes, lists and task lists others shared with it are listed in skipped, as are notes with hidden values (sealed with the server's key). Pictures and recordings are not in a snapshot. With settings its name, language, voice input, retention, notification and alarm settings replace the local account's (not sign-in, role or profile picture). Answers the import summary plus account and settings; without preview the snapshot is removed. The other accounts, the server's settings and its sharing never reach the instance. 404 for an unknown token or account. Desktop app only; 404 on a server",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Discard the staged snapshot (desktop app only)",
+        "description": "Removes the staged snapshot. Desktop app only; 404 on a server",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/admin/backups/deleted": {
       "get": {
         "summary": "Kept backups of deleted accounts",

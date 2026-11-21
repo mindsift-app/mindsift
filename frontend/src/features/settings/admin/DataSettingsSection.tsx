@@ -1,6 +1,8 @@
 import React from 'react';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { BackupAdminCard } from '../BackupAdminCard';
+import { ServerSnapshotCard } from '../ServerSnapshotCard';
+import { isDesktopApp } from '../../../lib/api';
 import { AdminPage } from './AdminPage';
 import { useAdminSettings } from './useAdminSettings';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +19,9 @@ export function DataSettingsSection({
   return (
     <AdminPage title={t('admin.nav.data')} intro={t('admin.pages.dataIntro')} demoMode={demoMode}>
       <BackupAdminCard settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
+
+      {/* Desktop app: one account of a server's database snapshot into this instance */}
+      {isDesktopApp() && <ServerSnapshotCard />}
 
       {/* Retention: may people keep finished and deleted things for good? */}
       <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">

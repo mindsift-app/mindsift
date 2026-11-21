@@ -1666,6 +1666,14 @@ func (p *ImportPlan) noteSecretRefs(note string, blocks []domain.DocumentBlock) 
 	}
 }
 
+// SkipHiddenValues lists every note of the plan that refers to hidden values as skipped with reason; for a
+// plan whose values cannot come along at all (a server's database snapshot, sealed with its key).
+func (p *ImportPlan) SkipHiddenValues(reason string) {
+	for _, r := range p.secretRefs {
+		p.skip(r.note, reason)
+	}
+}
+
 // CheckImportMedia lists the notes of the plan as skipped that show a file the import does not bring
 // along and the person may not read (someone else's file, or one that no longer exists), or that refer
 // to a hidden value of a note the person may not read. Applying the plan drops these references: a
