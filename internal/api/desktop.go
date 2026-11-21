@@ -22,6 +22,12 @@ import (
 // desktopMode: the server runs inside the desktop app.
 func (s *Server) desktopMode() bool { return s.cfg.Desktop != nil }
 
+// confirmsWithoutCredentials: sensitive changes (deleting the own data, a new API key …) need no password,
+// provider sign-in or second factor. In the desktop app the person at the machine is the account: it has no
+// password and no provider, and nothing signs in. The one place that decides it; the confirmations
+// (confirmWithSecondFactor, confirmSecondFactor) ask here, and the app shows a plain confirmation instead.
+func (s *Server) confirmsWithoutCredentials() bool { return s.desktopMode() }
+
 // notInDesktop refuses a route that makes no sense in the desktop app (registration, invites, push …).
 func (s *Server) notInDesktop(h http.HandlerFunc) http.HandlerFunc {
 	if !s.desktopMode() {
