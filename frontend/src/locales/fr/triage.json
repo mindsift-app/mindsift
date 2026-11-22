@@ -115,5 +115,17 @@
     "label": "Capture rapide – appuyer pour taper, maintenir appuyé pour parler"
   },
   "dictation": "Dictée",
-  "putOnList": "Mettre directement dans la liste « {{title}} »"
+  "putOnList": "Mettre directement dans la liste « {{title}} »",
+  "voiceJobs": {
+    "title": "Enregistrements vocaux en cours",
+    "pending": "Transcription de l’enregistrement vocal…",
+    "failed": "Enregistrement vocal non transcrit",
+    "retrying": "Nouvel essai sous peu",
+    "retry": "Réessayer",
+    "listen": "Écouter l’enregistrement",
+    "discard": "Supprimer l’enregistrement",
+    "discardConfirm": "L’enregistrement sera supprimé et ne pourra pas être restauré.",
+    "audioFailed": "Impossible de charger l’enregistrement",
+    "actionFailed": "Cela n’a pas fonctionné"
+  }
 }

@@ -502,7 +502,7 @@ func (s *Server) handleVoiceJobDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.transcriptionDone(job, "", "")
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
 // handleVoiceJobAudio: GET /voice/jobs/{id}/audio/{n}, part n of an inbox recording (to listen to one

@@ -34,6 +34,26 @@ export async function captureDictation(text: string, now: Date = new Date(), lan
 }
 
 /**
+ * The same for an entry the server made from a recording (features/capture/serverDictation.ts): a date in
+ * the text becomes its due date, its phrase taken out, read from when it was spoken (now). Nothing (null)
+ * without a date, or when the entry is no longer in the inbox or was changed meanwhile.
+ */
+export async function dateFromDictation(thoughtId: string, text: string, now: Date, lang: string = i18n.language): Promise<SavedDictation | null> {
+  const parsed = typedRecognitionOn() ? (await import('../../lib/naturalDate')).parseNaturalDate(text, lang, now) : null;
+  if (!parsed?.due) return null;
+  let current: Thought;
+  try {
+    current = await api.getThought(thoughtId);
+  } catch {
+    return null;
+  }
+  if (current.status !== 'inbox' || current.content !== text) return null;
+  // A new text makes the server read its tags from it, which would drop #diktat
+  const thought = await api.updateThought(thoughtId, { content: parsed.title, dueDate: parsed.due, tags: current.tags ?? [] });
+  return { thought, dictated: text, due: parsed.due };
+}
+
+/**
  * Takes the recognised date back: the entry gets the text as dictated and no due date. Does nothing (null)
  * when it is gone, no longer in the inbox (sorted meanwhile) or its text was changed since.
  */

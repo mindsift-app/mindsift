@@ -28,6 +28,12 @@ vi.mock('../../../lib/useVoiceInput', () => ({
   },
 }));
 
+// The queue itself: the recording's text as the stand-in delivers it (serverDictation.test.ts covers the
+// way through the server)
+vi.mock('../serverDictation', () => ({
+  serverDictation: (t: { result: () => Promise<string>; retry: () => Promise<string> }) => ({ text: () => t.result(), retry: () => t.retry() }),
+}));
+
 import { HoldToRecordFab } from '../HoldToRecordFab';
 
 const deferred = () => {

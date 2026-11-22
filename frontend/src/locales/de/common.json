@@ -443,5 +443,14 @@
   "naturalDate": {
     "recognized": "Erkanntes Fälligkeitsdatum: {{date}}",
     "ignore": "Datum nicht übernehmen"
+  },
+  "leaveGuard": {
+    "message": "Das Diktat ist noch nicht fertig. Beim Wechseln geht es verloren.",
+    "leave": "Trotzdem wechseln",
+    "stay": "Bleiben"
+  },
+  "voiceJobs": {
+    "failed": "Spracherkennung fehlgeschlagen",
+    "timeout": "Spracherkennung hat zu lange gedauert"
   }
 }

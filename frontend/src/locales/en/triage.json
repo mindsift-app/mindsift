@@ -115,5 +115,17 @@
     "label": "Quick capture – tap to type, press and hold to speak"
   },
   "dictation": "Dictation",
-  "putOnList": "Put straight onto the list “{{title}}”"
+  "putOnList": "Put straight onto the list “{{title}}”",
+  "voiceJobs": {
+    "title": "Voice recordings in progress",
+    "pending": "Transcribing voice recording…",
+    "failed": "Voice recording not transcribed",
+    "retrying": "Trying again shortly",
+    "retry": "Try again",
+    "listen": "Listen to recording",
+    "discard": "Discard recording",
+    "discardConfirm": "The recording will be deleted and cannot be restored.",
+    "audioFailed": "The recording could not be loaded",
+    "actionFailed": "That did not work"
+  }
 }

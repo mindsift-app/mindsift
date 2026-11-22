@@ -330,7 +330,7 @@ func TestTranscriptionDiscardAndRequeue(t *testing.T) {
 	if got, _ := store.GetTranscription(job.ID); got.Status != storage.TranscriptionQueued {
 		t.Fatalf("after restart: %s", got.Status)
 	}
-	if rec := sessionCall(router, "DELETE", "/api/v1/voice/jobs/"+job.ID, token, "", ""); rec.Code != http.StatusNoContent {
+	if rec := sessionCall(router, "DELETE", "/api/v1/voice/jobs/"+job.ID, token, "", ""); rec.Code != http.StatusOK {
 		t.Fatalf("discard: %d", rec.Code)
 	}
 	if _, err := store.GetTranscription(job.ID); err == nil {

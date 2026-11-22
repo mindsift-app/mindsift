@@ -6,6 +6,7 @@ import { useLatestRef } from '../../lib/useLatestRef';
 import { showError } from '../../components/ErrorNotice';
 import type { DictationOutcome } from './captureDictation';
 import { DictationQueue, type DictationItem } from './dictationQueue';
+import { serverDictation } from './serverDictation';
 
 /** recording: the button is held or locked; saving: earlier dictations are being transcribed or saved (the +
  *  can be held again meanwhile), or the browser's recognition is finishing; done: the last one was saved. */
@@ -49,7 +50,9 @@ const NOTICE_MS = 2000;
  *
  * Released dictations go into a queue (dictationQueue.ts): with the own Whisper server the button can be
  * held again while earlier ones are still being transcribed; they are saved in the order they were spoken.
- * One that fails waits with its audio until it is tried again (retryFailed); a reload loses it.
+ * With the own Whisper server a recording goes to the server when it is handed in, which transcribes it
+ * and makes the entry even if the app is closed (serverDictation.ts); only one whose upload failed waits
+ * here with its audio until it is tried again (retryFailed), and a reload loses that one.
  */
 export function useHoldToDictate({ onSave, touch = false, fallback }: HoldToDictateOptions) {
   const [mic, setMicState] = useState<MicPhase>('idle');
@@ -185,7 +188,8 @@ export function useHoldToDictate({ onSave, touch = false, fallback }: HoldToDict
       setLocked(false);
       setPhase('idle');
       setTranscript('');
-      queue().add({ text: () => transcription.result(), retry: () => transcription.retry() });
+      // The recording goes to the server, which transcribes it and makes the entry (serverDictation.ts)
+      queue().add(serverDictation(transcription));
     },
     onError: (message) => {
       clearTimer(stopTimerRef);

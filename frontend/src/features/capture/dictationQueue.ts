@@ -2,7 +2,8 @@
 // (features/capture/useHoldToDictate.ts). Each recording is transcribed as soon as it is handed in, several
 // at once if they overlap, but saved strictly one after another in the order they were recorded. One that
 // fails stays in the queue with its audio or text until it is tried again; the ones after it are saved
-// meanwhile. Failed ones do not hold the reload for a new version and are lost with it.
+// meanwhile. Failed ones do not hold the reload for a new version and are lost with it, unless their
+// recording is on the server already (serverDictation.ts): the server finishes those by itself.
 import { errorMessage } from '../../lib/errorMessage';
 import { holdReload } from '../../lib/reloadHold';
 
@@ -15,18 +16,20 @@ export interface DictationItem {
   error?: string;
 }
 
-export interface DictationSource {
+export interface DictationSource<R = unknown> {
   /** The recognised text; may be asked again after a failure (sends only what is missing). */
   text: () => Promise<string>;
   /** Asked instead of text() to try again; defaults to text(). */
   retry?: () => Promise<string>;
+  /** Saves the text instead of the queue's save (the server saved it already, serverDictation.ts). */
+  save?: (text: string) => Promise<R> | R;
 }
 
-interface Entry {
+interface Entry<R> {
   id: number;
   state: DictationItemState;
   error?: string;
-  source: DictationSource;
+  source: DictationSource<R>;
   pending: Promise<string> | null;
   // Set once recognised, so a failed save is tried again without transcribing again
   text: string | null;
@@ -45,7 +48,7 @@ export interface DictationQueueOptions<R> {
 }
 
 export class DictationQueue<R = unknown> {
-  private entries: Entry[] = [];
+  private entries: Entry<R>[] = [];
   private nextId = 1;
   // Saves run one after another in this chain, in the order the items joined it
   private tail: Promise<void> = Promise.resolve();
@@ -57,8 +60,8 @@ export class DictationQueue<R = unknown> {
   }
 
   /** Hands in a recording; its transcription starts at once. */
-  add(source: DictationSource): number {
-    const entry: Entry = { id: this.nextId++, state: 'transcribing', source, pending: null, text: null };
+  add(source: DictationSource<R>): number {
+    const entry: Entry<R> = { id: this.nextId++, state: 'transcribing', source, pending: null, text: null };
     entry.pending = this.request(source.text);
     this.entries.push(entry);
     this.changed();
@@ -97,11 +100,11 @@ export class DictationQueue<R = unknown> {
     return p;
   }
 
-  private enqueue(entry: Entry): void {
+  private enqueue(entry: Entry<R>): void {
     this.tail = this.tail.then(() => this.run(entry));
   }
 
-  private async run(entry: Entry): Promise<void> {
+  private async run(entry: Entry<R>): Promise<void> {
     if (entry.text === null) {
       try {
         entry.text = ((await entry.pending) ?? '').trim();
@@ -118,7 +121,7 @@ export class DictationQueue<R = unknown> {
     entry.state = 'saving';
     this.changed();
     try {
-      const result = await this.options.save(entry.text);
+      const result = await (entry.source.save ?? this.options.save)(entry.text);
       this.remove(entry);
       this.options.onSaved?.(result, entry.text);
     } catch (err) {
@@ -126,14 +129,14 @@ export class DictationQueue<R = unknown> {
     }
   }
 
-  private fail(entry: Entry, err: unknown): void {
+  private fail(entry: Entry<R>, err: unknown): void {
     entry.state = 'failed';
     entry.error = errorMessage(err, this.options.fallbackMessage());
     this.changed();
     this.options.onFailed?.(entry.error);
   }
 
-  private remove(entry: Entry): void {
+  private remove(entry: Entry<R>): void {
     this.entries = this.entries.filter((e) => e !== entry);
     this.changed();
   }

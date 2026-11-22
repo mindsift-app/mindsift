@@ -1765,6 +1765,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         ) : block.type === 'audio' ? (
           <AudioBlock
             content={localContent}
+            docId={docId}
+            blockId={block.id}
             canEdit={canEdit}
             locked={indentLocked}
             onIndent={indentTable}

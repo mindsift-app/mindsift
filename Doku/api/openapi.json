@@ -5041,7 +5041,7 @@
     "/api/v1/voice/jobs/{id}": {
       "delete": {
         "summary": "Discard a background transcription",
-        "description": "Removes an own job with its stored recording (an inbox recording is gone then; a note's recording stays in the note) → 204. 404 for another person's job",
+        "description": "Removes an own job with its stored recording (an inbox recording is gone then; a note's recording stays in the note) → {deleted: true}. 404 for another person's job",
         "tags": [
           "Account and General"
         ],

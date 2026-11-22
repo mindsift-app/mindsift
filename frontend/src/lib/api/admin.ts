@@ -1,7 +1,13 @@
 // REST calls: Administration: users, invites, server settings, voice, organizations
-import { AuditPage, Organization, SetupInfo, SmtpForm, SpeechModelsInfo, SystemSettings, SharingMode, UpdateStatus, User, UserInvite, VoiceAdminStatus } from '../types';
+import { AuditPage, Organization, SetupInfo, SmtpForm, SpeechModelsInfo, SystemSettings, SharingMode, TranscriptionJob, UpdateStatus, User, UserInvite, VoiceAdminStatus } from '../types';
 import { authHeaders, ensureArray, request } from './client';
 import i18n from '../../i18n';
+
+// File name of a recording for the Whisper server, after its format
+function recordingName(audio: Blob): string {
+  const ext = audio.type.includes('mp4') ? 'm4a' : audio.type.includes('ogg') ? 'ogg' : 'webm';
+  return `aufnahme.${ext}`;
+}
 
 export const adminApi = {
   // --- ADMIN & STAFF PANEL ---
@@ -132,18 +138,51 @@ export const adminApi = {
   },
 
   // Sends a recording to the own Whisper server (voice mode "server") and returns the text
-  async transcribe(audio: Blob): Promise<string> {
-    const ext = audio.type.includes('mp4') ? 'm4a' : audio.type.includes('ogg') ? 'ogg' : 'webm';
+  async transcribe(audio: Blob, signal?: AbortSignal): Promise<string> {
     const form = new FormData();
-    form.append('file', audio, `aufnahme.${ext}`);
+    form.append('file', audio, recordingName(audio));
     const res = await fetch('/api/v1/voice/transcribe', {
       method: 'POST',
       headers: authHeaders(),
       body: form,
+      signal,
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || i18n.t('common:errors.transcribeFailed', { status: res.status }));
     return data.text || '';
+  },
+
+  // Background transcriptions (lib/transcriptionJobs.ts). A recording in a note: its text becomes the caption
+  async transcribeBlock(docId: string, blockId: string): Promise<TranscriptionJob> {
+    return request<TranscriptionJob>(`/api/v1/documents/${encodeURIComponent(docId)}/blocks/${encodeURIComponent(blockId)}/transcribe`, { method: 'POST' });
+  },
+
+  async docTranscriptions(docId: string): Promise<TranscriptionJob[]> {
+    return ensureArray(await request<TranscriptionJob[]>(`/api/v1/documents/${encodeURIComponent(docId)}/transcriptions`));
+  },
+
+  // A recording dictated into the inbox, stored on the server with the text of the parts known already;
+  // the server makes the entry once the rest is transcribed
+  async captureVoice(parts: { blob: Blob; text: string | null }[]): Promise<TranscriptionJob> {
+    const form = new FormData();
+    for (const p of parts) form.append('file', p.blob, recordingName(p.blob));
+    form.append('texts', JSON.stringify(parts.map((p) => p.text)));
+    const res = await fetch('/api/v1/voice/captures', { method: 'POST', headers: authHeaders(), body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || i18n.t('common:errors.transcribeFailed', { status: res.status }));
+    return data as TranscriptionJob;
+  },
+
+  async voiceJobs(): Promise<TranscriptionJob[]> {
+    return ensureArray(await request<TranscriptionJob[]>('/api/v1/voice/jobs'));
+  },
+
+  async retryVoiceJob(id: string): Promise<TranscriptionJob> {
+    return request<TranscriptionJob>(`/api/v1/voice/jobs/${encodeURIComponent(id)}/retry`, { method: 'POST' });
+  },
+
+  async deleteVoiceJob(id: string): Promise<void> {
+    await request<{ deleted: boolean }>(`/api/v1/voice/jobs/${encodeURIComponent(id)}`, { method: 'DELETE' });
   },
 
   async adminGetSettings(): Promise<SystemSettings> {

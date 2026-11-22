@@ -115,5 +115,17 @@
     "label": "Registrazione rapida – tocca per scrivere, tieni premuto per parlare"
   },
   "dictation": "Dettatura",
-  "putOnList": "Metti direttamente nella lista «{{title}}»"
+  "putOnList": "Metti direttamente nella lista «{{title}}»",
+  "voiceJobs": {
+    "title": "Registrazioni vocali in corso",
+    "pending": "Trascrizione della registrazione vocale…",
+    "failed": "Registrazione vocale non trascritta",
+    "retrying": "Nuovo tentativo a breve",
+    "retry": "Riprova",
+    "listen": "Ascolta la registrazione",
+    "discard": "Elimina registrazione",
+    "discardConfirm": "La registrazione verrà eliminata e non potrà essere ripristinata.",
+    "audioFailed": "Impossibile caricare la registrazione",
+    "actionFailed": "Non ha funzionato"
+  }
 }
