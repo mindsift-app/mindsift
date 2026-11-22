@@ -648,15 +648,16 @@ var messagesFR = map[string]string{
 	"Anfrage zu groß (höchstens {mb} MB; ein Bild für add_note_image höchstens {img} MB)":         "Requête trop volumineuse (au plus {mb} Mo ; une image pour add_note_image au plus {img} Mo)",
 
 	// Desktop app: taking an account of a server's database snapshot over
-	"Keine Datei erhalten": "Aucun fichier reçu",
-	"Die Datei ist kein Datenbank-Abzug von MindSift (mindsift-db-….db.gz)":                                     "Le fichier n’est pas une copie de la base de données MindSift (mindsift-db-….db.gz)",
-	"Der Datenbank-Abzug ist zu groß (max. {gb} GB)":                                                            "La copie de la base de données est trop volumineuse (max. {gb} Go)",
+	"Keine Datei erhalten":                             "Aucun fichier reçu",
+	"Die Datei ist kein Backup eines MindSift-Servers": "Le fichier n’est pas une sauvegarde d’un serveur MindSift",
+	"Die Datei ist zu groß (max. {gb} GB)":             "Le fichier est trop volumineux (max. {gb} Go)",
+	"Der Datenbank-Abzug ist zu groß (max. {gb} GB)":   "La copie de la base de données est trop volumineuse (max. {gb} Go)",
 	"Der Datenbank-Abzug stammt von einer neueren MindSift-Version. Bitte zuerst die App aktualisieren.":        "La copie de la base de données provient d’une version plus récente de MindSift. Veuillez d’abord mettre à jour l’application.",
 	"Der Datenbank-Abzug ist beschädigt oder enthält etwas, das MindSift nicht anlegt, und wird nicht geöffnet": "La copie de la base de données est endommagée ou contient quelque chose que MindSift ne crée pas ; elle n’est pas ouverte",
-	"Im Datenbank-Abzug ist kein Konto":                                                                         "La copie de la base de données ne contient aucun compte",
-	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                                "La copie de la base de données n’est plus disponible. Veuillez choisir le fichier à nouveau.",
-	"Dieses Konto ist nicht im Datenbank-Abzug":                                                                 "Ce compte ne figure pas dans la copie de la base de données",
-	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":                    "Les valeurs masquées sont chiffrées avec la clé du serveur et ne sont pas reprises",
+	"Im Datenbank-Abzug ist kein Konto":                                                      "La copie de la base de données ne contient aucun compte",
+	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":             "La copie de la base de données n’est plus disponible. Veuillez choisir le fichier à nouveau.",
+	"Dieses Konto ist nicht im Datenbank-Abzug":                                              "Ce compte ne figure pas dans la copie de la base de données",
+	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit": "Les valeurs masquées sont chiffrées avec la clé du serveur et ne sont pas reprises",
 
 	"Versteckter Wert nicht im Backup enthalten und nicht mehr auf diesem Server, nur ein Platzhalter wird übernommen": "Valeur masquée absente de la sauvegarde et plus présente sur ce serveur, seul un espace réservé est repris",
 	"Der gewählte Backup-Ordner {dir} existiert nicht (Laufwerk nicht eingebunden?), das Backup wurde übersprungen":    "Le dossier de sauvegarde choisi {dir} n’existe pas (lecteur non connecté ?), la sauvegarde a été ignorée",

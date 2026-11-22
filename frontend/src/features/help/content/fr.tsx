@@ -736,6 +736,9 @@ const fr: HelpContent = {
               <li>
                 <strong className="text-main">Sauvegardes :</strong> sous <em>Administration → Données</em>, tu actives des sauvegardes quotidiennes et choisis leur dossier. Tu les retrouves sous <em>Paramètres du compte → Export &amp; import</em> ; tu peux les télécharger ou les restaurer, aussi pour certaines parties seulement comme les listes ou les tâches. Chaque sauvegarde contient en plus, dans le dossier <em>Obsidian</em>, tes notes, tâches et listes en Markdown, lisibles dans Obsidian ou n'importe quel éditeur de texte, même sans MindSift. Une sauvegarde peut aussi être restaurée sur un serveur si tu passes plus tard à l'un d'eux.
               </li>
+              <li>
+                <strong className="text-main">Reprendre un compte d'un serveur :</strong> sous <em>Administration → Données</em>, tu choisis une sauvegarde d'un serveur MindSift et l'un de ses comptes. Ses images et enregistrements suivent si tu choisis le dossier de données du serveur ou son dossier <em>backups</em> sous forme d'archive (.zip, .tar ou .tar.gz) ; une copie de la base de données (.db.gz) seule apporte tout sauf eux. Seul ce qui appartient au compte est repris : ce qui est partagé avec lui, les valeurs masquées et les paramètres du serveur restent dehors.
+              </li>
             </InDesktop>
             <Only can="install">
               <li>

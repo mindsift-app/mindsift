@@ -737,6 +737,9 @@ const en: HelpContent = {
               <li>
                 <strong className="text-main">Backups:</strong> under <em>Administration → Data</em> you switch on daily backups and choose the folder they go to. Under <em>Account settings → Export &amp; import</em> you find them; download them or restore them, also only for single areas such as lists or tasks. Every backup also holds your notes, tasks and lists as Markdown in the <em>Obsidian</em> folder, readable in Obsidian or any text editor, even without MindSift. A backup can also be restored on a server if you move there later.
               </li>
+              <li>
+                <strong className="text-main">Taking over an account from a server:</strong> under <em>Administration → Data</em> you pick a backup of a MindSift server and one of its accounts. Its pictures and recordings come along when you pick the server's data folder or its <em>backups</em> folder as an archive (.zip, .tar or .tar.gz); a database snapshot (.db.gz) alone brings everything but them. Only what the account owns comes over: things shared with it, hidden values and the server's settings stay out.
+              </li>
             </InDesktop>
             <Only can="install">
               <li>

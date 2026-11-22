@@ -69,3 +69,43 @@ describe('VoiceRecorder.stop', () => {
     expect(new TextDecoder().decode(await blob!.arrayBuffer())).toBe('ende');
   });
 });
+
+describe('VoiceRecorder.level', () => {
+  // The analyser hands out whatever the test puts into `next` (bytes, 128 = zero line)
+  let next = 128;
+  class FakeAudioContext {
+    createMediaStreamSource() {
+      return { connect: () => {} };
+    }
+    createAnalyser() {
+      return {
+        fftSize: 0,
+        getByteTimeDomainData: (b: Uint8Array) => b.forEach((_, i) => (b[i] = i % 2 ? next : 256 - next)),
+      };
+    }
+    resume() {
+      return Promise.resolve();
+    }
+  }
+
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'AudioContext');
+    vi.restoreAllMocks();
+  });
+
+  it('überbrückt kurze Lücken ohne Signal (WebKitGTK), längere Stille zählt', async () => {
+    Object.assign(window, { AudioContext: FakeAudioContext });
+    let now = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const rec = new VoiceRecorder();
+    await rec.start();
+    next = 160;
+    const loud = rec.level()!;
+    expect(loud).toBeGreaterThan(0.5);
+    next = 128; // a gap: the level stays
+    now += 200;
+    expect(rec.level()).toBe(loud);
+    now += 200; // silent for longer than the hold: really silent
+    expect(rec.level()).toBe(0);
+  });
+});

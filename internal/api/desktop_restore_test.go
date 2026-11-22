@@ -196,7 +196,7 @@ func TestDesktopSnapshotRefusesOtherFilesAndCancels(t *testing.T) {
 	router := srv.Router()
 	token := desktopToken(t, router)
 
-	if rec := uploadSnapshot(t, router, token, "kein Datenbank-Abzug"); rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "kein Datenbank-Abzug") {
+	if rec := uploadSnapshot(t, router, token, "kein Datenbank-Abzug"); rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "kein Backup eines MindSift-Servers") {
 		t.Errorf("text file: %d %s", rec.Code, rec.Body.String())
 	}
 	rec := uploadSnapshot(t, router, token, snapshot)
