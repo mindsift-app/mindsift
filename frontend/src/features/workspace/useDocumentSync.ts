@@ -199,6 +199,7 @@ export function useDocumentSync(
       if (!state.ready) return;
       engineReadyRef.current = true;
       const base = preReadyBaseRef.current;
+      let keptEarlyChanges = false;
       if (base) {
         preReadyBaseRef.current = null;
         // Changed before the engine was ready: when the server still has the note as it was fetched, the
@@ -206,11 +207,11 @@ export function useDocumentSync(
         // bullets). Otherwise the server's state wins, as changes of others could not be merged.
         if (engine.canEdit && sameBlocks(base, ensureNonEmptyBlocks(docId, state.blocks))) {
           engine.applyFlat(currentBlocksRef.current);
-          return;
+          keptEarlyChanges = true;
         }
       }
       const next = keepUnchanged(currentBlocksRef.current, ensureNonEmptyBlocks(docId, state.blocks));
-      if (!sameBlocks(currentBlocksRef.current, next)) {
+      if (!keptEarlyChanges && !sameBlocks(currentBlocksRef.current, next)) {
         // Changes of others (own edits are in currentBlocksRef already): remember where the bullet with the
         // cursor is, so bullets added or removed above it do not move it (keepCursorInPlace)
         cursorAnchorRef.current?.observer?.disconnect();
