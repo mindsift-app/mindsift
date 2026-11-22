@@ -940,6 +940,7 @@
     "days_one": "día",
     "days_other": "días",
     "folder": "Carpeta",
+    "folderMissing": "La carpeta <c>{{dir}}</c> no existe (¿unidad no conectada?). Mientras falte no se escribe ninguna copia; la siguiente ejecución lo intentará de nuevo cuando exista. MindSift no la crea por su cuenta.",
     "folderHint": "Vacío para la carpeta de la instancia. MindSift crea en la carpeta elegida su propia subcarpeta «MindSift-Backups» y solo escribe ahí. Al cambiarla, las copias existentes se quedan en la carpeta anterior; la lista y la restauración muestran las de la nueva.",
     "folderTarget": "Las copias se guardan en <c>{{dir}}</c>.",
     "folderChoose": "Elegir carpeta…",

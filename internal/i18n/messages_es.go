@@ -653,4 +653,7 @@ var messagesES = map[string]string{
 	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                                "La copia de la base de datos ya no está disponible. Vuelve a elegir el archivo.",
 	"Dieses Konto ist nicht im Datenbank-Abzug":                                                                 "Esta cuenta no está en la copia de la base de datos",
 	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":                    "Los valores ocultos están cifrados con la clave del servidor y no se transfieren",
+
+	"Versteckter Wert nicht im Backup enthalten und nicht mehr auf diesem Server, nur ein Platzhalter wird übernommen": "Valor oculto no incluido en la copia de seguridad y ya no está en este servidor, solo se conserva un marcador de posición",
+	"Der gewählte Backup-Ordner {dir} existiert nicht (Laufwerk nicht eingebunden?), das Backup wurde übersprungen":    "La carpeta de copias de seguridad elegida {dir} no existe (¿unidad no conectada?), se omitió la copia",
 }

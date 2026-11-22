@@ -85,7 +85,7 @@ Base: `/api/v1`. Responses are JSON; errors take the form `{"error": "Text"}`, s
 | POST | `/backups/{name}/restore` | Restore server backup: `mode=merge` or `restore` (replaces the selected sections, deleting their previous content once the backup is in), `sections=notes,tasks,lists,inbox,themes`, `preview=1` |
 | GET/POST | `/keys` | List or create API keys (plain text revealed only upon creation); `POST` with `name` and `scopes` (`webhook:triage`, `webhook:task`, `webhook:list`, `tasks:read`, `tasks:write`, `lists:read`, `lists:write`, `notes:read`, `notes:create`, `notes:write`, `inbox:read`, `inbox:write`; default `["webhook:triage"]`; an empty body creates such a key, a body that is not valid JSON gives `400`). `403` when the server refuses keys on REST (`API_KEYS_ENABLED=false`) and MCP is off too, since such a key could not be used anywhere. A key never asks for a second factor, so with two-factor sign-in on, creating one needs it: `code` or `passkeyToken` + `passkey` (`403` `mfa_required` / `mfa_invalid`) |
 | POST | `/mcp` | MCP endpoint for AI agents, see below |
-| GET/DELETE | `/mcp` | `405`: no server stream and no sessions (Streamable HTTP, stateless) |
+| GET/DELETE | `/mcp` | `405` with `Allow: POST`, also with an API key: no server stream and no sessions (Streamable HTTP, stateless) |
 | PATCH | `/keys/{id}` | Update name (`name`) and/or permissions (`scopes`); the key itself remains unchanged |
 | DELETE | `/keys/{id}` | Delete API key |
 
@@ -117,7 +117,7 @@ Performs a full-text search via SQLite FTS5 with BM25 relevance ranking.
 ### MCP for AI Agents (`POST /api/v1/mcp`)
 <a id="mcp-für-ki-agenten-post-apiv1mcp"></a>
 
-MindSift is an [MCP](https://modelcontextprotocol.io) server (Streamable HTTP, stateless, JSON-RPC 2.0 only via `POST`; no server stream, `GET` returns `405`, batches are rejected). Authentication as everywhere via `X-API-Key` or `Authorization: Bearer`; a user session can do everything, an API key is restricted to the tools matching its scopes, and `tools/list` only exposes those tools. Protocol versions `2025-06-18`, `2025-03-26`, `2024-11-05`. Supported methods: `initialize`, `ping`, `tools/list`, `tools/call`; notifications return `202`. Tool errors are returned as `isError` results so the agent can read them; results are returned as `structuredContent` (lists as `{items}`) and as JSON text.
+MindSift is an [MCP](https://modelcontextprotocol.io) server (Streamable HTTP, stateless, JSON-RPC 2.0 only via `POST`; no server stream, `GET` and `DELETE` return `405` with `Allow: POST` (also with an API key), batches are rejected). Authentication as everywhere via `X-API-Key` or `Authorization: Bearer`; a user session can do everything, an API key is restricted to the tools matching its scopes, and `tools/list` only exposes those tools. Protocol versions `2025-06-18`, `2025-03-26`, `2024-11-05`. Supported methods: `initialize`, `ping`, `tools/list`, `tools/call`; notifications return `202`. Tool errors are returned as `isError` results so the agent can read them; results are returned as `structuredContent` (lists as `{items}`) and as JSON text.
 
 The admin settings (`GET`/`PUT /admin/settings`) carry `defaultLanguage`: a supported code; empty in a `PUT` leaves it unchanged, an unknown code gives `400`. Registration and first-time setup start the new account in the browser's language (`Accept-Language`) when MindSift speaks it, otherwise in the default language.
 

@@ -74,6 +74,8 @@ type ImportPlan struct {
 	// a placeholder (secretGate). secretIDs counts them against maxImportOutsideMedia as well.
 	secretRefs []importMediaRefs
 	secretIDs  int
+	// secretsSkipped: SkipHiddenValues listed them already, checkImportSecrets adds nothing
+	secretsSkipped bool
 }
 
 // importMediaRefs: the files (or hidden values) of one note (by its path or title) that are not part of
@@ -1669,6 +1671,7 @@ func (p *ImportPlan) noteSecretRefs(note string, blocks []domain.DocumentBlock) 
 // SkipHiddenValues lists every note of the plan that refers to hidden values as skipped with reason; for a
 // plan whose values cannot come along at all (a server's database snapshot, sealed with its key).
 func (p *ImportPlan) SkipHiddenValues(reason string) {
+	p.secretsSkipped = true
 	for _, r := range p.secretRefs {
 		p.skip(r.note, reason)
 	}
@@ -1697,10 +1700,13 @@ func (s *Store) CheckImportMedia(userID string, plan *ImportPlan) {
 }
 
 // checkImportSecrets is CheckImportMedia for hidden values, by the rule of secretGate.prepare: a value of
-// a note the person may read becomes a copy in the new note, a reference to no value stays (it shows
-// nothing); only a value of a note the person may not read becomes a placeholder.
+// a note the person may read becomes a copy in the new note, a value of a note the person may not read
+// becomes a placeholder. A reference to no value on this server stays but shows nothing: a backup holds
+// the references only, never the values (they are sealed with the key of the server it was made on), so
+// the values of a backup from another server, or of notes deleted since, are lost. A backup of this
+// server whose notes still exist keeps them.
 func (s *Store) checkImportSecrets(userID string, plan *ImportPlan) {
-	if len(plan.secretRefs) == 0 {
+	if len(plan.secretRefs) == 0 || plan.secretsSkipped {
 		return
 	}
 	var ids []string
@@ -1715,7 +1721,12 @@ func (s *Store) checkImportSecrets(userID string, plan *ImportPlan) {
 	gate := s.newSecretGate(userID, "")
 	for _, r := range plan.secretRefs {
 		for _, id := range r.ids {
-			if v, ok := rows[id]; ok && !gate.mayRead(v.DocumentID) {
+			v, ok := rows[id]
+			if !ok {
+				plan.skip(r.note, "Versteckter Wert nicht im Backup enthalten und nicht mehr auf diesem Server, nur ein Platzhalter wird übernommen")
+				break
+			}
+			if !gate.mayRead(v.DocumentID) {
 				plan.skip(r.note, "Versteckter Wert ohne Zugriff, nur ein Platzhalter wird übernommen")
 				break
 			}

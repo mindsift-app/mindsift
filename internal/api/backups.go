@@ -50,6 +50,13 @@ func (s *Server) runBackups() (string, error) {
 func (s *Server) runBackupsOnce() (string, error) {
 	backupRunMu.Lock()
 	defer backupRunMu.Unlock()
+	// The folder the person chose (a second disk, say) has to be there already: a drive that is not
+	// mounted would otherwise get the path created on the system disk. The run is skipped and the next
+	// one tries again; the administration's backup card shows the warning (backupLocation).
+	if chosen, missing := s.chosenBackupFolderMissing(); missing {
+		slog.Warn("Backup skipped: the chosen backup folder does not exist (drive not mounted?)", "folder", chosen)
+		return "", errBackupDirMissing(chosen)
+	}
 	now := clock.Now() // the file names carry the server's date and time; the scheduler reads them back
 	root := s.backupRoot()
 	keep := s.backupKeepDays()

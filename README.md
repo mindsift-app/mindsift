@@ -120,7 +120,7 @@ claude mcp add --transport http mindsift https://your-server/api/v1/mcp --header
 ```
 
 ### 🏢 Users & admin
-Guided setup, sign-in through Authentik, Authelia, Keycloak or any other OpenID Connect provider, invite codes and links, registration modes (closed, approval, email domains, open), organizations that decide who may share with whom (a person can be in several), groups, sharing as editor or read-only, a user manager role for accounts without the server settings, an audit log of who changed accounts, roles and settings, and automatic backups with restore.
+Guided setup, sign-in through Authentik, Authelia, Keycloak or any other OpenID Connect provider, invite codes and links, registration modes (closed, approval, email domains, open), organizations that decide who may share with whom (a person can be in several), groups, sharing as editor or read-only, a user manager role for accounts without the server settings, an audit log of who changed accounts, roles and settings, and automatic backups that people restore for their own data.
 
 **More on the [website](https://mindsift.app/en/), or [open the demo](https://demo.mindsift.app) and poke around.**
 
@@ -146,7 +146,7 @@ Left out on purpose, each for a reason:
 * **SAML and LDAP:** single sign-on is OpenID Connect only. Providers such as Authentik, Keycloak or Entra ID speak it and connect your LDAP or Active Directory, so MindSift does not have to.
 * **Time zones per person:** one time zone per server (Administration → Instance, or `TZ`); reminders, the daily summary and due dates all follow it. Ask if you need more.
 * **PostgreSQL or MySQL:** SQLite on purpose (see [design decisions](#design-decisions)).
-* **Backups to S3, WebDAV or SFTP:** backups go to `data/backups/`, where the administration restores them with one click. Copying them elsewhere belongs to the backup you run for the whole server, not to each app.
+* **Backups to S3, WebDAV or SFTP:** backups go to `data/backups/`; people restore their own data from them in the account settings, a whole server by replacing `mindsift.db` with a snapshot ([steps](Doku/operations.md#restoring-a-whole-server)). Copying them elsewhere belongs to the backup you run for the whole server, not to each app.
 * **A Helm chart:** it is a single container with one volume; Docker Compose, or a small Kubernetes manifest of your own, is all it takes.
 * **End-to-end encryption:** the server reads your data, because search, sharing and AI agents need it; only hidden values (`/hidden`) are encrypted in the database. Protect the server and its disk.
 * **Native apps:** it is a PWA (installable, offline, push), not in the app stores.

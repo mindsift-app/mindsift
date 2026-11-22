@@ -24,6 +24,11 @@ var (
 	errBackupDirWrite    = i18n.NewError("In den Ordner für die Backups kann nicht geschrieben werden")
 )
 
+// errBackupDirMissing: the run was skipped, the chosen folder is not there (see chosenBackupFolderMissing)
+func errBackupDirMissing(dir string) error {
+	return i18n.NewError("Der gewählte Backup-Ordner {dir} existiert nicht (Laufwerk nicht eingebunden?), das Backup wurde übersprungen", "dir", dir)
+}
+
 // defaultBackupRoot: backups/ next to the database (every server, and the desktop app unless chosen otherwise)
 func (s *Server) defaultBackupRoot() string {
 	return filepath.Join(filepath.Dir(s.cfg.DatabasePath), "backups")
@@ -126,19 +131,38 @@ func (s *Server) checkBackupDir(raw string) (string, error) {
 	return dir, nil
 }
 
+// chosenBackupFolderMissing: the person chose a backup folder (desktop app) that does not exist now,
+// typically because it lies on a drive that is not mounted. Writing a backup would then create the path on
+// the system disk, so a backup run leaves it alone: only the setting dialog (checkBackupDir) creates the
+// chosen folder, never a backup run. Returns the folder as chosen.
+func (s *Server) chosenBackupFolderMissing() (string, bool) {
+	if !s.desktopMode() {
+		return "", false
+	}
+	chosen := s.store.BackupDir()
+	if chosen == "" {
+		return "", false
+	}
+	info, err := os.Stat(chosen)
+	return chosen, err != nil || !info.IsDir()
+}
+
 // backupLocation: what GET and PUT /admin/backups/location answer
 type backupLocation struct {
 	// Dir: where the backups go now; DefaultDir: backups/ in the instance's folder; Custom: a folder was
-	// chosen, Chosen (Dir is MindSift's subfolder in it, or the folder itself for an older install)
-	Dir        string `json:"dir"`
-	DefaultDir string `json:"defaultDir"`
-	Custom     bool   `json:"custom"`
-	Chosen     string `json:"chosen"`
+	// chosen, Chosen (Dir is MindSift's subfolder in it, or the folder itself for an older install);
+	// ChosenMissing: the chosen folder does not exist now (drive not mounted), backup runs are skipped
+	Dir           string `json:"dir"`
+	DefaultDir    string `json:"defaultDir"`
+	Custom        bool   `json:"custom"`
+	Chosen        string `json:"chosen"`
+	ChosenMissing bool   `json:"chosenMissing"`
 }
 
 func (s *Server) backupLocation() backupLocation {
 	chosen := s.store.BackupDir()
-	return backupLocation{Dir: s.backupRoot(), DefaultDir: s.defaultBackupRoot(), Custom: chosen != "", Chosen: chosen}
+	_, missing := s.chosenBackupFolderMissing()
+	return backupLocation{Dir: s.backupRoot(), DefaultDir: s.defaultBackupRoot(), Custom: chosen != "", Chosen: chosen, ChosenMissing: missing}
 }
 
 // handleBackupLocation: GET /admin/backups/location (desktop app only)

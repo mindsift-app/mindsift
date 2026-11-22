@@ -60,6 +60,8 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
       api.adminListBackups().then(setFiles).catch(() => {});
     } finally {
       setRunning(false);
+      // The folder may have been missing (drive not mounted) or be back
+      if (desktop) api.adminGetBackupLocation().then(setLocation).catch(() => {});
     }
   };
 
@@ -162,6 +164,11 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           {location.custom && (
             <p>
               <Trans t={t} i18nKey="backups.folderTarget" values={{ dir: location.dir }} components={{ c: <code className="font-mono break-all" /> }} />
+            </p>
+          )}
+          {location.chosenMissing && (
+            <p role="alert" className="p-2 rounded-card border border-status-err/40 bg-status-err/10 text-main">
+              <Trans t={t} i18nKey="backups.folderMissing" values={{ dir: location.chosen ?? '' }} components={{ c: <code className="font-mono break-all" /> }} />
             </p>
           )}
           <p>{t('backups.folderHint')}</p>

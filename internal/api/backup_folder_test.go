@@ -100,3 +100,55 @@ func TestBackupFolderOfOlderInstallStays(t *testing.T) {
 		t.Errorf("a subfolder appeared in the older backup folder: %v", err)
 	}
 }
+
+// A chosen backup folder on a drive that is not mounted does not exist: a run must neither create the path
+// on the system disk nor fail silently. It is skipped with a message, the location says so (the
+// administration shows a warning), and the next run writes again once the folder is back.
+func TestBackupSkippedWhileChosenFolderMissing(t *testing.T) {
+	store, dbPath := freshStore(t)
+	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
+	router := srv.Router()
+	token := desktopToken(t, router)
+
+	chosen := filepath.Join(t.TempDir(), "usb-drive", "Backups")
+	if err := os.MkdirAll(chosen, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body, _ := json.Marshal(map[string]string{"dir": chosen})
+	if rec := putJSONWith(t, router, "/api/v1/admin/backups/location", token, string(body)); rec.Code != http.StatusOK {
+		t.Fatalf("set location: %d %s", rec.Code, rec.Body.String())
+	}
+	if _, err := srv.runBackups(); err != nil {
+		t.Fatalf("backup into an existing folder: %v", err)
+	}
+
+	// The drive goes away
+	if err := os.RemoveAll(filepath.Dir(chosen)); err != nil {
+		t.Fatal(err)
+	}
+	_, err := srv.runBackups()
+	if err == nil || !strings.Contains(err.Error(), chosen) {
+		t.Fatalf("run with the folder missing: %v, want an error naming %q", err, chosen)
+	}
+	if _, statErr := os.Stat(filepath.Dir(chosen)); !os.IsNotExist(statErr) {
+		t.Fatalf("the run created the missing folder: %v", statErr)
+	}
+	rec := getWith(t, router, "/api/v1/admin/backups/location", token)
+	var loc backupLocation
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &loc) != nil || !loc.ChosenMissing {
+		t.Fatalf("location should report the missing folder: %d %s", rec.Code, rec.Body.String())
+	}
+
+	// Back again: the next run writes
+	if err := os.MkdirAll(chosen, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := srv.runBackups(); err != nil {
+		t.Fatalf("run after the folder is back: %v", err)
+	}
+	rec = getWith(t, router, "/api/v1/admin/backups/location", token)
+	loc = backupLocation{}
+	if json.Unmarshal(rec.Body.Bytes(), &loc) != nil || loc.ChosenMissing {
+		t.Errorf("warning stays although the folder is back: %s", rec.Body.String())
+	}
+}

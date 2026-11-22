@@ -666,6 +666,8 @@ export interface BackupLocation {
   custom: boolean;
   // chosen: the folder picked in the setup or the administration ('' = the default)
   chosen?: string;
+  // chosenMissing: the chosen folder does not exist now (drive not mounted): backup runs are skipped
+  chosenMissing?: boolean;
 }
 
 /** Desktop app: one account of a server's database snapshot, with what it owns. */

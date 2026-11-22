@@ -940,6 +940,7 @@
     "days_one": "day",
     "days_other": "days",
     "folder": "Folder",
+    "folderMissing": "The folder <c>{{dir}}</c> does not exist (drive not connected?). No backup is written while it is missing; the next run tries again once it is there. MindSift does not create it by itself.",
     "folderHint": "Empty for the instance’s folder. MindSift creates its own subfolder “MindSift-Backups” in the chosen folder and only writes there. When you switch, existing backups stay in the old folder; the list and restore show those of the new one.",
     "folderTarget": "The backups go to <c>{{dir}}</c>.",
     "folderChoose": "Choose folder…",

@@ -515,7 +515,8 @@ func (s *Server) Router() http.Handler {
 		r.Delete("/api/v1/teams/{id}/members/{userId}", s.handleRemoveTeamMember)
 
 		// MCP endpoint for AI agents (API key with agent scopes or a session); no server stream, so
-		// GET and DELETE answer 405 instead of the SPA fallback
+		// GET and DELETE answer 405 with Allow: POST instead of the SPA fallback (any other method gets
+		// the router's own 405; apiKeyRouteDenied lets every method of a key through to them)
 		r.Post(mcpPath, s.handleMCP)
 		r.Get(mcpPath, handleMCPNoStream)
 		r.Delete(mcpPath, handleMCPNoStream)

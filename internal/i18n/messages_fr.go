@@ -653,4 +653,7 @@ var messagesFR = map[string]string{
 	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                                "La copie de la base de données n’est plus disponible. Veuillez choisir le fichier à nouveau.",
 	"Dieses Konto ist nicht im Datenbank-Abzug":                                                                 "Ce compte ne figure pas dans la copie de la base de données",
 	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":                    "Les valeurs masquées sont chiffrées avec la clé du serveur et ne sont pas reprises",
+
+	"Versteckter Wert nicht im Backup enthalten und nicht mehr auf diesem Server, nur ein Platzhalter wird übernommen": "Valeur masquée absente de la sauvegarde et plus présente sur ce serveur, seul un espace réservé est repris",
+	"Der gewählte Backup-Ordner {dir} existiert nicht (Laufwerk nicht eingebunden?), das Backup wurde übersprungen":    "Le dossier de sauvegarde choisi {dir} n’existe pas (lecteur non connecté ?), la sauvegarde a été ignorée",
 }

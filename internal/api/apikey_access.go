@@ -74,7 +74,6 @@ type keyRoute struct {
 
 var keyRoutes = []keyRoute{
 	{http.MethodPost, regexp.MustCompile(`^/api/v1/inbox$`), nil},
-	{http.MethodPost, regexp.MustCompile(`^` + regexp.QuoteMeta(mcpPath) + `$`), nil},
 	{http.MethodGet, regexp.MustCompile(`^/api/v1/task-lists$`), []string{storage.ScopeTasksRead}},
 	{http.MethodGet, regexp.MustCompile(`^/api/v1/tasks$`), []string{storage.ScopeTasksRead}},
 	{http.MethodPatch, regexp.MustCompile(`^/api/v1/thoughts/[^/]+$`), []string{storage.ScopeTasksWrite}},
@@ -90,6 +89,11 @@ var keyRoutes = []keyRoute{
 // apiKeyRouteDenied returns why an API key may not make this request, or "" if it may.
 // /webhooks/ingest is not listed: it authenticates on its own and checks requireDeliveryScope.
 func apiKeyRouteDenied(r *http.Request, scopes []string) string {
+	// The MCP endpoint takes every method past this check (the tools check the rights): POST is the
+	// protocol, anything else gets the endpoint's own 405 with Allow: POST, as a session does
+	if r.URL.Path == mcpPath {
+		return ""
+	}
 	kr := findKeyRoute(r)
 	if kr == nil {
 		return "Mit einem API-Schlüssel nicht erreichbar (nur Aufgaben, Listen, Inbox und MCP; Notizen und Einstellungen brauchen eine Anmeldung)"

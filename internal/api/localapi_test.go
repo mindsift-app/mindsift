@@ -67,6 +67,9 @@ func TestLocalAPIOnlyReachesWhatAPIKeysMay(t *testing.T) {
 		{"MCP with X-API-Key", http.MethodPost, mcpPath, toolsList, withKey, http.StatusOK},
 		{"MCP with Bearer key", http.MethodPost, mcpPath, toolsList, hdr{"Authorization": "Bearer " + key.RawKey}, http.StatusOK},
 		{"MCP via localhost", http.MethodPost, mcpPath, toolsList, hdr{"X-API-Key": key.RawKey, "Host": "localhost:18890"}, http.StatusOK},
+		// MCP has no server stream: other methods answer 405 as on a server, not 403
+		{"MCP GET", http.MethodGet, mcpPath, "", withKey, http.StatusMethodNotAllowed},
+		{"MCP DELETE", http.MethodDelete, mcpPath, "", withKey, http.StatusMethodNotAllowed},
 		{"tasks", http.MethodGet, "/api/v1/tasks", "", withKey, http.StatusOK},
 		{"webhook with ?token=", http.MethodPost, "/api/v1/webhooks/ingest?token=" + key.RawKey, `{"title":"Vom Skript"}`, nil, http.StatusCreated},
 		// The key's rights still hold: lists need lists:read

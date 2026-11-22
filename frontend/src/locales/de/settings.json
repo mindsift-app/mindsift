@@ -939,6 +939,7 @@
     "days_one": "Tag",
     "days_other": "Tage",
     "folder": "Ordner",
+    "folderMissing": "Der Ordner <c>{{dir}}</c> existiert nicht (Laufwerk nicht eingebunden?). Solange er fehlt, wird kein Backup geschrieben; der nächste Lauf versucht es wieder, sobald er da ist. MindSift legt ihn nicht von selbst an.",
     "folderHint": "Leer für den Ordner der Instanz. MindSift legt im gewählten Ordner einen eigenen Unterordner „MindSift-Backups“ an und schreibt nur dort hinein. Vorhandene Backups bleiben beim Wechsel im alten Ordner; Liste und Wiederherstellen zeigen die des neuen.",
     "folderTarget": "Die Backups liegen in <c>{{dir}}</c>.",
     "folderChoose": "Ordner wählen…",

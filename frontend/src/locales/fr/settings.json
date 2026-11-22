@@ -940,6 +940,7 @@
     "days_one": "jour",
     "days_other": "jours",
     "folder": "Dossier",
+    "folderMissing": "Le dossier <c>{{dir}}</c> n’existe pas (lecteur non connecté ?). Aucune sauvegarde n’est écrite tant qu’il manque ; la prochaine exécution réessaiera dès qu’il sera là. MindSift ne le crée pas de lui-même.",
     "folderHint": "Vide pour le dossier de l’instance. MindSift crée dans le dossier choisi son propre sous-dossier « MindSift-Backups » et n’écrit que là. Lors d’un changement, les sauvegardes existantes restent dans l’ancien dossier ; la liste et la restauration montrent celles du nouveau.",
     "folderTarget": "Les sauvegardes vont dans <c>{{dir}}</c>.",
     "folderChoose": "Choisir un dossier…",

@@ -653,4 +653,7 @@ var messagesIT = map[string]string{
 	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                                "La copia del database non è più disponibile. Scegli di nuovo il file.",
 	"Dieses Konto ist nicht im Datenbank-Abzug":                                                                 "Questo account non è nella copia del database",
 	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":                    "I valori nascosti sono cifrati con la chiave del server e non vengono trasferiti",
+
+	"Versteckter Wert nicht im Backup enthalten und nicht mehr auf diesem Server, nur ein Platzhalter wird übernommen": "Valore nascosto non incluso nel backup e non più su questo server, viene ripreso solo un segnaposto",
+	"Der gewählte Backup-Ordner {dir} existiert nicht (Laufwerk nicht eingebunden?), das Backup wurde übersprungen":    "La cartella di backup scelta {dir} non esiste (unità non collegata?), il backup è stato saltato",
 }

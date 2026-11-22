@@ -653,4 +653,7 @@ var messagesEN = map[string]string{
 	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                                "The database snapshot is no longer there. Please choose the file again.",
 	"Dieses Konto ist nicht im Datenbank-Abzug":                                                                 "This account is not in the database snapshot",
 	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":                    "Hidden values are encrypted with the server's key and do not come along",
+
+	"Versteckter Wert nicht im Backup enthalten und nicht mehr auf diesem Server, nur ein Platzhalter wird übernommen": "Hidden value not part of the backup and no longer on this server, only a placeholder is kept",
+	"Der gewählte Backup-Ordner {dir} existiert nicht (Laufwerk nicht eingebunden?), das Backup wurde übersprungen":    "The chosen backup folder {dir} does not exist (drive not connected?), the backup was skipped",
 }

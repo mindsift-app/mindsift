@@ -76,7 +76,7 @@ The daily backups hold the whole database as `data/backups/system/mindsift-db-<d
 4. Keep the keys that belong to the data: `SECRETS_KEY` or `data/secrets.key` (without it, hidden values, authenticator codes, the copy of public links and the SMTP password of the administration cannot be read) and `JWT_SECRET` or `data/jwt.secret` (otherwise everyone is signed out). If the key is missing or wrong, MindSift still starts but logs a warning that begins with `THE SECRETS KEY DOES NOT MATCH THE DATA`; stop it, put the old key back and start again. Images and audio are not in the database dump but in `data/media/`; on a new machine copy the whole `data/` folder.
 5. Start the same version that wrote the snapshot, or a newer one. The container hands `data/` to its user (uid 1000) on start; without the container, keep the files owned by the user that runs MindSift and readable for it only.
 
-People restore their own data from their personal backups in the account settings, without stopping the server.
+People restore their own data from their personal backups in the account settings, without stopping the server. A personal backup holds hidden values (`/hidden`) as references only, never their values (they are sealed with the server's key): restored on the same server they come back as long as their notes still exist, otherwise the notes keep a placeholder and the restore summary lists them. A snapshot of the whole database keeps them.
 
 ## Locked out? / Command line
 

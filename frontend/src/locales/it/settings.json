@@ -940,6 +940,7 @@
     "days_one": "giorno",
     "days_other": "giorni",
     "folder": "Cartella",
+    "folderMissing": "La cartella <c>{{dir}}</c> non esiste (unità non collegata?). Finché manca non viene scritto alcun backup; la prossima esecuzione riproverà non appena sarà presente. MindSift non la crea da sola.",
     "folderHint": "Vuoto per la cartella dell’istanza. MindSift crea nella cartella scelta una propria sottocartella “MindSift-Backups” e scrive solo lì. Cambiandola, i backup esistenti restano nella cartella precedente; l’elenco e il ripristino mostrano quelli della nuova.",
     "folderTarget": "I backup vanno in <c>{{dir}}</c>.",
     "folderChoose": "Scegli cartella…",
