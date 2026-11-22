@@ -4,6 +4,7 @@ import { ImageOff, LoaderCircle, MoveDiagonal2, RotateCcw, X } from 'lucide-reac
 import { MIN_IMAGE_WIDTH, mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { useTranslation } from 'react-i18next';
 import { IndentArrows, OVERLAY_ARROW_BUTTON, overlayArrowsClass } from './IndentArrows';
+import { MediaCaption } from './MediaCaption';
 
 interface ImageBlockProps {
   content: string;
@@ -18,6 +19,8 @@ interface ImageBlockProps {
   canOutdent?: boolean;
   /** Someone else holds the bullet: arrows greyed out, caption read only, nothing moves (canEdit is false then) */
   locked?: boolean;
+  /** Enter in the caption: leave it for a new bullet below, like Enter at the end of a text bullet */
+  onExitBelow?: () => void;
 }
 
 // Without a pointer that can hover, the first tap on the picture shows the arrows and the empty caption field,
@@ -35,6 +38,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
   canIndent = false,
   canOutdent = false,
   locked = false,
+  onExitBelow,
 }) => {
   const { t } = useTranslation('workspace');
   const figureRef = useRef<HTMLElement | null>(null);
@@ -223,31 +227,21 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
       )}
       </div>
 
-      {editable ? (
-        <input
-          type="text"
-          value={caption}
-          readOnly={locked}
-          aria-label={t('media.caption')}
-          onChange={(e) => setCaption(e.target.value)}
-          onBlur={() => {
-            if (!locked) commitCaption();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          placeholder={locked ? '' : t('media.caption')}
-          className={`w-full bg-transparent border-0 p-0 text-xs text-muted placeholder:text-faint focus:outline-hidden focus:ring-0 transition-opacity ${
-            hideEmptyCaption
-              ? 'opacity-0 focus:opacity-100 [@media(hover:hover)]:group-hover/image:opacity-100'
-              : ''
-          }`}
-        />
-      ) : (
-        ref.caption && <figcaption className="text-xs text-muted">{ref.caption}</figcaption>
+      {(editable || ref.caption) && (
+      <figcaption>
+        {editable ? (
+          <MediaCaption
+            value={caption}
+            onChange={locked ? undefined : setCaption}
+            onCommit={commitCaption}
+            onExitBelow={onExitBelow}
+            keepLine={locked}
+            emptyClassName={hideEmptyCaption ? 'opacity-0 focus:opacity-100 [@media(hover:hover)]:group-hover/image:opacity-100' : ''}
+          />
+        ) : (
+          <MediaCaption value={ref.caption} />
+        )}
+      </figcaption>
       )}
 
       {zoomed &&

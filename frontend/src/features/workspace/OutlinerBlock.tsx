@@ -1771,10 +1771,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             onOutdent={outdentTable}
             canIndent={canIndentRow}
             canOutdent={canOutdentRow}
+            onExitBelow={canEdit ? appendBelowTable : undefined}
             onCaptionChange={(caption) => {
               const ref = parseMediaContent(localContent);
               if (!ref) return;
               const content = mediaContent('audio', ref.id, caption);
+              // Enter stores the caption before the new bullet, leaving the field then stores it once more
+              if (content === localContentRef.current) return;
               setLocalContent(content);
               localContentRef.current = content;
               flushDebounce(content);
@@ -1827,10 +1830,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             onOutdent={outdentTable}
             canIndent={canIndentRow}
             canOutdent={canOutdentRow}
+            onExitBelow={canEdit ? appendBelowTable : undefined}
             onCaptionChange={(caption) => {
               const ref = parseMediaContent(localContent);
               if (!ref) return;
               const content = mediaContent('image', ref.id, caption, ref.width);
+              // Enter stores the caption before the new bullet, leaving the field then stores it once more
+              if (content === localContentRef.current) return;
               setLocalContent(content);
               localContentRef.current = content;
               flushDebounce(content);

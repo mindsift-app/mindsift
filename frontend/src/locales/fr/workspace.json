@@ -379,6 +379,8 @@
     "transcribing": "Transcription en cours…",
     "transcribe": "Transcrire",
     "caption": "Ajouter une légende…",
+    "captionMore": "plus",
+    "captionLess": "moins",
     "imageUnavailable": "Image non disponible (hors ligne ou supprimée)",
     "enlarge": "Agrandir",
     "resize": "Faire glisser pour changer la taille",
