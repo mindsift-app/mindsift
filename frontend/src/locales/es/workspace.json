@@ -358,6 +358,7 @@
     "uploadFailed": "Error al subir",
     "emptyRecording": "La grabación está vacía",
     "noMic": "Sin acceso al micrófono (permiso denegado o la página no se sirve por HTTPS)",
+    "recordUnsupported": "Este navegador no permite grabar audio.",
     "record": "Grabar una nota de voz",
     "stopSave": "Detener y guardar la grabación",
     "start": "Iniciar grabación",

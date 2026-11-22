@@ -1774,6 +1774,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             canIndent={canIndentRow}
             canOutdent={canOutdentRow}
             onExitBelow={canEdit ? appendBelowTable : undefined}
+            // Caption or player focused counts as the cursor in this bullet (phone bar, highlight)
+            onFocusChange={(focused) => (focused ? onFocusBlock?.(block.id) : onBlurBlock?.(block.id))}
             onCaptionChange={(caption) => {
               const ref = parseMediaContent(localContent);
               if (!ref) return;

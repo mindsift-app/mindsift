@@ -358,6 +358,7 @@
     "uploadFailed": "Caricamento non riuscito",
     "emptyRecording": "La registrazione è vuota",
     "noMic": "Nessun accesso al microfono (permesso mancante o connessione non HTTPS)",
+    "recordUnsupported": "La registrazione non è supportata in questo browser.",
     "record": "Registra nota vocale",
     "stopSave": "Interrompi e salva registrazione",
     "start": "Avvia registrazione",

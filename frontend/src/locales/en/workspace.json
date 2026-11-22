@@ -358,6 +358,7 @@
     "uploadFailed": "Upload failed",
     "emptyRecording": "The recording is empty",
     "noMic": "No access to the microphone (permission, or the page is not served over HTTPS)",
+    "recordUnsupported": "Recording is not supported in this browser.",
     "record": "Record a voice note",
     "stopSave": "Stop and save the recording",
     "start": "Start recording",

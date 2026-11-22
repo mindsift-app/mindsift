@@ -162,6 +162,31 @@ describe('Pfeile zum Ein- und Ausrücken an Bild, Zeichnung und Code', () => {
     expect(empty.className).toContain('group-hover/audio:opacity-100');
   });
 
+  it('Audio am Handy ohne Pfeile (die Leiste über der Tastatur rückt ein), ab sm wie bisher', async () => {
+    render(<AudioBlock content="[](media:med_a2)" canEdit onCaptionChange={() => {}} onIndent={() => {}} onOutdent={() => {}} canIndent canOutdent />);
+    const arrows = (await screen.findByRole('button', { name: 'Einrücken' })).parentElement!;
+    expect(arrows.className.split(' ')).toEqual(expect.arrayContaining(['hidden', 'sm:flex']));
+  });
+
+  it('Audio: Antippen der Beschriftung macht den Block zum bearbeiteten Punkt, Verlassen gibt ihn frei', async () => {
+    const onFocusChange = vi.fn();
+    render(
+      <>
+        <AudioBlock content="[](media:med_a2)" canEdit onCaptionChange={() => {}} onIndent={() => {}} onFocusChange={onFocusChange} />
+        <button type="button">Draußen</button>
+      </>
+    );
+    const caption = await screen.findByRole('textbox', { name: 'Beschriftung hinzufügen…' });
+    fireEvent.focus(caption);
+    expect(onFocusChange).toHaveBeenLastCalledWith(true);
+    // Moving on inside the block (to the arrows) keeps it
+    onFocusChange.mockClear();
+    fireEvent.blur(caption, { relatedTarget: screen.getByRole('button', { name: 'Einrücken' }) });
+    expect(onFocusChange).not.toHaveBeenCalled();
+    fireEvent.blur(caption, { relatedTarget: screen.getByRole('button', { name: 'Draußen' }) });
+    expect(onFocusChange).toHaveBeenLastCalledWith(false);
+  });
+
   it('Audio gesperrt: Pfeile bleiben ausgegraut stehen, die Beschriftung nur lesbar', async () => {
     render(
       <AudioBlock content="[Sprachnotiz vom Montag](media:med_a2)" canEdit={false} locked onCaptionChange={() => {}} onIndent={() => {}} onOutdent={() => {}} canIndent canOutdent />
