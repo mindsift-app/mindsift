@@ -37,8 +37,20 @@ describe('StatusToast (answer to a save in the settings)', () => {
   });
 
   it('floats above the page instead of taking room in it', () => {
-    const { container } = render(<StatusToast msg={{ type: 'ok', text: 'Gespeichert' }} onClose={() => {}} />);
-    expect((container.firstElementChild as HTMLElement).className).toContain('fixed');
+    render(<StatusToast msg={{ type: 'ok', text: 'Gespeichert' }} onClose={() => {}} />);
+    expect((screen.getByRole('status').parentElement as HTMLElement).className).toContain('fixed');
+  });
+
+  it('puts two notices at once into one stack instead of on top of each other', () => {
+    render(
+      <>
+        <StatusToast msg={{ type: 'ok', text: 'Gespeichert' }} onClose={() => {}} />
+        <StatusToast msg={{ type: 'ok', text: '„x.zip“ gespeichert' }} onClose={() => {}} />
+      </>
+    );
+    const [first, second] = screen.getAllByRole('status');
+    expect(first.parentElement).toBe(second.parentElement);
+    expect((first.parentElement as HTMLElement).className).toMatch(/flex-col/);
   });
 
   it('ends a confirmation when it leaves the page (the section is left), but keeps an error', () => {
