@@ -25,6 +25,9 @@ Versions without a git tag were development states and were never published as a
 - Voice notes in a note now start right at their bullet: the indent and outdent arrows sit after the player (and the transcribe button) instead of keeping an empty gap in front of it while the pointer is elsewhere, on computers and phones.
 - Pressing Enter in the caption of an image or a voice note now goes on in a new bullet below, like Enter at the end of a text bullet; Shift+Enter only leaves the caption.
 - Long captions of images and voice notes (such as a transcript) now wrap instead of running out of the field: while editing, the whole text shows; otherwise a long caption is cut to two lines with "…", and "more" (or a click into it) shows all of it.
+- Voice notes in notes play properly in the Linux desktop app: the player shows the length right away, the playhead moves along and you can jump to any point. Before, the player guessed a length of a fraction of a second, stopped its playhead there while the sound went on, and only knew the real length at the end; Chrome showed no length until the end either. New recordings are saved with their length, older ones get it when they are played.
+- A voice note stops playing when you leave the note, and starting one voice note pauses another that is still playing. In the Linux desktop app a voice note went on playing after switching notes, and pressing play again started it a second time that could no longer be stopped.
+- Stopping a voice recording no longer seems to hang: "Saving" shows at once, and if the browser takes long to finish the recording (seen in the Linux desktop app), what was recorded until then is saved after at most three seconds. This also applies to dictation with the own speech recognition server.
 
 ## [0.98.0] - 2026-11-22
 

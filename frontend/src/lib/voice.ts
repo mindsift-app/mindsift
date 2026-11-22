@@ -184,6 +184,9 @@ export function resetVoiceConfig(): void {
 // Containers in order of preference; Safari only records MP4/AAC
 const RECORDING_TYPES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
 
+/** Longest wait for the browser to finish a recording after stop() (ms) */
+export const STOP_GRACE_MS = 3000;
+
 function recordingType(): string | undefined {
   const MR: typeof MediaRecorder | undefined = window.MediaRecorder;
   if (!MR?.isTypeSupported) return undefined;
@@ -277,8 +280,27 @@ export class VoiceRecorder {
         resolve(null);
         return;
       }
-      this.done = resolve;
-      this.recorder.stop();
+      const rec = this.recorder;
+      const chunks = this.chunks;
+      // The WebKitGTK of the desktop app can take long to finish a recording after stop(): what arrived
+      // until then (a piece every second) is used, so stopping never hangs
+      const timer = window.setTimeout(() => {
+        if (this.done !== finish) return;
+        this.done = null;
+        this.release();
+        resolve(chunks.length ? new Blob(chunks, { type: rec.mimeType || chunks[0].type || 'audio/webm' }) : null);
+      }, STOP_GRACE_MS);
+      const finish = (blob: Blob | null) => {
+        window.clearTimeout(timer);
+        resolve(blob);
+      };
+      this.done = finish;
+      try {
+        rec.requestData(); // hands over the last piece at once
+      } catch {
+        // not recording any more
+      }
+      rec.stop();
     });
   }
 

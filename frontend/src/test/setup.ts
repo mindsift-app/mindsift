@@ -9,6 +9,21 @@ addTexts('de', de);
 
 // jsdom has no layout engine, so scrolling is a no-op here
 Element.prototype.scrollIntoView = () => {};
+// nor media playback (it would only log "not implemented")
+HTMLMediaElement.prototype.pause = () => {};
+HTMLMediaElement.prototype.load = () => {};
+HTMLMediaElement.prototype.play = () => Promise.resolve();
+// jsdom's Blob cannot be read with arrayBuffer() (recordings are, see lib/webmDuration.ts)
+if (!Blob.prototype.arrayBuffer) {
+  Blob.prototype.arrayBuffer = function (this: Blob) {
+    return new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(this);
+    });
+  };
+}
 
 if (typeof window !== 'undefined' && !window.PointerEvent) {
   class PolyfillPointerEvent extends MouseEvent {

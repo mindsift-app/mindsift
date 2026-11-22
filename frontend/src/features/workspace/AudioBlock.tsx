@@ -8,6 +8,15 @@ import { errorMessage } from '../../lib/errorMessage';
 import { IndentArrows, OVERLAY_ARROW_BUTTON } from './IndentArrows';
 import { MediaCaption } from './MediaCaption';
 
+// The recording that is playing: starting another one pauses it, so two never play over each other
+let playingAudio: HTMLAudioElement | null = null;
+
+function onPlay(e: React.SyntheticEvent<HTMLAudioElement>) {
+  const a = e.currentTarget;
+  if (playingAudio && playingAudio !== a) playingAudio.pause();
+  playingAudio = a;
+}
+
 interface AudioBlockProps {
   content: string;
   canEdit: boolean;
@@ -49,19 +58,6 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Recordings from Chrome (WebM) carry no length: jump to the end once so the browser measures it,
-  // otherwise the player shows no total time and seeking does not work
-  const fixDuration = () => {
-    const a = audioRef.current;
-    if (!a || Number.isFinite(a.duration)) return;
-    const reset = () => {
-      a.removeEventListener('timeupdate', reset);
-      a.currentTime = 0;
-    };
-    a.addEventListener('timeupdate', reset);
-    a.currentTime = 1e101;
-  };
-
   useEffect(() => {
     // The caption field follows the stored caption (also from other devices)
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -74,13 +70,30 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
     // Another recording starts without the error of the previous one
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFailed(false);
-    mediaObjectURL(mediaId)
+    // WebM recordings get their length (and an index) written into the file first, see lib/webmDuration.ts
+    mediaObjectURL(mediaId, 'audio')
       .then((u) => alive && setSrc(u))
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
     };
   }, [mediaId]);
+
+  useEffect(() => {
+    if (!src) return;
+    const a = audioRef.current;
+    return () => {
+      // Leaving the note (or another file): stop and let go of the file. WebKitGTK (desktop app) otherwise
+      // went on playing the removed player, and a second one started alongside it
+      if (!a) return;
+      a.pause();
+      if (playingAudio === a) playingAudio = null;
+      if (a.getAttribute('src') === src) {
+        a.removeAttribute('src');
+        a.load();
+      }
+    };
+  }, [src]);
 
   useEffect(() => {
     void loadVoiceConfig().then((cfg) => setCanTranscribe(cfg.mode === 'server'));
@@ -122,7 +135,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
         </div>
       ) : src ? (
         <div className="flex items-center gap-2">
-          <audio ref={audioRef} controls preload="metadata" src={src} onLoadedMetadata={fixDuration} className="w-full max-w-md h-11" />
+          <audio ref={audioRef} controls preload="metadata" src={src} onPlay={onPlay} className="w-full max-w-md h-11" />
           {editable && canTranscribe && (
             <button
               type="button"
