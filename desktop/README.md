@@ -277,8 +277,10 @@ APP_VERSION=v1.2.0 desktop/build.sh        # the app's version; default v<packag
 `mindsift-desktop-linux-amd64.flatpak`, `mindsift-desktop-windows-amd64.exe` (portable),
 `mindsift-desktop-windows-amd64-setup.exe` (installer, see "Windows") and
 `mindsift-desktop-THIRD_PARTY_LICENSES.txt`. `.github/workflows/release.yaml` runs it from the tag's
-checkout and lists the files in the release's `SHA256SUMS` together with the server archives; the
-Flatpak bundle then goes into the own Flatpak repository (see "Own Flatpak repository").
+checkout and lists the files in the release's `SHA256SUMS` together with the server archives; it passes
+`FLATPAK_GPG_PRIVATE_KEY`, so the Flatpak bundle of a release carries the own Flatpak repository as its
+origin (the script checks the bundle's ref and origin), and the bundle then goes into that repository
+(see "Own Flatpak repository").
 `.gitea/workflows/desktop.yaml` runs the same script for pushes to `main` and by hand
 (any branch), with the version `v<package.json>-dev`; the files are one artifact of the run in the Gitea
 UI.
@@ -291,8 +293,8 @@ flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatp
 ```
 
 - **Files** in `packaging/flatpak/`: the manifest `app.mindsift.MindSift.yml` (each permission explained
-  there), the AppStream metainfo and `build.sh`. The desktop file and the icons are those of
-  `packaging/linux/`.
+  there), the AppStream metainfo, `build.sh` and `bundle.sh` (makes the bundle, see below). The desktop
+  file and the icons are those of `packaging/linux/`.
 - **Runtime:** `org.gnome.Platform//51` (GTK 4, WebKitGTK 6.0). The binary is built inside
   `org.gnome.Sdk//51` with `org.freedesktop.Sdk.Extension.golang//26.08`, so it links against the
   runtime's libraries; the extension is pinned to a commit in `build.sh` (Go 1.27.3), the GNOME branch
@@ -304,7 +306,17 @@ flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatp
   `desktop/app-version` (`APP_VERSION`, read by the manifest), a release entry in the metainfo when
   `CHANGELOG.md` has a section for that version, and the Go modules vendored (`go mod vendor` in `desktop/`, which includes the main
   module through its `replace`), then runs `flatpak-builder` offline (`GOFLAGS=-mod=vendor`,
-  `GOPROXY=off`) in a privileged Debian container; the runtimes stay in the volume `mindsift-flatpak`.
+  `GOPROXY=off`, `--default-branch=stable`) in a privileged Debian container; the runtimes stay in the
+  volume `mindsift-flatpak`.
+- **Branch and origin of the bundle:** the ref is `app/app.mindsift.MindSift/x86_64/stable`, the same as
+  in the own Flatpak repository (the branch is set on the command line, not in the manifest, which stays
+  as Flathub expects it). With `FLATPAK_GPG_PRIVATE_KEY` set (the repository's ASCII-armored signing key,
+  as in the release workflow), `bundle.sh` signs the commit with it and builds the bundle with
+  `--repo-url=https://flatpak.mindsift.app/repo/` and the public key (`--gpg-keys`), so an install of the
+  bundle gets updates from the repository (see "Own Flatpak repository"). Without the variable (local
+  builds, the Gitea builds) the bundle has no origin and installs as before, without updates. The key
+  reaches only the container that makes the bundle, as a variable passed by name; the script writes it to
+  a file only root can read and drops the variable before the build steps run.
 - **Data:** under Flatpak `XDG_DATA_HOME` is `~/.var/app/app.mindsift.MindSift/data`, so the base folder
   is `~/.var/app/app.mindsift.MindSift/data/MindSift`; the app needs no access to the home folder. It
   writes no desktop entry of its own (`FLATPAK_ID`); Flatpak exports the packaged one.
@@ -369,7 +381,8 @@ runs `ci/flatpak-repo.sh`, which
   not older than the release the repository holds (pre-releases are refused);
 - clones `gh-pages` over SSH with the deploy key (or starts the branch when there is none), imports the
   bundle and commits it with `flatpak build-commit-from` onto `app/app.mindsift.MindSift/x86_64/stable`,
-  whatever branch the bundle was built with (the release bundles are `master`); the previous release
+  whatever branch the bundle was built with (the bundles up to v0.98.0 are on `master`, later ones on
+  `stable`); the previous release
   becomes the parent, the same bundle twice makes no new commit and no push;
 - runs `flatpak build-update-repo --generate-static-deltas --prune --prune-depth=5 --default-branch=stable`
   (summary, appstream branches for the software centers, deltas from the previous release; the last five
@@ -382,6 +395,22 @@ runs `ci/flatpak-repo.sh`, which
 - commits it as `MindSift <noreply@mindsift.app>` as a **single commit without history** and force-pushes
   it: the OSTree repository keeps its own history, git history would keep every pruned release forever
   and grow past what Pages serves (1 GB). A release adds about 10-25 MB.
+
+**Updates for installs of the release bundle:** the release workflow builds the
+`mindsift-desktop-linux-amd64.flatpak` of a release (no `-`) with the repository as its origin (see
+"Flatpak", `bundle.sh`), when both secrets below are set. `flatpak install --user
+mindsift-desktop-linux-amd64.flatpak` then adds a remote `mindsift-origin` for
+`https://flatpak.mindsift.app/repo/` that trusts the repository's key (not listed in searches, priority
+0; an existing `mindsift` remote of the same repository stays as it is), and `flatpak update`, GNOME
+Software or Discover take every later release from there. The first update after installing replaces the
+bundle's commit with the repository's commit of the same release (`ci/flatpak-repo.sh` commits it anew
+on top of the previous release), a download of a few kilobytes. Pre-releases get no origin: their commit
+would be newer than the repository's, and `flatpak update` would fail with "Update is older than
+current version" until the next release. For the same reason the workflow only adds the origin when the
+deploy key is set as well, so the repository really gets each release. Bundles up to v0.98.0 are on
+`master` and have no origin: a newer bundle or an install from the repository (see "Install") lands next
+to them on `stable` and becomes the one that runs; `flatpak uninstall --user app.mindsift.MindSift//master`
+removes the old one (the data in `~/.var/app/app.mindsift.MindSift` stays).
 
 Two runs never push at once (concurrency group `flatpak-repo`). A release that is missing (e.g. the
 secrets came later) is added with "Run workflow" on *Flatpak Repository*, from `main`, with its tag;

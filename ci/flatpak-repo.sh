@@ -7,7 +7,8 @@
 #      the repository holds (the branch only moves forward).
 #   2. Clones the branch (or starts it when the remote has none), imports the bundle into a scratch repo and
 #      commits it onto app/app.mindsift.MindSift/x86_64/stable of repo/, whatever branch the bundle was
-#      built with (build-commit-from rewrites the ref binding, the previous release becomes the parent).
+#      built with (bundles up to v0.98.0 are on master, later ones on stable and carry this repository as
+#      their origin; build-commit-from rewrites the ref binding, the previous release becomes the parent).
 #      The same bundle twice makes no new commit.
 #   3. Updates the summary and appstream branches, static deltas, prunes all but the last KEEP old
 #      versions, signs commits and summary with the GPG key.

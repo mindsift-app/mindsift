@@ -55,11 +55,18 @@ jobs:
       # app has no image. desktop/build.sh and the Flatpak build run in containers (node, golang trixie
       # with GTK 4 / WebKitGTK 6.0, a Debian container with SYS_ADMIN for flatpak-builder), without .git,
       # npm without install scripts and Go only with the modules go.sum names.
+      # With FLATPAK_GPG_PRIVATE_KEY the Flatpak bundle of a release is signed with the own Flatpak
+      # repository's key and carries the repository as its origin, so installs of the bundle get updates
+      # from there (desktop/packaging/flatpak/bundle.sh; the key only goes into the container that makes
+      # the bundle, pre-releases get no origin). Only when the deploy key is there too: a repository that
+      # never gets the release would make flatpak update fail for those installs ("Update is older than
+      # current version"). Without them (e.g. a fork) the bundle is built without origin, as before.
       - name: Build Desktop App
         id: desktop
         continue-on-error: true
         env:
           TAG: ${{ inputs.tag }}
+          FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_REPO_DEPLOY_KEY != '' && secrets.FLATPAK_GPG_PRIVATE_KEY || '' }}
         run: |
           if [ ! -x ci/release-desktop.sh ]; then
             echo "::notice::${TAG} is from before the desktop release files, nothing to build"
