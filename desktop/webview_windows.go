@@ -24,15 +24,26 @@ func useWebviewDataDir(string) {}
 // gives them (window._wails.invoke, a wrapper of chrome.webview.postMessage, which WebView2 gives every
 // page anyway; flags; OS and architecture) is no way into the app: Wails' routes under /wails/ answer
 // nobody but their scripts (shell.GuardWailsRoutes).
-func setupPages(window *application.WebviewWindow, origin, scripts, marker string) {
+// The address of the page is not known to the app here (Wails has no way to ask WebView2 for it), so a page
+// of the window's own origin tells it (titleScript, the shell's "page" call) and the title follows the
+// history between those; a server's page cannot, the title stays as the page before it left it.
+func setupPages(window *application.WebviewWindow, origin, scripts, marker string, _ func(address string)) {
 	var once sync.Once
 	window.RegisterHook(events.Windows.WebViewNavigationCompleted, func(*application.WindowEvent) {
 		// ExecJS waits for "wails:runtime:ready", which only Wails' full runtime (runtime.js) sends and no
 		// page of this app loads, so nothing the app runs in the page would ever arrive. Once is enough,
 		// Wails never resets it.
 		once.Do(func() { window.HandleMessage("wails:runtime:ready") })
-		window.ExecJS(foreignPage(origin, marker) + scripts)
+		window.ExecJS(foreignPage(origin, marker) + scripts + titleScript(origin))
 	})
+}
+
+// titleScript: on a page of the window's own origin, tells the shell which page that is (shell.Navigated)
+func titleScript(origin string) string {
+	o, _ := json.Marshal(origin)
+	return `(function(){if((location.protocol+'//'+location.host).toLowerCase()!==` + string(o) + `)return;` +
+		`fetch('/__desktop/api/page',{method:'POST',headers:{'Content-Type':'application/json','X-MindSift-Desktop':'1'},` +
+		`body:JSON.stringify({path:location.pathname})}).catch(function(){})})();`
 }
 
 // foreignPage: on a page that is not on origin, Wails' runtime taken out again and the marker set

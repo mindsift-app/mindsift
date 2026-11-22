@@ -88,6 +88,12 @@ func (s *Shell) api(w http.ResponseWriter, r *http.Request, op string) {
 	case "local-api-set":
 		st, err := s.setLocalAPI(req.Enabled, req.Port)
 		s.answer(w, st, err)
+	case "page":
+		// Windows: a page of the window's own origin tells which page it is, for the title (title.go)
+		if s.Navigated != nil && strings.HasPrefix(req.Path, "/") {
+			s.Navigated(s.Origin + req.Path)
+		}
+		s.answerDone(w, nil)
 	case "show-base":
 		err := CreateFolder(s.Base)
 		if err == nil && s.ShowFolder != nil {

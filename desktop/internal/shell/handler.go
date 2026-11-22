@@ -48,9 +48,11 @@ type Shell struct {
 	// cancelled. Set by main.go.
 	PickFolder func(start string) (string, error)
 	// Opened: an entry was opened; StartShown: the start view was loaded, from the tray, the shortcut or
-	// the app's profile menu (main.go sets the window title)
+	// the app's profile menu; Navigated: the window shows this page now, history included (main.go sets
+	// the window title from these, see TitleFor)
 	Opened     func(Entry)
 	StartShown func()
+	Navigated  func(address string)
 
 	mu      sync.Mutex
 	problem *Problem // why the entry opened last did not open at the start (shown once)

@@ -92,9 +92,10 @@ export const DesktopSetupView: React.FC<{
   };
 
   return (
-    <div className="min-h-dvh bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
-      <div className="w-full max-w-xl panel-surface shadow-panel overflow-hidden" data-testid="desktop-setup">
-        <div className="p-4 bg-canvas border-b border-border flex items-center gap-2.5">
+    <div className="min-h-dvh bg-canvas text-main flex flex-col items-center justify-center p-4 sm:py-1.5 sm:px-3 font-sans" style={keyboardRoom}>
+      {/* The window is 860 px high at the start: the wizard fits that without scrolling; on a lower window the button row stays at the bottom edge (overflow-clip, not -hidden: that would stop it from sticking) */}
+      <div className="w-full max-w-xl panel-surface shadow-panel overflow-hidden sm:overflow-clip" data-testid="desktop-setup">
+        <div className="p-4 sm:p-2.5 bg-canvas border-b border-border flex items-center gap-2.5">
           <div className="w-8 h-8 bg-accent text-on-accent rounded-btn flex items-center justify-center">
             <Brain className="w-4 h-4" />
           </div>
@@ -104,8 +105,8 @@ export const DesktopSetupView: React.FC<{
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-5 text-xs">
-          <p className="text-muted leading-relaxed">
+        <form onSubmit={handleSubmit} className="p-5 space-y-5 sm:p-4 sm:pb-0 sm:space-y-2.5 text-xs">
+          <p className="text-muted leading-relaxed sm:leading-normal">
             <Trans
               t={t}
               i18nKey="desktopSetup.welcome"
@@ -114,7 +115,7 @@ export const DesktopSetupView: React.FC<{
             />
           </p>
 
-          <div className="p-3.5 bg-canvas border border-border space-y-3">
+          <div className="p-3.5 sm:p-2.5 bg-canvas border border-border space-y-3 sm:space-y-2">
             <h2 className="text-xs font-bold text-main uppercase tracking-wider flex items-center gap-1.5">
               <Monitor className="w-3.5 h-3.5 text-accent" />
               <span>{t('desktopSetup.section')}</span>
@@ -159,7 +160,7 @@ export const DesktopSetupView: React.FC<{
             </div>
           </div>
 
-          <div className="p-3.5 bg-canvas border border-border space-y-3">
+          <div className="p-3.5 sm:p-2.5 bg-canvas border border-border space-y-3 sm:space-y-2">
             <div className="flex items-center justify-between gap-3 select-none">
               <div>
                 <h2 className="text-xs font-bold text-main uppercase tracking-wider flex items-center gap-1.5">
@@ -212,7 +213,7 @@ export const DesktopSetupView: React.FC<{
             </div>
           )}
 
-          <div className="flex justify-end pt-1">
+          <div className="flex justify-end pt-1 sm:sticky sm:bottom-0 sm:z-10 sm:-mx-4 sm:px-4 sm:py-2.5 sm:bg-panel sm:border-t sm:border-border">
             <button
               type="submit"
               disabled={submitting}

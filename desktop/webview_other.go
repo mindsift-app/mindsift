@@ -8,7 +8,7 @@ import "github.com/wailsapp/wails/v3/pkg/application"
 
 func useWebviewDataDir(string) {}
 
-func setupPages(*application.WebviewWindow, string, string, string) {}
+func setupPages(*application.WebviewWindow, string, string, string, func(string)) {}
 
 func goBack(w application.Window)    { w.ExecJS("history.back()") }
 func goForward(w application.Window) { w.ExecJS("history.forward()") }

@@ -50,11 +50,12 @@ func languageCode(l string) string {
 	return strings.ToLower(l)
 }
 
-// SystemTimeZone: the IANA name of the system's time zone on Linux (/etc/localtime links into the zoneinfo
-// folder; /etc/timezone on Debian-like systems); empty where unknown, e.g. on Windows.
+// SystemTimeZone: the IANA name of the system's time zone: on Linux /etc/localtime links into the zoneinfo
+// folder (/etc/timezone on Debian-like systems), on Windows the zone's key in the registry is mapped
+// (WindowsToIANA); empty where unknown.
 func SystemTimeZone() string {
 	if runtime.GOOS == "windows" {
-		return ""
+		return WindowsToIANA(windowsTimeZoneKey())
 	}
 	if target, err := os.Readlink("/etc/localtime"); err == nil {
 		if _, zone, ok := strings.Cut(filepath.ToSlash(target), "/zoneinfo/"); ok && zone != "" {

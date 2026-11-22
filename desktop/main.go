@@ -108,13 +108,20 @@ func main() {
 	}
 	sh.Opened = func(e shell.Entry) {
 		if window != nil {
-			window.SetTitle(e.Name + " – MindSift")
+			window.SetTitle(shell.EntryTitle(e))
 		}
 	}
 
 	sh.StartShown = func() {
 		if window != nil {
-			window.SetTitle("MindSift")
+			window.SetTitle(shell.AppTitle)
+		}
+	}
+
+	// Every page the window shows, history included: the title follows the page, not only the opening
+	sh.Navigated = func(address string) {
+		if window != nil {
+			window.SetTitle(sh.TitleFor(address))
 		}
 	}
 
@@ -147,11 +154,11 @@ func main() {
 		},
 	})
 	if e, ok := settings.Last(); ok && startURL != shell.StartPath {
-		window.SetTitle(e.Name + " – MindSift")
+		window.SetTitle(shell.EntryTitle(e))
 	}
 	// Wails' runtime only on the window's own pages, the window's scripts on all, the marker on servers'
 	// pages; on Linux also the drop target for files (filedrop_linux.go)
-	setupPages(window, windowOrigin(), windowScripts, shellMarker(windowOrigin()))
+	setupPages(window, windowOrigin(), windowScripts, shellMarker(windowOrigin()), sh.Navigated)
 
 	tray := app.SystemTray.New()
 	tray.SetIcon(trayIcon)

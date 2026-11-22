@@ -12,6 +12,9 @@ import (
 // systemLanguagePlatform: nothing beyond the locale variables (SystemLanguage reads them)
 func systemLanguagePlatform() string { return "" }
 
+// windowsTimeZoneKey: only Windows has one
+func windowsTimeZoneKey() string { return "" }
+
 // lockFile takes an exclusive lock (flock) on the open file without waiting; held until the file is closed
 // or the process ends, whatever way it ends.
 func lockFile(f *os.File) error {

@@ -8,9 +8,37 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/config"
 )
+
+// The first backup does not wait for the scheduler's next tick: finishing the wizard with backups on and a
+// time already reached writes it at once, so the administration's list is not empty when it is opened.
+func TestDesktopSetupWritesTheFirstBackupAtOnce(t *testing.T) {
+	store, dbPath := freshStore(t)
+	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
+	router := srv.Router()
+	token := desktopToken(t, router)
+
+	dir := filepath.Join(t.TempDir(), "Sicherungen")
+	body, _ := json.Marshal(map[string]any{"backupEnabled": true, "backupTime": "00:00", "backupDir": dir})
+	if rec := postJSON(t, router, "/api/v1/admin/setup", token, string(body)); rec.Code != http.StatusOK {
+		t.Fatalf("finish setup: %d %s", rec.Code, rec.Body.String())
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		var listed []struct{ Name string }
+		_ = json.Unmarshal(getWith(t, router, "/api/v1/admin/backups", token).Body.Bytes(), &listed)
+		if len(listed) == 1 {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("no backup listed after the wizard (the scheduler's tick is a minute away): %v", listed)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
 
 func desktopToken(t *testing.T, router http.Handler) string {
 	t.Helper()

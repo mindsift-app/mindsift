@@ -184,6 +184,7 @@ func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
+	s.nudgeBackups()
 	slog.Info("Setup finished by the first administrator", "user_id", user.ID, "desktop", s.desktopMode())
 	res := map[string]any{"done": true}
 	if email != "" {

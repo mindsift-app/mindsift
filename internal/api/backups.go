@@ -101,6 +101,7 @@ func (s *Server) startBackupScheduler() {
 		case <-s.stop:
 			return
 		case <-ticker.C:
+		case <-s.backupNudge:
 		}
 		sys := s.effectiveSettings()
 		if sys == nil {
@@ -115,6 +116,16 @@ func (s *Server) startBackupScheduler() {
 		if _, err := s.runBackups(); err != nil {
 			slog.Error("Automatic backup failed", "error", err)
 		}
+	}
+}
+
+// nudgeBackups lets the scheduler check at once whether a run is due, e.g. after the setup wizard switched
+// the backups on: the first one then exists when the person opens the administration, not up to a minute
+// later.
+func (s *Server) nudgeBackups() {
+	select {
+	case s.backupNudge <- struct{}{}:
+	default: // one is pending already
 	}
 }
 
