@@ -1242,6 +1242,9 @@ var (
 	headingRe  = regexp.MustCompile(`^(#{1,6})[ \t]+(.*)$`)
 	fenceRe    = regexp.MustCompile("^([ \\t]*)(```|~~~)(.*)$")
 	calloutRe  = regexp.MustCompile(`^\[!([\w-]+)\][+-]?[ \t]*(.*)$`)
+	// A fence as a list item's content ("- ```bash"): three or more backticks or tildes, then the language;
+	// a backtick fence whose info holds a backtick is inline code, not a fence (CommonMark)
+	itemFenceRe = regexp.MustCompile("^(?:(`{3,})[ \\t]*([^`]*)|(~{3,})[ \\t]*(.*))$")
 )
 
 // calloutType maps an Obsidian callout kind to a block type: warnings and failures keep their colour,
@@ -1254,6 +1257,62 @@ func calloutType(kind string) string {
 		return "error"
 	}
 	return "callout"
+}
+
+// codeBlock is a fenced block: a code block with the fence's language; a drawing copied or exported
+// without its file comes back as a drawing.
+func codeBlock(code, lang string, level int) domain.DocumentBlock {
+	b := newBlock("code", code, level)
+	b.Lang = lang
+	if lang == drawing.Fence {
+		if _, ok := drawing.Parse(b.Content); ok {
+			b.Type, b.Lang = drawing.BlockType, ""
+		}
+	}
+	return b
+}
+
+// itemFence reads the code of a fence that is a list item's content (lines[at], fence marker, content
+// starting at column width): the lines indented at least that far, without that indentation. A closing
+// fence ends it at any indentation; the first non-blank line indented less ends it too, without being
+// taken (so an unclosed fence never swallows the bullets after it). Returns the code and the index of
+// the last line it took.
+func itemFence(lines []string, at int, marker string, width int) (string, int) {
+	var code []string
+	i := at + 1
+	for ; i < len(lines); i++ {
+		l := lines[i]
+		t := strings.TrimSpace(l)
+		if len(t) >= len(marker) && strings.Trim(t, marker[:1]) == "" {
+			break
+		}
+		if t != "" && indentWidth(l[:len(l)-len(strings.TrimLeft(l, " \t"))]) < width {
+			i--
+			break
+		}
+		code = append(code, stripColumns(l, width))
+	}
+	for len(code) > 0 && strings.TrimSpace(code[len(code)-1]) == "" {
+		code = code[:len(code)-1]
+	}
+	if i >= len(lines) {
+		i = len(lines) - 1
+	}
+	return strings.Join(code, "\n"), i
+}
+
+// stripColumns takes up to n columns of leading spaces and tabs (a tab counts 4) off a line.
+func stripColumns(s string, n int) string {
+	w, k := 0, 0
+	for k < len(s) && w < n && (s[k] == ' ' || s[k] == '\t') {
+		if s[k] == '\t' {
+			w += 4
+		} else {
+			w++
+		}
+		k++
+	}
+	return s[k:]
 }
 
 func newBlock(typ, content string, level int) domain.DocumentBlock {
@@ -1285,7 +1344,7 @@ func MarkdownToBlocks(md string) []domain.DocumentBlock {
 // markdownToBlocks stops (ok false) as soon as there are more than limit blocks (0: no limit), so a
 // note of countless short lines never turns into countless blocks in memory.
 func markdownToBlocks(md string, limit int) (_ []domain.DocumentBlock, ok bool) {
-	lines := strings.Split(md, "\n")
+	lines := strings.Split(strings.ReplaceAll(md, "\r\n", "\n"), "\n")
 	var blocks []domain.DocumentBlock
 	base := 0          // level of content in the current heading section
 	var headings []int // ranks (1–3) of the open headings: H2 below H1 nests one level deeper
@@ -1336,15 +1395,7 @@ func markdownToBlocks(md string, limit int) (_ []domain.DocumentBlock, ok bool) 
 			if prefix != "" && len(indents) > 0 {
 				level = listLevel(indentWidth(prefix))
 			}
-			b := newBlock("code", strings.Join(code, "\n"), level)
-			b.Lang = lang
-			// A drawing copied or exported without its file comes back as a drawing
-			if lang == drawing.Fence {
-				if _, ok := drawing.Parse(b.Content); ok {
-					b.Type, b.Lang = drawing.BlockType, ""
-				}
-			}
-			blocks = append(blocks, b)
+			blocks = append(blocks, codeBlock(strings.Join(code, "\n"), lang, level))
 			inList, afterParagraph = false, false
 			continue
 		}
@@ -1418,6 +1469,14 @@ func markdownToBlocks(md string, limit int) (_ []domain.DocumentBlock, ok bool) 
 		if m := listItemRe.FindStringSubmatch(line); m != nil {
 			level := listLevel(indentWidth(m[1]))
 			content := m[2]
+			// A fence as the item's content ("- ```bash") opens a code block at the item's level
+			if f := itemFenceRe.FindStringSubmatch(content); f != nil {
+				var code string
+				code, i = itemFence(lines, i, f[1]+f[3], indentWidth(line[:len(line)-len(content)]))
+				blocks = append(blocks, codeBlock(code, strings.TrimSpace(f[2]+f[4]), level))
+				inList, afterParagraph = false, false
+				continue
+			}
 			typ := "bullet"
 			if t := strings.TrimLeft(line, " \t"); t != "" && t[0] >= '0' && t[0] <= '9' {
 				typ = "numbered"

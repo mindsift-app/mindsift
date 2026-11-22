@@ -13,6 +13,7 @@ Versions without a git tag were development states and were never published as a
 
 ### Fixed
 - Slash commands now work anywhere in a bullet that already has text, not only at the end: typing `/code`, `/h2`, `/todo`, `/table` and the other block types at the start or in the middle of the text opens the menu and turns the whole bullet into that type. Only the typed command is removed, the rest of the text stays exactly as it was, the cursor stays where you typed, and Ctrl+Z undoes the change in one step. Dividers, pictures, voice notes and drawings still need an empty bullet.
+- A code block written as a list item (```` - ```bash ```` with the code indented below it) in Markdown from AI agents (MCP), imports or pasted text now becomes a code block at that bullet's level. Before, the fence ended up as bullet text, the code was lost or split, and the bullets after it could be swallowed into a code block. A fence without its closing line now ends at the next bullet that is indented less.
 
 ## [0.99.0] - 2026-11-22
 
