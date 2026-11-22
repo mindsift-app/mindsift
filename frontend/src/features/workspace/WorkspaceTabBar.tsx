@@ -7,6 +7,7 @@ import { SharedPill } from '../../components/SharedPill';
 import { Document, TagSummary, User } from '../../lib/types';
 import { DocHeaderStatus, DocSaveStatus } from './DocumentEditor';
 import { WorkspaceSubView } from './workspaceTypes';
+import { useCapabilities } from '../../lib/capabilities';
 
 interface WorkspaceTabBarProps {
   subView: WorkspaceSubView;
@@ -50,6 +51,7 @@ export function WorkspaceTabBar({
   setDocActionsTarget,
 }: WorkspaceTabBarProps) {
   const { t } = useTranslation('workspace');
+  const { publicAddress } = useCapabilities();
   return (
     <div className="hidden sm:flex flex-wrap items-center justify-between gap-2">
       {/* Left sidebar toggle and the views as one switch (Doku/ui-patterns.md "Toolbars") */}
@@ -140,8 +142,8 @@ export function WorkspaceTabBar({
               />
             )}
 
-            {/* Live connection pill */}
-            {docHeaderStatus?.showLive && (
+            {/* Live connection pill; not where nobody else reaches the instance (desktop app, local) */}
+            {docHeaderStatus?.showLive && publicAddress && (
               <span
                 className="inline-flex items-center gap-1 h-7 px-1.5 rounded-btn text-[11px] text-muted"
                 title={

@@ -14,6 +14,7 @@ Versions without a git tag were development states and were never published as a
 
 ### Changed
 - The administration is now called "Administration" and its "Server" page "Instance" (the same pages serve the desktop app). Servers whose mail is switched off (`SMTP_DISABLED`) no longer offer email as an alarm channel or the mail server settings, and servers with sharing set to private no longer create the help note about sharing for new accounts.
+- A local instance of the desktop app no longer shows the "Live" indicator above notes, tasks and lists: nobody else reaches it, so there are no changes of others to wait for.
 
 ### Fixed
 - Personal backups (the daily ones and the downloaded backup) held only 200 tasks and inbox entries; they now hold all of them, plus the tasks others added to your own task lists, so restoring such a list no longer loses them.
