@@ -77,6 +77,7 @@ import { userColorStyles } from '../../lib/userColor';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { matchSlashQuery, removeSlashQuery, slashCommandFitsText } from '../../lib/slashCommand';
 
 export interface SlashCommand {
   type: BlockType | 'link' | 'secret' | 'dictation' | 'extract' | 'template';
@@ -629,14 +630,18 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   // Turning the block into another type (slash menu, ``` or markdown shortcut) can swap the text field
   // for a new one (e.g. the code editor); the cursor must stay in the block so typing goes on there
   const refocusAfterTypeChangeRef = useRef(false);
+  // Where the cursor goes then (a slash command typed in the middle of the text); the end if not set
+  const refocusCaretRef = useRef<number | null>(null);
   useLayoutEffect(() => {
     if (!refocusAfterTypeChangeRef.current) return;
     refocusAfterTypeChangeRef.current = false;
+    const want = refocusCaretRef.current;
+    refocusCaretRef.current = null;
     const ta = textareaRef.current;
     if (ta && document.activeElement !== ta) {
       ta.focus();
-      const end = ta.value.length;
-      ta.setSelectionRange(end, end);
+      const pos = Math.min(want ?? ta.value.length, ta.value.length);
+      ta.setSelectionRange(pos, pos);
     }
   }, [block.type]);
 
@@ -652,11 +657,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     const q = slashMatchInfo.query.toLowerCase();
     const cmdQuery = q.startsWith('code ') ? 'code' : q;
 
-    const textBeforeSlash = localContent.slice(0, slashMatchInfo.slashStart);
-    const textAfterCursor = localContent.slice(slashMatchInfo.cursor);
-    const restOfBlock = (textBeforeSlash + textAfterCursor).trim();
-    const isRestEmpty = restOfBlock === '';
-    const isAtStartOrEnd = textBeforeSlash.trim() === '' || textAfterCursor.trim() === '';
+    // The command works wherever the slash was typed: at the start, in the middle or at the end
+    const restOfBlock = removeSlashQuery(localContent, slashMatchInfo.slashStart, slashMatchInfo.cursor).text.trim();
 
     return SLASH_COMMANDS.filter((c) => {
       const matchesQuery =
@@ -674,39 +676,10 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       }
       // Switched off by the administration: no new images
       if (c.type === 'image' && !imagesAllowed()) return false;
+      if (c.type === 'extract' && (!onExtractBlock || isNoteLinkOnly(restOfBlock))) return false;
 
-      // /divider, /image, /audio only when rest of block is empty
-      if (c.type === 'divider' || c.type === 'image' || c.type === 'audio' || c.type === 'drawing') {
-        return isRestEmpty;
-      }
-
-      // /code also at the end of a line: the text becomes the code
-      if (c.type === 'code') {
-        return isRestEmpty || textAfterCursor.trim() === '';
-      }
-
-      // /extract only when note has content and is at start/end
-      if (c.type === 'extract') {
-        return !isRestEmpty && isAtStartOrEnd && !!onExtractBlock && !isNoteLinkOnly(restOfBlock);
-      }
-
-      // /h1, /h2, /h3, /todo, /callout, /warn, /fail, /text (type 'bullet'), /table at start or at end
-      if (
-        c.type === 'h1' ||
-        c.type === 'h2' ||
-        c.type === 'h3' ||
-        c.type === 'todo' ||
-        c.type === 'numbered' ||
-        c.type === 'callout' ||
-        c.type === 'warning' ||
-        c.type === 'error' ||
-        c.type === 'bullet' ||
-        c.type === 'table'
-      ) {
-        return isAtStartOrEnd;
-      }
-
-      return true;
+      // Type changes take the bullet's text along; divider, image, audio and drawing need an empty bullet
+      return slashCommandFitsText(c.type, restOfBlock);
     }).sort((a, b) => slashRank(a, cmdQuery) - slashRank(b, cmdQuery));
   }, [slashMatchInfo, localContent, onExtractBlock, onTemplateCommand]);
 
@@ -724,14 +697,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     const slashEnd = slashMatchInfo ? slashMatchInfo.cursor : localContent.length;
     setSlashMatchInfo(null);
 
-    const before = localContent.slice(0, slashStart);
-    const after = localContent.slice(slashEnd);
-    const clean = `${before}${after}`.replace(/\s{2,}/g, ' ').trim();
+    // Only the typed "/query" goes, from where it was typed; the rest of the text stays as it is
+    const { before, after, text: clean, caret } = removeSlashQuery(localContent, slashStart, slashEnd);
 
     if (cmd.type === 'link') {
       linkBeforeRef.current = before;
       linkAfterRef.current = after;
-      linkCaretRef.current = Math.min(before.replace(/\s{2,}/g, ' ').trimStart().length, clean.length);
+      linkCaretRef.current = caret;
       setLocalContent(clean);
       localContentRef.current = clean;
       setShowLinkModal(true);
@@ -742,7 +714,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       // Goes in at the slash like a link, once the server has stored the value
       linkBeforeRef.current = before;
       linkAfterRef.current = after;
-      linkCaretRef.current = Math.min(before.replace(/\s{2,}/g, ' ').trimStart().length, clean.length);
+      linkCaretRef.current = caret;
       setLocalContent(clean);
       localContentRef.current = clean;
       setShowSecretSheet(true);
@@ -813,8 +785,10 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         ? resolveLanguageId(codeLangMatch[1]) || codeLangMatch[1]
         : undefined;
 
-    // Code keeps its spacing; only the typed command goes
-    const nextContent = cmd.type === 'code' ? `${before}${after}`.trim() : clean;
+    // The cursor stays where the command was typed (also when the type swaps the field, e.g. for code)
+    const nextContent = clean;
+    pendingCaretRef.current = caret;
+    refocusCaretRef.current = caret;
     setLocalContent(nextContent);
     localContentRef.current = nextContent;
     if (cmd.type !== block.type) refocusAfterTypeChangeRef.current = true;
@@ -968,11 +942,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       // Check for slash command invocation at cursor position
       const sel = e.currentTarget.selectionStart;
       const cursor = typeof sel === 'number' && sel > 0 ? sel : val.length;
-      const textBefore = val.slice(0, cursor);
-      const slashMatch = !typeOverride ? textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]{0,40}|[a-z0-9]*)$/i) : null;
+      const slashMatch = !typeOverride ? matchSlashQuery(val, cursor) : null;
       if (slashMatch) {
-        const slashStart = slashMatch.index! + slashMatch[1].length;
-        setSlashMatchInfo({ query: slashMatch[2], slashStart, cursor });
+        setSlashMatchInfo({ query: slashMatch.query, slashStart: slashMatch.slashStart, cursor });
         setSlashIndex(0);
       } else {
         setSlashMatchInfo(null);
