@@ -32,6 +32,7 @@ linters:
         - (io.ReadCloser).Close
         - (*os.File).Close
         - (*compress/gzip.Reader).Close
+        - (*archive/zip.ReadCloser).Close
         - (*net/smtp.Client).Close
         - os.Remove
         # Streaming to an http.ResponseWriter (metrics, server-sent events): a client that went away is
