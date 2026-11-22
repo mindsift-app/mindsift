@@ -11,5 +11,21 @@ export function saveBlob(blob: Blob, filename: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+// Saves a file the server sends itself (a link the browser downloads straight to disk, any size)
+export function saveFromUrl(url: string, filename: string): void {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 export const formatBytes = (n: number): string =>
-  n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(0)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
+  n < 1024
+    ? `${n} B`
+    : n < 1024 * 1024
+      ? `${(n / 1024).toFixed(0)} KB`
+      : n < 1024 * 1024 * 1024
+        ? `${(n / 1024 / 1024).toFixed(1)} MB`
+        : `${(n / 1024 / 1024 / 1024).toFixed(1)} GB`;

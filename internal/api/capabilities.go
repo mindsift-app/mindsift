@@ -40,12 +40,15 @@ const (
 	// capDesktopNotify: alarms as notifications of the operating system: a local instance of the desktop
 	// app, whose shell shows them (desktop_notify.go), in place of web push
 	capDesktopNotify capability = "desktopNotify"
+	// capRestore: the administration restores the whole instance from a backup (fullrestore.go): the runner
+	// can reopen the store, not in the demo
+	capRestore capability = "restore"
 )
 
 // allCapabilities: the ones /auth/status reports.
 var allCapabilities = []capability{
 	capAccounts, capSignIn, capSharing, capEmail, capPush, capPasskeys, capPublicLinks, capPublicAddress,
-	capLiveDrawing, capInstall, capDesktopNotify,
+	capLiveDrawing, capInstall, capDesktopNotify, capRestore,
 }
 
 // can says whether the instance offers c.
@@ -68,6 +71,8 @@ func (s *Server) can(c capability) bool {
 		return s.publicLinksEnabled()
 	case capDesktopNotify:
 		return desktop && s.desktopNotifierOf() != nil
+	case capRestore:
+		return s.canRestore()
 	}
 	return false
 }

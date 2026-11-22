@@ -23,10 +23,13 @@ import (
 //
 //	<data>/mindsift.db                                         the live database (with mindsift.db-wal)
 //	<data>/media/<note id>/<media id><ext>                     pictures and recordings
-//	<data>/backups/system/mindsift-db-….db.gz                  the daily database snapshots (no media)
+//	<data>/backups/system/mindsift-full-…/                     the daily full backups (database and media)
+//	<data>/backups/system/mindsift-db-….db.gz                  older daily database snapshots (no media)
 //	<data>/backups/users/<account id>/mindsift-backup-….zip    each account's daily backup, with its media
 //
-// A copy of the data folder or of its backups folder, packed as .zip, .tar or .tar.gz, is taken as it is:
+// A full backup as downloaded from the administration (a tar with manifest.json, mindsift.db.gz and media/,
+// storage/fullbackup.go) is read like a data folder. A copy of the data folder or of its backups folder,
+// packed as .zip, .tar or .tar.gz, is taken as it is:
 // the database is the live one (with its -wal) or else the newest daily snapshot; the chosen account's
 // pictures and recordings come from media/ of the data folder, or else from that account's newest daily
 // backup. A database snapshot alone (.db.gz) still works, without media.
@@ -154,8 +157,10 @@ func stageArchive(kind uploadKind, file, dir string) (*stagedArchive, error) {
 	err := walkArchive(kind, file, func(e archiveEntry) error {
 		base, parent := path.Base(e.name), entryDir(e.name)
 		switch {
-		case base == snapshotDBName:
-			if live != "" && depth(e.name) >= depth(live) {
+		case base == snapshotDBName, base == storage.FullBackupDBName:
+			// A full backup (mindsift.db.gz with media/ beside it) counts like a data folder; of several at
+			// the same depth the newest (the folder names carry the time), a plain database before them
+			if live != "" && !betterLiveDB(e.name, live) {
 				return nil
 			}
 			if err := copyEntry(e, liveTmp, maxSnapshotBytes); err != nil {
@@ -416,6 +421,19 @@ func entryDir(name string) string {
 }
 
 func depth(name string) int { return strings.Count(name, "/") }
+
+// betterLiveDB: the database entry name is a better choice than cur: closer to the archive's root, or at
+// the same depth a plain database over a full backup's, and the newer of two full backups.
+func betterLiveDB(name, cur string) bool {
+	if depth(name) != depth(cur) {
+		return depth(name) < depth(cur)
+	}
+	gz, curGz := path.Base(name) == storage.FullBackupDBName, path.Base(cur) == storage.FullBackupDBName
+	if gz != curGz {
+		return !gz
+	}
+	return gz && entryDir(name) > entryDir(cur)
+}
 
 // copyEntry writes the entry to dst, at most limit bytes (more: errSnapshotTooLarge, nothing stays).
 func copyEntry(e archiveEntry, dst string, limit int64) error {

@@ -23,8 +23,8 @@ import (
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
-// Automatic backups (see storage/backup.go): daily at the configured time a snapshot of the whole
-// database for the admin and one MindSift backup per active user, both kept for the configured number
+// Automatic backups (see storage/backup.go): daily at the configured time a full backup of the instance
+// (database and media, storage/fullbackup.go) for the admin and one MindSift backup per active user, both kept for the configured number
 // of days. Admins can also start a run by hand; users list, download and restore their own backups.
 
 var backupRunMu sync.Mutex
@@ -64,7 +64,7 @@ func (s *Server) runBackupsOnce() (string, error) {
 		markBackupRoot(root)
 	}
 
-	name, err := s.store.WriteSystemSnapshot(filepath.Join(root, "system"), now)
+	name, err := s.store.WriteFullBackup(filepath.Join(root, "system"), now, "")
 	if err != nil {
 		return "", err
 	}
@@ -101,7 +101,7 @@ func (s *Server) startBackupScheduler() {
 	defer ticker.Stop()
 	lastRun := ""
 	if files, err := storage.ListBackups(filepath.Join(s.backupRoot(), "system")); err == nil && len(files) > 0 {
-		lastRun = strings.TrimPrefix(files[0].Name, "mindsift-db-")[:10] // date of the newest snapshot
+		lastRun = storage.BackupDate(files[0].Name) // date of the newest system backup
 	}
 	for {
 		select {
@@ -188,11 +188,18 @@ func (s *Server) handleAdminDeleteBackup(w http.ResponseWriter, r *http.Request)
 	s.handleAdminListBackups(w, r)
 }
 
-// handleAdminDownloadBackup: a snapshot holds everybody's data, so the download is in the audit log.
+// handleAdminDownloadBackup: a snapshot holds everybody's data, so the download is in the audit log. A
+// full backup comes as one tar archive, streamed (fullrestore.go).
 func (s *Server) handleAdminDownloadBackup(w http.ResponseWriter, r *http.Request) {
 	dir, name := filepath.Join(s.backupRoot(), "system"), chi.URLParam(r, "name")
-	if _, err := storage.BackupPath(dir, name); err == nil {
+	p, err := storage.BackupPath(dir, name)
+	if err == nil {
 		s.audit(r, storage.AuditBackupDownloaded, storage.AuditEntry{TargetKind: storage.AuditTargetBackup, TargetName: name}, nil)
+	}
+	if err == nil && storage.IsFullBackupName(name) {
+		allowLongTransfer(w)
+		s.serveFullBackup(w, p, name)
+		return
 	}
 	serveBackupFile(w, r, dir, name, "application/gzip")
 }

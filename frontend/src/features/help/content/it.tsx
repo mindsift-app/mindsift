@@ -741,6 +741,11 @@ const it: HelpContent = {
                 <strong className="text-main">Riprendere un account da un server:</strong> in <em>Amministrazione → Dati</em> scegli un backup di un server MindSift e uno dei suoi account. Immagini e registrazioni arrivano con esso se scegli la cartella dei dati del server o la sua cartella <em>backups</em> come archivio (.zip, .tar o .tar.gz); una copia del database (.db.gz) da sola porta tutto tranne loro. Arriva solo ciò che appartiene all'account: ciò che è condiviso con esso, i valori nascosti e le impostazioni del server restano fuori.
               </li>
             </InDesktop>
+            <Only can="restore">
+              <li>
+                <strong className="text-main">Ripristinare tutto:</strong> gli admin ripristinano l’intera istanza con immagini e registrazioni in <em>Amministrazione → Dati</em> con <em>Ripristina</em>; prima viene salvato lo stato attuale. Per un trasloco, scarica un backup e caricalo sul nuovo server con <em>Carica backup</em>.
+              </li>
+            </Only>
             <Only can="install">
               <li>
                 <strong className="text-main">Senza Internet:</strong> installato come app (o nel browser), MindSift si avvia anche offline con l'ultimo stato caricato. Registrare pensieri e spuntare attività e voci di lista continua a funzionare; un avviso in basso mostra quante modifiche sono in attesa, e verranno inviate automaticamente appena torna la connessione.

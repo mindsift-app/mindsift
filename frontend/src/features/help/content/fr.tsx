@@ -740,6 +740,11 @@ const fr: HelpContent = {
                 <strong className="text-main">Reprendre un compte d'un serveur :</strong> sous <em>Administration → Données</em>, tu choisis une sauvegarde d'un serveur MindSift et l'un de ses comptes. Ses images et enregistrements suivent si tu choisis le dossier de données du serveur ou son dossier <em>backups</em> sous forme d'archive (.zip, .tar ou .tar.gz) ; une copie de la base de données (.db.gz) seule apporte tout sauf eux. Seul ce qui appartient au compte est repris : ce qui est partagé avec lui, les valeurs masquées et les paramètres du serveur restent dehors.
               </li>
             </InDesktop>
+            <Only can="restore">
+              <li>
+                <strong className="text-main">Tout restaurer :</strong> les admins restaurent toute l’instance avec ses images et enregistrements dans <em>Administration → Données</em> avec <em>Restaurer</em> ; l’état actuel est sauvegardé avant. Pour un déménagement, télécharge une sauvegarde et charge-la sur le nouveau serveur avec <em>Téléverser une sauvegarde</em>.
+              </li>
+            </Only>
             <Only can="install">
               <li>
                 <strong className="text-main">Sans connexion Internet :</strong> installée comme application (ou dans le navigateur), MindSift démarre également hors ligne avec le dernier état chargé. La capture de pensées et la validation de tâches ou de listes continuent de fonctionner ; un indicateur en bas affiche le nombre de modifications en attente, qui sont synchronisées dès le rétablissement de la connexion.

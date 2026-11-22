@@ -921,6 +921,11 @@ const de: HelpContent = {
                 <strong className="text-main">Konto von einem Server übernehmen:</strong> Unter <em>Administration → Daten</em> wählst du ein Backup eines MindSift-Servers und darin ein Konto. Mit Bildern und Aufnahmen kommt es, wenn du den Datenordner des Servers oder seinen Ordner <em>backups</em> als Archiv wählst (.zip, .tar oder .tar.gz); ein Datenbank-Abzug (.db.gz) allein bringt alles außer ihnen. Übernommen wird nur, was dem Konto gehört: Mit ihm Geteiltes, versteckte Werte und die Einstellungen des Servers bleiben draußen.
               </li>
             </InDesktop>
+            <Only can="restore">
+              <li>
+                <strong className="text-main">Alles wiederherstellen:</strong> Admins stellen unter <em>Administration → Daten</em> mit <em>Wiederherstellen</em> die ganze Instanz samt Bildern und Aufnahmen wieder her; vorher wird der aktuelle Stand gesichert. Für einen Umzug ein Backup herunterladen und auf dem neuen Server unter <em>Backup hochladen</em> einspielen.
+              </li>
+            </Only>
             <Only can="install">
               <li>
                 <strong className="text-main">Ohne Internet:</strong> Als App installiert (oder im Browser) startet MindSift auch offline mit dem zuletzt geladenen Stand. Gedanken erfassen sowie Aufgaben und Listeneinträge abhaken geht weiter; ein Hinweis unten zeigt, wie viele Änderungen warten, und sie werden automatisch übertragen, sobald die Verbindung zurück ist.

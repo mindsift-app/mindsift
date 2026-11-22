@@ -68,12 +68,14 @@ Whatever was written after the update is not in that copy.
 
 ## Restoring a whole server
 
-The daily backups hold the whole database as `data/backups/system/mindsift-db-<date>-<time>.db.gz` ([what else they contain](architecture.md#background-job-backups)). To put one back:
+The daily backups are full backups: `data/backups/system/mindsift-full-<date>-<time>/` holds the database and every picture and recording ([details](architecture.md#background-job-backups)). An admin restores one under Administration → Data → "Wiederherstellen": MindSift backs up the current state first, swaps database and media and reopens itself; nothing needs to be stopped. For a move to a new server, download a backup there (one `.tar` file), set up the new server, sign in as admin and upload it under "Backup hochladen"; it is sent in chunks (reverse proxies with a body limit of at least a few MB are fine) and resumes after an interruption. Copy `SECRETS_KEY` or `data/secrets.key` to the new server as well, before its first start or before the restore: the backup does not contain the key, and without it hidden values, authenticator codes, public links and the SMTP password cannot be read.
+
+By hand, without the app (an older database dump `mindsift-db-….db.gz`, or a server that does not start):
 
 1. Stop the container. Never replace the database while MindSift runs.
-2. Unpack the snapshot over the database (as root, see above): `gunzip -c data/backups/system/mindsift-db-….db.gz > data/mindsift.db`.
+2. Unpack the snapshot over the database (as root, see above): `gunzip -c data/backups/system/mindsift-full-…/mindsift.db.gz > data/mindsift.db` (or `…/mindsift-db-….db.gz` of an older dump). For a full backup, also replace `data/media` with its `media/` folder (`cp -a`).
 3. Delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist (see above).
-4. Keep the keys that belong to the data: `SECRETS_KEY` or `data/secrets.key` (without it, hidden values, authenticator codes, the copy of public links and the SMTP password of the administration cannot be read) and `JWT_SECRET` or `data/jwt.secret` (otherwise everyone is signed out). If the key is missing or wrong, MindSift still starts but logs a warning that begins with `THE SECRETS KEY DOES NOT MATCH THE DATA`; stop it, put the old key back and start again. Images and audio are not in the database dump but in `data/media/`; on a new machine copy the whole `data/` folder.
+4. Keep the keys that belong to the data: `SECRETS_KEY` or `data/secrets.key` (without it, hidden values, authenticator codes, the copy of public links and the SMTP password of the administration cannot be read) and `JWT_SECRET` or `data/jwt.secret` (otherwise everyone is signed out). If the key is missing or wrong, MindSift still starts but logs a warning that begins with `THE SECRETS KEY DOES NOT MATCH THE DATA`; stop it, put the old key back and start again. An older database dump has no images and audio; they are in `data/media/`.
 5. Start the same version that wrote the snapshot, or a newer one. The container hands `data/` to its user (uid 1000) on start; without the container, keep the files owned by the user that runs MindSift and readable for it only.
 
 People restore their own data from their personal backups in the account settings, without stopping the server. A personal backup holds hidden values (`/hidden`) as references only, never their values (they are sealed with the server's key): restored on the same server they come back as long as their notes still exist, otherwise the notes keep a placeholder and the restore summary lists them. A snapshot of the whole database keeps them.
@@ -92,7 +94,7 @@ docker exec mindsift mindsift reset-password anna --revoke-keys   # also removes
 docker exec mindsift mindsift make-admin anna              # admin role (--revoke takes it away)
 docker exec mindsift mindsift users create bert --email bert@example.com [--admin]
 docker exec mindsift mindsift users delete bert            # shows what would go; add --yes to delete
-docker exec mindsift mindsift check --backup               # snapshot to backups/system, then integrity check
+docker exec mindsift mindsift check --backup               # full backup to backups/system, then integrity check
 docker exec mindsift mindsift audit                        # audit log, newest first (--limit 1–500, default 50; --json)
 ```
 

@@ -39,8 +39,8 @@ func TestBackupsRunListDownloadAndRestoreSections(t *testing.T) {
 	}
 	var sysFiles []storage.BackupFile
 	_ = json.Unmarshal(rec.Body.Bytes(), &sysFiles)
-	if len(sysFiles) != 1 || !strings.HasSuffix(sysFiles[0].Name, ".db.gz") || sysFiles[0].Size == 0 {
-		t.Fatalf("expected one snapshot, got %+v", sysFiles)
+	if len(sysFiles) != 1 || !sysFiles[0].Full || !strings.HasPrefix(sysFiles[0].Name, storage.FullBackupPrefix) || sysFiles[0].Size == 0 {
+		t.Fatalf("expected one full backup, got %+v", sysFiles)
 	}
 	if rec := call("GET", "/api/v1/admin/backups/"+sysFiles[0].Name); rec.Code != http.StatusOK || rec.Body.Len() == 0 {
 		t.Fatalf("download snapshot: %d", rec.Code)

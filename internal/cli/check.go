@@ -34,7 +34,7 @@ func (c *command) check(args []string) error {
 			_, _ = clock.Apply(*sys.TimeZone)
 		}
 		dir := filepath.Join(filepath.Dir(c.env.DatabasePath), "backups", "system")
-		name, err := c.store.WriteSystemSnapshot(dir, clock.Now())
+		name, err := c.store.WriteFullBackup(dir, clock.Now(), "")
 		if err != nil {
 			return err
 		}

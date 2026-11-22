@@ -822,6 +822,11 @@ const es: HelpContent = {
                 <strong className="text-main">Tomar una cuenta de un servidor:</strong> en <em>Administración → Datos</em> eliges una copia de seguridad de un servidor MindSift y una de sus cuentas. Sus imágenes y grabaciones vienen con ella si eliges la carpeta de datos del servidor o su carpeta <em>backups</em> como archivo (.zip, .tar o .tar.gz); una copia de la base de datos (.db.gz) sola trae todo menos ellas. Solo llega lo que es de la cuenta: lo compartido con ella, los valores ocultos y los ajustes del servidor se quedan fuera.
               </li>
             </InDesktop>
+            <Only can="restore">
+              <li>
+                <strong className="text-main">Restaurarlo todo:</strong> los administradores restauran toda la instancia, con imágenes y grabaciones, en <em>Administración → Datos</em> con <em>Restaurar</em>; antes se guarda el estado actual. Para una mudanza, descarga una copia y cárgala en el nuevo servidor con <em>Subir copia</em>.
+              </li>
+            </Only>
             <Only can="install">
               <li>
                 <strong className="text-main">Sin internet:</strong> instalada como app (o en el navegador), MindSift también arranca sin conexión con el último estado cargado. Puedes seguir capturando pensamientos y tachando tareas y elementos de listas; un aviso abajo indica cuántos cambios están pendientes, y se enviarán automáticamente en cuanto vuelva la conexión.

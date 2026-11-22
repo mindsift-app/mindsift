@@ -40,6 +40,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		"status":  "ok",
 		"service": "mindsift",
 		"time":    domain.NowISO(),
+		"boot":    s.bootID,
 	})
 }
 

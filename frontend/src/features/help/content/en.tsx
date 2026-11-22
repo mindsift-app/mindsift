@@ -741,6 +741,11 @@ const en: HelpContent = {
                 <strong className="text-main">Taking over an account from a server:</strong> under <em>Administration → Data</em> you pick a backup of a MindSift server and one of its accounts. Its pictures and recordings come along when you pick the server's data folder or its <em>backups</em> folder as an archive (.zip, .tar or .tar.gz); a database snapshot (.db.gz) alone brings everything but them. Only what the account owns comes over: things shared with it, hidden values and the server's settings stay out.
               </li>
             </InDesktop>
+            <Only can="restore">
+              <li>
+                <strong className="text-main">Restoring everything:</strong> Admins restore the whole instance with its pictures and recordings under <em>Administration → Data</em> with <em>Restore</em>; the current state is backed up first. To move, download a backup and load it on the new server with <em>Upload backup</em>.
+              </li>
+            </Only>
             <Only can="install">
               <li>
                 <strong className="text-main">Without internet:</strong> installed as an app (or in the browser), MindSift also starts offline with the last loaded state. Capturing thoughts and checking off tasks and list items keeps working; a hint at the bottom shows how many changes are waiting, and they are sent automatically once the connection is back.

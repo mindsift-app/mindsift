@@ -131,6 +131,9 @@ type Config struct {
 	// up to 1 MB). Unset: derived from the memory the server may use (drawLiveDefaultMB), since the
 	// server's memory grows by about 3 MB per MB held, more for a moment while full sessions end.
 	DrawLiveMaxMB int
+	// RestoreUploadMaxGB: RESTORE_UPLOAD_MAX_GB, the largest backup the administration takes as an upload to
+	// restore (default 100)
+	RestoreUploadMaxGB int
 
 	// Web push (VAPID_*): keys are generated and stored in the database when not set
 	VAPIDPublicKey  string
@@ -675,6 +678,7 @@ func Load() *Config {
 		},
 		NotifyDigestMinutes: envInt("NOTIFY_DIGEST_MINUTES", 5, 1, 1440),
 		DrawLiveMaxMB:       envInt("DRAW_LIVE_MAX_MB", drawLiveDefaultMB(memoryLimit()), 1, 4096),
+		RestoreUploadMaxGB:  envInt("RESTORE_UPLOAD_MAX_GB", 100, 1, 10000),
 		VAPIDPublicKey:      strings.TrimSpace(os.Getenv("VAPID_PUBLIC_KEY")),
 		VAPIDPrivateKey:     strings.TrimSpace(os.Getenv("VAPID_PRIVATE_KEY")),
 		VAPIDSubject:        strings.TrimSpace(os.Getenv("VAPID_SUBJECT")),

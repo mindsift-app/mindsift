@@ -659,6 +659,12 @@ export interface BackupFile {
   name: string;
   size: number;
   createdAt: string;
+  /** A full backup (database and media): a folder, downloaded as one tar archive of size bytes */
+  full?: boolean;
+  /** Its pictures and recordings */
+  media?: number;
+  /** "pre-restore": written right before a restore */
+  reason?: string;
 }
 
 /** Desktop app: where the backups go; defaultDir is backups/ in the instance's folder, custom: chosen. */
