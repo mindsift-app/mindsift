@@ -8,6 +8,8 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+## [0.99.0] - 2026-11-22
+
 ### Added
 - **Restore the whole server from the administration:** Administration → Data → "Restore" on a backup puts back all data, with pictures and recordings, without stopping the server. MindSift first checks the backup and backs up the current state (listed as "before a restore", so a restore can be undone), then swaps the data and reopens itself; the page reloads by itself. If the restored data do not open, the previous data stay. The restore is recorded in the audit log. In the desktop app the same restores a local instance from its backups.
 - **Move to a new server with one file:** each backup downloads as one complete `.tar` file (also several GB, straight to disk), and Administration → Data → "Upload backup" on the new server loads it and restores it. The upload goes in chunks with a progress bar, resumes after an interruption and works behind reverse proxies with a body limit; the file's checksum is checked before the restore. The backup includes the key of the encrypted values (`secrets.key`), so hidden values, authenticator codes and the SMTP password keep working on the new server; keep backups as safe as the data themselves. `BACKUP_EXCLUDE_SECRETS_KEY=true` leaves the key out (Administration → Data then says so, and you keep the key separately); a key set with `SECRETS_KEY` is never in a backup. If the encrypted values of a backup do not open with the server's key, the restore asks before it goes on. The largest upload is set with `RESTORE_UPLOAD_MAX_GB` (default 100).

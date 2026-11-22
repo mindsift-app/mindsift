@@ -435,7 +435,7 @@ func walkArchive(kind uploadKind, file string, fn func(archiveEntry) error) erro
 			return errNotSnapshot
 		}
 		name := cleanEntryName(h.Name)
-		if name == "" || (h.Typeflag != tar.TypeReg && h.Typeflag != tar.TypeRegA) {
+		if name == "" || h.Typeflag != tar.TypeReg {
 			continue
 		}
 		if err := fn(archiveEntry{name: name, size: h.Size, open: func() (io.ReadCloser, error) { return io.NopCloser(tr), nil }}); err != nil {

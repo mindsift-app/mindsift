@@ -72,6 +72,12 @@
     <keyword>outliner</keyword>
   </keywords>
   <releases>
+    <release version="0.99.0" date="2026-11-22" type="stable">
+      <description>
+        <p>Alarms as system notifications, downloads with a save dialog, voice notes that play properly, transcription in the background, complete backups with restore, and updates from the own Flatpak repository.</p>
+      </description>
+      <url type="details">https://github.com/mindsift-app/mindsift/releases/tag/v0.99.0</url>
+    </release>
     <release version="0.98.0" date="2026-11-22" type="stable">
       <description>
         <p>First release of the desktop app.</p>

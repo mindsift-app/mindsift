@@ -164,7 +164,7 @@ func (s *Server) handleAdminRunBackup(w http.ResponseWriter, r *http.Request) {
 	// second backup: it waits for that run and answers with the list it left
 	if !manualBackupMu.TryLock() {
 		manualBackupMu.Lock()
-		manualBackupMu.Unlock()
+		manualBackupMu.Unlock() //nolint:staticcheck // SA2001: only waits until the running backup is done
 		s.handleAdminListBackups(w, r)
 		return
 	}
