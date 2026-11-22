@@ -1,0 +1,98 @@
+name: Flatpak Repository
+
+# Puts the Flatpak bundle of a release into MindSift's own Flatpak repository: the gh-pages branch of
+# mindsift-app/flatpak, served by GitHub Pages as flatpak.mindsift.app (ci/flatpak-repo.sh; not Flathub).
+# Installed apps get the release from there through GNOME Software, Discover or `flatpak update`.
+# Called by release.yaml once the release page of a version (no "-") has all its files; by hand ("Run
+# workflow", from main) for a release whose bundle is not in the repository yet. The bundle is the release
+# asset, checked against the release's SHA256SUMS.
+# Secrets (see desktop/README.md, "Own Flatpak repository"): FLATPAK_REPO_DEPLOY_KEY, the private half of
+# a deploy key with write access to mindsift-app/flatpak, and FLATPAK_GPG_PRIVATE_KEY, the ASCII-armored
+# signing key without passphrase. Without them the run ends with a notice and does not fail.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+    secrets:
+      FLATPAK_REPO_DEPLOY_KEY:
+        required: false
+      FLATPAK_GPG_PRIVATE_KEY:
+        required: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Released tag, e.g. v1.2.0'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Flatpak Repository ${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Two runs never push to the branch at the same time; a second one waits and builds on the first
+    concurrency:
+      group: flatpak-repo
+      cancel-in-progress: false
+    env:
+      FLATPAK_GIT_REMOTE: git@github.com:mindsift-app/flatpak.git
+    steps:
+      - name: Check Secrets
+        id: secrets
+        env:
+          DEPLOY_KEY: ${{ secrets.FLATPAK_REPO_DEPLOY_KEY }}
+          GPG_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "${DEPLOY_KEY}" ] || [ -z "${GPG_KEY}" ]; then
+            echo "::notice::FLATPAK_REPO_DEPLOY_KEY or FLATPAK_GPG_PRIVATE_KEY is not set, the Flatpak repository is not updated (desktop/README.md, \"Own Flatpak repository\")"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The workflow's own commit (for a release the tag's, by hand main's), not the tag of the input:
+      # older tags have no ci/flatpak-repo.sh
+      - name: Checkout
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download Bundle
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release download "${TAG}" --repo "${GITHUB_REPOSITORY}" --dir dl \
+            --pattern mindsift-desktop-linux-amd64.flatpak --pattern SHA256SUMS
+          ls -l dl
+
+      - name: Install Flatpak Tools
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends flatpak ostree >/dev/null
+          flatpak --version
+
+      - name: Update Repository
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          TAG: ${{ inputs.tag }}
+          DEPLOY_KEY: ${{ secrets.FLATPAK_REPO_DEPLOY_KEY }}
+          FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+        run: |
+          ssh_dir="${RUNNER_TEMP}/flatpak-ssh"
+          mkdir -m 700 "${ssh_dir}"
+          trap 'rm -rf "${ssh_dir}"' EXIT
+          printf '%s\n' "${DEPLOY_KEY}" > "${ssh_dir}/key"
+          chmod 600 "${ssh_dir}/key"
+          # GitHub's published host key (api.github.com/meta), not whatever answers first
+          echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "${ssh_dir}/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i ${ssh_dir}/key -o IdentitiesOnly=yes -o UserKnownHostsFile=${ssh_dir}/known_hosts -o StrictHostKeyChecking=yes"
+          SHA256SUMS=dl/SHA256SUMS ci/flatpak-repo.sh "${TAG}" dl/mindsift-desktop-linux-amd64.flatpak "${FLATPAK_GIT_REMOTE}"
