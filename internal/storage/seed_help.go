@@ -207,7 +207,7 @@ func (s *Store) seedHelpNotesDE(user *domain.User, demo bool, ed HelpEdition) {
 		help("Teilen & gemeinsam bearbeiten", "🤝", []seedBlock{
 			{text: "Notizen, Ordner, Aufgabenlisten und Listen mit anderen Personen zu teilen und gemeinsam zu bearbeiten braucht einen MindSift-Server mit mehreren Konten und eingeschaltetem Teilen"},
 			{desktopOnly: true, text: "Diese lokale Instanz der Desktop-App bietet das nicht an, deshalb gibt es hier keine Teilen-Schaltflächen. Willst du mit anderen arbeiten, brauchst du einen MindSift-Server, mit dem sich die Desktop-App verbinden kann"},
-			{serverOnly: true, text: "Auf diesem Server hat die Administration das Teilen ausgeschaltet (Administration → Instanz → Teilen, Einstellung „Privat“), deshalb gibt es hier keine Teilen-Schaltflächen. Sprich die Administration an, wenn du mit anderen arbeiten willst"},
+			{serverOnly: true, text: "Auf diesem Server hat die Administration das Teilen ausgeschaltet (Administration → Teilen, Einstellung „Privat“), deshalb gibt es hier keine Teilen-Schaltflächen. Sprich die Administration an, wenn du mit anderen arbeiten willst"},
 		})
 	}
 	help("API & Smart Home", "🔌", []seedBlock{

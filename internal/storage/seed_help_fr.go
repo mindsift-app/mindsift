@@ -113,7 +113,7 @@ func (s *Store) seedHelpNotesFR(user *domain.User, ed HelpEdition) {
 		help("Partager et modifier à plusieurs", "🤝", []seedBlock{
 			{text: "Partager des notes, dossiers, listes de tâches et listes avec d'autres personnes et les modifier à plusieurs demande un serveur MindSift avec plusieurs comptes et le partage activé"},
 			{desktopOnly: true, text: "Cette instance locale de l'application de bureau ne le propose pas, il n'y a donc pas de boutons de partage ici. Pour travailler avec d'autres, il te faut un serveur MindSift auquel l'application de bureau peut se connecter"},
-			{serverOnly: true, text: "Sur ce serveur, l'administration a désactivé le partage (Administration → Instance → Partage, réglage « Privé »), il n'y a donc pas de boutons de partage ici. Adresse-toi à l'administration si tu veux travailler avec d'autres"},
+			{serverOnly: true, text: "Sur ce serveur, l'administration a désactivé le partage (Administration → Partage, réglage « Privé »), il n'y a donc pas de boutons de partage ici. Adresse-toi à l'administration si tu veux travailler avec d'autres"},
 		})
 	}
 	help("API et domotique", "🔌", []seedBlock{

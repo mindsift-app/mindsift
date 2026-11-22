@@ -113,7 +113,7 @@ func (s *Store) seedHelpNotesIT(user *domain.User, ed HelpEdition) {
 		help("Condividere e modificare insieme", "🤝", []seedBlock{
 			{text: "Condividere note, cartelle, liste di attività e liste con altre persone e modificarle insieme richiede un server MindSift con più account e la condivisione attivata"},
 			{desktopOnly: true, text: "Questa istanza locale dell'app desktop non lo offre, quindi qui non ci sono pulsanti di condivisione. Per lavorare con altri ti serve un server MindSift a cui l'app desktop possa collegarsi"},
-			{serverOnly: true, text: "Su questo server l'amministrazione ha disattivato la condivisione (Amministrazione → Istanza → Condivisione, impostazione «Privato»), quindi qui non ci sono pulsanti di condivisione. Rivolgiti all'amministrazione se vuoi lavorare con altri"},
+			{serverOnly: true, text: "Su questo server l'amministrazione ha disattivato la condivisione (Amministrazione → Condivisione, impostazione «Privato»), quindi qui non ci sono pulsanti di condivisione. Rivolgiti all'amministrazione se vuoi lavorare con altri"},
 		})
 	}
 	help("API e smart home", "🔌", []seedBlock{

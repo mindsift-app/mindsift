@@ -113,7 +113,7 @@ func (s *Store) seedHelpNotesES(user *domain.User, ed HelpEdition) {
 		help("Compartir y editar en común", "🤝", []seedBlock{
 			{text: "Compartir notas, carpetas, listas de tareas y listas con otras personas y editarlas en común requiere un servidor MindSift con varias cuentas y la función de compartir activada"},
 			{desktopOnly: true, text: "Esta instancia local de la app de escritorio no lo ofrece, por eso aquí no hay botones para compartir. Para trabajar con otras personas necesitas un servidor MindSift al que la app de escritorio pueda conectarse"},
-			{serverOnly: true, text: "En este servidor la administración ha desactivado la función de compartir (Administración → Instancia → Compartir, ajuste «Privado»), por eso aquí no hay botones para compartir. Consulta con la administración si quieres trabajar con otras personas"},
+			{serverOnly: true, text: "En este servidor la administración ha desactivado la función de compartir (Administración → Compartir, ajuste «Privado»), por eso aquí no hay botones para compartir. Consulta con la administración si quieres trabajar con otras personas"},
 		})
 	}
 	help("API y domótica", "🔌", []seedBlock{
