@@ -688,7 +688,18 @@ export interface SnapshotStaged {
 export interface SnapshotTakeOver extends ImportSummary {
   account: SnapshotAccount;
   settings: boolean;
+  // Settings left out because they would not pass the account settings' checks (e.g. an alarm webhook)
+  settingsSkipped?: SnapshotSkippedSetting[];
 }
+
+export type SnapshotSkippedSetting =
+  | 'discordWebhookUrl'
+  | 'customWebhookUrl'
+  | 'language'
+  | 'voiceInput'
+  | 'voiceLanguage'
+  | 'retention'
+  | 'notifyBeforeMinutes';
 
 /** Parts of the own data a backup can be restored for. */
 export type DataSection = 'notes' | 'tasks' | 'lists' | 'inbox' | 'themes';

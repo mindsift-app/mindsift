@@ -987,6 +987,16 @@
       "settings": "Persönliche Einstellungen übernehmen",
       "settingsHint": "Name, Sprache, Spracheingabe, Aufbewahrung und Benachrichtigungen des Kontos. Anmeldung, Rolle und Profilbild bleiben wie hier.",
       "settingsToo": "Dazu die persönlichen Einstellungen des Kontos.",
+      "settingsSkipped": "Nicht übernommen, weil ungültig: {{what}}. Bei Bedarf in den Kontoeinstellungen neu eintragen.",
+      "skippedSetting": {
+        "discordWebhookUrl": "Discord-Webhook",
+        "customWebhookUrl": "eigener Webhook",
+        "language": "Sprache",
+        "voiceInput": "Spracheingabe",
+        "voiceLanguage": "Sprache der Spracheingabe",
+        "retention": "Aufbewahrungsfristen",
+        "notifyBeforeMinutes": "Vorlaufzeit der Alarme"
+      },
       "previewTitle": "Vorschau: {{name}}",
       "replaceWarning": "<b>Achtung:</b> Deine bisherigen Daten in den gewählten Bereichen ({{sections}}) werden durch die des Kontos ersetzt und gelöscht, sobald sie vollständig übernommen sind (schlägt es fehl, bleiben sie unverändert).",
       "replaceNow": "Ersetzen und übernehmen",

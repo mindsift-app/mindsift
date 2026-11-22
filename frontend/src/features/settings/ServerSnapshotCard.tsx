@@ -318,6 +318,13 @@ export const ServerSnapshotCard: React.FC = () => {
           {result.skipped.length > 0 && (
             <p className="text-[11px] text-muted">{t('import.skipped', { count: result.skipped.length })}</p>
           )}
+          {(result.settingsSkipped?.length ?? 0) > 0 && (
+            <p className="text-[11px] text-muted">
+              {t('backups.snapshot.settingsSkipped', {
+                what: (result.settingsSkipped ?? []).map((k) => t(`backups.snapshot.skippedSetting.${k}`)).join(', '),
+              })}
+            </p>
+          )}
           <button type="button" onClick={() => window.location.reload()} className="btn-primary h-11 sm:h-8 px-4 text-xs font-semibold">
             {t('backups.snapshot.reload')}
           </button>

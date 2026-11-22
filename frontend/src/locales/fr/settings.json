@@ -988,6 +988,16 @@
       "settings": "Reprendre les paramètres personnels",
       "settingsHint": "Nom, langue, saisie vocale, conservation et notifications du compte. La connexion, le rôle et la photo de profil restent comme ici.",
       "settingsToo": "Ainsi que les paramètres personnels du compte.",
+      "settingsSkipped": "Non repris car invalide : {{what}}. Si besoin, saisissez-les à nouveau dans les paramètres du compte.",
+      "skippedSetting": {
+        "discordWebhookUrl": "webhook Discord",
+        "customWebhookUrl": "webhook personnel",
+        "language": "langue",
+        "voiceInput": "saisie vocale",
+        "voiceLanguage": "langue de la saisie vocale",
+        "retention": "délais de conservation",
+        "notifyBeforeMinutes": "délai des alarmes"
+      },
       "previewTitle": "Aperçu : {{name}}",
       "replaceWarning": "<b>Attention :</b> vos données actuelles dans les domaines choisis ({{sections}}) sont remplacées par celles du compte et supprimées dès que celles-ci sont complètes (en cas d’échec, elles restent inchangées).",
       "replaceNow": "Remplacer et reprendre",

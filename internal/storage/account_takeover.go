@@ -58,31 +58,81 @@ func (s *Store) SnapshotAccounts() ([]SnapshotAccount, error) {
 // dates in typed text, whether the tour was offered, the notification settings and the alarm channels
 // with their webhooks. Not the sign-in (username, address, password, second factor, passkeys), the role,
 // the organizations and the profile picture (its file is not in a database snapshot).
-func (s *Store) TakeOverPersonSettings(src *Store, srcID, dstID string, allowNever bool) error {
+//
+// The snapshot is a file from elsewhere: every value passes the checks PATCH /auth/settings applies, the
+// webhooks through checkWebhook (the API's validateWebhookURL: only https, Discord only to discord.com,
+// no blocked targets). A value that fails is left out, its channel too, and named in the answer (the keys
+// of PATCH /auth/settings: discordWebhookUrl, customWebhookUrl, language, voiceInput, voiceLanguage,
+// retention, notifyBeforeMinutes); the rest is taken over.
+func (s *Store) TakeOverPersonSettings(src *Store, srcID, dstID string, allowNever bool, checkWebhook func(raw string, discord bool) error) (skipped []string, err error) {
 	u, err := src.GetUserByID(srcID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	channels := u.AlarmChannels
-	if _, err := s.UpdateUserFull(dstID, &u.DisplayName, nil, nil, nil, &channels, &u.DiscordWebhookURL, &u.CustomWebhookURL, &u.NotifyBeforeMinutes, nil); err != nil {
-		return err
+	discord, custom := strings.TrimSpace(u.DiscordWebhookURL), strings.TrimSpace(u.CustomWebhookURL)
+	without := func(drop string) {
+		kept := channels[:0:0]
+		for _, c := range channels {
+			if c != drop {
+				kept = append(kept, c)
+			}
+		}
+		channels = kept
+	}
+	if discord != "" && (len(discord) > maxWebhookURLLength || checkWebhook(discord, true) != nil) {
+		discord = ""
+		without("discord")
+		skipped = append(skipped, "discordWebhookUrl")
+	}
+	if custom != "" && (len(custom) > maxWebhookURLLength || checkWebhook(custom, false) != nil) {
+		custom = ""
+		without("webhook")
+		skipped = append(skipped, "customWebhookUrl")
+	}
+	var notifyBefore *int
+	if n := u.NotifyBeforeMinutes; n >= 0 && n <= maxNotifyBeforeMinutes {
+		notifyBefore = &n
+	} else {
+		skipped = append(skipped, "notifyBeforeMinutes")
+	}
+	if _, err := s.UpdateUserFull(dstID, &u.DisplayName, nil, nil, nil, &channels, &discord, &custom, notifyBefore, nil); err != nil {
+		return skipped, err
 	}
 	var errs []error
-	if lang := src.Language(srcID); lang != "" {
-		errs = append(errs, s.SetLanguage(dstID, lang))
+	// A value the store refuses (unknown language, voice input, retention) is left out, not an error
+	setOrSkip := func(key string, err error) {
+		switch {
+		case err == nil:
+		case errors.Is(err, ErrInvalidLanguage), errors.Is(err, ErrInvalidVoiceInput), errors.Is(err, ErrInvalidVoiceLanguage),
+			errors.Is(err, ErrInvalidRetention), errors.Is(err, ErrRetentionNever):
+			skipped = append(skipped, key)
+		default:
+			errs = append(errs, err)
+		}
 	}
+	if lang := src.Language(srcID); lang != "" {
+		setOrSkip("language", s.SetLanguage(dstID, lang))
+	}
+	setOrSkip("voiceInput", s.SetVoiceInput(dstID, src.VoiceInput(srcID)))
+	setOrSkip("voiceLanguage", s.SetVoiceLanguage(dstID, src.VoiceLanguage(srcID)))
+	setOrSkip("retention", s.SetRetention(dstID, src.RetentionOf(srcID, allowNever), allowNever))
 	errs = append(errs,
-		s.SetVoiceInput(dstID, src.VoiceInput(srcID)),
-		s.SetVoiceLanguage(dstID, src.VoiceLanguage(srcID)),
-		s.SetRetention(dstID, src.RetentionOf(srcID, allowNever), allowNever),
 		s.SetTypedRecognition(dstID, src.TypedRecognition(srcID)),
 		s.SetNotificationSettings(dstID, src.NotificationSettingsOf(srcID)),
 	)
 	if src.TourOffered(srcID) {
 		errs = append(errs, s.SetTourOffered(dstID, true))
 	}
-	return errors.Join(errs...)
+	return skipped, errors.Join(errs...)
 }
+
+const (
+	// maxWebhookURLLength: a longer alarm URL from a snapshot is not taken over
+	maxWebhookURLLength = 2048
+	// maxNotifyBeforeMinutes: alarms at most a week ahead (the app offers far less)
+	maxNotifyBeforeMinutes = 7 * 24 * 60
+)
 
 // HasAccount: whether the database has an account with this id.
 func (s *Store) HasAccount(id string) bool {

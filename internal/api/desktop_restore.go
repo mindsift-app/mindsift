@@ -257,6 +257,8 @@ type snapshotSummary struct {
 	storage.ImportSummary
 	Account  storage.SnapshotAccount `json:"account"`
 	Settings bool                    `json:"settings"`
+	// SettingsSkipped: settings of the account left out as invalid (keys of PATCH /auth/settings)
+	SettingsSkipped []string `json:"settingsSkipped,omitempty"`
 }
 
 // handleSnapshotTakeOver: POST /admin/backups/server-snapshot/{token}?account=<id> with sections, mode
@@ -318,7 +320,7 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 	settings := q.Get("settings") != "0"
 	if q.Get("preview") == "1" {
 		s.store.CheckImportMedia(userID, plan)
-		writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, plan.Summary(false)), *account, settings})
+		writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, plan.Summary(false)), *account, settings, nil})
 		return
 	}
 	var replace map[string]bool
@@ -331,12 +333,21 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusInternalServerError, "Import abgebrochen, nichts übernommen: "+clientMessage(err))
 		return
 	}
+	var settingsSkipped []string
 	if settings {
-		logFailed("Taking over the settings of the account", s.store.TakeOverPersonSettings(st, accountID, userID, s.allowNeverRetention()), "user_id", userID)
+		// The alarm webhooks pass the same check as in PATCH /auth/settings; what fails is left out and named
+		allowPrivate := s.allowPrivateWebhooks()
+		check := func(raw string, discord bool) error { return validateWebhookURL(raw, discord, allowPrivate) }
+		var err error
+		settingsSkipped, err = s.store.TakeOverPersonSettings(st, accountID, userID, s.allowNeverRetention(), check)
+		logFailed("Taking over the settings of the account", err, "user_id", userID)
+		if len(settingsSkipped) > 0 {
+			slog.Warn("Settings of a database snapshot left out as invalid", "user_id", userID, "settings", settingsSkipped)
+		}
 	}
 	slog.Info("Account of a database snapshot taken over", "user_id", userID, "notes", sum.Notes, "tasks", sum.Tasks, "lists", sum.Lists, "settings", settings)
 	s.clearSnapshots()
-	writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, sum), *account, settings})
+	writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, sum), *account, settings, settingsSkipped})
 }
 
 // snapshotAccountBackup: the account's backup ZIP, as its daily backup on the server would be (without

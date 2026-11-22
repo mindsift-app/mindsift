@@ -988,6 +988,16 @@
       "settings": "Riprendere le impostazioni personali",
       "settingsHint": "Nome, lingua, input vocale, conservazione e notifiche dell’account. Accesso, ruolo e immagine del profilo restano come qui.",
       "settingsToo": "Inoltre le impostazioni personali dell’account.",
+      "settingsSkipped": "Non trasferito perché non valido: {{what}}. Se serve, reinseriscilo nelle impostazioni dell’account.",
+      "skippedSetting": {
+        "discordWebhookUrl": "webhook Discord",
+        "customWebhookUrl": "webhook personale",
+        "language": "lingua",
+        "voiceInput": "input vocale",
+        "voiceLanguage": "lingua dell’input vocale",
+        "retention": "periodi di conservazione",
+        "notifyBeforeMinutes": "anticipo degli allarmi"
+      },
       "previewTitle": "Anteprima: {{name}}",
       "replaceWarning": "<b>Attenzione:</b> i tuoi dati attuali nelle aree scelte ({{sections}}) vengono sostituiti da quelli dell’account ed eliminati non appena questi sono completi (se non riesce, restano invariati).",
       "replaceNow": "Sostituisci e riprendi",

@@ -988,6 +988,16 @@
       "settings": "Tomar los ajustes personales",
       "settingsHint": "Nombre, idioma, entrada de voz, conservación y notificaciones de la cuenta. El inicio de sesión, el rol y la foto de perfil se quedan como aquí.",
       "settingsToo": "Además, los ajustes personales de la cuenta.",
+      "settingsSkipped": "No se transfirió por no ser válido: {{what}}. Si hace falta, vuelve a introducirlo en los ajustes de la cuenta.",
+      "skippedSetting": {
+        "discordWebhookUrl": "webhook de Discord",
+        "customWebhookUrl": "webhook propio",
+        "language": "idioma",
+        "voiceInput": "entrada de voz",
+        "voiceLanguage": "idioma de la entrada de voz",
+        "retention": "plazos de conservación",
+        "notifyBeforeMinutes": "antelación de las alarmas"
+      },
       "previewTitle": "Vista previa: {{name}}",
       "replaceWarning": "<b>Atención:</b> tus datos actuales en las áreas elegidas ({{sections}}) se sustituyen por los de la cuenta y se eliminan en cuanto estos estén completos (si falla, se quedan sin cambios).",
       "replaceNow": "Sustituir y tomar",

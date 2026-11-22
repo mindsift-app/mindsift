@@ -988,6 +988,16 @@
       "settings": "Take over personal settings",
       "settingsHint": "The account’s name, language, voice input, retention and notifications. Sign-in, role and profile picture stay as they are here.",
       "settingsToo": "Plus the account’s personal settings.",
+      "settingsSkipped": "Not taken over because invalid: {{what}}. Enter them again in the account settings if needed.",
+      "skippedSetting": {
+        "discordWebhookUrl": "Discord webhook",
+        "customWebhookUrl": "own webhook",
+        "language": "language",
+        "voiceInput": "voice input",
+        "voiceLanguage": "voice input language",
+        "retention": "retention periods",
+        "notifyBeforeMinutes": "alarm lead time"
+      },
       "previewTitle": "Preview: {{name}}",
       "replaceWarning": "<b>Caution:</b> your current data in the chosen areas ({{sections}}) is replaced by the account’s and deleted once that is in completely (if it fails, it stays unchanged).",
       "replaceNow": "Replace and take over",
