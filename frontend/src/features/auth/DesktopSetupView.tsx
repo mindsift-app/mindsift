@@ -53,8 +53,11 @@ export const DesktopSetupView: React.FC<{
       .then((loc) => {
         setDefaultDir(loc.defaultDir);
         if (loc.custom) {
-          setBackupDir(loc.dir);
-          setStored({ dir: loc.dir, shown: loc.dirShown || loc.dir });
+          // The folder the person chose, not the subfolder MindSift writes in it (loc.dir): saving that again
+          // would nest MindSift-Backups/<instance> inside itself. Older installs have no chosen: dir is it.
+          const chosen = loc.chosen || loc.dir;
+          setBackupDir(chosen);
+          setStored({ dir: chosen, shown: (loc.chosen ? loc.chosenShown : loc.dirShown) || chosen });
         }
       })
       .catch(() => {});

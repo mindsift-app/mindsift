@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, CircleAlert, X } from 'lucide-react';
 import { useLatestRef } from '../lib/useLatestRef';
@@ -21,6 +22,20 @@ export function useStatusMessage<T extends { type: StatusMessage['type'] }>() {
     return () => window.clearTimeout(timer);
   }, [msg]);
   return [msg, setMsg] as const;
+}
+
+// Every notice goes into one shared stack at the bottom, so two at once (a "Gespeichert" and the desktop
+// app's "file saved") stand one above the other instead of on top of each other. The element is made on
+// first use and made again should something have removed it.
+let stackEl: HTMLDivElement | null = null;
+function toastStack(): HTMLDivElement {
+  if (!stackEl || !stackEl.isConnected) {
+    stackEl = document.createElement('div');
+    stackEl.className =
+      'fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-70 w-max max-w-[calc(100vw-1.5rem)] pointer-events-none flex flex-col items-center';
+    document.body.appendChild(stackEl);
+  }
+  return stackEl;
 }
 
 // The answer to a save in the settings ("Gespeichert", or what went wrong) as a notice at the bottom of the
@@ -54,7 +69,7 @@ export function StatusToast({ msg, onClose }: { msg: StatusMessage | null; onClo
     msg?.type === type && (
       <div
         data-status-toast={type}
-        className={`pointer-events-auto max-w-full pl-3 pr-1 rounded-card text-xs font-medium bg-panel-elevated border shadow-panel flex items-center gap-2 ${
+        className={`pointer-events-auto max-w-full mt-2 pl-3 pr-1 rounded-card text-xs font-medium bg-panel-elevated border shadow-panel flex items-center gap-2 ${
           type === 'ok' ? 'text-main border-border' : 'text-status-err border-status-err/60'
         }`}
       >
@@ -76,14 +91,15 @@ export function StatusToast({ msg, onClose }: { msg: StatusMessage | null; onClo
       </div>
     );
 
-  return (
-    <div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-70 w-max max-w-[calc(100vw-1.5rem)] pointer-events-none">
-      <div role="status" aria-live="polite">
+  return createPortal(
+    <>
+      <div role="status" aria-live="polite" className="max-w-full">
         {notice('ok')}
       </div>
-      <div role="alert" aria-live="assertive">
+      <div role="alert" aria-live="assertive" className="max-w-full">
         {notice('err')}
       </div>
-    </div>
+    </>,
+    toastStack()
   );
 }
