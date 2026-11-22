@@ -105,7 +105,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	if srv.desktopMode() {
 		// The window asks again (handleDesktopSession) if this fails
 		logFailed("Creating the desktop account", srv.prepareDesktopAccount())
-		srv.clearSnapshots() // a snapshot staged before the instance last closed (desktop_restore.go)
+		srv.clearSnapshots("") // a snapshot staged before the instance last closed (desktop_restore.go)
 	}
 	srv.metrics = newAPIMetrics(srv)
 	var oidcOff string
@@ -223,7 +223,7 @@ func (s *Server) Close() {
 	s.stopOnce.Do(func() { close(s.stop) })
 	s.bg.Wait()
 	if s.desktopMode() {
-		s.clearSnapshots()
+		s.clearSnapshots("")
 	}
 }
 

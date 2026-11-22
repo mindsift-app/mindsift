@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"strings"
 )
@@ -28,7 +29,11 @@ type SnapshotAccount struct {
 
 // SnapshotAccounts lists every account of the database, oldest first.
 func (s *Store) SnapshotAccounts() ([]SnapshotAccount, error) {
-	rows, err := s.db.Query(`SELECT u.id, u.display_name, u.username, u.email, u.role, u.is_active,
+	return s.snapshotAccounts(context.Background())
+}
+
+func (s *Store) snapshotAccounts(ctx context.Context) ([]SnapshotAccount, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT u.id, u.display_name, u.username, u.email, u.role, u.is_active,
 		(SELECT COUNT(*) FROM documents d WHERE d.user_id = u.id AND d.is_archived = 0),
 		(SELECT COUNT(*) FROM thoughts t WHERE (t.user_id = u.id OR (t.task_list_id != '' AND t.task_list_id IN (SELECT id FROM task_lists WHERE user_id = u.id)))
 			AND (t.status = 'kept' OR (t.status = 'converted' AND t.converted_type = 'task'))),

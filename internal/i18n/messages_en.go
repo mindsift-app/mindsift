@@ -645,11 +645,12 @@ var messagesEN = map[string]string{
 
 	// Desktop app: taking an account of a server's database snapshot over
 	"Keine Datei erhalten": "No file received",
-	"Die Datei ist kein Datenbank-Abzug von MindSift (mindsift-db-….db.gz)":                              "The file is not a MindSift database snapshot (mindsift-db-….db.gz)",
-	"Der Datenbank-Abzug ist zu groß (max. {gb} GB)":                                                     "The database snapshot is too large (max. {gb} GB)",
-	"Der Datenbank-Abzug stammt von einer neueren MindSift-Version. Bitte zuerst die App aktualisieren.": "The database snapshot comes from a newer MindSift version. Please update the app first.",
-	"Im Datenbank-Abzug ist kein Konto":                                                                  "The database snapshot has no account",
-	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                         "The database snapshot is no longer there. Please choose the file again.",
-	"Dieses Konto ist nicht im Datenbank-Abzug":                                                          "This account is not in the database snapshot",
-	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":             "Hidden values are encrypted with the server's key and do not come along",
+	"Die Datei ist kein Datenbank-Abzug von MindSift (mindsift-db-….db.gz)":                                     "The file is not a MindSift database snapshot (mindsift-db-….db.gz)",
+	"Der Datenbank-Abzug ist zu groß (max. {gb} GB)":                                                            "The database snapshot is too large (max. {gb} GB)",
+	"Der Datenbank-Abzug stammt von einer neueren MindSift-Version. Bitte zuerst die App aktualisieren.":        "The database snapshot comes from a newer MindSift version. Please update the app first.",
+	"Der Datenbank-Abzug ist beschädigt oder enthält etwas, das MindSift nicht anlegt, und wird nicht geöffnet": "The database snapshot is damaged or contains something MindSift does not create, and is not opened",
+	"Im Datenbank-Abzug ist kein Konto":                                                                         "The database snapshot has no account",
+	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                                "The database snapshot is no longer there. Please choose the file again.",
+	"Dieses Konto ist nicht im Datenbank-Abzug":                                                                 "This account is not in the database snapshot",
+	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":                    "Hidden values are encrypted with the server's key and do not come along",
 }

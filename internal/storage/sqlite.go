@@ -52,6 +52,8 @@ type Store struct {
 	demoMode bool
 	// existingSchema: open without creating or migrating (WithExistingSchema, cli.go)
 	existingSchema bool
+	// untrusted: the file comes from elsewhere (WithUntrustedFile, untrusted.go)
+	untrusted bool
 
 	// OnTaskCreated is told about tasks the store creates by itself (next occurrence of a repeating
 	// task), so the server can push them to connected clients.
@@ -103,6 +105,13 @@ func newStore(driverName, dbPath string, opts ...StoreOption) (*Store, error) {
 	dsn := dbPath
 	if !strings.Contains(dsn, "?") {
 		dsn += "?_pragma=busy_timeout(10000)&_pragma=auto_vacuum(2)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)&_pragma=journal_size_limit(16777216)&_txlock=immediate"
+		var probe Store // the options only set fields; untrusted changes how each connection opens
+		for _, opt := range opts {
+			opt(&probe)
+		}
+		if probe.untrusted {
+			dsn += untrustedPragmas
+		}
 	}
 
 	db, err := sql.Open(driverName, dsn)

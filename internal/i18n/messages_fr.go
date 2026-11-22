@@ -645,11 +645,12 @@ var messagesFR = map[string]string{
 
 	// Desktop app: taking an account of a server's database snapshot over
 	"Keine Datei erhalten": "Aucun fichier reçu",
-	"Die Datei ist kein Datenbank-Abzug von MindSift (mindsift-db-….db.gz)":                              "Le fichier n’est pas une copie de la base de données MindSift (mindsift-db-….db.gz)",
-	"Der Datenbank-Abzug ist zu groß (max. {gb} GB)":                                                     "La copie de la base de données est trop volumineuse (max. {gb} Go)",
-	"Der Datenbank-Abzug stammt von einer neueren MindSift-Version. Bitte zuerst die App aktualisieren.": "La copie de la base de données provient d’une version plus récente de MindSift. Veuillez d’abord mettre à jour l’application.",
-	"Im Datenbank-Abzug ist kein Konto":                                                                  "La copie de la base de données ne contient aucun compte",
-	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                         "La copie de la base de données n’est plus disponible. Veuillez choisir le fichier à nouveau.",
-	"Dieses Konto ist nicht im Datenbank-Abzug":                                                          "Ce compte ne figure pas dans la copie de la base de données",
-	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":             "Les valeurs masquées sont chiffrées avec la clé du serveur et ne sont pas reprises",
+	"Die Datei ist kein Datenbank-Abzug von MindSift (mindsift-db-….db.gz)":                                     "Le fichier n’est pas une copie de la base de données MindSift (mindsift-db-….db.gz)",
+	"Der Datenbank-Abzug ist zu groß (max. {gb} GB)":                                                            "La copie de la base de données est trop volumineuse (max. {gb} Go)",
+	"Der Datenbank-Abzug stammt von einer neueren MindSift-Version. Bitte zuerst die App aktualisieren.":        "La copie de la base de données provient d’une version plus récente de MindSift. Veuillez d’abord mettre à jour l’application.",
+	"Der Datenbank-Abzug ist beschädigt oder enthält etwas, das MindSift nicht anlegt, und wird nicht geöffnet": "La copie de la base de données est endommagée ou contient quelque chose que MindSift ne crée pas ; elle n’est pas ouverte",
+	"Im Datenbank-Abzug ist kein Konto":                                                                         "La copie de la base de données ne contient aucun compte",
+	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                                "La copie de la base de données n’est plus disponible. Veuillez choisir le fichier à nouveau.",
+	"Dieses Konto ist nicht im Datenbank-Abzug":                                                                 "Ce compte ne figure pas dans la copie de la base de données",
+	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":                    "Les valeurs masquées sont chiffrées avec la clé du serveur et ne sont pas reprises",
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/hex"
 	"errors"
 	"io"
@@ -42,6 +43,11 @@ const (
 	// snapshotStageTTL: how long a staged snapshot waits for the person to pick an account
 	snapshotStageTTL = time.Hour
 	snapshotDBName   = "mindsift.db"
+	// snapshotCheckTimeout: PRAGMA quick_check and the schema check of an uploaded snapshot (a few seconds
+	// for a server's database; minutes only for the largest)
+	snapshotCheckTimeout = 5 * time.Minute
+	// snapshotQueryTimeout: listing the accounts of a snapshot
+	snapshotQueryTimeout = time.Minute
 )
 
 var (
@@ -52,6 +58,7 @@ var (
 	errSnapshotNoUsers  = errors.New("Im Datenbank-Abzug ist kein Konto")
 	errSnapshotGone     = errors.New("Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.")
 	errSnapshotNoUser   = errors.New("Dieses Konto ist nicht im Datenbank-Abzug")
+	errSnapshotRefused  = errors.New("Der Datenbank-Abzug ist beschädigt oder enthält etwas, das MindSift nicht anlegt, und wird nicht geöffnet")
 )
 
 // snapshotHiddenValues: why notes with hidden values are listed (the values are sealed with the server's key)
@@ -62,18 +69,56 @@ type snapshotStage struct {
 	mu      sync.Mutex
 	token   string
 	created time.Time
+	// busy: the folder a take-over is working in; nothing removes it until the take-over is done
+	busy string
 }
 
 func (s *Server) snapshotRoot() string {
 	return filepath.Join(filepath.Dir(s.cfg.DatabasePath), "restore-staging")
 }
 
-// clearSnapshots removes every staged snapshot (also leftovers of a crash).
-func (s *Server) clearSnapshots() {
+// clearSnapshots removes the staged snapshots (also leftovers of a crash) except the folder keep (an
+// upload that is about to be staged) and the one a running take-over works in.
+func (s *Server) clearSnapshots(keep string) {
 	s.snapshot.mu.Lock()
 	defer s.snapshot.mu.Unlock()
 	s.snapshot.token = ""
-	logFailed("Removing staged database snapshots", os.RemoveAll(s.snapshotRoot()))
+	s.removeSnapshotsLocked(keep)
+}
+
+func (s *Server) removeSnapshotsLocked(keep string) {
+	if keep == "" && s.snapshot.busy == "" {
+		logFailed("Removing staged database snapshots", os.RemoveAll(s.snapshotRoot()))
+		return
+	}
+	entries, err := os.ReadDir(s.snapshotRoot())
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if e.Name() == keep || e.Name() == s.snapshot.busy {
+			continue
+		}
+		logFailed("Removing staged database snapshots", os.RemoveAll(filepath.Join(s.snapshotRoot(), e.Name())))
+	}
+}
+
+// claimSnapshot marks the staged snapshot token as in use by a take-over (false: it is gone or replaced);
+// the returned function releases it.
+func (s *Server) claimSnapshot(token string) (release func(), ok bool) {
+	s.snapshot.mu.Lock()
+	defer s.snapshot.mu.Unlock()
+	if token == "" || s.snapshot.token != token {
+		return nil, false
+	}
+	s.snapshot.busy = token
+	return func() {
+		s.snapshot.mu.Lock()
+		defer s.snapshot.mu.Unlock()
+		if s.snapshot.busy == token {
+			s.snapshot.busy = ""
+		}
+	}, true
 }
 
 // stagedSnapshotDir: the folder of the staged snapshot with this token, "" when there is none (or it expired).
@@ -83,17 +128,34 @@ func (s *Server) stagedSnapshotDir(token string) string {
 	if s.snapshot.token == "" || token != s.snapshot.token {
 		return ""
 	}
-	if time.Since(s.snapshot.created) > snapshotStageTTL {
+	if time.Since(s.snapshot.created) > snapshotStageTTL && s.snapshot.busy != token {
 		s.snapshot.token = ""
-		logFailed("Removing an expired database snapshot", os.RemoveAll(s.snapshotRoot()))
+		s.removeSnapshotsLocked("")
 		return ""
 	}
 	return filepath.Join(s.snapshotRoot(), token)
 }
 
-// openSnapshot opens a staged snapshot's database; migrations run on the first open.
+// checkSnapshot looks at an uploaded snapshot before it is opened as a store (storage.CheckUntrustedDatabase):
+// not damaged, and no trigger or view this instance's schema does not have, all within snapshotCheckTimeout.
+func (s *Server) checkSnapshot(ctx context.Context, dir string) error {
+	known, err := s.store.SchemaObjects()
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(ctx, snapshotCheckTimeout)
+	defer cancel()
+	if err := storage.CheckUntrustedDatabase(ctx, filepath.Join(dir, snapshotDBName), known); err != nil {
+		slog.Warn("Database snapshot refused", "error", err)
+		return errSnapshotRefused
+	}
+	return nil
+}
+
+// openSnapshot opens a staged snapshot's database (checked by checkSnapshot when it was uploaded) with its
+// schema code distrusted; migrations run on the first open.
 func openSnapshot(dir string) (*storage.Store, error) {
-	st, err := storage.NewStore(filepath.Join(dir, snapshotDBName))
+	st, err := storage.NewStore(filepath.Join(dir, snapshotDBName), storage.WithUntrustedFile())
 	var newer *storage.NewerDatabaseError
 	switch {
 	case errors.As(err, &newer):
@@ -109,7 +171,6 @@ func openSnapshot(dir string) (*storage.Store, error) {
 // the snapshot and answers {token, accounts}.
 func (s *Server) handleSnapshotUpload(w http.ResponseWriter, r *http.Request) {
 	allowLongTransfer(w)
-	s.clearSnapshots()
 	token, err := randomToken(16)
 	if err != nil {
 		writeInternal(w, err)
@@ -136,10 +197,17 @@ func (s *Server) handleSnapshotUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer done()
+	// Only now, with the import gate held: a take-over of the snapshot staged before cannot be running, and
+	// the folder of this upload stays
+	s.clearSnapshots(token)
 	allowLongWork(w)
 	err = unpackSnapshot(raw, filepath.Join(dir, snapshotDBName))
 	logFailed("Removing the uploaded database snapshot", os.Remove(raw))
 	if err != nil {
+		failed(http.StatusBadRequest, err)
+		return
+	}
+	if err := s.checkSnapshot(r.Context(), dir); err != nil {
 		failed(http.StatusBadRequest, err)
 		return
 	}
@@ -148,7 +216,9 @@ func (s *Server) handleSnapshotUpload(w http.ResponseWriter, r *http.Request) {
 		failed(http.StatusBadRequest, err)
 		return
 	}
-	accounts, err := st.SnapshotAccounts()
+	ctx, cancel := context.WithTimeout(r.Context(), snapshotQueryTimeout)
+	accounts, err := st.SnapshotAccountsContext(ctx)
+	cancel()
 	logFailed("Closing a database snapshot", st.Close())
 	if err != nil {
 		slog.Warn("Accounts of a database snapshot could not be read", "error", err)
@@ -266,7 +336,8 @@ type snapshotSummary struct {
 // local settings) and preview=1 (only the summary). Without preview the snapshot is removed afterwards.
 func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) {
 	allowLongWork(w)
-	dir := s.stagedSnapshotDir(chi.URLParam(r, "token"))
+	token := chi.URLParam(r, "token")
+	dir := s.stagedSnapshotDir(token)
 	if dir == "" {
 		writeErrorFrom(w, http.StatusNotFound, errSnapshotGone)
 		return
@@ -276,6 +347,19 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	defer done()
+	// Claimed: cancelling, the expiry or a new upload no longer remove the folder under this take-over
+	release, ok := s.claimSnapshot(token)
+	if !ok {
+		writeErrorFrom(w, http.StatusNotFound, errSnapshotGone)
+		return
+	}
+	finished := false
+	defer func() {
+		release()
+		if finished {
+			s.clearSnapshots("")
+		}
+	}()
 	userID := auth.GetUserID(r.Context())
 	q := r.URL.Query()
 	accountID := q.Get("account")
@@ -286,7 +370,10 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 	}
 	defer func() { logFailed("Closing a database snapshot", st.Close()) }()
 	var account *storage.SnapshotAccount
-	if accounts, err := st.SnapshotAccounts(); err == nil {
+	ctx, cancel := context.WithTimeout(r.Context(), snapshotQueryTimeout)
+	accounts, err := st.SnapshotAccountsContext(ctx)
+	cancel()
+	if err == nil {
 		for i := range accounts {
 			if accounts[i].ID == accountID {
 				account = &accounts[i]
@@ -346,7 +433,7 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 	slog.Info("Account of a database snapshot taken over", "user_id", userID, "notes", sum.Notes, "tasks", sum.Tasks, "lists", sum.Lists, "settings", settings)
-	s.clearSnapshots()
+	finished = true // the snapshot goes once released (deferred above), after the store on it is closed
 	writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, sum), *account, settings, settingsSkipped})
 }
 
@@ -383,7 +470,7 @@ func snapshotAccountBackup(st *storage.Store, dir, accountID string) (*os.File, 
 // handleSnapshotDiscard: DELETE /admin/backups/server-snapshot/{token}, the person cancelled.
 func (s *Server) handleSnapshotDiscard(w http.ResponseWriter, r *http.Request) {
 	if s.stagedSnapshotDir(chi.URLParam(r, "token")) != "" {
-		s.clearSnapshots()
+		s.clearSnapshots("")
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
