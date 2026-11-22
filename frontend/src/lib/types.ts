@@ -657,9 +657,12 @@ export interface BackupFile {
 
 /** Desktop app: where the backups go; defaultDir is backups/ in the instance's folder, custom: chosen. */
 export interface BackupLocation {
+  // dir: where the backups go; with a chosen folder MindSift's subfolder in it (MindSift-Backups/<instance>)
   dir: string;
   defaultDir: string;
   custom: boolean;
+  // chosen: the folder picked in the setup or the administration ('' = the default)
+  chosen?: string;
 }
 
 /** Desktop app: one account of a server's database snapshot, with what it owns. */

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -28,12 +29,12 @@ import (
 
 var backupRunMu sync.Mutex
 
-// backupRoot: where the backups go, backups/ next to the database; in the desktop app the folder chosen
-// in its setup or settings, if any (desktop_backup.go).
+// backupRoot: where the backups go, backups/ next to the database; in the desktop app MindSift's own
+// subfolder of the folder chosen in its setup or settings, if any (desktop_backup.go).
 func (s *Server) backupRoot() string {
 	if s.desktopMode() {
 		if dir := s.store.BackupDir(); dir != "" {
-			return dir
+			return s.resolveBackupDir(dir)
 		}
 	}
 	return s.defaultBackupRoot()
@@ -52,6 +53,9 @@ func (s *Server) runBackupsOnce() (string, error) {
 	now := clock.Now() // the file names carry the server's date and time; the scheduler reads them back
 	root := s.backupRoot()
 	keep := s.backupKeepDays()
+	if root != s.defaultBackupRoot() {
+		markBackupRoot(root)
+	}
 
 	name, err := s.store.WriteSystemSnapshot(filepath.Join(root, "system"), now)
 	if err != nil {
@@ -296,26 +300,19 @@ func (s *Server) keepUserBackups(u *domain.User, now time.Time) {
 	s.removeUserBackups(u.ID)
 }
 
-// deletedAccounts reads backups/deleted; expired ones are removed when sweep is set.
+// deletedAccounts reads backups/deleted; expired ones are removed when sweep is set. Only folders MindSift
+// wrote count (deletedAccountFolder): in the desktop app the backups may lie in a folder the person chose,
+// and whatever else is there is neither listed nor ever removed.
 func (s *Server) deletedAccounts(now time.Time, sweep bool) []deletedAccountBackups {
 	root := filepath.Join(s.backupRoot(), "deleted")
 	entries, _ := os.ReadDir(root)
 	keep := time.Duration(s.backupKeepDays()) * 24 * time.Hour
 	out := []deletedAccountBackups{}
 	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
 		dir := filepath.Join(root, e.Name())
-		var d deletedAccountBackups
-		var deleted time.Time
-		if raw, err := os.ReadFile(filepath.Join(dir, "account.json")); err == nil && json.Unmarshal(raw, &d) == nil {
-			deleted, _ = time.Parse(time.RFC3339, d.DeletedAt)
-		}
-		if deleted.IsZero() { // no readable account.json: the folder's age
-			if info, err := e.Info(); err == nil {
-				deleted = info.ModTime()
-			}
+		d, deleted, ok := deletedAccountFolder(dir, e)
+		if !ok {
+			continue
 		}
 		removeAt := deleted.Add(keep)
 		if !now.Before(removeAt) {
@@ -326,7 +323,6 @@ func (s *Server) deletedAccounts(now time.Time, sweep bool) []deletedAccountBack
 			}
 			continue
 		}
-		d.UserID = e.Name()
 		d.DeletedAt = deleted.UTC().Format(time.RFC3339)
 		d.RemoveAt = removeAt.UTC().Format(time.RFC3339)
 		d.Files, _ = storage.ListBackups(dir)
@@ -334,6 +330,33 @@ func (s *Server) deletedAccounts(now time.Time, sweep bool) []deletedAccountBack
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].DeletedAt > out[j].DeletedAt })
 	return out
+}
+
+// accountIDPattern: the ids of accounts, domain.NewID("usr") (96 or, older, 40 random bits) and the
+// demo accounts (usr_demo_admin)
+var accountIDPattern = regexp.MustCompile(`^usr_[0-9a-z_]{4,40}$`)
+
+// deletedAccountFolder: dir holds the backups of a deleted account as keepUserBackups leaves them: a real
+// folder (no link) named after an account id, with the account.json written for that id and the time of
+// the deletion. Anything else is not MindSift's.
+func deletedAccountFolder(dir string, e os.DirEntry) (deletedAccountBackups, time.Time, bool) {
+	var d deletedAccountBackups
+	if !e.IsDir() || e.Type()&os.ModeSymlink != 0 || !accountIDPattern.MatchString(e.Name()) {
+		return d, time.Time{}, false
+	}
+	meta := filepath.Join(dir, "account.json")
+	if info, err := os.Lstat(meta); err != nil || !info.Mode().IsRegular() || info.Size() > 64<<10 {
+		return d, time.Time{}, false
+	}
+	raw, err := os.ReadFile(meta)
+	if err != nil || json.Unmarshal(raw, &d) != nil || d.UserID != e.Name() {
+		return d, time.Time{}, false
+	}
+	deleted, err := time.Parse(time.RFC3339, d.DeletedAt)
+	if err != nil || deleted.IsZero() {
+		return d, time.Time{}, false
+	}
+	return d, deleted, true
 }
 
 // runDeletedBackupSweep removes backups of deleted accounts past the retention period (hourly).

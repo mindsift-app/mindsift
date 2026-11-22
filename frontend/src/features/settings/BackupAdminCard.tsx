@@ -158,7 +158,12 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
       {desktop && location && (
         <div className="text-[11px] text-muted space-y-1">
           <p>{t('backups.folder')}</p>
-          <BackupFolderField value={location.custom ? location.dir : ''} defaultDir={location.defaultDir} onCommit={moveTo} />
+          <BackupFolderField value={location.custom ? (location.chosen ?? location.dir) : ''} defaultDir={location.defaultDir} onCommit={moveTo} />
+          {location.custom && (
+            <p>
+              <Trans t={t} i18nKey="backups.folderTarget" values={{ dir: location.dir }} components={{ c: <code className="font-mono break-all" /> }} />
+            </p>
+          )}
           <p>{t('backups.folderHint')}</p>
         </div>
       )}

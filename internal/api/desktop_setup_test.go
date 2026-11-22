@@ -71,8 +71,10 @@ func TestDesktopSetupWizard(t *testing.T) {
 	if users[0].Email != "" || len(store.PendingEmailChanges(users[0].ID)) != 0 {
 		t.Errorf("address taken: %q %v", users[0].Email, store.PendingEmailChanges(users[0].ID))
 	}
-	if store.SetupPending() || store.BackupDir() != dir || srv.backupRoot() != dir {
-		t.Errorf("pending %v, backup folder %q / %q, want %q", store.SetupPending(), store.BackupDir(), srv.backupRoot(), dir)
+	// The backups go into MindSift's own subfolder of the chosen folder, named after the instance's folder
+	root := filepath.Join(dir, "MindSift-Backups", filepath.Base(filepath.Dir(dbPath)))
+	if store.SetupPending() || store.BackupDir() != dir || srv.backupRoot() != root {
+		t.Errorf("pending %v, backup folder %q / %q, want %q", store.SetupPending(), store.BackupDir(), srv.backupRoot(), root)
 	}
 	if rec := postJSON(t, router, "/api/v1/admin/setup", token, `{}`); rec.Code != http.StatusConflict {
 		t.Errorf("second setup: %d, want 409", rec.Code)
@@ -82,7 +84,7 @@ func TestDesktopSetupWizard(t *testing.T) {
 	if rec := postJSON(t, router, "/api/v1/admin/backups", token, `{}`); rec.Code != http.StatusOK {
 		t.Fatalf("backup: %d %s", rec.Code, rec.Body.String())
 	}
-	if files, _ := filepath.Glob(filepath.Join(dir, "system", "mindsift-db-*.db.gz")); len(files) != 1 {
+	if files, _ := filepath.Glob(filepath.Join(root, "system", "mindsift-db-*.db.gz")); len(files) != 1 {
 		t.Errorf("system snapshots in the chosen folder: %v", files)
 	}
 	if files, _ := filepath.Glob(filepath.Join(filepath.Dir(dbPath), "backups", "system", "mindsift-db-*")); len(files) != 0 {
@@ -99,7 +101,7 @@ func TestDesktopSetupWizard(t *testing.T) {
 
 	// Restart: no wizard again, the folder stays
 	srv2 := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
-	if store.SetupPending() || srv2.backupRoot() != dir {
+	if store.SetupPending() || srv2.backupRoot() != root {
 		t.Errorf("after a restart: pending %v, folder %q", store.SetupPending(), srv2.backupRoot())
 	}
 }
@@ -122,11 +124,23 @@ func TestDesktopBackupLocation(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "neu", "tief")
 	rec := putJSONWith(t, router, "/api/v1/admin/backups/location", token, `{"dir":`+jsonString(dir)+`}`)
 	_ = json.Unmarshal(rec.Body.Bytes(), &loc)
-	if rec.Code != http.StatusOK || loc.Dir != dir || !loc.Custom {
+	root := filepath.Join(dir, "MindSift-Backups", filepath.Base(filepath.Dir(dbPath)))
+	if rec.Code != http.StatusOK || loc.Dir != root || loc.Chosen != dir || !loc.Custom {
 		t.Fatalf("set: %d %s", rec.Code, rec.Body.String())
 	}
-	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
-		t.Errorf("folder not created: %v", err)
+	if info, err := os.Stat(filepath.Join(root, ".mindsift-backups")); err != nil || !info.Mode().IsRegular() {
+		t.Errorf("subfolder not created and marked: %v", err)
+	}
+
+	// Choosing the shown folder itself does not nest another subfolder in it
+	rec = putJSONWith(t, router, "/api/v1/admin/backups/location", token, `{"dir":`+jsonString(root)+`}`)
+	_ = json.Unmarshal(rec.Body.Bytes(), &loc)
+	if rec.Code != http.StatusOK || loc.Dir != root {
+		t.Errorf("the shown folder chosen: %d %s", rec.Code, rec.Body.String())
+	}
+	rec = putJSONWith(t, router, "/api/v1/admin/backups/location", token, `{"dir":`+jsonString(dir)+`}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("set again: %d %s", rec.Code, rec.Body.String())
 	}
 
 	readOnly := filepath.Join(t.TempDir(), "nur-lesen")

@@ -117,7 +117,7 @@
     "/api/v1/admin/backups/location": {
       "get": {
         "summary": "Backup folder (desktop app only)",
-        "description": "Where the backups go: dir, defaultDir (backups/ in the instance's folder), custom. Desktop app only; 404 on a server",
+        "description": "Where the backups go: dir, defaultDir (backups/ in the instance's folder), custom, chosen (the folder picked; dir is MindSift's subfolder MindSift-Backups/<instance> in it, or the folder itself when it already held MindSift's backups directly). Desktop app only; 404 on a server",
         "tags": [
           "Administration"
         ],
@@ -129,7 +129,7 @@
       },
       "put": {
         "summary": "Set the backup folder (desktop app only)",
-        "description": "{dir}: an absolute path, created when missing; \"\" goes back to the default. 400 for a relative path, the instance's own folder or a folder that cannot be written to. Backups already written stay in the old folder; the lists and restore read the new one. Answers like GET. Desktop app only; 404 on a server",
+        "description": "{dir}: an absolute path; the backups go into MindSift-Backups/<instance> in it (created and marked with .mindsift-backups); \"\" goes back to the default. 400 for a relative path, the instance's own folder or a folder that cannot be written to. Backups already written stay in the old folder; the lists and restore read the new one. Answers like GET. Desktop app only; 404 on a server",
         "tags": [
           "Administration"
         ],

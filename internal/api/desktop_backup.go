@@ -39,9 +39,60 @@ func (s *Server) onlyInDesktop(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// The backups never go straight into the chosen folder but into <chosen>/MindSift-Backups/<instance>
+// (resolveBackupDir): the folder is the person's (a Nextcloud folder, a second disk), and what MindSift
+// writes, prunes and sweeps there must not mix with their files nor with another instance's backups. A
+// folder MindSift writes its backups to carries backupRootMarker.
+const (
+	backupFolderName = "MindSift-Backups"
+	backupRootMarker = ".mindsift-backups"
+)
+
+// instanceBackupFolder: the name of the instance's subfolder below MindSift-Backups, the name of its own
+// folder (unique among the app's instances; the folder of the first version, data/, is "MindSift").
+func (s *Server) instanceBackupFolder() string {
+	name := filepath.Base(filepath.Dir(s.cfg.DatabasePath))
+	if name == "" || name == "." || name == ".." || name == string(filepath.Separator) || name == "data" {
+		return "MindSift"
+	}
+	return name
+}
+
+// resolveBackupDir: where the backups go for the chosen folder. Installs from before the subfolder wrote
+// straight into the chosen folder: a folder that already is a MindSift backup folder (marker, or system
+// snapshots in system/) stays in use, so its backups stay listed and are pruned as before. Choosing the
+// shown folder itself (…/MindSift-Backups/<instance>) also lands there instead of nesting.
+func (s *Server) resolveBackupDir(chosen string) string {
+	if isBackupRoot(chosen) {
+		return chosen
+	}
+	return filepath.Join(chosen, backupFolderName, s.instanceBackupFolder())
+}
+
+func isBackupRoot(dir string) bool {
+	if info, err := os.Lstat(filepath.Join(dir, backupRootMarker)); err == nil && info.Mode().IsRegular() {
+		return true
+	}
+	files, err := storage.ListBackups(filepath.Join(dir, "system"))
+	return err == nil && len(files) > 0
+}
+
+// markBackupRoot leaves the marker in a folder MindSift writes its backups to (also one from before the
+// subfolder, which then stays recognised once its old snapshots are pruned).
+func markBackupRoot(dir string) {
+	marker := filepath.Join(dir, backupRootMarker)
+	if _, err := os.Lstat(marker); err == nil {
+		return
+	}
+	if err := os.MkdirAll(dir, 0o700); err == nil {
+		err = os.WriteFile(marker, []byte("MindSift writes its backups to this folder.\n"), 0o600)
+		logFailed("Marking the backup folder", err, "folder", dir)
+	}
+}
+
 // checkBackupDir: the folder as stored, "" for the default folder. It must be an absolute path, not the
 // instance's own folder (the backups' subfolders would mix with the database and media), and a folder this
-// process can create and write in; it is created when missing.
+// process can create and write in; MindSift's subfolder in it is created and marked.
 func (s *Server) checkBackupDir(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -57,32 +108,37 @@ func (s *Server) checkBackupDir(raw string) (string, error) {
 	if dir == filepath.Clean(filepath.Dir(s.cfg.DatabasePath)) {
 		return "", errBackupDirData
 	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	root := s.resolveBackupDir(dir)
+	if err := os.MkdirAll(root, 0o700); err != nil {
 		return "", errBackupDirWrite
 	}
-	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
+	if info, err := os.Stat(root); err != nil || !info.IsDir() {
 		return "", errBackupDirWrite
 	}
-	probe, err := os.CreateTemp(dir, ".mindsift-write-test-*")
+	probe, err := os.CreateTemp(root, ".mindsift-write-test-*")
 	if err != nil {
 		return "", errBackupDirWrite
 	}
 	name := probe.Name()
 	_ = probe.Close()
 	_ = os.Remove(name)
+	markBackupRoot(root)
 	return dir, nil
 }
 
 // backupLocation: what GET and PUT /admin/backups/location answer
 type backupLocation struct {
-	// Dir: where the backups go now; DefaultDir: backups/ in the instance's folder; Custom: Dir was chosen
+	// Dir: where the backups go now; DefaultDir: backups/ in the instance's folder; Custom: a folder was
+	// chosen, Chosen (Dir is MindSift's subfolder in it, or the folder itself for an older install)
 	Dir        string `json:"dir"`
 	DefaultDir string `json:"defaultDir"`
 	Custom     bool   `json:"custom"`
+	Chosen     string `json:"chosen"`
 }
 
 func (s *Server) backupLocation() backupLocation {
-	return backupLocation{Dir: s.backupRoot(), DefaultDir: s.defaultBackupRoot(), Custom: s.store.BackupDir() != ""}
+	chosen := s.store.BackupDir()
+	return backupLocation{Dir: s.backupRoot(), DefaultDir: s.defaultBackupRoot(), Custom: chosen != "", Chosen: chosen}
 }
 
 // handleBackupLocation: GET /admin/backups/location (desktop app only)
