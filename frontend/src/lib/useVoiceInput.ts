@@ -263,7 +263,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
       let hadSpeech = false;
       segmentTimerRef.current = window.setInterval(() => {
         if (cancelledRef.current || stoppedRef.current || recorderRef.current !== rec) return;
-        const lvl = rec.level();
+        const lvl = rec.speechLevel();
         if (lvl !== null) {
           if (lvl >= LIVE_SPEECH_LEVEL) {
             hadSpeech = true;

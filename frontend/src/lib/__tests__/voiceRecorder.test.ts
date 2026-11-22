@@ -100,12 +100,34 @@ describe('VoiceRecorder.level', () => {
     const rec = new VoiceRecorder();
     await rec.start();
     next = 160;
-    const loud = rec.level()!;
+    const loud = rec.speechLevel()!;
     expect(loud).toBeGreaterThan(0.5);
-    next = 128; // a gap: the level stays
+    next = 128; // a gap: the raw signal stays
     now += 200;
-    expect(rec.level()).toBe(loud);
+    expect(rec.speechLevel()).toBe(loud);
     now += 200; // silent for longer than the hold: really silent
-    expect(rec.level()).toBe(0);
+    expect(rec.speechLevel()).toBe(0);
+  });
+
+  it('zeigt leise Sprache deutlich an, Stille bleibt bei 0', async () => {
+    Object.assign(window, { AudioContext: FakeAudioContext });
+    let now = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const rec = new VoiceRecorder();
+    await rec.start();
+    next = 128 + 3; // about -32 dBFS: quiet speech
+    let shown = 0;
+    for (let i = 0; i < 10; i++) {
+      now += 16;
+      shown = rec.level()!;
+    }
+    expect(shown).toBeGreaterThan(0.3);
+    next = 128;
+    now += 600; // past the hold, the bars sink
+    for (let i = 0; i < 60; i++) {
+      now += 16;
+      shown = rec.level()!;
+    }
+    expect(shown).toBe(0);
   });
 });
