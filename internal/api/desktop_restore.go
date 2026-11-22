@@ -35,6 +35,13 @@ import (
 // and its sharing never reach the instance. One snapshot is staged at a time; it is removed after the take
 // over, when the person cancels, when another is uploaded, after an hour, and when the instance opens or
 // closes.
+//
+// Values the server sealed with its key: the account's hidden values in notes come along when the backup
+// carries the server's secrets.key (a complete backup, a copy of the data folder): opened with it and
+// sealed again with the instance's key, as values of the new notes. Without that key, or where it does not
+// open them, the notes come without them and are listed. The server's key is only read from the staging
+// folder, never kept. The second factor, public links and calendar subscriptions stay out: the local
+// instance has no sign-in, nothing public and no feeds (and the export does not carry them).
 
 const (
 	// maxSnapshotUploadBytes: the file the window sends (in-process, no network): a snapshot, or an archive
@@ -64,7 +71,8 @@ var (
 	errSnapshotRefused  = errors.New("Der Datenbank-Abzug ist beschädigt oder enthält etwas, das MindSift nicht anlegt, und wird nicht geöffnet")
 )
 
-// snapshotHiddenValues: why notes with hidden values are listed (the values are sealed with the server's key)
+// snapshotHiddenValues: why notes with hidden values are listed: the values are sealed with the server's key
+// and the backup has no key that opens them (snapshotHiddenValuesOf)
 const snapshotHiddenValues = "Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit"
 
 // snapshotStage is the snapshot waiting for the person's choice.
@@ -413,7 +421,7 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 	}
 	sections := storage.NormalizeSections(strings.Split(q.Get("sections"), ","))
 	plan = plan.Only(sections)
-	plan.SkipHiddenValues(snapshotHiddenValues)
+	plan.CarryHiddenValues(s.snapshotHiddenValuesOf(st, dir, accountID, plan.HiddenValueIDs()), snapshotHiddenValues)
 	settings := q.Get("settings") != "0"
 	if q.Get("preview") == "1" {
 		s.store.CheckImportMedia(userID, plan)
@@ -445,6 +453,40 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 	slog.Info("Account of a database snapshot taken over", "user_id", userID, "notes", sum.Notes, "tasks", sum.Tasks, "lists", sum.Lists, "settings", settings)
 	finished = true // the snapshot goes once released (deferred above), after the store on it is closed
 	writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, sum), *account, settings, settingsSkipped, mediaFound, mediaMissing})
+}
+
+// snapshotHiddenValuesOf opens the account's hidden values among ids with the server's key from the backup
+// (staged by stageServerKey) and returns them as id → plain text, for the import to seal again with this
+// instance's key. Without a key in the backup, without a key of this instance, or for values the key does
+// not open (another server's key, a key changed on the server) nothing comes back for them, and their
+// notes are listed as before.
+func (s *Server) snapshotHiddenValuesOf(st *storage.Store, dir, accountID string, ids []string) map[string]string {
+	if len(ids) == 0 || len(s.cfg.SecretsKey) == 0 || len(s.store.SecretsKey()) == 0 {
+		return nil
+	}
+	key, err := storage.ReadSecretsKeyFile(filepath.Join(dir, stagedServerKey))
+	if err != nil {
+		return nil
+	}
+	sealed, err := st.HiddenValuesOf(accountID, ids)
+	if err != nil {
+		slog.Warn("Hidden values of a database snapshot could not be read", "error", err)
+		return nil
+	}
+	out := make(map[string]string, len(sealed))
+	unreadable := 0
+	for id, ct := range sealed {
+		plain, err := storage.OpenValue(key, id, ct)
+		if err != nil {
+			unreadable++
+			continue
+		}
+		out[id] = plain
+	}
+	if unreadable > 0 {
+		slog.Warn("Some hidden values of the server's backup do not open with the secrets.key it carries; they stay behind", "unreadable", unreadable, "opened", len(out))
+	}
+	return out
 }
 
 // snapshotAccountBackup: the account's backup ZIP, as its daily backup on the server would be, written once

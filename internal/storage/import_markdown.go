@@ -74,8 +74,11 @@ type ImportPlan struct {
 	// a placeholder (secretGate). secretIDs counts them against maxImportOutsideMedia as well.
 	secretRefs []importMediaRefs
 	secretIDs  int
-	// secretsSkipped: SkipHiddenValues listed them already, checkImportSecrets adds nothing
+	// secretsSkipped: SkipHiddenValues or CarryHiddenValues listed them already, checkImportSecrets adds nothing
 	secretsSkipped bool
+	// carried: hidden values the plan brings along (reference id → plain text, CarryHiddenValues); each
+	// note gets values of its own, sealed with this instance's key
+	carried map[string]string
 }
 
 // importMediaRefs: the files (or hidden values) of one note (by its path or title) that are not part of
@@ -1044,6 +1047,7 @@ func (s *Store) applyImport(userID string, plan *ImportPlan, undo *importUndo) e
 			icon = "🗒️"
 		}
 		blocks, files := linkImportMedia(d.dir, blocks, plan.Media)
+		blocks, values := plan.carryHiddenValues(blocks)
 		// The import's own files are stored once the note exists; any other file stays out unless the
 		// person may read it already (mediaGate)
 		keep := make(map[string]bool, len(files))
@@ -1060,6 +1064,9 @@ func (s *Store) applyImport(userID string, plan *ImportPlan, undo *importUndo) e
 		}
 		undo.docs = append(undo.docs, doc.ID)
 		if err := s.storeImportMedia(userID, doc.ID, files, budget); err != nil {
+			return fmt.Errorf("note %q: %w", title, err)
+		}
+		if err := s.storeCarriedValues(userID, doc, values); err != nil {
 			return fmt.Errorf("note %q: %w", title, err)
 		}
 		return nil
@@ -1675,6 +1682,102 @@ func (p *ImportPlan) SkipHiddenValues(reason string) {
 	for _, r := range p.secretRefs {
 		p.skip(r.note, reason)
 	}
+}
+
+// HiddenValueIDs: the hidden values the notes of the plan refer to (up to maxImportOutsideMedia).
+func (p *ImportPlan) HiddenValueIDs() []string {
+	var ids []string
+	for _, r := range p.secretRefs {
+		ids = append(ids, r.ids...)
+	}
+	return ids
+}
+
+// CarryHiddenValues makes the plan bring the hidden values along (reference id → plain text: a server's
+// values, opened with its key from the backup); applying it gives each note a value of its own under a new
+// id, sealed with this instance's key. Notes that refer to a value not in values are listed as skipped
+// with reason, as SkipHiddenValues does; with no values at all it is SkipHiddenValues.
+func (p *ImportPlan) CarryHiddenValues(values map[string]string, reason string) {
+	p.secretsSkipped = true
+	if len(values) > 0 {
+		p.carried = values
+	}
+	for _, r := range p.secretRefs {
+		for _, id := range r.ids {
+			if _, ok := values[id]; !ok {
+				p.skip(r.note, reason)
+				break
+			}
+		}
+	}
+}
+
+// carryHiddenValues rewrites the references of blocks to carried values to new ids (one per value and
+// note) and returns new id → plain text; storeCarriedValues stores them once the note exists.
+func (p *ImportPlan) carryHiddenValues(blocks []domain.DocumentBlock) ([]domain.DocumentBlock, map[string]string) {
+	if len(p.carried) == 0 {
+		return blocks, nil
+	}
+	fresh := map[string]string{} // reference id → new id
+	values := map[string]string{}
+	var out []domain.DocumentBlock
+	for i, b := range blocks {
+		if !strings.Contains(b.Content, "{{secret:") {
+			continue
+		}
+		content := SecretRefRe.ReplaceAllStringFunc(b.Content, func(ref string) string {
+			id := ref[len("{{secret:") : len(ref)-len("}}")]
+			plain, ok := p.carried[id]
+			if !ok {
+				return ref
+			}
+			to, seen := fresh[id]
+			if !seen {
+				to = NewSecretID()
+				fresh[id], values[to] = to, plain
+			}
+			return secretRef(to)
+		})
+		if content == b.Content {
+			continue
+		}
+		if out == nil {
+			out = slices.Clone(blocks)
+		}
+		out[i].Content = content
+	}
+	if out == nil {
+		return blocks, nil
+	}
+	return out, values
+}
+
+// storeCarriedValues seals the values carryHiddenValues gave the note doc with this instance's key and
+// stores them; a value no bullet of the stored note refers to (a code block keeps none) is left out.
+func (s *Store) storeCarriedValues(userID string, doc *domain.Document, values map[string]string) error {
+	if len(values) == 0 {
+		return nil
+	}
+	var list []NoteSecret
+	seen := map[string]bool{}
+	for _, b := range doc.Blocks {
+		for _, m := range SecretRefRe.FindAllStringSubmatch(b.Content, -1) {
+			plain, ok := values[m[1]]
+			if !ok || seen[m[1]] {
+				continue
+			}
+			seen[m[1]] = true
+			sealed, err := SealValue(s.secretsKey, m[1], plain)
+			if err != nil {
+				return err
+			}
+			list = append(list, NoteSecret{ID: m[1], DocumentID: doc.ID, CreatedBy: userID, Ciphertext: sealed})
+		}
+	}
+	if len(list) == 0 {
+		return nil
+	}
+	return s.insertSecrets(list)
 }
 
 // CheckImportMedia lists the notes of the plan as skipped that show a file the import does not bring

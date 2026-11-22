@@ -55,3 +55,24 @@ func TestSnapshotAccounts(t *testing.T) {
 		t.Errorf("Ben: %+v", b)
 	}
 }
+
+// Taking an account over hands out only the hidden values of notes it owns, not a value of someone else's
+// note its notes refer to.
+func TestHiddenValuesOfOnlyOwnNotes(t *testing.T) {
+	store, anna, ben := newImportStore(t)
+	annaDoc, _ := store.CreateDocument(anna.ID, "", "Annas", "📄", "", nil, nil, false)
+	benDoc, _ := store.CreateDocument(ben.ID, "", "Bens", "📄", "", nil, nil, false)
+	if err := store.CreateSecret("secanna", annaDoc.ID, anna.ID, "v1:anna"); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.CreateSecret("secben", benDoc.ID, ben.ID, "v1:ben"); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.HiddenValuesOf(anna.ID, []string{"secanna", "secben", "secnone"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got["secanna"] != "v1:anna" {
+		t.Errorf("Anna's values: %v", got)
+	}
+}

@@ -144,3 +144,37 @@ func (s *Store) HasAccount(id string) bool {
 	u, err := s.GetUserByID(id)
 	return err == nil && u != nil && u.ID == id
 }
+
+// HiddenValuesOf returns the stored hidden values among ids (id → ciphertext, sealed with the key of the
+// server this database comes from) that belong to notes the account owns. A reference in one of its notes
+// to a value of someone else's note is left out: taking an account over brings only what it owns.
+func (s *Store) HiddenValuesOf(accountID string, ids []string) (map[string]string, error) {
+	out := map[string]string{}
+	for start := 0; start < len(ids); start += secretLookupChunk {
+		chunk := ids[start:min(start+secretLookupChunk, len(ids))]
+		args := make([]any, 0, len(chunk)+1)
+		args = append(args, accountID)
+		for _, id := range chunk {
+			args = append(args, id)
+		}
+		rows, err := s.db.Query(`SELECT s.id, s.ciphertext FROM note_secrets s JOIN documents d ON d.id = s.document_id
+			WHERE d.user_id = ? AND s.id IN (?`+strings.Repeat(", ?", len(chunk)-1)+`)`, args...)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var id, ct string
+			if err := rows.Scan(&id, &ct); err != nil {
+				_ = rows.Close()
+				return nil, err
+			}
+			out[id] = ct
+		}
+		err = rows.Err()
+		_ = rows.Close()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}

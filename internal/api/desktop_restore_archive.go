@@ -6,10 +6,12 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -46,6 +48,10 @@ const (
 	// data and backups folders are
 	stagedArchiveName = "archive"
 	stagedArchiveInfo = "archive.json"
+	// stagedServerKey: the server's secrets.key from the archive, checked (stageServerKey)
+	stagedServerKey = "server-secrets.key"
+	// maxSecretsKeyFileBytes: a secrets.key is 65 bytes; a larger file of that name is no key
+	maxSecretsKeyFileBytes = 1024
 )
 
 var (
@@ -149,8 +155,12 @@ func stageArchive(kind uploadKind, file, dir string) (*stagedArchive, error) {
 	defer os.Remove(snapTmp)
 	var live, snap string
 	wals := map[string]string{} // folder in the archive → its -wal, staged
+	keys := map[string]string{} // folder in the archive → its secrets.key, staged
 	defer func() {
 		for _, f := range wals {
+			_ = os.Remove(f)
+		}
+		for _, f := range keys {
 			_ = os.Remove(f)
 		}
 	}()
@@ -176,6 +186,19 @@ func stageArchive(kind uploadKind, file, dir string) (*stagedArchive, error) {
 				return err
 			}
 			wals[parent] = dst
+		case base == storage.FullBackupSecretsKey:
+			dst := filepath.Join(dir, fmt.Sprintf("key-%d", len(keys)))
+			if old, ok := keys[parent]; ok {
+				dst = old
+			}
+			err := copyEntry(e, dst, maxSecretsKeyFileBytes)
+			if errors.Is(err, errSnapshotTooLarge) {
+				return nil // no key file of MindSift
+			}
+			if err != nil {
+				return err
+			}
+			keys[parent] = dst
 		case path.Base(parent) == "system" && snapshotFileRe.MatchString(base):
 			if snap != "" && base <= path.Base(snap) {
 				return nil
@@ -217,7 +240,32 @@ func stageArchive(kind uploadKind, file, dir string) (*stagedArchive, error) {
 	default:
 		return nil, errNotSnapshot
 	}
+	// The server's key: beside the database (a data folder, a full backup); for a daily snapshot the one of
+	// the data folder its backups folder lies in
+	keyDir, haveKeyDir := "", false
+	switch {
+	case live != "":
+		keyDir, haveKeyDir = entryDir(live), true
+	case info.Media != "":
+		keyDir, haveKeyDir = entryDir(info.Media), true
+	}
+	if key, ok := keys[keyDir]; ok && haveKeyDir {
+		stageServerKey(key, dir)
+	}
 	return info, nil
+}
+
+// stageServerKey keeps the server's secrets.key found in the archive as dir/server-secrets.key when it is
+// one (storage.ReadSecretsKeyFile: hex, 32 bytes); anything else is dropped and the hidden values stay
+// behind as without a key. The key is only read by a take-over (snapshotHiddenValuesOf) and goes with
+// the staging folder; it never becomes the instance's key.
+func stageServerKey(src, dir string) {
+	key, err := storage.ReadSecretsKeyFile(src)
+	if err != nil {
+		slog.Warn("The secrets.key in the server's backup is not a MindSift key and is ignored", "error", err)
+		return
+	}
+	logFailed("Staging the server's secrets key", storage.WriteFileAtomically(filepath.Join(dir, stagedServerKey), []byte(hex.EncodeToString(key)+"\n")))
 }
 
 // extractAccountMedia puts the pictures and recordings of the account's notes from the staged archive into
