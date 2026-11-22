@@ -110,6 +110,12 @@ export function useDocumentSync(
   // Sync engine (operation log): stores every change locally and syncs it with the server
   const engineRef = useRef<DocSyncEngine | null>(null);
   const [engineState, setEngineState] = useState<EngineState | null>(null);
+  // Whether the engine holds the note yet. Until then the note shows the fetched copy and the engine takes no
+  // changes: preReadyBase keeps the bullets as fetched once something changed meanwhile (an image dropped
+  // right after the page loaded, typing), so those changes go to the engine once it is ready instead of
+  // being replaced by its state.
+  const engineReadyRef = useRef(false);
+  const preReadyBaseRef = useRef<DocumentBlock[] | null>(null);
 
   const currentTitleRef = useLatestRef<string>(title);
   const currentBlocksRef = useLatestRef<DocumentBlock[]>(blocks);
@@ -186,11 +192,26 @@ export function useDocumentSync(
     lastExtractRef.current = kept?.extract ?? null;
     lastInlineRef.current = kept?.inline ?? null;
     lastMoveRef.current = kept?.move ?? null;
+    engineReadyRef.current = false;
+    preReadyBaseRef.current = null;
     const unsubscribe = engine.subscribe((state) => {
       setEngineState(state);
       if (!state.ready) return;
+      engineReadyRef.current = true;
+      const base = preReadyBaseRef.current;
+      let keptEarlyChanges = false;
+      if (base) {
+        preReadyBaseRef.current = null;
+        // Changed before the engine was ready: when the server still has the note as it was fetched, the
+        // changes made meanwhile become operations now (the engine's next report then equals the editor's
+        // bullets). Otherwise the server's state wins, as changes of others could not be merged.
+        if (engine.canEdit && sameBlocks(base, ensureNonEmptyBlocks(docId, state.blocks))) {
+          engine.applyFlat(currentBlocksRef.current);
+          keptEarlyChanges = true;
+        }
+      }
       const next = keepUnchanged(currentBlocksRef.current, ensureNonEmptyBlocks(docId, state.blocks));
-      if (!sameBlocks(currentBlocksRef.current, next)) {
+      if (!keptEarlyChanges && !sameBlocks(currentBlocksRef.current, next)) {
         // Changes of others (own edits are in currentBlocksRef already): remember where the bullet with the
         // cursor is, so bullets added or removed above it do not move it (keepCursorInPlace)
         cursorAnchorRef.current?.observer?.disconnect();
@@ -239,6 +260,7 @@ export function useDocumentSync(
       const prev = currentBlocksRef.current;
       const next = typeof update === 'function' ? update(prev) : update;
       if (next === prev) return;
+      if (!engineReadyRef.current && !preReadyBaseRef.current) preReadyBaseRef.current = prev;
       currentBlocksRef.current = next;
       setBlocks(next);
       engineRef.current?.applyFlat(next);
