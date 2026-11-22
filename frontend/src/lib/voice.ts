@@ -8,6 +8,7 @@
 import { api } from './api';
 import type { AuthStatus, VoiceMode } from './types';
 import { voiceLanguageTag } from './voiceLanguages';
+import { LevelMeter, rmsOfBytes } from './voiceLevel';
 
 export type EffectiveVoiceMode = VoiceMode | 'unsupported';
 
@@ -207,7 +208,8 @@ export class VoiceRecorder {
   private audioCtx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private samples: Uint8Array | null = null;
-  private lastLevel = { value: 0, at: 0 };
+  private lastRms = { value: 0, at: 0 };
+  private meter = new LevelMeter();
   private done: ((blob: Blob | null) => void) | null = null;
 
   /** bitsPerSecond: the audio bitrate asked of the browser (undefined: its own choice). */
@@ -260,28 +262,35 @@ export class VoiceRecorder {
     rec.start(1000);
   }
 
-  /** Input level 0..1 (roughly loudness), or null when unknown. */
   /** Bytes recorded so far in the current segment (the file grows about once a second). */
   recordedBytes(): number {
     return this.chunks.reduce((sum, c) => sum + c.size, 0);
   }
 
-  level(): number | null {
+  /** RMS of the current input (0..1), or null when unknown. */
+  private rms(): number | null {
     if (!this.analyser || !this.samples) return null;
     this.analyser.getByteTimeDomainData(this.samples as Uint8Array<ArrayBuffer>);
-    let sum = 0;
-    for (const v of this.samples) {
-      const x = (v - 128) / 128;
-      sum += x * x;
-    }
+    const rms = rmsOfBytes(this.samples);
     const now = performance.now();
     // Not a single sample off the zero line: the WebKitGTK of the desktop app (GStreamer) hands the analyser
     // gaps of silence while the microphone delivers late, often several in a second. The wave then dropped
-    // to nothing and back; the last level stands in for such a gap, a longer silence counts as one
-    if (sum === 0 && now - this.lastLevel.at < LEVEL_HOLD_MS) return this.lastLevel.value;
-    const level = Math.min(1, Math.sqrt(sum / this.samples.length) * 4);
-    if (sum > 0) this.lastLevel = { value: level, at: now };
-    return level;
+    // to nothing and back; the last value stands in for such a gap, a longer silence counts as one
+    if (rms === 0 && now - this.lastRms.at < LEVEL_HOLD_MS) return this.lastRms.value;
+    if (rms > 0) this.lastRms = { value: rms, at: now };
+    return rms;
+  }
+
+  /** Input level 0..1 for wave animations (dB scale, automatic gain, smoothed), or null when unknown. */
+  level(): number | null {
+    const rms = this.rms();
+    return rms === null ? null : this.meter.push(rms, performance.now());
+  }
+
+  /** Raw input strength 0..1 (linear RMS x4), for speech/silence detection; independent of the display scaling. */
+  speechLevel(): number | null {
+    const rms = this.rms();
+    return rms === null ? null : Math.min(1, rms * 4);
   }
 
   stop(): Promise<Blob | null> {
