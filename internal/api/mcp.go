@@ -173,7 +173,8 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 				"change show the user a badge with the name of your API key. Notes, tasks and lists come with a url " +
 				"that opens them in the app: when you tell the user about one, summarize it and add its url so " +
 				"they can look for themselves. Notes are outlines: one thought per bullet, details as indented child bullets, " +
-				"## / ### headings with an empty bullet before each heading that follows text. Diagrams are written as Mermaid " +
+				"## / ### headings with an empty bullet before each heading that follows text. Commands, code, config, JSON/YAML, SQL and log excerpts (anything to copy) go into a fenced code block with a language " +
+				"(```bash) as its own bullet, one block per command sequence, not one bullet per line, the fence on its own line, never after a \"- \" (e.g. \"- Install\\n\\t```bash\\n\\tnpm ci\\n\\tnpm test\\n\\t```\"); commands, flags, paths, file names, env vars and identifiers inside text are `inline code`. Diagrams are written as Mermaid " +
 				"(flowchart, mindmap, sequenceDiagram, stateDiagram, gitGraph) and become editable drawings; drawing_help explains them.",
 		}, nil)
 	case "ping":
@@ -616,7 +617,7 @@ var mcpTools = []mcpTool{
 			"taskListId": prop("string", "Task list id (from list_task_lists); empty = personal tasks"),
 			"priority":   map[string]any{"type": "string", "enum": []string{"low", "normal", "high", "urgent"}},
 			"dueDate":    prop("string", "YYYY-MM-DD or YYYY-MM-DDTHH:MM"),
-			"notes":      prop("string", "Longer description"),
+			"notes":      prop("string", "Longer description; Markdown: commands and code in fenced blocks with a language, paths and single commands as `inline code`"),
 			"reminders": map[string]any{"type": "array", "items": map[string]string{"type": "integer"},
 				"description": "Reminders in minutes before the due date, replacing the user's lead time: 0, 15, 30, 60, 120, 1440 (1 day), 2880, 4320, 10080 (1 week), 20160 (2 weeks), 43200 (1 month); [] = the lead time again"},
 		}),
@@ -660,7 +661,7 @@ var mcpTools = []mcpTool{
 			"isCompleted":  prop("boolean", "true = done"),
 			"dueDate":      prop("string", "YYYY-MM-DD, YYYY-MM-DDTHH:MM or empty"),
 			"priority":     map[string]any{"type": "string", "enum": []string{"low", "normal", "high", "urgent"}},
-			"notes":        prop("string", "Description"),
+			"notes":        prop("string", "Description; Markdown: commands and code in fenced blocks with a language, paths and single commands as `inline code`"),
 			"kanbanStatus": prop("string", "Column id of the task list's board (e.g. todo, in_progress, done)"),
 			"taskListId":   prop("string", "Move into another task list"),
 			"tags":         map[string]any{"type": "array", "items": map[string]string{"type": "string"}},
@@ -1052,7 +1053,7 @@ var mcpTools = []mcpTool{
 			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". A fenced ```mermaid block (flowchart, mindmap, sequenceDiagram, stateDiagram, gitGraph) becomes a drawing, laid out automatically (details: drawing_help). " +
 			"template starts the note with the bullets of one of the user's note templates (its id or exact title; list_notes with templates=true lists them, isTemplate marks them), as the app's \"new note from template\" does: to-dos open, {{datum}}/{{date}} become today's date, {{titel}}/{{title}} the new title; content, if given, follows below. Using a template reads it, so it needs notes:read as well. " +
 			"Structure: MindSift is an outliner. One thought per bullet; a term as a bullet with its details indented below (\"- Term\\n\\t- explanation\") rather than \"**Term:** explanation\"; ## and ### headings for longer notes, " +
-			"with an empty bullet (a line with just -) before each heading except the first, as all bullets have the same spacing (a recommendation: leave it out where it does not fit). " +
+			"with an empty bullet (a line with just -) before each heading except the first, as all bullets have the same spacing (a recommendation: leave it out where it does not fit). " + mcpCodeStyle +
 			"Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
 		Scope: storage.ScopeNotesCreate,
 		Schema: schema([]string{"title"}, map[string]any{

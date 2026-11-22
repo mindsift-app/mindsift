@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Changed
+- Notes written by AI agents through MCP now put commands, code, config files, JSON/YAML, SQL and log excerpts into code blocks with a language (one block per command sequence, not one bullet per line), and show paths, flags, file names and single commands in text as `inline code`.
+
 ## [0.99.0] - 2026-11-22
 
 ### Added

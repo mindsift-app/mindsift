@@ -359,7 +359,7 @@ var mcpWriteTools = []mcpTool{
 			"Several bullets at once: markdown instead of text and type, a whole outline in one call (as create_note's content: nested list with a tab or 2+ spaces per level, - [ ] to-dos, ## headings, code fences, tables, ```mermaid); " +
 			"its first level goes where a single bullet would, deeper levels below it. Prefer this over one call per bullet. " +
 			"Outline: details as children (parentId) rather than \"**Term:** text\"; h2/h3 for sections, with an empty text bullet above a heading that follows other bullets. " +
-			"type table: text is a Markdown table (| :---: | centers a column, | ---: | aligns it right, \\| is a | inside a cell). " + mcpCodeHelp + mcpDrawingHelp,
+			"type table: text is a Markdown table (| :---: | centers a column, | ---: | aligns it right, \\| is a | inside a cell). " + mcpCodeStyleShort + mcpCodeHelp + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId"}, map[string]any{
 			"noteId":   prop("string", "Note id"),
@@ -465,7 +465,7 @@ var mcpWriteTools = []mcpTool{
 		Description: "Change one bullet of a note: its text, tick or untick a to-do, or its type. Bullet ids come from get_note. " +
 			"A drawing is replaced as a whole: text is the new drawing (Mermaid or the JSON model, see drawing_help); type drawing turns a bullet into one. " +
 			"type code turns a bullet into a code block (its text becomes the code; language sets or changes the language), type divider into a line (its text goes). " +
-			"Code and dividers are written as in add_note_bullet.",
+			"Code and dividers are written as in add_note_bullet; text that is a command or code to copy is type code, a path, flag or single command inside other text is `inline code`.",
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId", "bulletId"}, map[string]any{
 			"noteId":   prop("string", "Note id"),
