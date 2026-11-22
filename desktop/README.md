@@ -317,6 +317,21 @@ flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatp
   builds, the Gitea builds) the bundle has no origin and installs as before, without updates. The key
   reaches only the container that makes the bundle, as a variable passed by name; the script writes it to
   a file only root can read and drops the variable before the build steps run.
+- **Screenshots** for GNOME Software, Discover and Flathub: the metainfo lists four PNGs (notes, board,
+  calendar, journal; 1600x900, English demo) in `screenshots/store/`, as
+  `https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/store/<name>.png`.
+  `e2e/screenshots.sh` makes them together with the README screenshots (`store-*.png` of
+  `e2e/screenshots.mjs`, scaled and compressed with pngquant); refresh them with that one command and
+  commit `screenshots/`. They must be PNG or JPEG: `flatpak-builder` runs `appstreamcli compose`, which
+  downloads every screenshot and silently drops the ones it cannot read (gdk-pixbuf in the build has no
+  WebP loader); the composed `share/app-info` of the bundle is what `flatpak build-update-repo` puts into
+  the appstream branch of the own repository. Up to v0.99.0 the metainfo pointed at the README's WebP
+  files, so the software centers showed none. A release build (CHANGELOG has the version) rewrites the URLs
+  from `main` to the tag (`…/mindsift/v1.2.0/screenshots/store/…`), which never changes, and fails when the
+  bundle's appstream data lacks one of them. Flathub builds from the unchanged metainfo and mirrors the
+  images itself (`--mirror-screenshots-url`). Check the published data with
+  `flatpak remote-ls --user --app mindsift` and
+  `~/.local/share/flatpak/appstream/mindsift/x86_64/active/appstream.xml`.
 - **Data:** under Flatpak `XDG_DATA_HOME` is `~/.var/app/app.mindsift.MindSift/data`, so the base folder
   is `~/.var/app/app.mindsift.MindSift/data/MindSift`; the app needs no access to the home folder. It
   writes no desktop entry of its own (`FLATPAK_ID`); Flatpak exports the packaged one.

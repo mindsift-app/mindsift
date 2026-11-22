@@ -112,7 +112,9 @@ func TestDesktopSetupWizard(t *testing.T) {
 	if rec := postJSON(t, router, "/api/v1/admin/backups", token, `{}`); rec.Code != http.StatusOK {
 		t.Fatalf("backup: %d %s", rec.Code, rec.Body.String())
 	}
-	if files, _ := filepath.Glob(filepath.Join(root, "system", "mindsift-full-*")); len(files) != 1 {
+	// The setup starts a first backup in the background: besides the one by hand there may be that one too,
+	// depending on whether it is done yet (two in the same second get the next free second, never one name)
+	if files, _ := filepath.Glob(filepath.Join(root, "system", "mindsift-full-*")); len(files) < 1 || len(files) > 2 {
 		t.Errorf("system snapshots in the chosen folder: %v", files)
 	}
 	if files, _ := filepath.Glob(filepath.Join(filepath.Dir(dbPath), "backups", "system", "mindsift-*")); len(files) != 0 {

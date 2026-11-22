@@ -2,6 +2,9 @@
 # Builds MindSift, starts it in demo mode with a fresh database and renews the README screenshots
 # in screenshots/ (title picture and colour-family grid: light and dark joined along a diagonal).
 # The PNGs from the browser are scaled down (desktop 1280 px, phone 480 px wide) and saved as WebP.
+# The Flatpak's software-center screenshots (store-*.png of screenshots.mjs) go to screenshots/store/ as PNG,
+# 1600x900: appstreamcli compose (flatpak-builder) and the software centers read no WebP. The metainfo
+# (desktop/packaging/flatpak/) refers to them; a release build points it at the tag's copies.
 # Requires podman (or docker via ENGINE=docker). Usage: e2e/screenshots.sh, other theme pair: SHOT_LIGHT=fjord SHOT_DARK=fjord-night
 set -euo pipefail
 ENGINE="${ENGINE:-podman}"
@@ -25,8 +28,9 @@ trap cleanup EXIT
 mkdir -p "$WORK/png"
 
 echo "Building the image …"
-# Version in the header, e.g. APP_VERSION=v0.2 e2e/screenshots.sh
-"$ENGINE" build -q --build-arg APP_VERSION="${APP_VERSION:-}" -t "$IMAGE" "$ROOT" >/dev/null
+# Version in the header, e.g. APP_VERSION=v0.2 e2e/screenshots.sh; the image's tests are skipped (pictures
+# need none, ci/local-checks.sh runs them), SKIP_TESTS=0 runs them
+"$ENGINE" build -q --build-arg APP_VERSION="${APP_VERSION:-}" --build-arg SKIP_TESTS="${SKIP_TESTS:-1}" -t "$IMAGE" "$ROOT" >/dev/null
 # Straight to the app (not the entrypoint that hands /data to uid 1000): the test data stays the host
 # user's, so the script can remove it
 "$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true -e DEMO_RESET_MINUTES=0 \
@@ -44,6 +48,19 @@ echo "Converting to WebP …"
   apk add -q libwebp-tools >/dev/null
   for f in /png/*.png; do
     name=$(basename "$f" .png)
+    case "$name" in store-*) continue ;; esac
     case "$name" in Mobile_*) width=480 ;; *) width=1280 ;; esac
     cwebp -quiet -resize "$width" 0 -q 90 -m 6 -metadata none "$f" -o "/shots/$name.webp"
+  done'
+
+echo "Store screenshots (PNG) …"
+mkdir -p "$ROOT/screenshots/store"
+"$ENGINE" run --rm -v "$WORK/png":/png:Z -v "$ROOT/screenshots/store":/store:Z docker.io/library/alpine:3.24 sh -c '
+  apk add -q imagemagick pngquant >/dev/null
+  rm -f /store/*.png
+  for f in /png/store-*.png; do
+    name=$(basename "$f" .png); name=${name#store-}
+    magick "$f" -resize 1600x -strip "/tmp/$name.png"
+    pngquant --quality 80-95 --speed 1 --strip --force --output "/store/$name.png" "/tmp/$name.png" \
+      || cp "/tmp/$name.png" "/store/$name.png"  # pngquant leaves it when the quality would suffer
   done'

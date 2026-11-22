@@ -35,23 +35,55 @@ function fenceCloses(line: string, marker: string): boolean {
   return t.length >= marker.length && t.startsWith(marker) && t.split('').every((ch) => ch === marker[0]);
 }
 
+// A fence as a list item's content ("- ```bash"): a code block at the item's level. Its code is the lines
+// indented at least as far as the item's content (width), without that indentation; a closing fence ends it
+// at any indentation, and so does the first non-blank line indented less (not taken, so an unclosed fence
+// never swallows the bullets after it). Same rules as the server's Markdown import (itemFence).
+function itemFenceOpen(line: string): { marker: string; info: string; width: number } | null {
+  const item = line.match(/^([ \t]*(?:[-*+•]|\d+[.)])[ \t]+)(.*)$/);
+  const open = item?.[2].trimEnd().match(FENCE_OPEN);
+  if (!item || !open) return null;
+  return { marker: open[1], info: open[2].trim(), width: leadingWidth(item[1].replace(/[^ \t]/g, ' ')).width };
+}
+
+function endsItemFence(line: string, width: number): boolean {
+  return line.trim() !== '' && leadingWidth(line).width < width;
+}
+
+// Takes up to n columns of leading spaces and tabs (a tab counts 4) off a line
+function stripColumns(line: string, n: number): string {
+  let w = 0;
+  let i = 0;
+  while (i < line.length && w < n && (line[i] === ' ' || line[i] === '\t')) {
+    w += line[i] === '\t' ? 4 : 1;
+    i++;
+  }
+  return line.slice(i);
+}
+
 // The lines inside fences (not the fences themselves): their own indentation is code, not nesting
 function fenceBodyLines(rawLines: string[]): Set<number> {
   const body = new Set<number>();
-  let marker: string | null = null;
-  rawLines.forEach((line, i) => {
-    if (marker) {
-      if (fenceCloses(line, marker)) marker = null;
-      else body.add(i);
-      return;
+  let open: { marker: string; width?: number } | null = null;
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i];
+    if (open) {
+      if (fenceCloses(line, open.marker)) open = null;
+      else if (open.width !== undefined && endsItemFence(line, open.width)) {
+        open = null;
+        i--;
+      } else body.add(i);
+      continue;
     }
-    const open = line.trim().match(FENCE_OPEN);
-    if (open) marker = open[1];
-  });
+    const fence = line.trim().match(FENCE_OPEN);
+    if (fence) open = { marker: fence[1] };
+    else open = itemFenceOpen(line);
+  }
   return body;
 }
 
-export function parsePastedLines(rawLines: string[]): PastedItem[] {
+export function parsePastedLines(lines: string[]): PastedItem[] {
+  const rawLines = lines.map((l) => l.replace(/\r$/, ''));
   // Indentation steps differ (2, 3 or 4 spaces, tabs): the distinct widths in use are the levels
   const inFence = fenceBodyLines(rawLines);
   const widths = Array.from(
@@ -61,8 +93,9 @@ export function parsePastedLines(rawLines: string[]): PastedItem[] {
 
   const items: PastedItem[] = [];
   let current: PastedItem | null = null;
-  // An open fence: its marker, the indentation of its line (taken off the code lines), language, lines so far
-  let fence: { marker: string; prefix: string; info: string; lines: string[]; indent: number } | null = null;
+  // An open fence: its marker, the indentation of its line (taken off the code lines), language, lines so far;
+  // a fence that is a list item's content has the column of that content instead (width)
+  let fence: { marker: string; prefix: string; info: string; lines: string[]; indent: number; width?: number } | null = null;
   let afterHeading = false;
   const headings: { rank: number; level: number }[] = []; // open headings, innermost last
   // A list right after a paragraph ("Folgende Punkte:") nests under it: level of that paragraph,
@@ -100,6 +133,18 @@ export function parsePastedLines(rawLines: string[]): PastedItem[] {
 
   for (let li = 0; li < rawLines.length; li++) {
     const rawLine = rawLines[li];
+    if (fence?.width !== undefined) {
+      if (fenceCloses(rawLine, fence.marker)) {
+        closeFence(true);
+        continue;
+      }
+      if (!endsItemFence(rawLine, fence.width)) {
+        fence.lines.push(stripColumns(rawLine, fence.width));
+        continue;
+      }
+      // A line indented less than the item's content ends the fence and is read as usual
+      closeFence(true);
+    }
     if (fence) {
       if (fenceCloses(rawLine, fence.marker)) {
         closeFence(true);
@@ -123,6 +168,18 @@ export function parsePastedLines(rawLines: string[]): PastedItem[] {
       afterHeading = false;
       paragraphLevel = null;
       if (width === 0) inList = false;
+      continue;
+    }
+    const itemFence = itemFenceOpen(rawLine);
+    if (itemFence) {
+      flush();
+      afterHeading = false;
+      const indent = sectionLevel() + levelOf(leadingWidth(rawLine).width);
+      if (!inList) {
+        inList = true;
+        listBoost = paragraphLevel !== null && indent <= paragraphLevel ? paragraphLevel + 1 - indent : 0;
+      }
+      fence = { marker: itemFence.marker, prefix: '', info: itemFence.info, lines: [], indent: indent + listBoost, width: itemFence.width };
       continue;
     }
 

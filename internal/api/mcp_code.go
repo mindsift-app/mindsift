@@ -63,3 +63,11 @@ func mcpCodeLanguage(name string) (string, error) {
 const mcpCodeHelp = "type code: text is the code as it is (no Markdown fence), language e.g. go, python, typescript, bash, sql, json, yaml " +
 	"(short names like js, py, sh work too; any other name is kept as written, without highlighting). {{secret:…}} in code becomes a placeholder. " +
 	"type divider: a line without text. "
+
+// mcpCodeStyle: where commands, code and paths go in a note, for create_note (add_note_bullet has the
+// short form; the descriptions are limited in length, see TestMCPDrawingHelp). The fence goes on its own
+// line: after a list marker ("- ```bash") the parser reads a text bullet, not a code block.
+const mcpCodeStyle = "Code: commands, code, config files, JSON/YAML, SQL and log excerpts go into a fenced block with a language (```bash) as one bullet per command sequence, " +
+	"on its own line (never after a \"- \"; indent it below a bullet); paths, flags and single commands in text are `inline code`. "
+
+const mcpCodeStyleShort = "Commands and code: one ```lang block per sequence, on its own line; paths, flags, single commands in text: `inline code`. "

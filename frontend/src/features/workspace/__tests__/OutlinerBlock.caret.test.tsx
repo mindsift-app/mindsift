@@ -590,6 +590,44 @@ describe('outliner polish (Teil A)', () => {
     expect(last?.content).toBe('Meine Überschrift');
   });
 
+  it.each([
+    ['at the start', '/codeHallo Welt', 5],
+    ['in the middle', 'Hallo /code Welt', 11],
+    ['at the end', 'Hallo Welt /code', 16],
+  ])('turns a bullet with text into code with /code typed %s', (_where, typed, cursor) => {
+    const updates: DocumentBlock[] = [];
+    const block = { id: 'b1', type: 'bullet', content: 'Hallo Welt', level: 0 } as DocumentBlock;
+    const { container, queryByText } = renderBlock(block, { onUpdateBlock: (u: DocumentBlock) => updates.push(u) });
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    ta.focus();
+    fireEvent.change(ta, { target: { value: typed, selectionStart: cursor, selectionEnd: cursor } });
+    expect(queryByText('/code')).toBeTruthy();
+    fireEvent.keyDown(ta, { key: 'Enter' });
+    // One update with the new type and the text without the command
+    const last = updates[updates.length - 1];
+    expect(last?.type).toBe('code');
+    expect(last?.content).toBe('Hallo Welt');
+  });
+
+  it('offers headings, to-do and table in the middle of the text, but no divider or drawing', () => {
+    const updates: DocumentBlock[] = [];
+    const block = { id: 'b1', type: 'bullet', content: 'Hallo Welt', level: 0 } as DocumentBlock;
+    const { container, queryByText } = renderBlock(block, { onUpdateBlock: (u: DocumentBlock) => updates.push(u) });
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    ta.focus();
+    fireEvent.change(ta, { target: { value: 'Hallo / Welt', selectionStart: 7, selectionEnd: 7 } });
+    expect(queryByText('/h2')).toBeTruthy();
+    expect(queryByText('/todo')).toBeTruthy();
+    expect(queryByText('/table')).toBeTruthy();
+    expect(queryByText('/divider')).toBeNull();
+    expect(queryByText('/canvas')).toBeNull();
+    fireEvent.change(ta, { target: { value: 'Hallo /h2 Welt', selectionStart: 9, selectionEnd: 9 } });
+    fireEvent.keyDown(ta, { key: 'Enter' });
+    const last = updates[updates.length - 1];
+    expect(last?.type).toBe('h2');
+    expect(last?.content).toBe('Hallo Welt');
+  });
+
   it('closes slash menu on mousedown outside', () => {
     const block = { id: 'b1', type: 'bullet', content: '', level: 0 } as DocumentBlock;
     const { container, queryByText } = renderBlock(block);
