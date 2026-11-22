@@ -10,7 +10,9 @@ attached to every GitHub release with fixed names, see "Release" in ci/release-d
   listed (also ones copied there by hand), "Neue lokale Instanz…" (a name) and "Mit Server verbinden…"
   (name and address, checked with `GET /api/v1/health`: 15 s in all, a failed connection is tried once
   more after a second; a server that answers wrongly is reported at once). Entries can be renamed and removed from the list;
-  removing never deletes data. The entry opened last opens directly at the next start. The tray menu has
+  removing never deletes data. On the first start (nothing listed or found) it offers "Lokale Instanz anlegen" and
+  "Mit Server verbinden" side by side and creates nothing before the person chose. The entry opened last opens
+  directly at the next start. The tray menu has
   "MindSift öffnen", "Instanz wechseln…" (the start view, also Ctrl+Shift+O for desktops without a
   tray) and "Beenden", in the system’s language (`internal/shell/texts.go`). In a local instance the
   profile menu has "Instanz wechseln" where sign-out would be; it loads the start view too.
@@ -251,6 +253,37 @@ flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatp
   release tag, the Go modules as generated sources (e.g. flatpak-go-mod's `modules.txt` plus one archive
   source per module) or a vendor archive attached to the release, and the frontend either built from
   generated npm sources (flatpak-node-generator, with the node SDK extension) or taken as a release asset.
+- **License file in an offline vendor build:** the app reads `THIRD_PARTY_LICENSES.txt` next to its binary
+  (*About MindSift*), so a build without network and without a Go module cache has to produce it too.
+  Run this from the repository root after the frontend's `node_modules` (`npm ci`, offline from the
+  generated sources) and `desktop/vendor/` are in place, before installing:
+
+  ```bash
+  node ci/third-party-licenses-npm.mjs frontend > third-party-npm.txt
+  (cd desktop && SUBJECT='The desktop app' GO_PLATFORMS='linux/amd64' GOFLAGS=-mod=vendor GOPROXY=off \
+    bash ../ci/third-party-licenses.sh ../third-party-npm.txt . > ../THIRD_PARTY_LICENSES.txt)
+  install -Dm644 THIRD_PARTY_LICENSES.txt /app/bin/THIRD_PARTY_LICENSES.txt
+  install -Dm644 THIRD_PARTY_LICENSES.txt /app/share/licenses/app.mindsift.MindSift/THIRD_PARTY_LICENSES.txt
+  ```
+
+  - The npm script only reads `frontend/package-lock.json` and the installed `frontend/node_modules`; it
+    needs nothing else (no network, no packages of its own).
+  - `ci/third-party-licenses.sh` needs `bash` and `go` on the `PATH` (the Go SDK extension's
+    `/usr/lib/sdk/golang/bin`). With `-mod=vendor` `go list` reports no module directory, so the script
+    reads each module's license files from `desktop/vendor/<module path>/` instead of the module cache. The
+    vendor folder must therefore hold the whole module including its `LICENSE`/`COPYING`/`NOTICE`/`PATENTS`/
+    `AUTHORS` files, as the module archives of flatpak-go-mod do (plain `go mod vendor` works for the current
+    modules, too); the script fails and names the module when one has none. MindSift's own
+    module (`vendor/github.com/mindsift-app/mindsift/`) is never listed. Go's own license comes from
+    `$(go env GOROOT)/LICENSE`, so the SDK extension's Go tree has to ship that file.
+  - `GO_PLATFORMS` names what the build compiles (`linux/amd64`, add `linux/arm64` when both are built);
+    the release page's file lists Linux and Windows. With a module cache and no vendor mode, the script
+    works as before (`desktop/build.sh licenses`).
+  - Installed locations: `/app/bin/THIRD_PARTY_LICENSES.txt` (what the app opens) and
+    `/app/share/licenses/app.mindsift.MindSift/THIRD_PARTY_LICENSES.txt`.
+  - Checked in `golang:1.27.4-trixie` with the module cache deleted and `GOPROXY=off`, vendor filled with
+    each module's complete directory (what the proxy zips contain): the Go part is byte-identical to the
+    module-cache run (same modules, same texts).
 
 ## Windows
 

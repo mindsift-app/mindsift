@@ -278,9 +278,7 @@ const main = async () => {
       created.push(imgDoc.id);
       await page.goto(`${BASE}/?note=${imgDoc.id}`);
       await page.waitForFunction(() => document.querySelectorAll('[data-outline-block]').length === 2, null, { timeout: 10000 });
-      // The note is ready for drops once a bullet takes the cursor (WebKit ignored a drop right after loading)
-      await page.locator('[data-outline-block]').last().click();
-      await page.waitForFunction(() => document.activeElement?.tagName === 'TEXTAREA', null, { timeout: 5000 });
+      // Right after loading, before the note's sync has its first snapshot (WebKit lost such an image again)
       await page.evaluate(async () => {
         const canvas = document.createElement('canvas');
         canvas.width = 240;

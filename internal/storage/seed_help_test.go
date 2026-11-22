@@ -134,9 +134,9 @@ func TestDemoBehaeltAlleBeispieldaten(t *testing.T) {
 	}
 }
 
-// Die Hilfe der Desktop-App kommt ohne Teilen und Home Assistant aus: eine Notiz weniger, alle Links führen
-// zu einer Notiz, die API-Notiz nennt die lokale Adresse statt eines Servers, und in jeder Sprache sind es
-// dieselben Notizen mit denselben Blöcken.
+// Die Hilfe der Desktop-App kommt ohne Home Assistant aus: die Teilen-Notiz ist die Kurzfassung ohne
+// Teilen-Schaltflächen (Server nötig), alle Links führen zu einer Notiz, die API-Notiz nennt die lokale
+// Adresse statt eines Servers, und in jeder Sprache sind es dieselben Notizen mit denselben Blöcken.
 func TestHilfeNotizenDesktop(t *testing.T) {
 	var reference []string
 	for _, lang := range []string{"en", "de", "es", "fr", "it"} {
@@ -149,8 +149,8 @@ func TestHilfeNotizenDesktop(t *testing.T) {
 		}
 		var inFolder int
 		_ = s.db.QueryRow(`SELECT COUNT(*) FROM documents WHERE user_id = ? AND folder_path = ?`, u.ID, helpFolders[lang]).Scan(&inFolder)
-		if inFolder != 8 {
-			t.Errorf("%s: %d Hilfe-Notizen, erwartet 8 (ohne Teilen)", lang, inFolder)
+		if inFolder != 9 {
+			t.Errorf("%s: %d Hilfe-Notizen, erwartet 9 (Teilen als Kurzfassung)", lang, inFolder)
 		}
 		checkHelpLinks(t, s, u.ID, lang)
 
@@ -169,6 +169,9 @@ func TestHilfeNotizenDesktop(t *testing.T) {
 		if !strings.Contains(text, "127.0.0.1") || strings.Contains(text, "example.com") || strings.Contains(text, "Home Assistant") {
 			t.Errorf("%s: die API-Notiz soll die lokale Adresse nennen, keinen Server und kein Home Assistant", lang)
 		}
+		if lang == "de" && (!strings.Contains(text, "Diese lokale Instanz der Desktop-App bietet das nicht an") || strings.Contains(text, "Administration das Teilen ausgeschaltet")) {
+			t.Error("de: die Teilen-Notiz der Desktop-App nennt die lokale Instanz und braucht einen Server")
+		}
 
 		shape := helpShape(t, s, u.ID)
 		if reference == nil {
@@ -181,8 +184,8 @@ func TestHilfeNotizenDesktop(t *testing.T) {
 	}
 }
 
-// Ein Server im Freigabemodus „privat“ bekommt die Hilfe ohne Teilen wie die Desktop-App, aber mit der
-// Server-Adresse in der API-Notiz.
+// Ein Server im Freigabemodus „privat“ bekommt die Teilen-Notiz als Kurzfassung (Administration hat Teilen
+// ausgeschaltet) und die Server-Adresse in der API-Notiz.
 func TestHilfeNotizenOhneTeilen(t *testing.T) {
 	s, u := newSyncTestStore(t)
 	if err := s.SetLanguage(u.ID, "de"); err != nil {
@@ -193,8 +196,8 @@ func TestHilfeNotizenOhneTeilen(t *testing.T) {
 	}
 	var inFolder int
 	_ = s.db.QueryRow(`SELECT COUNT(*) FROM documents WHERE user_id = ? AND folder_path = ?`, u.ID, helpFolders["de"]).Scan(&inFolder)
-	if inFolder != 8 {
-		t.Errorf("%d Hilfe-Notizen, erwartet 8 (ohne Teilen)", inFolder)
+	if inFolder != 9 {
+		t.Errorf("%d Hilfe-Notizen, erwartet 9 (Teilen als Kurzfassung)", inFolder)
 	}
 	checkHelpLinks(t, s, u.ID, "de")
 	docs, _ := s.GetDocuments(u.ID)
@@ -210,5 +213,7 @@ func TestHilfeNotizenOhneTeilen(t *testing.T) {
 	}
 	if text := all.String(); !strings.Contains(text, "example.com") || strings.Contains(text, "127.0.0.1") || strings.Contains(text, "Geteilte Listen") {
 		t.Error("ohne Teilen: die API-Notiz nennt den Server, nichts über geteilte Listen")
+	} else if !strings.Contains(text, "die Administration das Teilen ausgeschaltet") || strings.Contains(text, "Desktop-App bietet das nicht an") {
+		t.Error("ohne Teilen auf einem Server: die Teilen-Notiz nennt die ausgeschaltete Freigabe, nicht die Desktop-App")
 	}
 }
