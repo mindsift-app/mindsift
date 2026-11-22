@@ -14,6 +14,7 @@ Versions without a git tag were development states and were never published as a
 
 ### Fixed
 - Voice input where the window has no speech recognition of its own (the Linux desktop app, Firefox): the message no longer blames "this browser" but says that voice input is not available here and that a Whisper server (Administration → Voice input & AI) provides it. With a Whisper server, a browser choice made on another device no longer switches voice input off here: Whisper stays in use, and the "Browser" option in the account settings is greyed out with a note. A microphone that stayed open when the browser refused to start a recording is closed again.
+- Desktop app on Windows: the window title now follows the page shown on a server too. Going back or forward to a server's page, or a server's page leading to another server or site, left the title of the page before (e.g. "MindSift" from the start view) instead of the server's name.
 - An image dropped onto a note (or anything typed or pasted) right after opening the note's page is kept: it showed up and vanished again a moment later when the note's sync had not loaded yet, which happened most often in Safari and other WebKit browsers, also in the desktop app on Linux.
 
 ## [0.98.0] - 2026-11-22

@@ -84,6 +84,8 @@ func main() {
 		// The webview's storage (local storage, IndexedDB, cookies, service workers, caches) in the base
 		// folder, whatever the program's file is called; on Linux useWebviewDataDir below
 		Windows: application.WindowsOptions{WebviewUserDataPath: webviewDir},
+		// Windows: the note every page posts after its load, for the title (webview_windows.go); nil elsewhere
+		RawMessageHandler: rawMessages,
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "app.mindsift.MindSift",
 			OnSecondInstanceLaunch: func(application.SecondInstanceData) {
