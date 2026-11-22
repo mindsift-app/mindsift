@@ -912,6 +912,7 @@
     "full": {
       "autoHint": "Daily at {{time}}: all data including pictures and recordings, plus one backup per user, in <c>backups/</c>.",
       "restoreHint": "Restoring replaces all data of this instance; the current state is backed up first.",
+      "keyExcluded": "The key for encrypted values is not in the backup; keep it separately.",
       "kindFull_one": "Complete with {{count}} media file",
       "kindFull_other": "Complete with {{count}} media files",
       "kindDb": "Database only",

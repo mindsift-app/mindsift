@@ -5177,7 +5177,7 @@
     "/api/v1/admin/backups/{name}/restore": {
       "post": {
         "summary": "Restore the instance from a backup",
-        "description": "Body {confirm: name}. Checks the backup, writes a full backup of the current state, answers 202 and reopens the server with the restored data (previous data back if they do not open); capability restore",
+        "description": "Body {confirm: name, acceptKeyMismatch?}. Checks the backup (409 code secrets_key_mismatch when its encrypted values do not open with the key the restored instance will use; acceptKeyMismatch: true restores anyway), restores its secrets.key with the data, writes a full backup of the current state, answers 202 and reopens the server with the restored data (previous data back if they do not open); capability restore",
         "tags": [
           "Administration"
         ],
@@ -5307,7 +5307,7 @@
     "/api/v1/admin/backups/uploads/{id}/restore": {
       "post": {
         "summary": "Restore an uploaded backup",
-        "description": "Body {confirm: name, sha256}: SHA-256 over the SHA-256 of each 32 MiB block; then as /admin/backups/{name}/restore",
+        "description": "Body {confirm: name, sha256, acceptKeyMismatch?}: SHA-256 over the SHA-256 of each 32 MiB block; then as /admin/backups/{name}/restore",
         "tags": [
           "Administration"
         ],

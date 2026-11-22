@@ -200,6 +200,44 @@ func TestSecretsKeySource(t *testing.T) {
 	}
 }
 
+// Complete backups carry secrets.key by default; BACKUP_EXCLUDE_SECRETS_KEY=true or a key from SECRETS_KEY
+// leaves it out, for the server and for the command line alike.
+func TestBackupSecretsKey(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("DATA_DIR", dir)
+	t.Setenv("DATABASE_URL", "")
+	t.Setenv("SECRETS_KEY", "")
+	t.Setenv("BACKUP_EXCLUDE_SECRETS_KEY", "")
+	cfg := Load()
+	if key := cfg.BackupSecretsKey(); !bytes.Equal(key, cfg.SecretsKey) || len(key) != 32 {
+		t.Fatalf("by default the backups carry the key: %x", key)
+	}
+	if key := BackupSecretsKeyFromEnv(filepath.Dir(cfg.DatabasePath)); !bytes.Equal(key, cfg.SecretsKey) {
+		t.Errorf("command line: %x", key)
+	}
+
+	t.Setenv("BACKUP_EXCLUDE_SECRETS_KEY", "true")
+	cfg = Load()
+	if !cfg.BackupExcludeSecretsKey || cfg.BackupSecretsKey() != nil || BackupSecretsKeyFromEnv(filepath.Dir(cfg.DatabasePath)) != nil {
+		t.Error("BACKUP_EXCLUDE_SECRETS_KEY=true must leave the key out")
+	}
+
+	t.Setenv("BACKUP_EXCLUDE_SECRETS_KEY", "")
+	t.Setenv("SECRETS_KEY", "a-long-random-value-for-the-secrets-key")
+	cfg = Load()
+	if cfg.BackupSecretsKey() != nil || BackupSecretsKeyFromEnv(filepath.Dir(cfg.DatabasePath)) != nil {
+		t.Error("a key from SECRETS_KEY is not put into backups")
+	}
+	restored := bytes.Repeat([]byte{1}, 32)
+	if cfg.TakeRestoredSecretsKey(restored); bytes.Equal(cfg.SecretsKey, restored) {
+		t.Error("SECRETS_KEY wins over a restored key")
+	}
+	cfg.SecretsKeySource = secretsKeyFile
+	if cfg.TakeRestoredSecretsKey(restored); !bytes.Equal(cfg.SecretsKey, restored) {
+		t.Error("the restored key must be taken")
+	}
+}
+
 func TestCustomLinkValidation(t *testing.T) {
 	t.Setenv("DATA_DIR", t.TempDir())
 

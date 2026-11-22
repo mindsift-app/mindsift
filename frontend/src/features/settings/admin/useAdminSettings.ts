@@ -131,6 +131,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           backupEnabledConfiguredViaEnv: Boolean(sys.backupEnabledConfiguredViaEnv),
           backupTimeConfiguredViaEnv: Boolean(sys.backupTimeConfiguredViaEnv),
           backupRetentionDaysConfiguredViaEnv: Boolean(sys.backupRetentionDaysConfiguredViaEnv),
+          backupSecretsKeyExcluded: Boolean(sys.backupSecretsKeyExcluded),
           smtpPassEnvHost: sys.smtpPassEnvHost || '',
           smtpPassEnvUser: sys.smtpPassEnvUser || '',
           smtpFrom: sys.smtpFrom || '',

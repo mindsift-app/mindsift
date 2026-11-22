@@ -17,11 +17,12 @@ const (
 	SealedPublicLink = "public_link"
 	SealedCalFeed    = "calendar_feed"
 	SealedSMTPPass   = "smtp_pass"
+	SealedSpeechKey  = "speech_key"
 )
 
 // SealedSamples returns up to perKind of the newest values of each kind encrypted with SECRETS_KEY, so the
 // start can check that the current key still opens them. The TOTP rows carry the user id; the caller
-// builds the seal id from it. The SMTP password (sealed by the store, see sealed.go) comes with its
+// builds the seal id from it. The SMTP password and the Whisper server's API key (sealed by the store) come with their
 // seal id as it is.
 func (s *Store) SealedSamples(perKind int) ([]SealedSample, error) {
 	queries := []struct{ kind, query string }{
@@ -31,6 +32,8 @@ func (s *Store) SealedSamples(perKind int) ([]SealedSample, error) {
 		{SealedCalFeed, `SELECT user_id, token_sealed FROM calendar_feeds ORDER BY created_at DESC LIMIT ?`},
 		{SealedSMTPPass, `SELECT '` + smtpPassSealID + `', value FROM system_settings
 			WHERE key = 'smtp_pass' AND value LIKE '` + SealedPrefix + `%' LIMIT ?`},
+		{SealedSpeechKey, `SELECT '` + speechKeySealID + `', value FROM system_settings
+			WHERE key = 'speech_api_key' AND value LIKE '` + SealedPrefix + `%' LIMIT ?`},
 	}
 	var out []SealedSample
 	for _, q := range queries {

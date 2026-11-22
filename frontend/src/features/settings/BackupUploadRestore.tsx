@@ -5,6 +5,7 @@ import { api } from '../../lib/api';
 import { askConfirm } from '../../components/askConfirm';
 import { errorMessage } from '../../lib/errorMessage';
 import { formatBytes } from '../../lib/download';
+import { restoreWithKeyCheck } from './restoreKeyCheck';
 import { forgetUpload, uploadBackup, type FinishedUpload, type UploadProgress } from '../../lib/backupUpload';
 
 interface Props {
@@ -27,7 +28,7 @@ export const BackupUploadRestore: React.FC<Props> = ({ onRestoring }) => {
     setError(null);
     try {
       const boot = await api.serverBoot();
-      await api.adminRestoreUpload(up.id, up.name, up.sha256);
+      if (!(await restoreWithKeyCheck((accept) => api.adminRestoreUpload(up.id, up.name, up.sha256, accept), t('backups.full.restore')))) return;
       forgetUpload();
       setDone(null);
       onRestoring(boot);

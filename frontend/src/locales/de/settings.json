@@ -911,6 +911,7 @@
     "full": {
       "autoHint": "Täglich um {{time}}: alle Daten samt Bildern und Aufnahmen, dazu ein Backup je Benutzer, unter <c>backups/</c>.",
       "restoreHint": "Wiederherstellen ersetzt alle Daten dieser Instanz; der aktuelle Stand wird vorher gesichert.",
+      "keyExcluded": "Der Schlüssel für verschlüsselte Werte ist nicht im Backup; bewahre ihn getrennt auf.",
       "kindFull_one": "Komplett mit {{count}} Mediendatei",
       "kindFull_other": "Komplett mit {{count}} Mediendateien",
       "kindDb": "Nur Datenbank",

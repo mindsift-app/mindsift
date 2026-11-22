@@ -912,6 +912,7 @@
     "full": {
       "autoHint": "Chaque jour à {{time}} : toutes les données avec images et enregistrements, plus une sauvegarde par utilisateur, dans <c>backups/</c>.",
       "restoreHint": "La restauration remplace toutes les données de cette instance ; l'état actuel est sauvegardé avant.",
+      "keyExcluded": "La clé des valeurs chiffrées n'est pas dans la sauvegarde ; conserve-la séparément.",
       "kindFull_one": "Complète avec {{count}} fichier média",
       "kindFull_other": "Complète avec {{count}} fichiers média",
       "kindDb": "Base de données seule",

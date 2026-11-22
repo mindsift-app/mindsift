@@ -13,6 +13,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/config"
@@ -41,16 +42,20 @@ type Env struct {
 	// DatabasePath and DemoMode as the server takes them from the environment
 	DatabasePath string
 	DemoMode     bool
+	// BackupSecretsKey: the key check --backup puts into the backup (config.BackupSecretsKeyFromEnv)
+	BackupSecretsKey []byte
 }
 
 // Main runs the command in args (os.Args[1:]) with the process's streams and environment.
 func Main(args []string) int {
+	dbPath := config.DatabasePathFromEnv()
 	return Run(args, Env{
-		Stdout:       os.Stdout,
-		Stderr:       os.Stderr,
-		Stdin:        os.Stdin,
-		DatabasePath: config.DatabasePathFromEnv(),
-		DemoMode:     config.DemoModeFromEnv(),
+		Stdout:           os.Stdout,
+		Stderr:           os.Stderr,
+		Stdin:            os.Stdin,
+		DatabasePath:     dbPath,
+		DemoMode:         config.DemoModeFromEnv(),
+		BackupSecretsKey: config.BackupSecretsKeyFromEnv(filepath.Dir(dbPath)),
 	})
 }
 
@@ -182,7 +187,7 @@ func (c *command) open() error {
 	if _, err := os.Stat(c.env.DatabasePath); err != nil {
 		return fmt.Errorf("no database at %s (set DATA_DIR or DATABASE_URL as for the server)", c.env.DatabasePath)
 	}
-	store, err := storage.NewStore(c.env.DatabasePath, storage.WithExistingSchema())
+	store, err := storage.NewStore(c.env.DatabasePath, storage.WithExistingSchema(), storage.WithBackupSecretsKey(c.env.BackupSecretsKey))
 	if err != nil {
 		return err
 	}

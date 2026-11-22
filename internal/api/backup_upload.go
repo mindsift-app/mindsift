@@ -290,7 +290,7 @@ func (s *Server) handleUploadRestore(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, errUploadChecksum)
 		return
 	}
-	s.restoreFrom(w, r, meta.Name, true, stageUploadedBackup(file), func() {
+	s.restoreFrom(w, r, meta.Name, true, req.AcceptKeyMismatch, stageUploadedBackup(file), func() {
 		// Staged: the upload itself is no longer needed
 		logFailed("Removing a restored backup upload", os.RemoveAll(dir))
 	})

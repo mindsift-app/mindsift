@@ -223,6 +223,7 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `MEDIA_AUDIO_UPLOADS` | admin UI decides (`true`) | `false` refuses audio files from the device; notes then only take recordings made in the app |
 | `UPDATE_CHECK` | `true` | `false` stops the daily look for a new MindSift release (admins get a hint); no request goes out then |
 | `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | empty | Outgoing proxy for OIDC, the update check, webhooks, push, link previews and image copies; MindSift still checks each target's addresses itself before handing it over, and needs DNS for that ([limits](Doku/security.md#nothing-reaches-into-your-network)) |
+| `BACKUP_EXCLUDE_SECRETS_KEY` | `false` | `true` keeps `secrets.key` out of the server backups (keep the key separately then); by default it is included, so a move needs no manual step |
 | `RESTORE_UPLOAD_MAX_GB` | `100` | Largest backup the administration takes as an upload to restore, in GB |
 | `DRAW_LIVE_MAX_MB` | a twelfth of the server's memory, 16–128 | Memory all live drawings on the server may hold together, in MB (each up to 1 MB; the server needs about three times that). Without the variable it follows `GOMEMLIMIT`, else the machine's memory |
 | `METRICS_TOKEN` | empty | Switches on `/metrics` for Prometheus, see [monitoring](Doku/operations.md#monitoring) |

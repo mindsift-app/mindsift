@@ -76,12 +76,20 @@ func (e *restoreEnv) reopen() error {
 	case <-time.After(10 * time.Second):
 		e.t.Fatal("the restarter was not called")
 	}
+	return e.reopenNow()
+}
+
+// reopenNow closes and opens the store and server as the runner does (keys from the configuration).
+func (e *restoreEnv) reopenNow() error {
+	e.t.Helper()
 	e.srv.Close()
 	_ = e.store.Close()
-	st, restoreErr, err := storage.OpenStoreWithRestore(e.srv.cfg.DatabasePath, storage.WithSecretsKey(testSecretsKey))
+	cfg := e.srv.cfg
+	st, restoreErr, err := storage.OpenStoreWithRestore(cfg.DatabasePath, storage.WithSecretsKey(cfg.SecretsKey), storage.WithBackupSecretsKey(cfg.BackupSecretsKey()))
 	if err != nil {
 		e.t.Fatal(err)
 	}
+	cfg.TakeRestoredSecretsKey(st.SecretsKey())
 	e.t.Cleanup(func() { _ = st.Close() })
 	srv := NewServer(e.srv.cfg, st, ws.NewHub(), nil)
 	e.t.Cleanup(srv.Close)
@@ -189,6 +197,8 @@ func hasTitleIn(list []string, want string) bool {
 // An old database snapshot (.db.gz) restores the database and leaves the media as they are.
 func TestRestoreOldSnapshotKeepsMedia(t *testing.T) {
 	e := newRestoreEnv(t)
+	e.useKeyFile(testSecretsKey)
+	e.addSecret()
 	dir := filepath.Join(e.srv.backupRoot(), "system")
 	name, err := e.store.WriteSystemSnapshot(dir, time.Now().Add(-time.Hour))
 	if err != nil {
@@ -210,6 +220,14 @@ func TestRestoreOldSnapshotKeepsMedia(t *testing.T) {
 		if _, err := os.Stat(p); err != nil {
 			t.Errorf("media must stay with a database snapshot: %v", err)
 		}
+	}
+	// No key in an old snapshot: the server's stays and opens the restored hidden values
+	keyFile := filepath.Join(filepath.Dir(e.srv.cfg.DatabasePath), storage.FullBackupSecretsKey)
+	if key, err := storage.ReadSecretsKeyFile(keyFile); err != nil || !bytes.Equal(key, testSecretsKey) || !bytes.Equal(e.srv.cfg.SecretsKey, testSecretsKey) {
+		t.Errorf("the key must stay: %x %v", key, err)
+	}
+	if checked, unreadable := e.srv.CheckSecretsKey(); checked == 0 || unreadable != 0 {
+		t.Errorf("hidden values after the restore: %d checked, %d unreadable", checked, unreadable)
 	}
 }
 
