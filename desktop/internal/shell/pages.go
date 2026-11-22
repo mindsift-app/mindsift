@@ -29,17 +29,21 @@ func OwnPage(address, origin string) bool {
 // streams and scripts)
 const wailsPrefix = "/wails/"
 
-// GuardWailsRoutes is the outermost asset middleware: Wails' own routes under /wails/ only for calls of
-// the window's own pages. Wails checks no origin there in a desktop build, and a page of another origin can
-// send a request there without a preflight (a form, an image, fetch in no-cors mode; on Windows
-// http://wails.localhost counts as a local and with it secure address). Its scripts (runtime.js,
-// transport.js) stay readable, they hold nothing; every other route needs the window's origin in Origin,
-// which a browser sets on every POST and on cross-origin requests of fetch, and no cross-site
-// Sec-Fetch-Site. The app itself calls none of these routes (the frontend uses no Wails runtime).
-func GuardWailsRoutes(origin string) func(http.Handler) http.Handler {
+// GuardWailsRoutes is the outermost asset middleware: of Wails' own routes under /wails/ only its scripts
+// (runtime.js, transport.js; they hold nothing) are answered, for every page; every other route (runtime
+// calls: window control, dialogs, clipboard, opening addresses, quitting; event payloads; streams) is
+// refused, for the window's own pages too. Wails checks no origin there in a desktop build, a page of
+// another origin can send a request there without a preflight (a form, an image, fetch in no-cors mode),
+// and WebKitGTK sends such requests to wails:// without Origin and Sec-Fetch-Site, so no header tells the
+// window's own pages apart. The app needs none of it: the frontend uses no Wails runtime or bindings, and
+// what the shell does for it goes through Go (key bindings and the tray are native, the window's scripts
+// run by evaluation, dropped files come through filedrop_linux.go, the folder dialog and the start view
+// through the shell's /__desktop/api). The runtime's own messages (ready, drag) use the webview's message
+// handler, not these routes.
+func GuardWailsRoutes() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasPrefix(r.URL.Path, wailsPrefix) && !wailsCallAllowed(r, origin) {
+			if strings.HasPrefix(r.URL.Path, wailsPrefix) && !wailsRouteAllowed(r) {
 				http.Error(w, "forbidden", http.StatusForbidden)
 				return
 			}
@@ -48,14 +52,10 @@ func GuardWailsRoutes(origin string) func(http.Handler) http.Handler {
 	}
 }
 
-func wailsCallAllowed(r *http.Request, origin string) bool {
+func wailsRouteAllowed(r *http.Request) bool {
 	switch r.URL.Path {
 	case "/wails/runtime.js", "/wails/transport.js":
 		return r.Method == http.MethodGet || r.Method == http.MethodHead
 	}
-	if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" {
-		return false
-	}
-	o := r.Header.Get("Origin")
-	return o != "" && strings.EqualFold(o, origin)
+	return false
 }

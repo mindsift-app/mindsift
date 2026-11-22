@@ -2,11 +2,13 @@ package shell
 
 import (
 	"bytes"
+	"errors"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 // DesktopEntryID is the application id: the name of the .desktop file and of the icons, the GTK
@@ -20,9 +22,16 @@ const DesktopEntryID = "app.mindsift.MindSift"
 // one a Flatpak ships; its Exec line is replaced by exe), icons the hicolor tree. Files that are already
 // right are left alone, so a changed binary path or a new icon is the only thing that writes. Nothing
 // happens when the app is packaged (Flatpak brings its own entry; a system package under /usr as well).
+//
+// A path with a control character (a line break, a tab) cannot be written safely into the file's Exec
+// line: a line break would start a line of its own (another key, another group). ErrExecPath then, and
+// nothing is written.
 func InstallDesktopEntry(dataHome, exe string, entry []byte, icons fs.FS) error {
 	if os.Getenv("FLATPAK_ID") != "" || exe == "" || strings.HasPrefix(exe, "/usr/") || dataHome == "" {
 		return nil
+	}
+	if hasControlChar(exe) {
+		return ErrExecPath
 	}
 	err := writeIfChanged(filepath.Join(dataHome, "applications", DesktopEntryID+".desktop"), withExec(entry, exe))
 	if err != nil {
@@ -51,8 +60,16 @@ func withExec(entry []byte, exe string) []byte {
 	return []byte(strings.Join(lines, "\n"))
 }
 
+// ErrExecPath: the program's path holds a control character and is not written into a desktop entry
+var ErrExecPath = errors.New("the program's path holds a control character; no desktop entry written")
+
+func hasControlChar(s string) bool {
+	return strings.ContainsFunc(s, unicode.IsControl)
+}
+
 // execQuote: a path as the Exec key wants it: quoted, with \ " ` $ escaped by a backslash that is itself
-// doubled (the file's string escaping comes on top of the quoting), % doubled
+// doubled (the file's string escaping comes on top of the quoting), % doubled. Paths with control
+// characters never get here (InstallDesktopEntry).
 func execQuote(p string) string {
 	r := strings.NewReplacer(`\`, `\\\\`, `"`, `\\"`, "`", "\\\\`", `$`, `\\$`, `%`, `%%`)
 	return `"` + r.Replace(p) + `"`

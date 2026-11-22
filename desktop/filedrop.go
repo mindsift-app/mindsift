@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -23,13 +25,19 @@ type droppedFile struct {
 	Data string `json:"data,omitempty"`
 }
 
-// describeFiles: names and types of dragged files, for the drag events while the pointer moves.
+// describeFiles: the types of dragged files, for the drag events while the pointer moves. No names: a
+// browser does not show them before the drop either, and the page under the pointer may not be the one
+// the files are dropped on.
 func describeFiles(paths []string) []droppedFile {
 	out := make([]droppedFile, 0, len(paths))
 	for _, p := range paths {
-		out = append(out, droppedFile{Name: filepath.Base(p), Type: mime.TypeByExtension(strings.ToLower(filepath.Ext(p)))})
+		out = append(out, droppedFile{Type: fileType(p)})
 	}
 	return out
+}
+
+func fileType(path string) string {
+	return mime.TypeByExtension(strings.ToLower(filepath.Ext(path)))
 }
 
 // readDroppedFiles: the dropped regular files with their content (folders and unreadable files are left
@@ -52,7 +60,7 @@ func readDroppedFiles(paths []string) []droppedFile {
 			continue
 		}
 		total += len(data)
-		f := describeFiles([]string{p})[0]
+		f := droppedFile{Name: filepath.Base(p), Type: fileType(p)}
 		if f.Type == "" {
 			f.Type, _, _ = strings.Cut(http.DetectContentType(data), ";")
 		}
@@ -62,17 +70,36 @@ func readDroppedFiles(paths []string) []droppedFile {
 	return out
 }
 
-// fileDragScript: the call of fileDropScript for one step of a file drag ("over", "leave", "drop") at x, y
-// (CSS pixels in the window).
+// fileDragName: the name of the page's drop function (window.<name>, defined by dropScripts), new for every
+// start of the app. A page cannot define it before the shell's script runs and so receive the dropped
+// files itself; the script defines it read-only (not writable, not configurable), so a page cannot replace
+// it afterwards either.
+var fileDragName = "__msFileDrag_" + randomName()
+
+func randomName() string {
+	b := make([]byte, 12)
+	if _, err := rand.Read(b); err != nil {
+		panic(err) // crypto/rand does not fail on supported systems
+	}
+	return hex.EncodeToString(b)
+}
+
+// fileDragScript: the call of the page's drop function for one step of a file drag ("over", "leave",
+// "drop") at x, y (CSS pixels in the window).
 func fileDragScript(kind string, x, y float64, files []droppedFile) string {
 	if files == nil {
 		files = []droppedFile{}
 	}
 	data, _ := json.Marshal(files)
-	return fmt.Sprintf("window.__msFileDrag&&window.__msFileDrag(%q,%g,%g,%s)", kind, x, y, data)
+	return fmt.Sprintf("window.%[1]s&&window.%[1]s(%[2]q,%[3]g,%[4]g,%[5]s)", fileDragName, kind, x, y, data)
 }
 
-// dropScripts run after every page load (the window's JS option), after Wails' runtime.
+// dropScripts: dropScriptsTemplate with this start's fileDragName.
+func dropScripts() string {
+	return strings.ReplaceAll(dropScriptsTemplate, "__msFileDrag", fileDragName)
+}
+
+// dropScriptsTemplate runs after every page load (the window's JS option), after Wails' runtime.
 //
 // The runtime listens for file drags on the document element and, with Wails' own file drop off, sets every
 // one to "none" after the page has handled it: a note's "copy" was overwritten and the drop never came
@@ -81,8 +108,9 @@ func fileDragScript(kind string, x, y float64, files []droppedFile) string {
 // __msFileDrag fires the drag events a browser fires for files dragged in from another program
 // (filedrop_linux.go): dragenter, dragover and dragleave as the pointer moves, dragover and drop with the
 // files' content at the end. Only the page's own handlers act on them, as in a browser. WebKit's own events
-// for the same drag (a link with a hidden address) do not reach the page meanwhile.
-const dropScripts = `(function(){if(window.__msFileDrag)return;
+// for the same drag (a link with a hidden address) do not reach the page meanwhile. Once per document: the
+// function is there already when the script runs again.
+const dropScriptsTemplate = `(function(){if(Object.getOwnPropertyDescriptor(window,'__msFileDrag'))return;
 var kept=null;
 function hasFiles(e){return e.dataTransfer&&Array.from(e.dataTransfer.types||[]).indexOf('Files')>=0}
 ['dragenter','dragover'].forEach(function(t){
@@ -93,10 +121,10 @@ var last=null,active=false;
 if(!active||!e.isTrusted)return;e.stopImmediatePropagation();if(t!=='dragleave'){e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='copy'}},true)});
 function transfer(files){var d=new DataTransfer();files.forEach(function(f){var parts=[];if(f.data){var s=atob(f.data),a=new Uint8Array(s.length);for(var i=0;i<s.length;i++)a[i]=s.charCodeAt(i);parts=[a]}d.items.add(new File(parts,f.name,{type:f.type||''}))});try{d.effectAllowed='copy'}catch(x){}return d}
 function fire(type,el,x,y,d,rel){var e=new DragEvent(type,{bubbles:true,cancelable:type!=='dragleave',composed:true,clientX:x,clientY:y,dataTransfer:d,relatedTarget:rel||null});el.dispatchEvent(e);return e}
-window.__msFileDrag=function(kind,x,y,files){
+Object.defineProperty(window,'__msFileDrag',{writable:false,configurable:false,enumerable:false,value:function(kind,x,y,files){
 if(kind==='leave'){active=false;if(last&&last.isConnected)fire('dragleave',last,x,y,transfer([]),null);last=null;return}
 active=kind==='over';
 var el=document.elementFromPoint(x,y)||document.documentElement,d=transfer(files);
 if(el!==last){if(last&&last.isConnected)fire('dragleave',last,x,y,d,el);fire('dragenter',el,x,y,d,last);last=el}
 fire('dragover',el,x,y,d);
-if(kind==='drop'){fire('drop',el,x,y,d);last=null}};})();`
+if(kind==='drop'){fire('drop',el,x,y,d);last=null}}});})();`

@@ -22,8 +22,8 @@ func useWebviewDataDir(string) {}
 // option does not reach these pages on Windows) and, on a page that is not one of the window's own (a
 // server's), the runtime taken out again and the marker set (shellMarker). The page's own scripts may run in between; what the runtime
 // gives them (window._wails.invoke, a wrapper of chrome.webview.postMessage, which WebView2 gives every
-// page anyway; flags; OS and architecture) is no way into the app: Wails' routes under /wails/ refuse
-// other origins (shell.GuardWailsRoutes).
+// page anyway; flags; OS and architecture) is no way into the app: Wails' routes under /wails/ answer
+// nobody but their scripts (shell.GuardWailsRoutes).
 func setupPages(window *application.WebviewWindow, origin, scripts, marker string) {
 	var once sync.Once
 	window.RegisterHook(events.Windows.WebViewNavigationCompleted, func(*application.WindowEvent) {

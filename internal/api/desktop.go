@@ -125,8 +125,12 @@ func (s *Server) desktopAccount() (*domain.User, error) {
 
 // desktopOriginAllowed: the request comes from the app's own window. Nothing else can reach the router of
 // the desktop app anyway (it listens on no port); this keeps a page of another origin that the window might
-// show (a link opened in it) from asking for a session. Browsers send Origin with every POST from a page; a
-// request without one is no page's and passes, Sec-Fetch-Site still has to say it is not cross-site.
+// show (a link opened in it) from asking for a session. A foreign Origin or a cross-site Sec-Fetch-Site is
+// refused; a request with neither passes: WebKitGTK sends neither to wails://, for the window's own fetch
+// POSTs as for a foreign page's (checked under Xvfb, 2026-11-22), so their absence cannot be refused. What
+// keeps a foreign page out there: the JSON content type it cannot send without a CORS preflight (which
+// nothing here answers), and a foreign page can read no answer (no CORS), so a session it makes is of no use
+// to it; WebView2 on Windows sends Origin as browsers do.
 func (s *Server) desktopOriginAllowed(r *http.Request) bool {
 	if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" && site != "none" {
 		return false

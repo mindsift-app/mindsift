@@ -66,7 +66,10 @@ opens the system's folder dialog at `path` (or its nearest existing parent) and 
 cancelled; the setup wizard and the administration use it for the backup folder. The endpoints answer
 only requests with the header `X-MindSift-Desktop: 1`, `Content-Type: application/json`, no foreign
 `Origin` and no cross-site `Sec-Fetch-Site`. A server's page shown in the window (or any other origin) cannot send that header
-without a CORS preflight, which the shell never allows, so its requests never arrive. Errors come back as
+without a CORS preflight, which the shell never allows, so its requests never arrive. `Origin` and
+`Sec-Fetch-Site` may also be missing and still pass: WebKitGTK sends neither to `wails://`, for the start
+view's and the app's own `fetch` POSTs as for a foreign page's (checked under Xvfb), so the custom header
+and the JSON content type (both need a preflight) are the check there; WebView2 sends `Origin` as browsers do. Errors come back as
 `{"error": {"code", "detail"}}` and are shown from the locale files (`desktop:errors.<code>`).
 
 All local instances share the window's origin, so the frontend remembers which instance the window's
@@ -115,10 +118,14 @@ engine sends a server page's request to the window's origin without a preflight:
 page on another origin set the window's title through a form posted to
 `wails://localhost/wails/runtime` (a no-cors `fetch` gets through too). So:
 
-- **`/wails/` only for the window's own pages** (`shell.GuardWailsRoutes`, the outermost asset
-  middleware): `runtime.js`/`transport.js` stay readable, every other route needs `Origin` equal to the
-  window's origin and no cross-site `Sec-Fetch-Site`; otherwise 403. The app itself calls none of them
-  (the frontend uses no Wails runtime).
+- **`/wails/` closed** (`shell.GuardWailsRoutes`, the outermost asset middleware): only
+  `runtime.js`/`transport.js` are answered (GET/HEAD); every other route is 403 for every page, the
+  window's own included. Checked under Xvfb: WebKitGTK sends a no-cors request to `wails://` without
+  `Origin` and `Sec-Fetch-Site`, so no header tells the window's own pages from others, and the app needs
+  none of these routes: the frontend uses no Wails runtime or bindings; key bindings and the tray are
+  native, the window's scripts run by evaluation, dropped files come through `filedrop_linux.go`, the
+  folder dialog and the start view through the shell's `/__desktop/api`, and the runtime's own messages
+  (ready, drag) go through the engine's message channel, not these routes.
 - **Runtime only on own pages.** Linux (`webview_linux.go`): a hook on `WindowLoadFinished`, registered
   before Wails' own, reads the page's address from the webview (`shell.OwnPage`); for any other page it
   cancels the event, which keeps Wails' runtime hook, the `JS` option and the event's listeners away, and
@@ -172,7 +179,8 @@ normal server neither). Details in [Doku/architecture.md](../Doku/architecture.m
   organizations, sharing, mail and legal texts; the settings hide Sicherheit, the calendar subscription,
   the address and the mail and push channels of alarms.
 - **Kept:** MCP with API keys (local AI agents, over the listener above), daily backups (on unless switched off in the wizard; into
-  `backups/` of the instance or a folder chosen in the wizard or the administration), export and import. Moving to a server later is a backup restored there; the other way, Administration → Data takes one account
+  `backups/` of the instance or, with a folder chosen in the wizard or the administration, its subfolder
+  `MindSift-Backups/<instance>`), export and import. Moving to a server later is a backup restored there; the other way, Administration → Data takes one account
   over from a server's database snapshot (see Desktop Mode in Doku/architecture.md).
 - **Realtime without WebSocket:** server-sent events on Linux, long polling on Windows (Wails buffers
   responses there). The server names the transport in `/auth/status` (`desktop.realtime`).

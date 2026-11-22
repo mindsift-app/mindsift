@@ -77,8 +77,8 @@ func main() {
 		Linux: application.LinuxOptions{ApplicationID: shell.DesktopEntryID},
 		Assets: application.AssetOptions{
 			Handler: sh,
-			// Outermost, before Wails' own routes: those only for the window's own pages (shell/pages.go)
-			Middleware:     shell.GuardWailsRoutes(windowOrigin()),
+			// Outermost, before Wails' own routes: only its scripts are answered (shell/pages.go)
+			Middleware:     shell.GuardWailsRoutes(),
 			DisableLogging: true,
 		},
 		// The webview's storage (local storage, IndexedDB, cookies, service workers, caches) in the base
@@ -132,8 +132,8 @@ func main() {
 		Width:  1280,
 		Height: 860,
 		URL:    startURL,
-		// Developer tools (right click → Inspect) help to see what the engine does while this is a spike
-		DevToolsEnabled: true,
+		// Developer tools (right click → Inspect): builds of a branch and MINDSIFT_DESKTOP_DEVTOOLS=1 only
+		DevToolsEnabled: shell.DevToolsEnabled(version),
 		// Runs after every load of the window's own pages on Linux; setupPages gives it to every other page
 		// (and on Windows to all of them)
 		JS: windowScripts,
@@ -171,7 +171,7 @@ func main() {
 }
 
 // windowScripts: what every page of the window gets after it loaded
-const windowScripts = dropGuard + dropScripts
+var windowScripts = dropGuard + dropScripts()
 
 // shellMarker: on a server's page, the address of the app's start view (window.__msDesktopShell) and the
 // event mindsift:desktop-shell: MindSift's frontend then offers "Instanz wechseln" on its sign-in page and

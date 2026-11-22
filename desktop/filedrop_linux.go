@@ -6,9 +6,10 @@ package main
 // as a link whose address it hides (no "Files", empty dataTransfer.files, empty text/uri-list), so a note
 // could never take a dropped image. A GTK drop target in front of WebKit's own takes drags of local files
 // instead, reads the files when they are dropped and hands them to the page as the drag events a browser
-// fires (__msFileDrag in dropScripts): the page handles them as in a browser. Everything else (text, links,
-// the page's own drags) stays WebKit's. Only the user's own drop reaches this code, never a request of the
-// page, and the page only ever gets the files dropped onto it.
+// fires (the drop function of dropScripts): the page handles them as in a browser. Everything else (text,
+// links, the page's own drags) stays WebKit's. Only the user's own drop reaches this code, never a request
+// of the page, and the page only ever gets the files dropped onto it: their names and content only with the
+// drop itself, and only while the window still shows the page they were dropped on.
 
 /*
 #cgo pkg-config: gtk4 webkitgtk-6.0
@@ -100,6 +101,7 @@ static void ms_attach_file_drop(void *webview) {
 import "C"
 
 import (
+	"log/slog"
 	"unsafe"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -133,10 +135,18 @@ func msFileDragLeave() {
 //export msFileDrop
 func msFileDrop(paths **C.char, x, y C.double) C.int {
 	files := goPaths(paths)
+	// The page the files were dropped on; only it gets their content
+	at := currentURI()
 	// Reading the files may take a moment; the window goes on meanwhile
 	go func() {
 		js := fileDragScript("drop", float64(x), float64(y), readDroppedFiles(files))
-		application.InvokeAsync(func() { evalInPage(js) })
+		application.InvokeAsync(func() {
+			if now := currentURI(); now != at || at == "" {
+				slog.Warn("Desktop: dropped files not handed over, the window shows another page now")
+				return
+			}
+			evalInPage(js)
+		})
 	}()
 	return 1
 }

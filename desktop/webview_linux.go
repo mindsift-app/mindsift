@@ -172,6 +172,16 @@ func setupPages(window *application.WebviewWindow, origin, scripts, marker strin
 	})
 }
 
+// currentURI: the address of the window's page ("" without the webview); only on the main thread.
+func currentURI() string {
+	if webView == nil {
+		return ""
+	}
+	uri := C.ms_view_uri(webView)
+	defer C.g_free(C.gpointer(uri))
+	return C.GoString(uri)
+}
+
 // evalInPage runs js in the window's page; only on the main thread.
 func evalInPage(js string) {
 	if webView == nil {

@@ -25,7 +25,9 @@ const apiPrefix = "/__desktop/api/"
 
 // apiHeader: every call of the start view carries it. A page of another origin (a server's page the window
 // shows, a link opened in it) cannot send a custom header without a CORS preflight, which the shell never
-// allows, so the request never arrives; Origin and Sec-Fetch-Site are checked on top.
+// allows, so the request never arrives; a foreign Origin or a cross-site Sec-Fetch-Site is refused on top.
+// Their absence is not: WebKitGTK sends neither to wails://, also not for the start view's own fetch POSTs
+// (checked under Xvfb, 2026-11-22), so the header and the JSON content type are what keeps others out.
 const apiHeader = "X-MindSift-Desktop"
 
 // Shell answers every request of the window: the start view and its endpoints under /__desktop/, all

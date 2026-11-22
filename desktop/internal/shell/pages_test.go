@@ -41,7 +41,7 @@ func TestOwnPage(t *testing.T) {
 func TestGuardWailsRoutes(t *testing.T) {
 	const origin = "wails://localhost"
 	reached := false
-	h := GuardWailsRoutes(origin)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := GuardWailsRoutes()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		reached = true
 		w.WriteHeader(http.StatusNoContent)
 	}))
@@ -54,8 +54,12 @@ func TestGuardWailsRoutes(t *testing.T) {
 		{"start view", "GET", "/__desktop/start", nil, true},
 		{"runtime script", "GET", "/wails/runtime.js", map[string]string{"Sec-Fetch-Site": "cross-site"}, true},
 		{"transport script", "GET", "/wails/transport.js", nil, true},
-		{"runtime call of the own page", "POST", "/wails/runtime", map[string]string{"Origin": origin, "Sec-Fetch-Site": "same-origin"}, true},
-		{"runtime call, origin in other case", "POST", "/wails/runtime", map[string]string{"Origin": "WAILS://localhost"}, true},
+		{"script, HEAD", "HEAD", "/wails/runtime.js", nil, true},
+		// Audit 2026-11-22 F6: no runtime call, also not from the window's own pages (the app uses none)
+		{"runtime call of the own page", "POST", "/wails/runtime", map[string]string{"Origin": origin, "Sec-Fetch-Site": "same-origin"}, false},
+		{"runtime call, origin in other case", "POST", "/wails/runtime", map[string]string{"Origin": "WAILS://localhost"}, false},
+		{"custom.js", "HEAD", "/wails/custom.js", map[string]string{"Origin": origin}, false},
+		{"events of the own page", "GET", "/wails/events", map[string]string{"Origin": origin}, false},
 		{"runtime call of a server's page", "POST", "/wails/runtime", map[string]string{"Origin": "https://demo.mindsift.app"}, false},
 		{"runtime call with origin null", "POST", "/wails/runtime", map[string]string{"Origin": "null"}, false},
 		{"runtime call without origin", "POST", "/wails/runtime", nil, false},
