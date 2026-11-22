@@ -56,3 +56,24 @@ func TestMCPCodeLanguagesMatchEditor(t *testing.T) {
 		}
 	}
 }
+
+// The advice in the descriptions holds: a fence on its own line becomes a code block with its language,
+// below a bullet as its child, one block for the whole command sequence; backticks stay in the text.
+func TestMCPCodeStyleExampleBecomesCodeBlock(t *testing.T) {
+	blocks := mcpContentBlocks("- Install\n\t```bash\n\tnpm ci\n\tnpm test\n\t```\n- Run `npm ci` first")
+	if len(blocks) != 3 {
+		t.Fatalf("blocks: %+v", blocks)
+	}
+	if b := blocks[1]; b.Type != "code" || b.Lang != "bash" || b.Level != 1 || b.Content != "npm ci\nnpm test" {
+		t.Errorf("code block: %+v", b)
+	}
+	if b := blocks[2]; b.Type != "bullet" || b.Content != "Run `npm ci` first" {
+		t.Errorf("inline code: %+v", b)
+	}
+	for _, name := range []string{"create_note", "add_note_bullet", "update_note_bullet"} {
+		tool, _ := mcpToolByName(name)
+		if !strings.Contains(tool.Description, "`inline code`") {
+			t.Errorf("%s: no advice on inline code", name)
+		}
+	}
+}
