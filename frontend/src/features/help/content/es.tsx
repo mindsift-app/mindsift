@@ -805,7 +805,7 @@ const es: HelpContent = {
       subtitle: 'Seguir trabajando sin internet, restaurar copias, restablecer la contraseña',
       without: { cap: 'signIn', title: 'Copias de seguridad', subtitle: 'Crear copias y restaurarlas' },
       icon: CloudOff,
-      keywords: ['sin conexión', 'offline', 'internet', 'copia de seguridad', 'restaurar', 'contraseña', 'olvidada', 'cuenta', 'dos pasos', '2fa', 'autenticación', 'seguridad', 'llave de acceso', 'passkey', 'huella', 'sso', 'oidc'],
+      keywords: ['sin conexión', 'offline', 'internet', 'obsidian', 'copia de seguridad', 'restaurar', 'contraseña', 'olvidada', 'cuenta', 'dos pasos', '2fa', 'autenticación', 'seguridad', 'llave de acceso', 'passkey', 'huella', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -822,6 +822,9 @@ const es: HelpContent = {
                 <strong className="text-main">Tomar una cuenta de un servidor:</strong> en <em>Administración → Datos</em> eliges una copia de seguridad de un servidor MindSift y una de sus cuentas. Sus imágenes y grabaciones vienen con ella si eliges la carpeta de datos del servidor o su carpeta <em>backups</em> como archivo (.zip, .tar o .tar.gz); una copia de la base de datos (.db.gz) sola trae todo menos ellas. Solo llega lo que es de la cuenta: lo compartido con ella, los valores ocultos y los ajustes del servidor se quedan fuera.
               </li>
             </InDesktop>
+            <li>
+              <strong className="text-main">Importar Obsidian:</strong> En <em>Ajustes de la cuenta → Exportar e importar</em>, MindSift acepta un vault en .zip. Las notas van a una carpeta propia con el nombre del vault, las subcarpetas se mantienen, las casillas siguen siendo casillas y las etiquetas del frontmatter se convierten en #hashtags. Las imágenes y audios incrustados se incluyen; otros adjuntos, como los PDF, no.
+            </li>
             <Only can="install">
               <li>
                 <strong className="text-main">Sin internet:</strong> instalada como app (o en el navegador), MindSift también arranca sin conexión con el último estado cargado. Puedes seguir capturando pensamientos y tachando tareas y elementos de listas; un aviso abajo indica cuántos cambios están pendientes, y se enviarán automáticamente en cuanto vuelva la conexión.
@@ -888,7 +891,7 @@ const es: HelpContent = {
               <strong className="text-main">Zona horaria del servidor:</strong> la administración del servidor la ajusta en <em>Administración → Instancia → Zona horaria</em>. Vale al instante para todos: vencimientos con hora, avisos, el resumen diario y la hora de las copias de seguridad.
             </li>
             <li>
-              <strong className="text-main">Calidad de imagen:</strong> antes de subirlas, la app reduce las imágenes a 2048 píxeles como máximo. Cuánto las comprime lo ajusta la administración del servidor en <em>Administración → Datos → Calidad de imagen</em>: Alta (predeterminada), Media o Ahorro. El tamaño es el mismo en todos los niveles, el texto de las capturas sigue legible; el ajuste vale para las imágenes nuevas.
+              <strong className="text-main">Calidad de imagen:</strong> antes de subirlas, la app reduce las imágenes a 2048 píxeles como máximo. Cuánto las comprime lo ajusta la administración del servidor en <em>Administración → Multimedia → Calidad de imagen</em>: Alta (predeterminada), Media o Ahorro. El tamaño es el mismo en todos los niveles, el texto de las capturas sigue legible; el ajuste vale para las imágenes nuevas.
             </li>
             <li>
               <strong className="text-main">Grupos:</strong> agrupa a personas que puedes ver (p. ej. familia, compañeros de piso, un proyecto) y comparte contenido con todos ellos a la vez. Quien crea un grupo es su administrador; solo los miembros pueden compartir con el grupo.

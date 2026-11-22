@@ -904,7 +904,7 @@ const de: HelpContent = {
       subtitle: 'Ohne Internet weiterarbeiten, Sicherungen einspielen, Passwort zurücksetzen',
       without: { cap: 'signIn', title: 'Backups', subtitle: 'Sicherungen anlegen und wieder einspielen' },
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'sicherung', 'wiederherstellen', 'passwort', 'vergessen', 'konto', 'zwei-faktor', '2fa', 'authenticator', 'sicherheit', 'passkey', 'fingerabdruck', 'sso', 'oidc'],
+      keywords: ['offline', 'internet', 'backup', 'obsidian', 'sicherung', 'wiederherstellen', 'passwort', 'vergessen', 'konto', 'zwei-faktor', '2fa', 'authenticator', 'sicherheit', 'passkey', 'fingerabdruck', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -921,6 +921,9 @@ const de: HelpContent = {
                 <strong className="text-main">Konto von einem Server übernehmen:</strong> Unter <em>Administration → Daten</em> wählst du ein Backup eines MindSift-Servers und darin ein Konto. Mit Bildern und Aufnahmen kommt es, wenn du den Datenordner des Servers oder seinen Ordner <em>backups</em> als Archiv wählst (.zip, .tar oder .tar.gz); ein Datenbank-Abzug (.db.gz) allein bringt alles außer ihnen. Übernommen wird nur, was dem Konto gehört: Mit ihm Geteiltes, versteckte Werte und die Einstellungen des Servers bleiben draußen.
               </li>
             </InDesktop>
+            <li>
+              <strong className="text-main">Obsidian importieren:</strong> Unter <em>Kontoeinstellungen → Export &amp; Import</em> nimmt MindSift einen Vault als .zip. Die Notizen kommen in einen eigenen Ordner mit dem Namen des Vaults, Unterordner bleiben erhalten, Checkboxen bleiben Checkboxen und Frontmatter-Tags werden zu #Hashtags. Eingebettete Bilder und Audiodateien kommen mit, andere Anhänge wie PDFs nicht.
+            </li>
             <Only can="install">
               <li>
                 <strong className="text-main">Ohne Internet:</strong> Als App installiert (oder im Browser) startet MindSift auch offline mit dem zuletzt geladenen Stand. Gedanken erfassen sowie Aufgaben und Listeneinträge abhaken geht weiter; ein Hinweis unten zeigt, wie viele Änderungen warten, und sie werden automatisch übertragen, sobald die Verbindung zurück ist.
@@ -988,7 +991,7 @@ const de: HelpContent = {
               <strong className="text-main">Zeitzone des Servers:</strong> Server-Admins stellen sie unter <em>Administration → Instanz → Zeitzone</em> ein. Sie gilt sofort für alle: Fälligkeiten mit Uhrzeit, Alarme, die Tageszusammenfassung und die Backup-Zeit.
             </li>
             <li>
-              <strong className="text-main">Bildqualität:</strong> Bilder verkleinert die App vor dem Hochladen auf höchstens 2048 Pixel. Wie stark sie dabei komprimiert, stellen Server-Admins unter <em>Administration → Daten → Bildqualität</em> ein: Hoch (Standard), Mittel oder Sparsam. Die Größe bleibt bei jeder Stufe gleich, Text in Screenshots bleibt lesbar; die Einstellung gilt für neu eingefügte Bilder.
+              <strong className="text-main">Bildqualität:</strong> Bilder verkleinert die App vor dem Hochladen auf höchstens 2048 Pixel. Wie stark sie dabei komprimiert, stellen Server-Admins unter <em>Administration → Medien → Bildqualität</em> ein: Hoch (Standard), Mittel oder Sparsam. Die Größe bleibt bei jeder Stufe gleich, Text in Screenshots bleibt lesbar; die Einstellung gilt für neu eingefügte Bilder.
             </li>
             <li>
               <strong className="text-main">Gruppen:</strong> Fasse Personen, die du sehen kannst, zu Gruppen zusammen (z. B. Familie, WG, Projekt) und teile mit allen auf einmal. Wer eine Gruppe anlegt, ist ihr Admin; mit einer Gruppe teilen kann nur, wer selbst Mitglied ist.
