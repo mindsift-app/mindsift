@@ -50,6 +50,34 @@ describe('parsePastedLines', () => {
     expect(items[1]).toEqual({ type: 'text', content: 'Danach', indent: 0 });
   });
 
+  describe('a fence as a list item content ("- ```bash")', () => {
+    const rows = (text: string) => parse(text).map((i) => [i.indent, i.type, i.lang ?? '', i.content]);
+    it.each([
+      ['with language', '- Installieren\n  - ```bash\n    npm ci\n    npm test\n    ```\n- weiter',
+        [[0, 'text', '', 'Installieren'], [1, 'code', 'bash', 'npm ci\nnpm test'], [0, 'text', '', 'weiter']]],
+      ['without language', '- ```\n  a\n    b\n  ```\n- weiter',
+        [[0, 'code', '', 'a\n  b'], [0, 'text', '', 'weiter']]],
+      ['tildes', '- Einrichten\n  * ~~~ python\n    print(1)\n    ~~~\n- weiter',
+        [[0, 'text', '', 'Einrichten'], [1, 'code', 'python', 'print(1)'], [0, 'text', '', 'weiter']]],
+      ['nested level', '- a\n  - b\n    - ```sh\n      ls\n      ```\n    - c\n  - d',
+        [[0, 'text', '', 'a'], [1, 'text', '', 'b'], [2, 'code', 'bash', 'ls'], [2, 'text', '', 'c'], [1, 'text', '', 'd']]],
+      ['closing fence at the marker indentation', '- x\n  - ```bash\n    npm ci\n  ```\n- weiter',
+        [[0, 'text', '', 'x'], [1, 'code', 'bash', 'npm ci'], [0, 'text', '', 'weiter']]],
+      ['closing fence at column 0', '- ```bash\n  npm ci\n```\n- weiter',
+        [[0, 'code', 'bash', 'npm ci'], [0, 'text', '', 'weiter']]],
+      ['unclosed fence followed by bullets', '- Installieren\n  - ```bash\n    npm ci\n\n- weiter\n  - tiefer',
+        [[0, 'text', '', 'Installieren'], [1, 'code', 'bash', 'npm ci'], [0, 'text', '', 'weiter'], [1, 'text', '', 'tiefer']]],
+      ['tabs', '- x\n\t- ```bash\n\t  npm ci\n\t    echo\n\t  ```\n- weiter',
+        [[0, 'text', '', 'x'], [1, 'code', 'bash', 'npm ci\n  echo'], [0, 'text', '', 'weiter']]],
+      ['CRLF', '- Installieren\r\n  - ```bash\r\n    npm ci\r\n    ```\r\n- weiter',
+        [[0, 'text', '', 'Installieren'], [1, 'code', 'bash', 'npm ci'], [0, 'text', '', 'weiter']]],
+      ['inline code stays text', '- ```x``` ist inline\n- weiter',
+        [[0, 'text', '', '```x``` ist inline'], [0, 'text', '', 'weiter']]],
+    ])('%s', (_name, text, want) => {
+      expect(rows(text)).toEqual(want);
+    });
+  });
+
   it('nests a list under the paragraph that introduces it', () => {
     expect(parse('# Plan\nFolgende Punkte:\n\n- eins\n  - tiefer\n- zwei\n\nDanach Text\n1. a\n2. b')).toEqual([
       { type: 'h1', content: 'Plan', indent: 0 },
