@@ -3,7 +3,7 @@ name: GitHub Release
 # Creates the release page of a version tag, with its CHANGELOG section as text (ci/release-notes.sh), and
 # attaches the server binaries for Linux, taken out of the images of that tag (ci/release-binaries.sh),
 # and the desktop app built from the tag (ci/release-desktop.sh: Linux binary, Flatpak bundle, Windows
-# exe), with one SHA256SUMS for all of them.
+# exe and installer), with one SHA256SUMS for all of them.
 # Called by build-and-publish.yaml once the images of a tag are pushed; by hand ("Run workflow") for a tag
 # that has no release yet, or to refresh the text and files of an existing one. It runs with the workflow
 # token, so the release shows github-actions[bot] as author, not a person. Tags with "-" become

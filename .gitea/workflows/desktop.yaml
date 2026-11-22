@@ -1,9 +1,10 @@
 name: MindSift Desktop (Gitea)
 
 # Builds the desktop app (desktop/, Wails v3) exactly as a GitHub release does (ci/release-desktop.sh:
-# desktop/build.sh and desktop/packaging/flatpak/build.sh) and offers the files as one artifact of the
-# workflow run in the Gitea UI (Actions -> run -> Artifacts): the Linux archive, the Flatpak bundle, the
-# Windows exe and the license file, under their release names, with the version v<package.json>-dev.
+# desktop/build.sh, desktop/packaging/flatpak/build.sh and desktop/packaging/windows/build.sh) and offers
+# the files as one artifact of the workflow run in the Gitea UI (Actions -> run -> Artifacts): the Linux
+# archive, the Flatpak bundle, the Windows exe, the Windows installer (NSIS in a Debian container) and the
+# license file, under their release names, with the version v<package.json>-dev.
 # Runs for pushes to the desktop-spike branch and by hand ("Run workflow", for any branch, main too); it
 # builds no images and touches no registry. Releases are built by .github/workflows/release.yaml.
 # The scripts run with docker and copy the sources into the build containers, because the job may itself

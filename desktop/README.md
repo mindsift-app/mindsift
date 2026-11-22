@@ -1,8 +1,8 @@
 # MindSift desktop
 
 A Wails v3 shell around MindSift for Linux and Windows (no macOS): local instances without a server, or a
-window onto a MindSift server. Release builds (Flatpak, Linux binary, Windows exe) are attached to every
-GitHub release with fixed names, see "Release" in ci/release-desktop.sh.
+window onto a MindSift server. Release builds (Flatpak, Linux binary, Windows exe and installer) are
+attached to every GitHub release with fixed names, see "Release" in ci/release-desktop.sh.
 
 - **Start view** (`/__desktop/start`): a view of the frontend (`features/desktop/DesktopStartView.tsx`),
   in the look of the sign-in page and the system's language. It lists the entries used lately (local
@@ -214,7 +214,8 @@ APP_VERSION=v1.2.0 desktop/build.sh        # the app's version; default v<packag
 `APP_VERSION` and writes the files of the release page under fixed names (the website links to
 `releases/latest/download/<name>`): `mindsift-desktop-linux-amd64.tar.gz` (binary `mindsift-desktop`,
 `LICENSE`, `THIRD_PARTY_LICENSES.txt`, `README.txt` from `packaging/linux/`),
-`mindsift-desktop-linux-amd64.flatpak`, `mindsift-desktop-windows-amd64.exe` and
+`mindsift-desktop-linux-amd64.flatpak`, `mindsift-desktop-windows-amd64.exe` (portable),
+`mindsift-desktop-windows-amd64-setup.exe` (installer, see "Windows") and
 `mindsift-desktop-THIRD_PARTY_LICENSES.txt`. `.github/workflows/release.yaml` runs it from the tag's
 checkout and lists the files in the release's `SHA256SUMS` together with the server archives.
 `.gitea/workflows/desktop.yaml` runs the same script for pushes to the `desktop-spike` branch and by hand
@@ -250,6 +251,42 @@ flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatp
   release tag, the Go modules as generated sources (e.g. flatpak-go-mod's `modules.txt` plus one archive
   source per module) or a vendor archive attached to the release, and the frontend either built from
   generated npm sources (flatpak-node-generator, with the node SDK extension) or taken as a release asset.
+
+## Windows
+
+```bash
+desktop/build.sh windows && desktop/build.sh licenses   # the exe and the license file
+desktop/packaging/windows/build.sh   # -> desktop/out/mindsift-desktop-windows-amd64-setup.exe
+```
+
+Two downloads with the same exe: `mindsift-desktop-windows-amd64.exe` runs where it lies (portable, no
+Start menu entry), `mindsift-desktop-windows-amd64-setup.exe` installs it. Both keep the data in
+`%APPDATA%\MindSift`, so switching between them keeps every instance.
+
+- **Installer** (`packaging/windows/mindsift.nsi`, NSIS 3): per user without administrator rights into
+  `%LOCALAPPDATA%\Programs\MindSift` (`MindSift.exe`, `LICENSE.txt`, `THIRD_PARTY_LICENSES.txt` for the
+  about box, `uninstall.exe`), a Start menu entry, a desktop shortcut if ticked (off by default), and the
+  uninstaller in "Apps & features" (`HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\app.mindsift.MindSift`,
+  with version, icon and size). Its pages and messages are in the app's five languages (Windows' display
+  language, English otherwise); it needs 64-bit Windows 10 or 11. Silent: `/S` (and `/D=<folder>` as the
+  last argument).
+- **Updates:** a newer setup installs over the installed version, into its folder (from the uninstall
+  key's `InstallLocation`, without asking for a folder) and keeping the desktop shortcut. A running app
+  locks its exe, so the installer (and the uninstaller) asks to quit it, also from the tray, and retries;
+  a silent run gives up with exit code 3 instead.
+- **Uninstall** removes only the files it installed, the shortcuts and the key; the folder only when
+  nothing else is left in it. `%APPDATA%\MindSift` (instances, `desktop.json`, the webview's storage) is
+  never deleted and there is no option for it; the confirmation page says so.
+- **WebView2:** no bootstrapper, the runtime is part of Windows 10 and 11. Wails' own NSIS template
+  (v3.1.0, `internal/commands/build_assets/windows/nsis`) runs Microsoft's bootstrapper when the
+  EdgeUpdate key is missing and its uninstaller deletes `%APPDATA%\<exe>` (WebView2's default data
+  folder); the installer here does neither, the rest follows its per-user mode (`WAILS_INSTALL_SCOPE user`).
+- **Build:** `packaging/windows/build.sh` stages the exe, the license files and `app.ico` and runs
+  `makensis -WX` (a warning fails the build) in `debian:trixie-…-slim` with Debian's `nsis` (3.11), the
+  image of the Flatpak build; no Windows needed. The installer's version resource carries `APP_VERSION`.
+  The installer is a 32-bit NSIS stub (as every NSIS installer) installing the 64-bit app.
+- **Not signed** yet: SmartScreen warns on the first downloads ("More info", "Run anyway"). Signing would
+  go into `!finalize` / `!uninstfinalize` in the `.nsi` and sign the exe before it is packed.
 
 ## App icon
 
