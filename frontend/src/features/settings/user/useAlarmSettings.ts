@@ -22,42 +22,49 @@ export function buildNotificationSettings(user: User): NotificationSettings {
         discord: s?.events?.due?.discord ?? dueDiscordDefault,
         webhook: s?.events?.due?.webhook ?? dueWebhookDefault,
         push: s?.events?.due?.push ?? false,
+        desktop: s?.events?.due?.desktop ?? false,
       },
       shared: {
         email: s?.events?.shared?.email ?? true,
         discord: s?.events?.shared?.discord ?? false,
         webhook: s?.events?.shared?.webhook ?? false,
         push: s?.events?.shared?.push ?? false,
+        desktop: s?.events?.shared?.desktop ?? false,
       },
       assigned: {
         email: s?.events?.assigned?.email ?? true,
         discord: s?.events?.assigned?.discord ?? false,
         webhook: s?.events?.assigned?.webhook ?? false,
         push: s?.events?.assigned?.push ?? false,
+        desktop: s?.events?.assigned?.desktop ?? false,
       },
       mentioned: {
         email: s?.events?.mentioned?.email ?? true,
         discord: s?.events?.mentioned?.discord ?? false,
         webhook: s?.events?.mentioned?.webhook ?? false,
         push: s?.events?.mentioned?.push ?? false,
+        desktop: s?.events?.mentioned?.desktop ?? false,
       },
       taskCreated: {
         email: s?.events?.taskCreated?.email ?? false,
         discord: s?.events?.taskCreated?.discord ?? false,
         webhook: s?.events?.taskCreated?.webhook ?? false,
         push: s?.events?.taskCreated?.push ?? false,
+        desktop: s?.events?.taskCreated?.desktop ?? false,
       },
       taskDone: {
         email: s?.events?.taskDone?.email ?? false,
         discord: s?.events?.taskDone?.discord ?? false,
         webhook: s?.events?.taskDone?.webhook ?? false,
         push: s?.events?.taskDone?.push ?? false,
+        desktop: s?.events?.taskDone?.desktop ?? false,
       },
       watched: {
         email: s?.events?.watched?.email ?? true,
         discord: s?.events?.watched?.discord ?? true,
         webhook: s?.events?.watched?.webhook ?? false,
         push: s?.events?.watched?.push ?? false,
+        desktop: s?.events?.watched?.desktop ?? false,
       },
     },
     dailySummary: {
@@ -67,6 +74,7 @@ export function buildNotificationSettings(user: User): NotificationSettings {
       discord: s?.dailySummary?.discord ?? false,
       webhook: s?.dailySummary?.webhook ?? false,
       push: s?.dailySummary?.push ?? false,
+      desktop: s?.dailySummary?.desktop ?? false,
     },
   };
 }
@@ -166,7 +174,7 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     }
   }, [currentUser]);
 
-  const setEventChannel = (eventKey: keyof NotificationEvents, channel: 'email' | 'discord' | 'webhook' | 'push', value: boolean) => {
+  const setEventChannel = (eventKey: keyof NotificationEvents, channel: 'email' | 'discord' | 'webhook' | 'push' | 'desktop', value: boolean) => {
     setNotificationSettings((prev) => ({
       ...prev,
       events: {
@@ -209,7 +217,7 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     }
   };
 
-  const handleTestChannel = async (channel: 'email' | 'discord' | 'webhook') => {
+  const handleTestChannel = async (channel: 'email' | 'discord' | 'webhook' | 'desktop') => {
     setAlarmMsg(null);
     let target = '';
     // E-mail goes to the login address, the server takes no target for it
@@ -235,7 +243,9 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
           ? i18n.t('settings:alarms.channel.email')
           : channel === 'discord'
             ? 'Discord'
-            : i18n.t('settings:alarms.channel.ownWebhook');
+            : channel === 'desktop'
+              ? i18n.t('settings:alarms.channel.desktop')
+              : i18n.t('settings:alarms.channel.ownWebhook');
       setAlarmMsg({
         type: 'ok',
         text: i18n.t('settings:alarms.testSent', { label }),

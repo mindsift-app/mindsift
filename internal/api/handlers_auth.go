@@ -1086,6 +1086,17 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadGateway, tr(w, "E-Mail-Versand fehlgeschlagen")+": "+trErr(w, err))
 			return
 		}
+	case "desktop":
+		// The desktop app's system notification, only in its local instances
+		if !s.can(capDesktopNotify) {
+			writeErrorCode(w, http.StatusForbidden, "desktop_off", "In der Desktop-App nicht verfügbar")
+			return
+		}
+		if err := s.notifyDesktop(DesktopNotification{Title: testTitle, Body: i18n.T(lang, "Systembenachrichtigungen von MindSift kommen an."), Tag: "test"}); err != nil {
+			slog.Warn("Test notification of the desktop app not shown", "error", err)
+			writeError(w, http.StatusBadGateway, "Systembenachrichtigung nicht angezeigt")
+			return
+		}
 	default:
 		writeError(w, http.StatusBadRequest, "Unbekannter Alarm-Kanal (erlaubt: email, discord, webhook)")
 		return

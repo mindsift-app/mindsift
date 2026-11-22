@@ -27,6 +27,9 @@ type Local struct {
 	Static  fs.FS
 	Desktop config.Desktop
 	Version string
+	// Notify shows an alarm of the instance with the given id as a system notification (notify.go); nil:
+	// the instances get none (their channel "desktop" is off)
+	Notify func(instanceID string, n api.DesktopNotification) error
 
 	envOnce sync.Once
 	mu      sync.Mutex
@@ -179,6 +182,10 @@ func (l *Local) start(id, dir string) (*running, error) {
 	store.ConfiguredLanguage = cfg.DefaultLanguage
 	hub := ws.NewHub()
 	srv := api.NewServer(cfg, store, hub, l.Static)
+	if notify := l.Notify; notify != nil {
+		// Before the window asks for the status (capability desktopNotify) and the first alarm run
+		srv.SetDesktopNotifier(api.DesktopNotifierFunc(func(n api.DesktopNotification) error { return notify(id, n) }))
+	}
 	srv.ApplyTimeZone()
 	srv.CheckSecretsKey()
 	ctx, cancel := context.WithCancel(context.Background())

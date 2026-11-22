@@ -93,6 +93,21 @@ func (s *Store) SetNotificationSettings(userID string, n domain.NotificationSett
 	return err
 }
 
+// SetNotificationSettingsIfUnset stores n only for a user who never saved any (the defaults of a new
+// account, e.g. the desktop app's); whether it did.
+func (s *Store) SetNotificationSettingsIfUnset(userID string, n domain.NotificationSettings) (bool, error) {
+	if !validClock(n.DailySummary.Time) {
+		n.DailySummary.Time = "07:00"
+	}
+	raw, _ := json.Marshal(n)
+	res, err := s.db.Exec(`UPDATE users SET notification_settings = ? WHERE id = ? AND notification_settings = ''`, string(raw), userID)
+	if err != nil {
+		return false, err
+	}
+	rows, err := res.RowsAffected()
+	return rows > 0, err
+}
+
 // QueuedNotification is one event waiting to be sent bundled.
 type QueuedNotification struct {
 	ID        int64

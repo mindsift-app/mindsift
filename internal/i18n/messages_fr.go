@@ -342,6 +342,8 @@ var messagesFR = map[string]string{
 	"{count} heute":                                                                                                                "{count} aujourd’hui",
 	"{count} morgen":                                                                                                               "{count} demain",
 	"Deine Aufgaben: {counts}":                                                                                                     "Tes tâches : {counts}",
+	"Systembenachrichtigungen von MindSift kommen an.":                                                                             "Les notifications système de MindSift arrivent bien.",
+	"Systembenachrichtigung nicht angezeigt":                                                                                       "Notification système non affichée",
 	"Dein eigener Webhook empfängt MindSift-Alarme!":                                                                               "Ton propre webhook reçoit les alarmes MindSift !",
 	"Dein Discord-Alarmkanal funktioniert einwandfrei!":                                                                            "Ton canal d’alarmes Discord fonctionne parfaitement !",
 	"Dein E-Mail-Alarmkanal funktioniert":                                                                                          "Ton canal d’alarmes par e-mail fonctionne",

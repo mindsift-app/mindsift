@@ -607,7 +607,7 @@ const en: HelpContent = {
             </NotInDesktop>
             <InDesktop>
               <li>
-                <strong className="text-main">Automatic alarms:</strong> at the due time (all-day tasks at 9:00, minus your advance warning) MindSift notifies you by <strong className="text-main">Discord webhook</strong> or a custom HTTP webhook, as long as the desktop app is running. If you move the due date or reopen the task, the alarm fires again. Configurable in your account settings under “Alarms”. All times use the instance’s time zone, which you set under <em>Administration → Instance</em> (otherwise the system’s).
+                <strong className="text-main">Automatic alarms:</strong> at the due time (all-day tasks at 9:00, minus your advance warning) MindSift notifies you by <strong className="text-main">system notification</strong> (clicking it opens the task), <strong className="text-main">Discord webhook</strong> or a custom HTTP webhook, as long as the desktop app is running. If you move the due date or reopen the task, the alarm fires again. Configurable in your account settings under “Alarms”. All times use the instance’s time zone, which you set under <em>Administration → Instance</em> (otherwise the system’s).
               </li>
             </InDesktop>
             <li>

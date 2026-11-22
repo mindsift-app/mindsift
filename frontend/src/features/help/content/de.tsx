@@ -775,7 +775,7 @@ const de: HelpContent = {
             </NotInDesktop>
             <InDesktop>
               <li>
-                <strong className="text-main">Automatische Alarme:</strong> Zur Fälligkeit (ganztägige Aufgaben um 9:00, abzüglich deiner Vorlaufzeit) benachrichtigt MindSift dich per <strong className="text-main">Discord-Webhook</strong> oder individuellem HTTP-Webhook, solange die Desktop-App läuft. Verschiebst du die Fälligkeit oder öffnest die Aufgabe wieder, kommt der Alarm erneut. Konfigurierbar in deinen Kontoeinstellungen unter „Alarme“. Alle Zeiten gelten in der Zeitzone der Instanz, die du unter <em>Administration → Instanz</em> einstellst (sonst die des Systems).
+                <strong className="text-main">Automatische Alarme:</strong> Zur Fälligkeit (ganztägige Aufgaben um 9:00, abzüglich deiner Vorlaufzeit) benachrichtigt MindSift dich per <strong className="text-main">Systembenachrichtigung</strong> (ein Klick darauf öffnet die Aufgabe), <strong className="text-main">Discord-Webhook</strong> oder individuellem HTTP-Webhook, solange die Desktop-App läuft. Verschiebst du die Fälligkeit oder öffnest die Aufgabe wieder, kommt der Alarm erneut. Konfigurierbar in deinen Kontoeinstellungen unter „Alarme“. Alle Zeiten gelten in der Zeitzone der Instanz, die du unter <em>Administration → Instanz</em> einstellst (sonst die des Systems).
               </li>
             </InDesktop>
             <li>

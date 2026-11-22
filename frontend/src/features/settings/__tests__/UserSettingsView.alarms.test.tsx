@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { UserSettingsView } from '../UserSettingsView';
 import { api } from '../../../lib/api';
 import { User } from '../../../lib/types';
+import { actAsDesktopApp } from '../../../test/desktop';
 
 vi.mock('../../../lib/api', async () => {
   const actual = await vi.importActual<typeof import('../../../lib/api')>('../../../lib/api');
@@ -92,13 +93,13 @@ describe('UserSettingsView notification matrix', () => {
           paused: true,
           includeOwnWatched: true,
           events: {
-            due: { email: true, discord: true, webhook: false, push: false },
-            shared: { email: true, discord: false, webhook: false, push: false },
-            assigned: { email: true, discord: false, webhook: false, push: false },
-            mentioned: { email: true, discord: false, webhook: false, push: false },
-            taskCreated: { email: true, discord: false, webhook: false, push: false },
-            taskDone: { email: true, discord: false, webhook: false, push: false },
-            watched: { email: true, discord: false, webhook: false, push: false },
+            due: { email: true, discord: true, webhook: false, push: false, desktop: false },
+            shared: { email: true, discord: false, webhook: false, push: false, desktop: false },
+            assigned: { email: true, discord: false, webhook: false, push: false, desktop: false },
+            mentioned: { email: true, discord: false, webhook: false, push: false, desktop: false },
+            taskCreated: { email: true, discord: false, webhook: false, push: false, desktop: false },
+            taskDone: { email: true, discord: false, webhook: false, push: false, desktop: false },
+            watched: { email: true, discord: false, webhook: false, push: false, desktop: false },
           },
           dailySummary: {
             enabled: true,
@@ -107,6 +108,7 @@ describe('UserSettingsView notification matrix', () => {
             discord: true,
             webhook: false,
             push: false,
+            desktop: false,
           },
         },
       })
@@ -181,5 +183,53 @@ describe('UserSettingsView notification matrix', () => {
     expect(patch.discordWebhookUrl).toBe(discordUrl);
     expect(patch.customWebhookUrl).toBe('https://hooks.example.com/neu');
     expect(patch.notificationSettings?.events.due.discord).toBe(true);
+  });
+
+  it('offers system notifications instead of push where the instance shows them (desktop app)', async () => {
+    actAsDesktopApp();
+    const testChannel = vi.spyOn(api, 'testAlarmChannel').mockResolvedValue({ status: 'ok' });
+    const desktopUser: User = {
+      ...baseUser,
+      alarmChannels: undefined,
+      notificationSettings: {
+        paused: false,
+        includeOwnWatched: false,
+        events: {
+          due: { email: false, discord: false, webhook: false, push: false, desktop: true },
+        },
+        dailySummary: { enabled: false, time: '07:00', email: false, discord: false, webhook: false, push: false, desktop: true },
+      } as unknown as User['notificationSettings'],
+    };
+    render(
+      <UserSettingsView
+        currentUser={desktopUser}
+        activeTheme="dark"
+        customThemes={[]}
+        onThemeChange={() => {}}
+        onCustomThemesChange={() => {}}
+        onUserUpdated={() => {}}
+        onDataChanged={() => {}}
+        onBack={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByText('Alarme'));
+
+    expect(screen.queryByText('Ziel: Push-Benachrichtigungen')).toBeNull();
+    expect(screen.getByText('Ziel: Systembenachrichtigung')).toBeTruthy();
+    const due = screen.getByTitle('Fällige Aufgaben (sofort) – Systembenachrichtigung');
+    expect(due.getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByTitle('Beobachtete Aufgaben – Systembenachrichtigung').getAttribute('aria-checked')).toBe('false');
+    expect(screen.getByTitle('Tageszusammenfassung – Systembenachrichtigung').getAttribute('aria-checked')).toBe('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Test anzeigen' }));
+    await waitFor(() => expect(testChannel).toHaveBeenCalledWith('desktop', ''));
+
+    fireEvent.click(screen.getByTitle('Beobachtete Aufgaben – Systembenachrichtigung'));
+    fireEvent.click(screen.getByRole('button', { name: 'Alarm-Einstellungen speichern' }));
+    await waitFor(() => expect(api.updateSettings).toHaveBeenCalledTimes(1));
+    const patch = vi.mocked(api.updateSettings).mock.calls[0][0];
+    expect(patch.notificationSettings?.events.due.desktop).toBe(true);
+    expect(patch.notificationSettings?.events.watched.desktop).toBe(true);
+    expect(patch.notificationSettings?.dailySummary.desktop).toBe(true);
   });
 });

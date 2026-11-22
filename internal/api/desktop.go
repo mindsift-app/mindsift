@@ -92,6 +92,24 @@ func (s *Server) prepareDesktopAccount() error {
 	return nil
 }
 
+// desktopAlarmDefaults: an instance of the desktop app whose account never saved its alarm settings
+// alarms through the system's notifications (task alarms, and the daily summary once it is switched on)
+// instead of the server defaults' mail, which the app cannot send. Settings saved once are left alone.
+func (s *Server) desktopAlarmDefaults() error {
+	u, err := s.desktopAccount()
+	if err != nil || u == nil {
+		return err
+	}
+	n := domain.DefaultNotificationSettings(nil)
+	n.Events.Due = domain.ChannelChoice{Desktop: true}
+	n.DailySummary.Email, n.DailySummary.Desktop = false, true
+	if set, err := s.store.SetNotificationSettingsIfUnset(u.ID, n); err != nil || !set {
+		return err
+	}
+	slog.Info("Desktop alarms set to the system's notifications", "user_id", u.ID)
+	return nil
+}
+
 // desktopUsername: the system's login name as a MindSift username (lower case; a Windows domain in front
 // dropped), "me" when it does not fit the rules.
 func desktopUsername(login string) string {

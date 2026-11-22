@@ -213,3 +213,6 @@ func onView(f func(unsafe.Pointer)) {
 func goBack(application.Window)    { onView(func(v unsafe.Pointer) { C.ms_view_back(v) }) }
 func goForward(application.Window) { onView(func(v unsafe.Pointer) { C.ms_view_forward(v) }) }
 func reload(application.Window)    { onView(func(v unsafe.Pointer) { C.ms_view_reload(v) }) }
+
+// runInPage runs js in the window's page, from any goroutine (Wails' ExecJS never runs here, see above)
+func runInPage(_ application.Window, js string) { application.InvokeAsync(func() { evalInPage(js) }) }
