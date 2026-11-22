@@ -201,7 +201,7 @@ func TestShellPickFolder(t *testing.T) {
 	answer := "/media/disk/MindSift"
 	sh.PickFolder = func(start string) (string, error) { gotStart = start; return answer, nil }
 	existing := t.TempDir()
-	if code, out := call(t, sh, "pick-folder", map[string]string{"path": existing}); code != http.StatusOK || out["path"] != answer || gotStart != existing {
+	if code, out := call(t, sh, "pick-folder", map[string]string{"path": existing}); code != http.StatusOK || out["path"] != answer || out["shown"] != answer || gotStart != existing {
 		t.Errorf("pick: %d %v, start %q", code, out, gotStart)
 	}
 	for start, want := range map[string]string{filepath.Join(existing, "fehlt", "tief"): existing, "relativ": "", "": ""} {

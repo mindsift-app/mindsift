@@ -27,6 +27,7 @@ import { DemoHint } from './components/DemoHint';
 import { useConnectionState } from './lib/useConnectionState';
 import { SharedImportToast } from './components/SharedImportToast';
 import { EmailConfirmToast } from './components/EmailConfirmToast';
+import { DownloadNotice } from './components/DownloadNotice';
 import { useMobileActions } from './context/MobileActionContext';
 import { MobileHeaderMenu } from './components/MobileHeaderMenu';
 import { AboutModal } from './components/AboutModal';
@@ -807,6 +808,8 @@ export const App: React.FC = () => {
           />
         }
       />
+      {/* The desktop app's shell reports saved downloads (a browser shows its own) */}
+      <DownloadNotice />
       {quickDumpUsed && (
         <Suspense fallback={null}>
           <QuickDumpWindow

@@ -55,9 +55,10 @@ func main() {
 		log.Fatal(err)
 	}
 	login, name := shell.SystemUser()
+	// ShownPath: a folder of the Flatpak document portal shown as the host's (the backup folder)
 	local := &shell.Local{
 		Static:  staticFS,
-		Desktop: config.Desktop{Platform: runtime.GOOS, Origin: windowOrigin(), Username: login, DisplayName: name},
+		Desktop: config.Desktop{Platform: runtime.GOOS, Origin: windowOrigin(), Username: login, DisplayName: name, ShownPath: shell.HostPath},
 		Version: version,
 	}
 	sh := &shell.Shell{Settings: settings, Local: local, Static: staticFS, Origin: windowOrigin(), Version: version, Base: base}
@@ -106,6 +107,17 @@ func main() {
 		}
 		return d.PromptForSingleSelection()
 	}
+	// Downloads of every page (download_linux.go): the system's save dialog asks where to; "" = cancelled
+	setupDownloads(base, func(name, dir string) (string, error) {
+		d := app.Dialog.SaveFile().SetFilename(name).CanCreateDirectories(true)
+		if dir != "" {
+			d.SetDirectory(dir)
+		}
+		if window != nil {
+			d.AttachToWindow(window)
+		}
+		return d.PromptForSingleSelection()
+	})
 	sh.Opened = func(e shell.Entry) {
 		if window != nil {
 			window.SetTitle(shell.EntryTitle(e))

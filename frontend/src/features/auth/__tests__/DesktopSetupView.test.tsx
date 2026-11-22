@@ -84,6 +84,20 @@ describe('DesktopSetupView: the desktop app’s short wizard', () => {
     expect(finishSetup).toHaveBeenCalledWith(expect.objectContaining({ backupDir: '/media/usb/MindSift' }));
   });
 
+  it('shows the host’s path of a Flatpak portal folder and sends the portal’s path', async () => {
+    pickFolder.mockImplementationOnce(async () => ({ path: '/run/user/1000/doc/ab12cd/Backups', shown: '/home/anna/Backups' }));
+    await renderView();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Ordner wählen/ }));
+    });
+    const field = screen.getByLabelText('Ordner') as HTMLInputElement;
+    expect(field.value).toBe('/home/anna/Backups');
+    // Leaving the field unchanged keeps the portal's path
+    fireEvent.blur(field);
+    await finish();
+    expect(finishSetup).toHaveBeenCalledWith(expect.objectContaining({ backupDir: '/run/user/1000/doc/ab12cd/Backups' }));
+  });
+
   it('sends no backup settings when backups are switched off', async () => {
     await renderView();
     fireEvent.click(screen.getByRole('switch', { name: 'Tägliche Backups' }));

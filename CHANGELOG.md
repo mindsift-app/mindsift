@@ -13,6 +13,9 @@ Versions without a git tag were development states and were never published as a
 - The desktop app's first start no longer opens the form for a local instance right away: it shows "Create a local instance" and "Connect to a server" side by side, and nothing is created before you choose. If you only use a MindSift server, you go straight to it. Later starts still open the instance or server used last.
 
 ### Fixed
+- Downloads in the desktop app on Linux (backups, the Markdown archive, automatic backups, a note as Markdown, themes) did nothing: the button flickered and no file was saved, in the Flatpak not even in the Downloads folder. The app now asks where to save with the system's save dialog and shows a short notice when the file was saved or could not be. On Windows, WebView2's own download bar stays as it was.
+- The desktop app's Flatpak showed a backup folder chosen in the folder dialog as `/run/user/1000/doc/…`; it now shows the folder as you chose it (for example `~/Backups`). The backups still go to the same place.
+- Clicking "Back up now" twice in a row could make two backups; a second click while one is running now waits for it instead. The download buttons of backups wait while their file is being fetched, too.
 - An image dropped onto a note (or anything typed or pasted) right after opening the note's page is kept: it showed up and vanished again a moment later when the note's sync had not loaded yet, which happened most often in Safari and other WebKit browsers, also in the desktop app on Linux.
 
 ## [0.98.0] - 2026-11-22

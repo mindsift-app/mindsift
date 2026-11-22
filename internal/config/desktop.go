@@ -22,6 +22,18 @@ type Desktop struct {
 	// and full name); a username MindSift does not accept becomes "me"
 	Username    string
 	DisplayName string
+	// ShownPath: a path as the person knows it, for showing only (nil: as it is). Under Flatpak a folder
+	// chosen in the system's dialog is a path of the document portal (/run/user/1000/doc/…); the app keeps
+	// using that path, the person reads the host's.
+	ShownPath func(string) string
+}
+
+// Shown: p as ShownPath shows it
+func (d Desktop) Shown(p string) string {
+	if d.ShownPath == nil || p == "" {
+		return p
+	}
+	return d.ShownPath(p)
 }
 
 // Realtime is the transport the window uses for live updates: no WebSocket in the app (its webview hands

@@ -25,6 +25,21 @@ export const ServerBackupsCard: React.FC<{ onRestored?: () => void }> = ({ onRes
     api.listMyBackups().then(setFiles).catch(() => {});
   }, []);
 
+  // The backup being fetched: its button waits, so a second click does not fetch (and save) it twice
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const download = async (name: string) => {
+    setDownloading(name);
+    setDownloadError(null);
+    try {
+      saveBlob(await api.downloadMyBackup(name), name);
+    } catch (err) {
+      setDownloadError(errorMessage(err, t('backups.downloadFailed')));
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   const startRestore = (name: string) => {
     setOpen(open === name ? null : name);
     setConfirm(false);
@@ -76,8 +91,9 @@ export const ServerBackupsCard: React.FC<{ onRestored?: () => void }> = ({ onRes
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={async () => saveBlob(await api.downloadMyBackup(f.name), f.name)}
-                    className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1"
+                    onClick={() => download(f.name)}
+                    disabled={downloading === f.name}
+                    className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
                   >
                     <Download className="w-3.5 h-3.5" />
                     {t('common:download')}
@@ -172,6 +188,7 @@ export const ServerBackupsCard: React.FC<{ onRestored?: () => void }> = ({ onRes
           ))
         )}
       </div>
+      {downloadError && <p className="text-[11px] text-status-err">{downloadError}</p>}
     </div>
   );
 };

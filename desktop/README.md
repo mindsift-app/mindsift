@@ -22,7 +22,19 @@ attached to every GitHub release with fixed names, see "Release" in ci/release-d
   `data/`, stays where it is and becomes the instance "MindSift". The start view names the folder and opens
   it in the file manager. The only folder dialog is the backup folder's (`pick-folder`, the system's dialog
   through Wails, under Flatpak through the portal); the shell hands the choice to the window, the server
-  checks it.
+  checks it. Under Flatpak the portal answers with a path of its document store (`/run/user/1000/doc/<id>/…`),
+  where the app may write; that path is stored and used, the window shows the host's path instead
+  (`shell.HostPath`: `org.freedesktop.portal.Documents.GetHostPaths`, portal version 5 and later, else the
+  path as it is).
+- **Downloads** (backups, exports, a note as Markdown, a theme; the frontend saves blobs through a link with
+  `download`): WebKitGTK asks nobody and writes into the Downloads folder, which the Flatpak may not reach, so
+  the shell takes every download of the window's network session, on any page (`download_linux.go`:
+  `download-started`, `decide-destination` kept waiting until the system's save dialog answered, the portal's
+  under Flatpak). WebKit writes into `<base>/webview/downloads/` and the finished file is moved to the chosen
+  path (renamed, else copied; into a file of the document portal a rename fails with `EXDEV`, writing it
+  works, so nothing depends on WebKit's `<name>.wkdownload` next to the destination). A cancelled dialog cancels the download; the page gets
+  `mindsift:desktop-download` (`{saved, name}`) and the frontend shows a notice (`components/DownloadNotice.tsx`).
+  Windows: WebView2's own download bar, untouched.
 - **Local instances:** the MindSift server runs inside the app. Its router is the Wails asset handler, so
   no port is opened and nothing but the app's own window can reach it (`wails://localhost/` on Linux,
   `http://wails.localhost/` on Windows are served by the webview itself). One instance at a time:
@@ -64,7 +76,8 @@ as `desktop.json.broken`.
 `POST /__desktop/api/<op>` with a JSON body (`state`, `create`, `open`, `open-found`, `add-server`,
 `rename`, `remove`, `show-base`, `pick-folder`, and for the app's settings `local-api` and `local-api-set`),
 code in `desktop/internal/shell`. `pick-folder {path}`
-opens the system's folder dialog at `path` (or its nearest existing parent) and answers `{path}`, empty when
+opens the system's folder dialog at `path` (or its nearest existing parent; under Flatpak the host's path,
+unchecked) and answers `{path, shown}` (`shown`: the folder as the person knows it), empty when
 cancelled; the setup wizard and the administration use it for the backup folder. The endpoints answer
 only requests with the header `X-MindSift-Desktop: 1`, `Content-Type: application/json`, no foreign
 `Origin` and no cross-site `Sec-Fetch-Site`. A server's page shown in the window (or any other origin) cannot send that header
