@@ -12,14 +12,16 @@
 #    unless SKIP_FRONTEND=1.
 # 2. A staged source tree in desktop/out/flatpak/src: the repository's files (git ls-files), the
 #    built frontend in desktop/dist, THIRD_PARTY_LICENSES.txt, the version in desktop/app-version, a
-#    release entry for that version in the metainfo (when CHANGELOG.md has its section), and the Go
+#    release entry for that version in the metainfo and its screenshot URLs on the tag (when CHANGELOG.md
+#    has its section), and the Go
 #    modules vendored (golang container, the only step that downloads modules), so flatpak-builder builds
 #    offline, as Flathub requires.
 # 3. flatpak-builder in a Debian container with SYS_ADMIN (bubblewrap needs its own namespaces), with the
 #    runtimes cached in the podman/docker volume mindsift-flatpak; the binary is built inside the GNOME
 #    SDK with the Go extension, so glibc, GTK and WebKitGTK are the runtime's. The ref is on the branch
 #    stable, the one of the own Flatpak repository; bundle.sh makes the bundle (with the repository as its
-#    origin when FLATPAK_GPG_PRIVATE_KEY holds its signing key).
+#    origin when FLATPAK_GPG_PRIVATE_KEY holds its signing key). A release build fails when the bundle's
+#    appstream data lacks a screenshot of the metainfo.
 # Like desktop/build.sh it runs with podman and bind mounts locally; the CI workflow sets ENGINE=docker
 # COPY_MODE=1 and the sources are copied into the containers instead.
 set -eu
@@ -70,6 +72,15 @@ if [ -n "$date" ] && ! grep -q "<release version=\"$release\"" "$METAINFO"; then
   sed -i "s|^\( *\)<releases>\$|&\\
 $entry|" "$METAINFO"
   grep -q "<release version=\"$release\"" "$METAINFO" || { echo "could not add release $release to the metainfo" >&2; exit 1; }
+fi
+# The software-center screenshots (PNG in screenshots/store/): a release takes those of its tag, which never
+# change, instead of main's. flatpak-builder's appstreamcli compose downloads each one and silently drops
+# those it cannot load (no WebP, nothing unreachable), so a release build checks that all of them made it
+# into the bundle's appstream data (SHOTS: how many the metainfo has, 0 = no check).
+SHOTS=0
+if [ -n "$date" ]; then
+  sed -i "s|https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/|https://raw.githubusercontent.com/mindsift-app/mindsift/v$release/screenshots/|" "$METAINFO"
+  SHOTS="$(grep -o '<screenshot[ >]' "$METAINFO" | wc -l)"
 fi
 
 $ENGINE volume create mindsift-desktop-gomod >/dev/null 2>&1 || true
@@ -132,6 +143,10 @@ run_in "$FLATPAK_IMAGE" mindsift-flatpak:/var/lib/flatpak . "set -e
   flatpak update -y --noninteractive org.gnome.Platform//$GNOME_BRANCH org.gnome.Sdk//$GNOME_BRANCH
   flatpak update -y --noninteractive --commit=$GO_EXT_COMMIT org.freedesktop.Sdk.Extension.golang//$GO_EXT_BRANCH
   flatpak-builder --state-dir=/tmp/state --disable-rofiles-fuse --disable-download --force-clean --default-branch=stable --repo=/tmp/repo /tmp/build $APP_ID.yml
+  if [ $SHOTS -gt 0 ]; then
+    got=\$(gzip -dc /tmp/build/files/share/app-info/xmls/$APP_ID.xml.gz | grep -o '<screenshot[ >]' | wc -l)
+    [ \"\$got\" = $SHOTS ] || { echo \"the bundle's appstream data has \$got of $SHOTS screenshots: compose drops those it cannot download or read (PNG or JPEG at the tag's URL)\" >&2; exit 1; }
+  fi
   sh bundle.sh /tmp/repo mindsift.flatpak \$key
   rm -f \$key
   rm -rf src bundle.sh" "$SANDBOX_OPTS"

@@ -2,6 +2,8 @@
 // The title picture and the colour-family grid are taken twice in the same state – light and dark
 // theme – and joined along a slanted diagonal (light left, dark right); the others are plain light
 // or dark pictures.
+// Pictures named store-<name>.png are the software-center screenshots of the Flatpak (metainfo);
+// e2e/screenshots.sh saves them as PNG in screenshots/store/ instead of WebP.
 // Usage: e2e/screenshots.sh (builds the image) or MINDSIFT_URL=… SHOTS_DIR=… node screenshots.mjs
 // Theme pair: SHOT_LIGHT / SHOT_DARK (default: light / dark, the "Klassik" family)
 import fs from 'node:fs';
@@ -138,6 +140,11 @@ async function plain(page, file, mode) {
   console.log(`OK   ${file}`);
 }
 
+// The picture just taken also as a store screenshot (store-<name>.png)
+function store(file, name) {
+  fs.copyFileSync(`${OUT}/${file}`, `${OUT}/store-${name}.png`);
+}
+
 const main = async () => {
   const admin = await login('admin');
   const user = await login('user');
@@ -151,6 +158,7 @@ const main = async () => {
   await tab(page, 'Tasks');
   await page.getByRole('radio', { name: /Kanban/ }).first().click();
   await plain(page, 'aufgaben_desktop.png', 'dark');
+  store('aufgaben_desktop.png', 'board');
   // Colour families: the board fills the width, so both halves of the diagonal show content
   for (const [family, light, dark] of FAMILIES) {
     await shot(page, `Theme_${family}.png`, { light, dark, scale: 0.5 });
@@ -159,6 +167,15 @@ const main = async () => {
   await page.getByRole('radio', { name: /Calendar/ }).first().click();
   await sleep(1200);
   await plain(page, 'calendar_desktop.png', 'light');
+  store('calendar_desktop.png', 'calendar');
+
+  // The store picture of the note, before the demo user joins: one person, as in a local instance of the
+  // desktop app
+  await tab(page, 'Workspace');
+  await page.getByText(/^Homelab 2\.0/).first().click();
+  await page.waitForFunction(() => document.querySelectorAll('textarea').length > 5, null, { timeout: 10000 });
+  await sleep(1500);
+  await plain(page, 'store-notes.png', 'light');
 
   // The demo user edits a bullet of the shared note, so the screenshot shows lock and presence
   const other = await open(browser, user, DESKTOP);
@@ -205,7 +222,7 @@ const main = async () => {
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const day = (offset) => iso(new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset));
   await fetch(`${BASE}/api/v1/journal/${day(0)}`, { method: 'POST', headers: H });
-  await page.getByRole('button', { name: 'Journal', exact: true }).click();
+  await page.getByRole('button', { name: 'Journal', exact: true }).first().click();
   await sleep(1500);
   const write = async (date, lines) => {
     const section = page.locator(`[data-journal-date="${date}"]`);
@@ -226,12 +243,15 @@ const main = async () => {
   // Back to today in the calendar (large screens have no "Today" button above the days)
   await page.getByTitle(new RegExp(today.toLocaleDateString('en-US', { day: 'numeric', month: 'long' }))).first().click().catch(() => {});
   await page.mouse.click(1000, DESKTOP.viewport.height - 20);
+  // The click can land in a bullet, which then shows its raw text (links as [[…]]): leave it
+  await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
   await sleep(2500);
   // Round corners (setting "Corners: round") for this picture only
   await page.evaluate(() => document.documentElement.setAttribute('data-corners', 'round'));
   await plain(page, 'journal_desktop.png', 'dark');
+  store('journal_desktop.png', 'journal');
   await page.evaluate(() => document.documentElement.removeAttribute('data-corners'));
-  await page.getByRole('button', { name: 'Journal', exact: true }).click(); // close it again
+  await page.getByRole('button', { name: 'Journal', exact: true }).first().click(); // close it again
 
   await tab(page, 'Lists');
   await page.getByText('Weekly groceries', { exact: true }).first().click().catch(() => {});

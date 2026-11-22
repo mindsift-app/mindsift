@@ -31,22 +31,24 @@
   <url type="homepage">https://mindsift.app/</url>
   <url type="bugtracker">https://github.com/mindsift-app/mindsift/issues</url>
   <url type="vcs-browser">https://github.com/mindsift-app/mindsift</url>
+  <!-- PNG from e2e/screenshots.sh (screenshots/store/, see desktop/README.md); a release build points the
+       URLs at the tag instead of main (build.sh) -->
   <screenshots>
     <screenshot type="default">
-      <caption>Notes as outlines, edited together</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/workspace_desktop.webp</image>
+      <caption>Notes as nested outlines</caption>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/store/notes.png</image>
     </screenshot>
     <screenshot>
-      <caption>Tasks on a board</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/aufgaben_desktop.webp</image>
+      <caption>Tasks on a Kanban board</caption>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/store/board.png</image>
     </screenshot>
     <screenshot>
-      <caption>The calendar</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/calendar_desktop.webp</image>
+      <caption>Tasks in the calendar</caption>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/store/calendar.png</image>
     </screenshot>
     <screenshot>
-      <caption>The journal</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/journal_desktop.webp</image>
+      <caption>A journal for each day</caption>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/store/journal.png</image>
     </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
