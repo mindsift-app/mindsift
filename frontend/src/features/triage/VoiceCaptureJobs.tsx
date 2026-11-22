@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Headphones, LoaderCircle, Mic, RotateCcw, Trash } from 'lucide-react';
 import type { TranscriptionJob } from '../../lib/types';
 import { discardTranscription, retryTranscription, transcriptionError, useInboxTranscriptions } from '../../lib/transcriptionJobs';
-import { loadAuthorized } from '../../lib/media';
+import { authorizedAudioURL } from '../../lib/media';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
@@ -15,8 +15,9 @@ const JobAudio: React.FC<{ job: TranscriptionJob }> = ({ job }) => {
   useEffect(() => {
     let alive = true;
     const n = Math.max(1, job.pieces ?? 1);
-    Promise.all(Array.from({ length: n }, (_, i) => loadAuthorized(`/api/v1/voice/jobs/${encodeURIComponent(job.id)}/audio/${i}`)))
-      .then((loaded) => alive && setUrls(loaded.map((l) => l.url)))
+    // Recordings get their length written in (lib/webmDuration.ts), as in a note
+    Promise.all(Array.from({ length: n }, (_, i) => authorizedAudioURL(`/api/v1/voice/jobs/${encodeURIComponent(job.id)}/audio/${i}`)))
+      .then((loaded) => alive && setUrls(loaded))
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
@@ -28,7 +29,8 @@ const JobAudio: React.FC<{ job: TranscriptionJob }> = ({ job }) => {
   return (
     <div className="space-y-1">
       {urls.map((u) => (
-        <audio key={u} controls preload="metadata" src={u} className="w-full max-w-md h-11" />
+        // preload "auto": the file is in memory already; with "metadata" WebKitGTK's player kept its spinner
+        <audio key={u} controls preload="auto" src={u} className="w-full max-w-md h-11" />
       ))}
     </div>
   );

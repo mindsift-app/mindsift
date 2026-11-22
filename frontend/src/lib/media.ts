@@ -80,20 +80,29 @@ export function loadAuthorized(path: string, headers: Record<string, string> = a
 // Audio files as played: WebM recordings with their length written in (see webmDuration.ts)
 const playable = new Map<string, Promise<string>>();
 
+function playableURL(key: string, load: () => Promise<{ blob: Blob; url: string }>): Promise<string> {
+  let p = playable.get(key);
+  if (!p) {
+    p = load().then(async (m) => {
+      const fixed = await repairWebmBlob(m.blob);
+      return fixed === m.blob ? m.url : URL.createObjectURL(fixed);
+    });
+    p.catch(() => playable.delete(key));
+    playable.set(key, p);
+  }
+  return p;
+}
+
 /** blob: URL of a file for <img>/<audio>. For 'audio', a WebM recording without length (made with
  *  MediaRecorder) gets it written into the file first, so every player shows it and can seek. */
 export function mediaObjectURL(id: string, kind?: 'audio'): Promise<string> {
   if (kind !== 'audio') return loadMedia(id).then((m) => m.url);
-  let p = playable.get(id);
-  if (!p) {
-    p = loadMedia(id).then(async (m) => {
-      const fixed = await repairWebmBlob(m.blob);
-      return fixed === m.blob ? m.url : URL.createObjectURL(fixed);
-    });
-    p.catch(() => playable.delete(id));
-    playable.set(id, p);
-  }
-  return p;
+  return playableURL(`media:${id}`, () => loadMedia(id));
+}
+
+/** A recording of the API (needs the login) as blob: URL for <audio>, repaired like mediaObjectURL's. */
+export function authorizedAudioURL(path: string): Promise<string> {
+  return playableURL(path, () => loadAuthorized(path));
 }
 
 /** The file itself, e.g. to send a recording to the speech recognition. */

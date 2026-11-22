@@ -102,6 +102,62 @@ describe('webmDuration', () => {
     expect(scanWebm(new Uint8Array([0x1a, 0x45, 0xdf, 0xa3]))).toBeNull();
   });
 
+  it('moves a recording of WebKitGTK that starts hours in to 0 (length, cluster times, cues)', () => {
+    // GStreamer's running time as first cluster time: 4 bytes per timecode, like WebKitGTK writes them
+    const late = (time: number, rels: number[]) => [
+      0x1f, 0x43, 0xb6, 0x75, ...UNKNOWN,
+      ...el([0xe7], [(time >>> 24) & 0xff, (time >> 16) & 0xff, (time >> 8) & 0xff, time & 0xff]),
+      ...rels.flatMap(block),
+    ];
+    const header = el([0x1a, 0x45, 0xdf, 0xa3], el([0x42, 0x82], [0x77, 0x65, 0x62, 0x6d]));
+    const tracks = el([0x16, 0x54, 0xae, 0x6b], el([0xae], el([0xd7], [0x01])));
+    const start = 71_009_806; // 19:43:29
+    const original = new Uint8Array([
+      ...header, 0x18, 0x53, 0x80, 0x67, ...UNKNOWN, ...info(), ...tracks,
+      ...late(start, [0, 20, 40]), ...late(start + 1000, [0, 20, 40, 60]),
+    ]);
+    const scan = scanWebm(original)!;
+    expect(scan.start).toBe(start);
+    expect(scan.measured).toBe(1080);
+    expect(webmDurationSeconds(original)).toBe(1.08);
+
+    const fixed = repairWebm(original)!;
+    const after = scanWebm(fixed)!;
+    expect(after.start).toBe(0);
+    expect(after.stored?.value).toBe(1080);
+    expect(after.clusters.map((c) => c.time)).toEqual([0, 1000]);
+    expect(after.timecodes.map((t) => t.length)).toEqual([4, 4]); // rewritten in place
+    expect(after.cueTimes.map((t) => t.value)).toEqual([0, 1000]);
+    expect(repairWebm(fixed)).toBeNull();
+  });
+
+  it('corrects a recording that an earlier repair gave the wrong length (times still hours in)', () => {
+    // As the previous version left WebKitGTK's files: Duration = time of the last block, Cues with those times
+    const start = 71_009_806;
+    const late = (time: number, rels: number[]) => [
+      0x1f, 0x43, 0xb6, 0x75, ...UNKNOWN,
+      ...el([0xe7], [(time >>> 24) & 0xff, (time >> 16) & 0xff, (time >> 8) & 0xff, time & 0xff]),
+      ...rels.flatMap(block),
+    ];
+    const header = el([0x1a, 0x45, 0xdf, 0xa3], el([0x42, 0x82], [0x77, 0x65, 0x62, 0x6d]));
+    const tracks = el([0x16, 0x54, 0xae, 0x6b], el([0xae], el([0xd7], [0x01])));
+    const wrong = new Uint8Array(8);
+    new DataView(wrong.buffer).setFloat64(0, start + 1080);
+    const original = new Uint8Array([
+      ...header, 0x18, 0x53, 0x80, 0x67, ...UNKNOWN,
+      ...info(el([0x44, 0x89], Array.from(wrong))), ...tracks,
+      ...late(start, [0, 20, 40]), ...late(start + 1000, [0, 20, 40, 60]),
+      ...el([0x1c, 0x53, 0xbb, 0x6b], el([0xbb], [...el([0xb3], [(start >>> 24) & 0xff, (start >> 16) & 0xff, (start >> 8) & 0xff, start & 0xff]), ...el([0xb7], el([0xf7], [1]))])),
+    ]);
+    expect(webmDurationSeconds(original)).toBe(1.08);
+    const fixed = repairWebm(original)!;
+    expect(fixed.length).toBe(original.length);
+    const after = scanWebm(fixed)!;
+    expect(after.stored?.value).toBe(1080);
+    expect(after.clusters.map((c) => c.time)).toEqual([0, 1000]);
+    expect(after.cueTimes.map((t) => t.value)).toEqual([0]);
+  });
+
   it('repairs a recording as Blob and hands other files back unchanged', async () => {
     const blob = new Blob([recording() as Uint8Array<ArrayBuffer>], { type: 'audio/webm;codecs=opus' });
     const fixed = await repairWebmBlob(blob);
