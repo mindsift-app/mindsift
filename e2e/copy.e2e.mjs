@@ -1,7 +1,7 @@
 // Selection over several bullets with the mouse and Ctrl+A, copied with Ctrl+C as Markdown and deleted with
 // Backspace, in Chromium and Firefox. Covers both directions, different start points in the row (text, empty
 // space, the action bubble on the right), callouts at the top and the bottom, warnings and errors, a code block with a free
-// language name, tables (on the top level and
+// language name, a voice note (audio block with a caption), tables (on the top level and
 // nested in a list), an empty indented last bullet and a drag past the first/last bullet. Needs a server in demo mode (account admin/admin); see e2e/README.md.
 import { chromium, firefox } from 'playwright';
 
@@ -39,14 +39,15 @@ const TABLE = '| Name | Wert |\n| --- | --- |\n| [[Homelab#doc_e2ecopy\\|Link]] 
 // A code block with a language outside the editor's list: copied as a fence with that name
 const CODE = '# SSH von innen\npass in on $int_if proto tcp to port 22';
 
-const NOTES = {
+// A voice note (block type 'audio'): copied as its Markdown link; AUDIO is filled in once the file is uploaded
+const notes = (AUDIO) => ({
   'Callout oben': {
     blocks: [
       ['callout', 'Ein **Hinweis** oben', 0], ['h2', 'Überschrift', 0], ['bullet', 'Erster Punkt mit **fett**', 0], ['bullet', 'Kind mit [[Homelab#doc_e2ecopy|Link]]', 1],
-      ['drawing', DRAWING, 0], ['table', TABLE, 0], ['code', CODE, 0, 'OpenBSD-pf'], ['todo', 'Aufgabe', 0],
+      ['audio', AUDIO, 1], ['drawing', DRAWING, 0], ['table', TABLE, 0], ['code', CODE, 0, 'OpenBSD-pf'], ['todo', 'Aufgabe', 0],
     ],
     markdown:
-      '> Ein **Hinweis** oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind mit [[Homelab#doc_e2ecopy|Link]]\n\n```mindsift-canvas\n' + DRAWING + '\n```\n\n' + TABLE +
+      '> Ein **Hinweis** oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind mit [[Homelab#doc_e2ecopy|Link]]\n- ' + AUDIO + '\n\n```mindsift-canvas\n' + DRAWING + '\n```\n\n' + TABLE +
       '\n\n```OpenBSD-pf\n' + CODE + '\n```\n\n- [ ] Aufgabe',
   },
   'Callout unten, Warnung und Fehler, leerer eingerückter Bullet am Ende': {
@@ -57,7 +58,18 @@ const NOTES = {
     markdown:
       'Erster Punkt\n- Kind\n\n' + TABLE.replace(/^/gm, '\t') + '\n\n- > [!warning] Achtung, heiß\n\n> Ein **Hinweis** unten\n\n> [!failure]\n> Fehlgeschlagen\n\nLetzter\n-',
   },
-};
+});
+
+// One second of silence as 8 kHz mono WAV
+function silentWav() {
+  const n = 8000;
+  const b = Buffer.alloc(44 + n);
+  b.write('RIFF', 0); b.writeUInt32LE(36 + n, 4); b.write('WAVE', 8); b.write('fmt ', 12);
+  b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(8000, 24);
+  b.writeUInt32LE(8000, 28); b.writeUInt16LE(1, 32); b.writeUInt16LE(8, 34); b.write('data', 36); b.writeUInt32LE(n, 40);
+  b.fill(128, 44);
+  return b;
+}
 
 async function openNote(browser, token, title) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
@@ -85,6 +97,14 @@ const main = async () => {
   const admin = (await api(null, 'POST', '/api/v1/auth/login', { login: 'admin', password: 'admin' })).token;
   const created = [];
   try {
+    // A short silent WAV in a note of its own, for the voice note in the test notes
+    const holder = await api(admin, 'POST', '/api/v1/documents', { title: `Kopier-Test Medien ${Date.now()}`, blocks: [] });
+    created.push(holder.id);
+    const form = new FormData();
+    form.append('file', new Blob([silentWav()], { type: 'audio/wav' }), 'sprachnotiz.wav');
+    const up = await fetch(`${BASE}/api/v1/documents/${holder.id}/media`, { method: 'POST', headers: { Authorization: `Bearer ${admin}` }, body: form });
+    if (!up.ok) throw new Error(`upload: ${up.status} ${await up.text()}`);
+    const NOTES = notes(`[Sprachnotiz](media:${(await up.json()).id})`);
     for (const engine of [chromium, firefox]) {
       const browser = await engine.launch();
       for (const [noteName, note] of Object.entries(NOTES)) {

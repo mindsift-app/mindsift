@@ -54,8 +54,8 @@ describe('Pfeile zum Ein- und Ausrücken an Bild, Zeichnung und Code', () => {
     unmount();
 
     render(<ImageBlock content="![Hafen am Abend](media:med_a1)" canEdit onCaptionChange={() => {}} />);
-    const filled = screen.getByRole('textbox', { name: 'Beschriftung hinzufügen…' }) as HTMLInputElement;
-    expect(filled.value).toBe('Hafen am Abend');
+    const filled = screen.getByRole('textbox', { name: 'Beschriftung hinzufügen…' });
+    expect(filled.textContent).toBe('Hafen am Abend');
     expect(filled.className).not.toContain('opacity-0');
   });
 
@@ -86,7 +86,9 @@ describe('Pfeile zum Ein- und Ausrücken an Bild, Zeichnung und Code', () => {
     expect((screen.getByRole('button', { name: 'Ausrücken' }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(indent);
     expect(onIndent).not.toHaveBeenCalled();
-    expect((screen.getByRole('textbox') as HTMLInputElement).readOnly).toBe(true);
+    // Read only: the caption shows, there is no field to type in
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.getByText('Hafen', { selector: 'figcaption div' })).toBeTruthy();
   });
 
   it('Bild nur zum Lesen: keine Pfeile und kein Beschriftungsfeld', async () => {
@@ -166,8 +168,8 @@ describe('Pfeile zum Ein- und Ausrücken an Bild, Zeichnung und Code', () => {
     );
     const indent = (await screen.findByRole('button', { name: 'Einrücken' })) as HTMLButtonElement;
     expect(indent.disabled).toBe(true);
-    const caption = screen.getByRole('textbox', { name: 'Beschriftung hinzufügen…' }) as HTMLInputElement;
-    expect(caption.readOnly).toBe(true);
-    expect(caption.value).toBe('Sprachnotiz vom Montag');
+    // Read only: the text shows, there is no field to type in
+    expect(screen.getByText('Sprachnotiz vom Montag')).toBeTruthy();
+    expect(screen.queryByRole('textbox')).toBeNull();
   });
 });

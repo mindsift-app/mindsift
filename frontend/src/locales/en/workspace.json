@@ -379,6 +379,8 @@
     "transcribing": "Transcribing…",
     "transcribe": "Transcribe",
     "caption": "Add a caption…",
+    "captionMore": "more",
+    "captionLess": "less",
     "imageUnavailable": "Image not available (offline or deleted)",
     "enlarge": "Enlarge",
     "resize": "Drag to change the size",

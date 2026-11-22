@@ -250,6 +250,13 @@ Component: [TableBlock.tsx](../frontend/src/features/workspace/TableBlock.tsx), 
 - **+ right of the table** adds a column: on phones always there and 44 px wide, on a desktop only on hover or with the cursor in the table. The **⋯** below it is an `ActionMenu` with the line modes, the alignment of the column with the cursor (left, centered, right; stored in the Markdown's separator row) and row/column actions; on a desktop + and ⋯ stay visible while the menu is open (a fading box would put the menu behind the bullet below).
 - Lines come from the theme's `--border-color`, drawn per cell so the default mode can fade them out towards the edge; the frame of `grid` takes `--radius-card`. Wide tables scroll sideways inside the note (`.table-scroll`).
 
+## Media Blocks in Notes (Image, Voice Note)
+
+Components: [ImageBlock.tsx](../frontend/src/features/workspace/ImageBlock.tsx), [AudioBlock.tsx](../frontend/src/features/workspace/AudioBlock.tsx), caption in [MediaCaption.tsx](../frontend/src/features/workspace/MediaCaption.tsx), arrows in [IndentArrows.tsx](../frontend/src/features/workspace/IndentArrows.tsx).
+
+- **Indent arrows** never stand between the bullet and the media: over an image or a drawing at its top left (`overlayArrowsClass`), after a voice note's player (and its transcribe button). On devices that can hover they show only over the block; held by someone else they stay, greyed out.
+- **Caption:** one line of text that wraps (line breaks become spaces). While it is edited the whole text shows; otherwise a long caption is cut to two lines with "…" and a small "mehr"/"weniger" below it (44 px to tap on phones) shows all of it; a click into an editable caption starts editing. An empty caption shows only over the block, its line stays. **Enter** goes on in a new bullet below, like Enter at the end of a text bullet; **Shift+Enter** only leaves the caption.
+
 ## Mentioning People (@)
 
 Hook: [useMentionInput.ts](../frontend/src/lib/useMentionInput.ts), list: [MentionMenu.tsx](../frontend/src/components/MentionMenu.tsx), chip: [MentionChip.tsx](../frontend/src/components/MentionChip.tsx).

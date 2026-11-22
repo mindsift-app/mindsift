@@ -22,6 +22,9 @@ Versions without a git tag were development states and were never published as a
 - The desktop app's Flatpak showed a backup folder chosen in the folder dialog as `/run/user/1000/doc/…`; it now shows the folder as you chose it (for example `~/Backups`). The backups still go to the same place.
 - Clicking "Back up now" twice in a row could make two backups; a second click while one is running now waits for it instead. The download buttons of backups wait while their file is being fetched, too.
 - An image dropped onto a note (or anything typed or pasted) right after opening the note's page is kept: it showed up and vanished again a moment later when the note's sync had not loaded yet, which happened most often in Safari and other WebKit browsers, also in the desktop app on Linux.
+- Voice notes in a note now start right at their bullet: the indent and outdent arrows sit after the player (and the transcribe button) instead of keeping an empty gap in front of it while the pointer is elsewhere, on computers and phones.
+- Pressing Enter in the caption of an image or a voice note now goes on in a new bullet below, like Enter at the end of a text bullet; Shift+Enter only leaves the caption.
+- Long captions of images and voice notes (such as a transcript) now wrap instead of running out of the field: while editing, the whole text shows; otherwise a long caption is cut to two lines with "…", and "more" (or a click into it) shows all of it.
 
 ## [0.98.0] - 2026-11-22
 
