@@ -23,7 +23,7 @@ func (s *Store) seedHelpNotesIT(user *domain.User, ed HelpEdition) {
 		{level: 1, text: "[[Liste e spesa]] – fare la spesa e la valigia"},
 		{level: 1, text: "[[Scorciatoie da tastiera]] – lavorare più in fretta"},
 		{level: 1, text: "[[Inserimento vocale]] – dettare invece di scrivere"},
-		{sharingOnly: true, level: 1, text: "[[Condividere e modificare insieme]]"},
+		{level: 1, text: "[[Condividere e modificare insieme]]"},
 		{level: 1, text: "[[API e smart home]] – collegare agenti IA e script"},
 	})
 	help("Note e outliner", "", []seedBlock{
@@ -102,12 +102,18 @@ func (s *Store) seedHelpNotesIT(user *domain.User, ed HelpEdition) {
 		{text: "Sul telefono: tenere premuto il + avvia subito una registrazione"},
 		{text: "Con un tuo server Whisper la registrazione resta sul tuo server; in Impostazioni account → Inserimento vocale scegli Whisper o il riconoscimento del browser"},
 	})
-	// Only where people share (not in the desktop app, nor in sharing mode private)
+	// Where people share the full note; without sharing (desktop app, sharing mode private) a short one saying why it is missing
 	if ed.Sharing {
 		help("Condividere e modificare insieme", "🤝", []seedBlock{
 			{text: "Note, cartelle, liste di attività e liste si possono condividere con persone o gruppi – in modifica o in sola lettura"},
 			{text: "In una nota condivisa scrivono più persone contemporaneamente; chi digita in un punto lo riserva per un momento"},
 			{text: "Le attività nelle liste condivise si possono assegnare a persone e seguire"},
+		})
+	} else {
+		help("Condividere e modificare insieme", "🤝", []seedBlock{
+			{text: "Condividere note, cartelle, liste di attività e liste con altre persone e modificarle insieme richiede un server MindSift con più account e la condivisione attivata"},
+			{desktopOnly: true, text: "Questa istanza locale dell'app desktop non lo offre, quindi qui non ci sono pulsanti di condivisione. Per lavorare con altri ti serve un server MindSift a cui l'app desktop possa collegarsi"},
+			{serverOnly: true, text: "Su questo server l'amministrazione ha disattivato la condivisione (Amministrazione → Istanza → Condivisione, impostazione «Privato»), quindi qui non ci sono pulsanti di condivisione. Rivolgiti all'amministrazione se vuoi lavorare con altri"},
 		})
 	}
 	help("API e smart home", "🔌", []seedBlock{

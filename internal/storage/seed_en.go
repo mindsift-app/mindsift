@@ -279,7 +279,7 @@ func (s *Store) seedHelpNotesEN(user *domain.User, demo bool, ed HelpEdition) {
 		{level: 1, text: "[[Lists & groceries]] – shop and pack"},
 		{level: 1, text: "[[Keyboard shortcuts]] – work faster"},
 		{level: 1, text: "[[Voice input]] – dictate instead of typing"},
-		{sharingOnly: true, level: 1, text: "[[Sharing & editing together]]"},
+		{level: 1, text: "[[Sharing & editing together]]"},
 		{level: 1, text: "[[API & smart home]] – connect AI agents and scripts"},
 	})
 	help("Notes & outliner", "", []seedBlock{
@@ -358,7 +358,7 @@ func (s *Store) seedHelpNotesEN(user *domain.User, demo bool, ed HelpEdition) {
 		{text: "On the phone: holding the + starts a recording right away"},
 		{text: "With your own Whisper server the recording stays on your server; under Account settings → Voice input you choose Whisper or the browser's recognition"},
 	}, demoBlock(demo, seedBlock{typ: "callout", text: "In this demo MindSift uses the browser's speech recognition."})))
-	// Only where people share (not in the desktop app, nor in sharing mode private)
+	// Where people share the full note; without sharing (desktop app, sharing mode private) a short one saying why it is missing
 	if ed.Sharing {
 		help("Sharing & editing together", "🤝", slices.Concat([]seedBlock{
 			{text: "Notes, folders, task lists and lists can be shared with people or groups – for editing or read-only"},
@@ -366,6 +366,12 @@ func (s *Store) seedHelpNotesEN(user *domain.User, demo bool, ed HelpEdition) {
 		}, demoBlock(demo, seedBlock{level: 1, text: "Try it: in the demo everything is shared with the account **user** – sign in as user/user in a second browser"}), []seedBlock{
 			{text: "Tasks in shared lists can be assigned to people and watched"},
 		}))
+	} else {
+		help("Sharing & editing together", "🤝", []seedBlock{
+			{text: "Sharing notes, folders, task lists and lists with other people and editing them together needs a MindSift server with several accounts and sharing turned on"},
+			{desktopOnly: true, text: "This local instance of the desktop app does not offer that, so there are no share buttons here. To work with others you need a MindSift server the desktop app can connect to"},
+			{serverOnly: true, text: "On this server the administration has turned sharing off (Administration → Instance → Sharing, setting “Private”), so there are no share buttons here. Ask the administration if you want to work with others"},
+		})
 	}
 	help("API & smart home", "🔌", []seedBlock{
 		{text: "Under Account settings → API you create keys with exactly the permissions a device needs"},

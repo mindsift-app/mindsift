@@ -23,7 +23,7 @@ func (s *Store) seedHelpNotesFR(user *domain.User, ed HelpEdition) {
 		{level: 1, text: "[[Listes et courses]] – faire les courses et la valise"},
 		{level: 1, text: "[[Raccourcis clavier]] – travailler plus vite"},
 		{level: 1, text: "[[Saisie vocale]] – dicter au lieu de taper"},
-		{sharingOnly: true, level: 1, text: "[[Partager et modifier à plusieurs]]"},
+		{level: 1, text: "[[Partager et modifier à plusieurs]]"},
 		{level: 1, text: "[[API et domotique]] – connecter des agents IA et des scripts"},
 	})
 	help("Notes et outliner", "", []seedBlock{
@@ -102,12 +102,18 @@ func (s *Store) seedHelpNotesFR(user *domain.User, ed HelpEdition) {
 		{text: "Sur le téléphone : maintenir le + appuyé lance tout de suite un enregistrement"},
 		{text: "Avec ton propre serveur Whisper, l'enregistrement reste sur ton serveur ; sous Paramètres du compte → Saisie vocale, tu choisis Whisper ou la reconnaissance du navigateur"},
 	})
-	// Only where people share (not in the desktop app, nor in sharing mode private)
+	// Where people share the full note; without sharing (desktop app, sharing mode private) a short one saying why it is missing
 	if ed.Sharing {
 		help("Partager et modifier à plusieurs", "🤝", []seedBlock{
 			{text: "Les notes, dossiers, listes de tâches et listes peuvent être partagés avec des personnes ou des groupes – en modification ou en lecture seule"},
 			{text: "Plusieurs personnes écrivent en même temps dans une note partagée ; celui qui tape dans une puce la réserve un instant"},
 			{text: "Les tâches des listes partagées peuvent être attribuées à des personnes et suivies"},
+		})
+	} else {
+		help("Partager et modifier à plusieurs", "🤝", []seedBlock{
+			{text: "Partager des notes, dossiers, listes de tâches et listes avec d'autres personnes et les modifier à plusieurs demande un serveur MindSift avec plusieurs comptes et le partage activé"},
+			{desktopOnly: true, text: "Cette instance locale de l'application de bureau ne le propose pas, il n'y a donc pas de boutons de partage ici. Pour travailler avec d'autres, il te faut un serveur MindSift auquel l'application de bureau peut se connecter"},
+			{serverOnly: true, text: "Sur ce serveur, l'administration a désactivé le partage (Administration → Instance → Partage, réglage « Privé »), il n'y a donc pas de boutons de partage ici. Adresse-toi à l'administration si tu veux travailler avec d'autres"},
 		})
 	}
 	help("API et domotique", "🔌", []seedBlock{

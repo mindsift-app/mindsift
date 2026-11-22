@@ -23,7 +23,7 @@ func (s *Store) seedHelpNotesES(user *domain.User, ed HelpEdition) {
 		{level: 1, text: "[[Listas y compra]]: comprar y hacer la maleta"},
 		{level: 1, text: "[[Atajos de teclado]]: trabaja más rápido"},
 		{level: 1, text: "[[Entrada de voz]]: dicta en vez de escribir"},
-		{sharingOnly: true, level: 1, text: "[[Compartir y editar en común]]"},
+		{level: 1, text: "[[Compartir y editar en común]]"},
 		{level: 1, text: "[[API y domótica]]: conecta agentes de IA y scripts"},
 	})
 	help("Notas y outliner", "", []seedBlock{
@@ -102,12 +102,18 @@ func (s *Store) seedHelpNotesES(user *domain.User, ed HelpEdition) {
 		{text: "En el móvil: mantener pulsado el + inicia una grabación al instante"},
 		{text: "Con tu propio servidor Whisper la grabación se queda en tu servidor; en Ajustes de la cuenta → Entrada de voz eliges Whisper o el reconocimiento del navegador"},
 	})
-	// Only where people share (not in the desktop app, nor in sharing mode private)
+	// Where people share the full note; without sharing (desktop app, sharing mode private) a short one saying why it is missing
 	if ed.Sharing {
 		help("Compartir y editar en común", "🤝", []seedBlock{
 			{text: "Las notas, carpetas, listas de tareas y listas se pueden compartir con personas o grupos, para editar o solo para leer"},
 			{text: "En una nota compartida escriben varias personas a la vez; quien escribe en un punto lo reserva un momento"},
 			{text: "Las tareas de las listas compartidas se pueden asignar a personas y seguir"},
+		})
+	} else {
+		help("Compartir y editar en común", "🤝", []seedBlock{
+			{text: "Compartir notas, carpetas, listas de tareas y listas con otras personas y editarlas en común requiere un servidor MindSift con varias cuentas y la función de compartir activada"},
+			{desktopOnly: true, text: "Esta instancia local de la app de escritorio no lo ofrece, por eso aquí no hay botones para compartir. Para trabajar con otras personas necesitas un servidor MindSift al que la app de escritorio pueda conectarse"},
+			{serverOnly: true, text: "En este servidor la administración ha desactivado la función de compartir (Administración → Instancia → Compartir, ajuste «Privado»), por eso aquí no hay botones para compartir. Consulta con la administración si quieres trabajar con otras personas"},
 		})
 	}
 	help("API y domótica", "🔌", []seedBlock{

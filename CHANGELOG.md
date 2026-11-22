@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Changed
+- New accounts on an instance without sharing (the desktop app's local instances, servers with sharing set to private) now get the help note about sharing again, as a short version: it says that sharing with other people needs a MindSift server with several accounts and sharing turned on, and that this instance does not offer it (in the desktop app: connect it to a server; on a server: the administration has turned sharing off), instead of describing share buttons that do not exist. Available in all five languages.
+
 ## [0.98.0] - 2026-11-22
 
 ### Added
