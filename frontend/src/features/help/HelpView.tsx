@@ -14,7 +14,7 @@ import {
   LoaderCircle,
   CloudOff,
 } from 'lucide-react';
-import { isDesktopApp } from '../../lib/api';
+import { useCapabilities, type Capability } from '../../lib/capabilities';
 import { AboutModal } from '../../components/AboutModal';
 import { LegalLinks } from '../../components/LegalLinks';
 import type { AuthStatus } from '../../lib/types';
@@ -24,8 +24,9 @@ import type { DocCard, HelpCategory, HelpContent } from './content/types';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { TourStartCard } from '../tour/TourStartCard';
 
-// Cards about working together with other people: the desktop app has one account and no sharing, no locks
-const DESKTOP_HIDDEN_CARDS = new Set(['workspace-collab-locks', 'collab-teams-sharing']);
+// Cards about working together with other people: gone while sharing is off (sharing mode private, the
+// desktop app)
+const CARD_NEEDS: Record<string, Capability> = { 'workspace-collab-locks': 'sharing', 'collab-teams-sharing': 'sharing' };
 
 interface HelpViewProps {
   onBack?: () => void;
@@ -53,15 +54,17 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
     };
   }, [language]);
   const help = content === 'failed' ? undefined : content;
-  const desktop = isDesktopApp();
+  const caps = useCapabilities();
   const cards: DocCard[] = useMemo(
     () =>
-      desktop
-        ? (help?.cards ?? [])
-            .filter((card) => !DESKTOP_HIDDEN_CARDS.has(card.id))
-            .map((card) => (card.desktop ? { ...card, ...card.desktop } : card))
-        : (help?.cards ?? []),
-    [help, desktop]
+      (help?.cards ?? [])
+        .filter((card) => !CARD_NEEDS[card.id] || caps[CARD_NEEDS[card.id]])
+        .map((card) => {
+          if (!card.without || caps[card.without.cap]) return card;
+          const { cap: _cap, ...topic } = card.without;
+          return { ...card, ...topic };
+        }),
+    [help, caps]
   );
 
   // Filtered cards based on active category & search query
@@ -119,7 +122,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
               <span>{t('title')}</span>
             </h1>
             <p className="text-xs text-muted">
-              {t(desktop ? 'subtitleDesktop' : 'subtitle')}
+              {t('subtitle')}
             </p>
           </div>
         </div>
@@ -163,7 +166,12 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
           { id: 'account', label: t('cat.account'), icon: UserCog },
           { id: 'shortcuts', label: t('cat.shortcuts'), icon: Keyboard },
         ]
-          .filter((cat) => !(desktop && cat.id === 'collaboration'))
+          // A category without any card left (collaboration while sharing is off) is not offered
+          .filter((cat) =>
+            help
+              ? cat.id === 'all' || cat.id === 'shortcuts' || cards.some((card) => card.category === cat.id)
+              : cat.id !== 'collaboration' || caps.sharing
+          )
           .map((cat) => {
           const Icon = cat.icon;
           const isActive = activeCategory === cat.id;

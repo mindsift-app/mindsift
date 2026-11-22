@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { User } from '../../../lib/types';
 import { LANGUAGES, languageName } from '../../../i18n';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
-import { isDesktopApp } from '../../../lib/api';
 import { InstantSaveToast, useInstantSave } from './InstantSave';
 
 // Language of the app: own choice or the browser's ('' = browser, then the server's default); dates and
@@ -30,7 +29,7 @@ export function LanguageSection({
   const { t } = useTranslation('settings');
   const { instant, languageSaving, handleChangeLanguage, handleChangeTypedRecognition } = language;
   const options = [
-    { value: '', title: t('common:languageAuto'), text: t(isDesktopApp() ? 'language.autoHintDesktop' : 'language.autoHint', { fallback: languageName(serverDefault || 'de') }) },
+    { value: '', title: t('common:languageAuto'), text: t('language.autoHint', { fallback: languageName(serverDefault || 'de') }) },
     ...LANGUAGES.map((l) => ({ value: l.id as string, title: l.name, text: '' })),
   ];
   return (

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { setCurrentDesktop } from '../../../lib/api/client';
+import { actAsDesktopApp, actAsServer } from '../../../test/desktop';
 import type { useProfileSettings } from '../user/useProfileSettings';
 import { DangerConfirmSheet } from '../user/ProfileSection';
 
@@ -23,7 +23,7 @@ function profileOf(noPassword: boolean, action: 'data' | 'account' = 'data'): Pr
 const confirmButton = () => screen.getByRole('button', { name: 'Daten löschen' }) as HTMLButtonElement;
 
 describe('DangerConfirmSheet', () => {
-  afterEach(() => setCurrentDesktop(null));
+  afterEach(() => actAsServer());
 
   it('asks a normal account for its password and keeps the button off until it is typed', () => {
     render(<DangerConfirmSheet profile={profileOf(false)} />);
@@ -38,7 +38,7 @@ describe('DangerConfirmSheet', () => {
   });
 
   it('is a plain confirmation in the desktop app: no password, no provider, the button works at once', () => {
-    setCurrentDesktop({ platform: 'linux', realtime: 'sse' });
+    actAsDesktopApp();
     render(<DangerConfirmSheet profile={profileOf(true)} />);
     expect(screen.getByText(/endgültig gelöscht/)).toBeTruthy();
     expect(screen.queryByLabelText('Zur Bestätigung dein Passwort')).toBeNull();

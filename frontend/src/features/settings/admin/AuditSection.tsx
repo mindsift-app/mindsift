@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CircleAlert } from 'lucide-react';
-import { api, isDesktopApp } from '../../../lib/api';
+import { api } from '../../../lib/api';
+import { can } from '../../../lib/capabilities';
 import i18n from '../../../i18n';
 import type { AuditEntry, User } from '../../../lib/types';
 import { SelectMenu } from '../../../components/SelectMenu';
@@ -98,15 +99,15 @@ export function AuditSection({ users }: { users: User[] }) {
     <div className="space-y-4">
       <div className="border-b border-border pb-3">
         <h2 className="text-sm font-bold text-main">{t('audit.title')}</h2>
-        <p className="text-muted mt-0.5">{t(isDesktopApp() ? 'audit.introDesktop' : 'audit.intro')}</p>
+        <p className="text-muted mt-0.5">{t('audit.intro')}</p>
       </div>
 
       <div className="flex items-center gap-2">
         <div className="flex-1 min-w-0 sm:flex-none">
           <SelectMenu<string> size="sm" buttonClassName={FILTER_BUTTON} ariaLabel={t('audit.filter.action')} title={t('audit.filter.action')} value={action} onChange={(v) => changeFilter({ action: v })} options={actionOptions} />
         </div>
-        {/* One account in the desktop app: nothing to filter by */}
-        {!isDesktopApp() && (
+        {/* One account (the desktop app): nothing to filter by */}
+        {can('accounts') && (
           <div className="flex-1 min-w-0 sm:flex-none">
             <SelectMenu<string> size="sm" buttonClassName={FILTER_BUTTON} ariaLabel={t('audit.filter.account')} title={t('audit.filter.account')} value={account} onChange={(v) => changeFilter({ account: v })} options={accountOptions} />
           </div>

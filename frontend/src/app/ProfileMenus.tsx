@@ -1,7 +1,8 @@
 import { ArrowLeftRight, Brain, CircleQuestionMark, LogOut, Palette, Settings, Shield, Smartphone, Users, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../lib/types';
-import { isDesktopApp, isSharingDisabled, triggerHaptic } from '../lib/api';
+import { isDesktopApp, triggerHaptic } from '../lib/api';
+import { can } from '../lib/capabilities';
 import { ThemeId, ThemeOption } from '../lib/theme';
 import { UserAvatar } from '../components/UserAvatar';
 import { ThemeQuickPicker } from '../components/ThemeQuickPicker';
@@ -48,8 +49,8 @@ export function ProfileDropdown({
         <UserAvatar user={user} size="md" className="border" />
         <div className="min-w-0 flex-1">
           <p className="font-bold text-main truncate">{user.displayName}</p>
-          {/* The desktop app has one account: its name once, no login name, no role */}
-          {!isDesktopApp() && (
+          {/* One account (the desktop app): its name once, no login name, no role */}
+          {can('accounts') && (
             <>
               <p className="text-[11px] text-muted truncate">{user.email || user.username}</p>
               <span className="inline-block mt-1 px-1.5 py-0.5 bg-panel border border-border rounded-btn text-[10px] text-accent font-semibold">
@@ -85,7 +86,7 @@ export function ProfileDropdown({
           <span>{t('profile.accountSettings')}</span>
         </button>
 
-        {!isSharingDisabled() && (
+        {can('sharing') && (
         <button
           onClick={() => {
             triggerHaptic(10);
@@ -204,7 +205,7 @@ export function MobileProfileSheet({
             <UserAvatar user={user} size="lg" className="border shadow-xs" />
             <div>
               <p className="font-bold text-sm text-main">{user.displayName}</p>
-              {!isDesktopApp() && (
+              {can('accounts') && (
                 <>
                   <p className="text-xs text-muted">{user.email || user.username}</p>
                   <span className="inline-block mt-1 px-1.5 py-0.5 bg-canvas border border-border rounded-btn text-[10px] text-accent font-semibold">
@@ -265,7 +266,7 @@ export function MobileProfileSheet({
             <span>{t('profile.accountSettings')}</span>
           </button>
 
-          {!isSharingDisabled() && (
+          {can('sharing') && (
           <button
             type="button"
             onClick={() => {

@@ -12,10 +12,10 @@ import {
 import { User, Team, UnifiedShare } from '../lib/types';
 import { UserAutocomplete } from '../features/UserAutocomplete';
 import { UserAvatar } from './UserAvatar';
-import { isSharingDisabled } from '../lib/api';
 import { NO_AUTOFILL } from '../lib/noAutofill';
 import { SelectMenu } from './SelectMenu';
 import { errorMessage } from '../lib/errorMessage';
+import { can } from '../lib/capabilities';
 
 export interface UnifiedShareModalProps {
   isOpen: boolean;
@@ -167,7 +167,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
         )}
 
         {/* Add Share Section (Only if owner / manager) */}
-        {isSharingDisabled() ? (
+        {!can('sharing') ? (
           <div className="p-3 bg-panel-elevated border border-border rounded-card text-xs text-muted">
             {t('share.disabled')}
           </div>

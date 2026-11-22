@@ -1,7 +1,7 @@
 import { Trans, useTranslation } from 'react-i18next';
-import { isDesktopApp } from '../../lib/api';
 import { TourStepId } from './tourSteps';
 import { LinkedTaskDemo, SlashDemo, TriageDemo } from './TourDemos';
+import { can } from '../../lib/capabilities';
 
 interface TourContentProps {
   step: TourStepId;
@@ -74,15 +74,9 @@ export function TourContent({ step, phone, target }: TourContentProps) {
     case 'end':
       return (
         <>
-          {/* One person on one computer in the desktop app: nothing to share */}
-          {isDesktopApp() ? (
-            text('end.textDesktop')
-          ) : (
-            <>
-              {text(phone ? 'end.textPhone' : 'end.text')}
-              {text('end.share')}
-            </>
-          )}
+          {text(phone ? 'end.textPhone' : 'end.text')}
+          {/* Sharing off (sharing mode private, the desktop app): nothing to share */}
+          {can('sharing') && text('end.share')}
         </>
       );
   }

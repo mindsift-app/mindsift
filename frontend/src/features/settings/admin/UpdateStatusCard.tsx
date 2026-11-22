@@ -55,7 +55,7 @@ export const UpdateStatusCard: React.FC = () => {
           <span>{t('update.admin.title')}</span>
         </p>
         <p className="text-[11px] text-muted mt-0.5">
-          {status.enabled ? t(desktop ? 'update.admin.hintDesktop' : 'update.admin.hint') : t(`update.admin.${status.reason ?? 'off'}`)}
+          {status.enabled ? t('update.admin.hint') : t(`update.admin.${status.reason ?? 'off'}`)}
         </p>
       </div>
       <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-xs">

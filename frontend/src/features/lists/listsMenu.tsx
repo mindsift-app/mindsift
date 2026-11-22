@@ -3,6 +3,7 @@ import i18n from '../../i18n';
 import { SharedList } from '../../lib/types';
 import { MobileMenuGroup } from '../../context/MobileActionContext';
 import { canWriteList, deduplicateItems } from './listItems';
+import { can } from '../../lib/capabilities';
 
 interface ListsMenuInput {
   lists: SharedList[];
@@ -53,12 +54,17 @@ export function buildListsMenu({
             },
             ...(activeList
               ? [
-                  {
-                    id: 'list-share',
-                    label: i18n.t('lists:shareMenuLabel', { title: activeList.title }),
-                    icon: <Users className="w-4 h-4" />,
-                    onClick: () => openShareModal(),
-                  },
+                  // Sharing off (sharing mode private, the desktop app): nobody to share with
+                  ...(can('sharing')
+                    ? [
+                        {
+                          id: 'list-share',
+                          label: i18n.t('lists:shareMenuLabel', { title: activeList.title }),
+                          icon: <Users className="w-4 h-4" />,
+                          onClick: () => openShareModal(),
+                        },
+                      ]
+                    : []),
                   ...(canWriteList(activeList)
                     ? [
                         {

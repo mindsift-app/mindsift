@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { SystemSettings } from '../../../lib/types';
-import { isDesktopApp } from '../../../lib/api';
 
 // Administration → Server: link previews for the whole server. Off, the server fetches no pages and the
 // app shows neither preview cards nor the switch per device. Always off in the demo.
@@ -20,7 +19,7 @@ export function LinkPreviewSetting({
       <div className="pr-4">
         <p className="font-bold text-main">{t('server.linkPreviews')}</p>
         <p className="text-[11px] text-muted mt-0.5">
-          {t(isDesktopApp() ? 'server.linkPreviewsHintDesktop' : 'server.linkPreviewsHint')}
+          {t('server.linkPreviewsHint')}
           {demoMode
             ? ` ${t('server.fixedBy', { env: 'MINDSIFT_DEMO' })}`
             : settings.linkPreviewsConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'LINK_PREVIEWS' })}`}

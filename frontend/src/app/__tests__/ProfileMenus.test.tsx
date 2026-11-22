@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { setCapabilities } from '../../lib/capabilities';
+import { DESKTOP_CAPABILITIES } from '../../test/desktop';
 import type { User } from '../../lib/types';
 
 let desktop = false;
 vi.mock('../../lib/api', () => ({
   isDesktopApp: () => desktop,
-  isSharingDisabled: () => desktop,
   triggerHaptic: vi.fn(),
 }));
 const openDesktopStart = vi.fn();
@@ -38,6 +39,7 @@ describe('profile menus', () => {
 
   it('on a server: login name, role and sign-out', () => {
     desktop = false;
+    setCapabilities(undefined);
     render(<ProfileDropdown {...props} setShowProfileMenu={vi.fn()} />);
     expect(screen.getAllByText('root')).toHaveLength(2);
     expect(screen.getByText('Server-Admin')).toBeTruthy();
@@ -48,6 +50,7 @@ describe('profile menus', () => {
 
   it('in the desktop app: the name once, no role, "Switch instance" instead of sign-out', () => {
     desktop = true;
+    setCapabilities(DESKTOP_CAPABILITIES);
     const { unmount } = render(<ProfileDropdown {...props} setShowProfileMenu={vi.fn()} />);
     expect(screen.getAllByText('root')).toHaveLength(1);
     expect(screen.queryByText('Server-Admin')).toBeNull();

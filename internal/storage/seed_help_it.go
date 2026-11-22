@@ -4,27 +4,27 @@ import "github.com/mindsift-app/mindsift/internal/domain"
 
 // seedHelpNotesIT: the help notes in Italian, see seedHelpNotes. Same notes, blocks and links as the English
 // ones (seed_en.go), without the parts that only fit the online demo (which has its help in English).
-func (s *Store) seedHelpNotesIT(user *domain.User, desktop bool) {
+func (s *Store) seedHelpNotesIT(user *domain.User, ed HelpEdition) {
 	const folder = "Aiuto di MindSift"
 	_, _ = s.CreateFolder(user.ID, folder)
 	help := func(title, icon string, spec []seedBlock) {
-		_, _ = s.CreateDocument(user.ID, "", title, icon, folder, seedBlocks(forEdition(spec, desktop)), []string{"aiuto"}, false)
+		_, _ = s.CreateDocument(user.ID, "", title, icon, folder, seedBlocks(forEdition(spec, ed)), []string{"aiuto"}, false)
 	}
 	help("Primi passi", "", []seedBlock{
 		{typ: "callout", text: "Benvenuto! Queste note ti spiegano MindSift. Tutto qui è contenuto di esempio – puoi modificarlo, spostarlo ed eliminarlo senza problemi. #aiuto"},
 		{typ: "h2", text: "L'idea in tre passi"},
 		{typ: "numbered", text: "**Cattura:** tutto ciò che ti viene in mente va subito nella barra in alto (Quick Dump) – tasto `C` o `/`, sul telefono il +."},
 		{typ: "numbered", text: "**Ordina:** più tardi passi in rassegna i pensieri nel Triage: scarta, attività, nota o voce di lista."},
-		{typ: "numbered", text: orDesktop(desktop, "**Approfondisci:** le attività hanno sottoattività e scadenze, le note diventano schemi, le liste si condividono con la famiglia.", "**Approfondisci:** le attività hanno sottoattività e scadenze, le note diventano schemi, le liste aiutano con la spesa e la valigia.")},
+		{typ: "numbered", text: "**Approfondisci:** le attività hanno sottoattività e scadenze, le note diventano schemi, le liste aiutano con la spesa e la valigia."},
 		{typ: "h2", text: "Continua a leggere"},
 		{level: 1, text: "[[Note e outliner]] – punti, livelli, zoom e collegamenti"},
 		{level: 1, text: "[[Prova lo zoom]] – uno schema su dieci livelli"},
 		{level: 1, text: "[[Attività e Kanban]] – liste, colonne, cestino"},
-		{level: 1, text: "[[Liste e spesa]] – " + orDesktop(desktop, "fare la spesa e la valigia insieme", "fare la spesa e la valigia")},
+		{level: 1, text: "[[Liste e spesa]] – fare la spesa e la valigia"},
 		{level: 1, text: "[[Scorciatoie da tastiera]] – lavorare più in fretta"},
 		{level: 1, text: "[[Inserimento vocale]] – dettare invece di scrivere"},
-		{serverOnly: true, level: 1, text: "[[Condividere e modificare insieme]]"},
-		{level: 1, text: "[[API e smart home]] – " + orDesktop(desktop, "collegare Home Assistant e agenti IA", "collegare agenti IA e script")},
+		{sharingOnly: true, level: 1, text: "[[Condividere e modificare insieme]]"},
+		{level: 1, text: "[[API e smart home]] – collegare agenti IA e script"},
 	})
 	help("Note e outliner", "", []seedBlock{
 		{typ: "h2", text: "Punti e livelli"},
@@ -82,7 +82,7 @@ func (s *Store) seedHelpNotesIT(user *domain.User, desktop bool) {
 	help("Liste e spesa", "🛒", []seedBlock{
 		{text: "Le categorie nascono dagli hashtag: `latte d'avena #frigo` finisce sotto «frigo»"},
 		{text: "Le quantità vanno nel campo apposito, ad es. `500 g` o `3x`"},
-		{serverOnly: true, text: "Le liste condivise mostrano subito a tutti le voci spuntate – ideale per la spesa settimanale"},
+		{sharingOnly: true, text: "Le liste condivise mostrano subito a tutti le voci spuntate – ideale per la spesa settimanale"},
 		{text: "Le voci spuntate scompaiono da sole dopo una settimana (regolabile in Conservazione)"},
 	})
 	help("Scorciatoie da tastiera", "⌨️", []seedBlock{
@@ -102,8 +102,8 @@ func (s *Store) seedHelpNotesIT(user *domain.User, desktop bool) {
 		{text: "Sul telefono: tenere premuto il + avvia subito una registrazione"},
 		{text: "Con un tuo server Whisper la registrazione resta sul tuo server; in Impostazioni account → Inserimento vocale scegli Whisper o il riconoscimento del browser"},
 	})
-	// Nobody to share with in the desktop app
-	if !desktop {
+	// Only where people share (not in the desktop app, nor in sharing mode private)
+	if ed.Sharing {
 		help("Condividere e modificare insieme", "🤝", []seedBlock{
 			{text: "Note, cartelle, liste di attività e liste si possono condividere con persone o gruppi – in modifica o in sola lettura"},
 			{text: "In una nota condivisa scrivono più persone contemporaneamente; chi digita in un punto lo riserva per un momento"},

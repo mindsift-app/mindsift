@@ -20,7 +20,6 @@ import {
   User,
 } from '../../lib/types';
 import { StatusToast } from '../../components/StatusToast';
-import { isDesktopApp } from '../../lib/api';
 import { useAdminSettings } from './admin/useAdminSettings';
 import { UsersSection } from './admin/UsersSection';
 import { OrganizationsSection } from './admin/OrganizationsSection';
@@ -32,6 +31,7 @@ import { MediaSettingsSection } from './admin/MediaSettingsSection';
 import { AiSection } from './admin/AiSection';
 import { SmtpSection } from './admin/SmtpSection';
 import { AuditSection } from './admin/AuditSection';
+import { can, type Capability } from '../../lib/capabilities';
 
 interface AdminSettingsViewProps {
   currentUser: User;
@@ -56,9 +56,10 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
 }) => {
   const { t } = useTranslation('settings');
   const isServerAdmin = currentUser.role === 'admin';
-  // The desktop app has one person and no sign-in: people, sign-in, organizations, sharing and mail are gone
-  const desktop = isDesktopApp();
-  const [section, setSection] = useState<AdminSection>(desktop ? 'server' : 'users');
+  // One account only (the desktop app): people, organizations, sharing and their roles are gone; sign-in
+  // and mail need their capability too
+  const accounts = can('accounts');
+  const [section, setSection] = useState<AdminSection>(accounts ? 'users' : 'server');
 
   // Users, invites, organizations, server and mail settings (admin/useAdminSettings.ts)
   const admin = useAdminSettings(currentUser, isServerAdmin);
@@ -66,22 +67,17 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
 
   // The left column, top to bottom. User managers look after people only; the server's settings, mail
   // and the audit log are for server admins.
-  const navItems: { id: AdminSection; icon: LucideIcon; label: string; hint: string; serverAdminOnly?: boolean; notInDesktop?: boolean }[] = [
-    { id: 'users', icon: Users, label: t('admin.nav.users'), hint: t('admin.nav.usersHint'), notInDesktop: true },
-    { id: 'signin', icon: KeyRound, label: t('admin.nav.signin'), hint: t('admin.nav.signinHint'), serverAdminOnly: true, notInDesktop: true },
-    { id: 'organizations', icon: BuildingComplex, label: t('orgs.title'), hint: t('admin.nav.orgsHint'), notInDesktop: true },
-    { id: 'sharing', icon: Share2, label: t('admin.nav.sharing'), hint: t('admin.nav.sharingHint'), serverAdminOnly: true, notInDesktop: true },
-    {
-      id: 'server',
-      icon: Server,
-      label: desktop ? t('admin.nav.serverDesktop') : t('admin.nav.server'),
-      hint: desktop ? t('admin.nav.serverHintDesktop') : t('admin.nav.serverHint'),
-      serverAdminOnly: true,
-    },
+  // needs: the capability a section is about (the sharing section stays while sharing is off: it switches it on)
+  const navItems: { id: AdminSection; icon: LucideIcon; label: string; hint: string; serverAdminOnly?: boolean; needs?: Capability }[] = [
+    { id: 'users', icon: Users, label: t('admin.nav.users'), hint: t('admin.nav.usersHint'), needs: 'accounts' },
+    { id: 'signin', icon: KeyRound, label: t('admin.nav.signin'), hint: t('admin.nav.signinHint'), serverAdminOnly: true, needs: 'signIn' },
+    { id: 'organizations', icon: BuildingComplex, label: t('orgs.title'), hint: t('admin.nav.orgsHint'), needs: 'accounts' },
+    { id: 'sharing', icon: Share2, label: t('admin.nav.sharing'), hint: t('admin.nav.sharingHint'), serverAdminOnly: true, needs: 'accounts' },
+    { id: 'server', icon: Server, label: t('admin.nav.server'), hint: t('admin.nav.serverHint'), serverAdminOnly: true },
     { id: 'data', icon: Database, label: t('admin.nav.data'), hint: t('admin.nav.dataHint'), serverAdminOnly: true },
     { id: 'media', icon: Images, label: t('admin.nav.media'), hint: t('admin.nav.mediaHint'), serverAdminOnly: true },
     { id: 'ai', icon: Mic, label: t('admin.nav.ai'), hint: t('admin.nav.aiHint'), serverAdminOnly: true },
-    { id: 'smtp', icon: Mail, label: t('admin.nav.smtp'), hint: t('admin.nav.smtpHint'), serverAdminOnly: true, notInDesktop: true },
+    { id: 'smtp', icon: Mail, label: t('admin.nav.smtp'), hint: t('admin.nav.smtpHint'), serverAdminOnly: true, needs: 'email' },
     { id: 'audit', icon: ScrollText, label: t('admin.nav.audit'), hint: t('admin.nav.auditHint'), serverAdminOnly: true },
   ];
 
@@ -103,16 +99,16 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           <div>
             <h1 className="text-base font-bold text-main tracking-tight flex items-center gap-2">
               <Shield className="w-4 h-4 text-accent" />
-              <span>{desktop ? t('admin.titleDesktop') : t('admin.title')}</span>
+              <span>{t('admin.title')}</span>
             </h1>
             <p className="text-xs text-muted">
-              {desktop ? t('admin.subtitleDesktop') : t('admin.subtitle')}
+              {t('admin.subtitle')}
             </p>
           </div>
         </div>
 
-        {/* One person in the desktop app: no role to show */}
-        {!desktop && <span className="badge-accent">{t(`common:role.${currentUser.role}`)}</span>}
+        {/* One account only (the desktop app): no role to show */}
+        {accounts && <span className="badge-accent">{t(`common:role.${currentUser.role}`)}</span>}
       </div>
 
       {/* Answers to saves float above the page, so nothing in it moves */}
@@ -123,7 +119,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         {/* Left Navigation Sidebar */}
         <aside className="panel-surface divide-y divide-border overflow-hidden">
           {navItems
-            .filter((item) => (!item.serverAdminOnly || isServerAdmin) && !(desktop && item.notInDesktop))
+            .filter((item) => (!item.serverAdminOnly || isServerAdmin) && (!item.needs || can(item.needs)))
             .map(({ id, icon: Icon, label, hint }) => (
               <button
                 key={id}

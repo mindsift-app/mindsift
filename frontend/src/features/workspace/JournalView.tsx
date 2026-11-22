@@ -7,7 +7,7 @@ import { DocHeaderStatus, DocSaveStatus, DocumentEditor } from './DocumentEditor
 import { JournalCalendar } from './JournalCalendar';
 import { useTranslation } from 'react-i18next';
 import { useLatestRef } from '../../lib/useLatestRef';
-import { isDesktopApp } from '../../lib/api';
+import { can } from '../../lib/capabilities';
 
 const PAGE = 7;
 // The sidebar's journal panel opens in 300 ms; the days after the first get their editor only after that
@@ -272,7 +272,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
             {t('common:date.today')}
           </button>
         )}
-        {!isDesktopApp() && (
+        {can('sharing') && (
           <button
             type="button"
             disabled={!activeDoc || !activeDoc.isOwner}

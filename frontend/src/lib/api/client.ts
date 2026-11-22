@@ -1,5 +1,5 @@
 // Token, request() with offline cache and session renewal, and small helpers shared by the REST modules
-import { DesktopInfo, SharingMode } from '../types';
+import { DesktopInfo } from '../types';
 import { OfflineError, isOffline, isCacheablePath, readCached, writeCached, clearOfflineData } from '../offline';
 import i18n from '../../i18n';
 
@@ -185,20 +185,12 @@ export function sendOutboxEntry(entry: { method: string; path: string; body: Rec
   });
 }
 
-// Server-wide sharing mode from /auth/status; in private mode the UI hides sharing and groups
 // Sign-in through the OIDC provider as /auth/status said (lib/oidc.ts)
 let currentOidc = { enabled: false, name: '', passwordLogin: true };
 export const setCurrentOidc = (oidc: { enabled: boolean; name: string } | undefined, passwordLogin: boolean | undefined) => {
   currentOidc = { enabled: Boolean(oidc?.enabled), name: oidc?.name || '', passwordLogin: passwordLogin !== false };
 };
 export const getCurrentOidc = () => currentOidc;
-
-let currentSharingMode: SharingMode = 'organizations';
-export const setCurrentSharingMode = (mode: SharingMode) => {
-  currentSharingMode = mode;
-};
-// Sharing off: the administration chose "private", or the desktop app (one person, nobody to share with)
-export const isSharingDisabled = () => currentSharingMode === 'private' || isDesktopApp();
 
 // People search (auth status): off, people are added by exact e-mail address or username only
 let currentPeopleSearch = true;
@@ -207,8 +199,9 @@ export const setCurrentPeopleSearch = (on: boolean) => {
 };
 export const isPeopleSearchOn = () => currentPeopleSearch;
 
-// Desktop app (AuthStatus.desktop, set with every status): no sign-in and sign-out, and the options that need
-// other people or a public address are hidden
+// Desktop app (AuthStatus.desktop, set with every status). Only for the app's own shell (start view,
+// switching instances, local API, its setup wizard, backup folder) and the realtime transport: what the
+// instance offers is a capability (lib/capabilities.ts)
 let currentDesktop: DesktopInfo | null = null;
 export const setCurrentDesktop = (d: DesktopInfo | null | undefined) => {
   currentDesktop = d ?? null;

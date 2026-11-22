@@ -36,7 +36,8 @@ import { CalendarModeSwitch, TaskCalendar, useCalendarMode } from './TaskCalenda
 import { TaskListShareDialog } from './TaskListShareDialog';
 import { ActiveFilterBanner } from './ActiveFilterBanner';
 import { GROUP_LABELS, GroupBy, TaskFilter, TaskSort, ViewMode } from './taskViewTypes';
-import { api, isDesktopApp, triggerHaptic } from '../../lib/api';
+import { api, triggerHaptic } from '../../lib/api';
+import { can } from '../../lib/capabilities';
 import { TaskDetailModal } from './TaskDetailModal';
 import { ManageColumnsModal, DEFAULT_KANBAN_COLUMNS } from './ManageColumnsModal';
 import { activeColumnsFor, boardIdOfColumn, columnsOfTask, combinedBoardColumns, ownColumnIn } from '../../lib/kanbanColumns';
@@ -880,7 +881,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
           <LivePill />
           {currentSelectedList && (
             <>
-              {!isDesktopApp() && (
+              {can('sharing') && (
                 <>
                   <span className="w-px h-5 bg-border" aria-hidden />
                   <button

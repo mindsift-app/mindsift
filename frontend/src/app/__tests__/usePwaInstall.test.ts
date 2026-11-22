@@ -1,20 +1,20 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { usePwaInstall } from '../usePwaInstall';
-import { setCurrentDesktop } from '../../lib/api/client';
+import { actAsDesktopApp, actAsServer } from '../../test/desktop';
 
 beforeEach(() => {
   window.matchMedia = (() => ({ matches: false, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
 });
 
 afterEach(() => {
-  setCurrentDesktop(null);
+  actAsServer();
   sessionStorage.clear();
 });
 
 describe('usePwaInstall', () => {
   it('counts the desktop app as installed: no install button, no offer sheet', () => {
-    setCurrentDesktop({ platform: 'linux', realtime: 'sse' });
+    actAsDesktopApp();
     const { result } = renderHook(() => usePwaInstall('u1'));
     expect(result.current.isStandaloneApp).toBe(true);
     expect(result.current.showPwaInstallModal).toBe(false);

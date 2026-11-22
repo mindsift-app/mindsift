@@ -4,27 +4,27 @@ import "github.com/mindsift-app/mindsift/internal/domain"
 
 // seedHelpNotesES: the help notes in Spanish, see seedHelpNotes. Same notes, blocks and links as the English
 // ones (seed_en.go), without the parts that only fit the online demo (which has its help in English).
-func (s *Store) seedHelpNotesES(user *domain.User, desktop bool) {
+func (s *Store) seedHelpNotesES(user *domain.User, ed HelpEdition) {
 	const folder = "Ayuda de MindSift"
 	_, _ = s.CreateFolder(user.ID, folder)
 	help := func(title, icon string, spec []seedBlock) {
-		_, _ = s.CreateDocument(user.ID, "", title, icon, folder, seedBlocks(forEdition(spec, desktop)), []string{"ayuda"}, false)
+		_, _ = s.CreateDocument(user.ID, "", title, icon, folder, seedBlocks(forEdition(spec, ed)), []string{"ayuda"}, false)
 	}
 	help("Primeros pasos", "", []seedBlock{
 		{typ: "callout", text: "¡Bienvenido! Estas notas explican MindSift. Todo lo que hay aquí es contenido de ejemplo: puedes cambiarlo, moverlo y borrarlo sin problema. #ayuda"},
 		{typ: "h2", text: "La idea en tres pasos"},
 		{typ: "numbered", text: "**Capturar:** lo que se te ocurra, directo a la barra de arriba (Quick Dump): tecla `C` o `/`, en el móvil el +."},
 		{typ: "numbered", text: "**Ordenar:** más tarde repasas tus pensamientos en el triage: descartar, tarea, nota o elemento de lista."},
-		{typ: "numbered", text: orDesktop(desktop, "**Profundizar:** las tareas tienen subtareas y fechas de vencimiento, las notas se convierten en esquemas, las listas se comparten con la familia.", "**Profundizar:** las tareas tienen subtareas y fechas de vencimiento, las notas se convierten en esquemas, las listas ayudan con la compra y el equipaje.")},
+		{typ: "numbered", text: "**Profundizar:** las tareas tienen subtareas y fechas de vencimiento, las notas se convierten en esquemas, las listas ayudan con la compra y el equipaje."},
 		{typ: "h2", text: "Sigue leyendo"},
 		{level: 1, text: "[[Notas y outliner]]: puntos, niveles, zoom y enlaces"},
 		{level: 1, text: "[[Probar el zoom]]: un esquema de diez niveles"},
 		{level: 1, text: "[[Tareas y Kanban]]: listas, columnas, papelera"},
-		{level: 1, text: "[[Listas y compra]]: " + orDesktop(desktop, "comprar y hacer la maleta en común", "comprar y hacer la maleta")},
+		{level: 1, text: "[[Listas y compra]]: comprar y hacer la maleta"},
 		{level: 1, text: "[[Atajos de teclado]]: trabaja más rápido"},
 		{level: 1, text: "[[Entrada de voz]]: dicta en vez de escribir"},
-		{serverOnly: true, level: 1, text: "[[Compartir y editar en común]]"},
-		{level: 1, text: "[[API y domótica]]: " + orDesktop(desktop, "conecta Home Assistant y agentes de IA", "conecta agentes de IA y scripts")},
+		{sharingOnly: true, level: 1, text: "[[Compartir y editar en común]]"},
+		{level: 1, text: "[[API y domótica]]: conecta agentes de IA y scripts"},
 	})
 	help("Notas y outliner", "", []seedBlock{
 		{typ: "h2", text: "Puntos y niveles"},
@@ -82,7 +82,7 @@ func (s *Store) seedHelpNotesES(user *domain.User, desktop bool) {
 	help("Listas y compra", "🛒", []seedBlock{
 		{text: "Las categorías salen de los hashtags: `leche de avena #frescos` queda en «frescos»"},
 		{text: "Las cantidades van en su propio campo, p. ej. `500 g` o `3x`"},
-		{serverOnly: true, text: "Las listas compartidas muestran lo marcado a todos al instante: ideales para la compra semanal"},
+		{sharingOnly: true, text: "Las listas compartidas muestran lo marcado a todos al instante: ideales para la compra semanal"},
 		{text: "Los elementos marcados desaparecen solos al cabo de una semana (se ajusta en Retención)"},
 	})
 	help("Atajos de teclado", "⌨️", []seedBlock{
@@ -102,8 +102,8 @@ func (s *Store) seedHelpNotesES(user *domain.User, desktop bool) {
 		{text: "En el móvil: mantener pulsado el + inicia una grabación al instante"},
 		{text: "Con tu propio servidor Whisper la grabación se queda en tu servidor; en Ajustes de la cuenta → Entrada de voz eliges Whisper o el reconocimiento del navegador"},
 	})
-	// Nobody to share with in the desktop app
-	if !desktop {
+	// Only where people share (not in the desktop app, nor in sharing mode private)
+	if ed.Sharing {
 		help("Compartir y editar en común", "🤝", []seedBlock{
 			{text: "Las notas, carpetas, listas de tareas y listas se pueden compartir con personas o grupos, para editar o solo para leer"},
 			{text: "En una nota compartida escriben varias personas a la vez; quien escribe en un punto lo reserva un momento"},

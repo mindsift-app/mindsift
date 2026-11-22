@@ -3,6 +3,7 @@ import { cleanup } from '@testing-library/react';
 // Components read their texts through i18next: German, added right away (the app loads it as a chunk)
 import { addTexts } from '../i18n';
 import de from '../locales/de';
+import { actAsServer } from './desktop';
 
 addTexts('de', de);
 
@@ -24,4 +25,6 @@ if (typeof window !== 'undefined' && !window.PointerEvent) {
 
 afterEach(() => {
   cleanup();
+  // Every test starts on a server with everything on (lib/capabilities.ts)
+  actAsServer();
 });

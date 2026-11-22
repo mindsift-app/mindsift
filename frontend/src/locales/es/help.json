@@ -1,8 +1,7 @@
 {
   "back": "Atrás",
   "title": "Ayuda y documentación",
-  "subtitle": "Uso del teclado, notas outliner, triage, tablero Kanban y colaboración",
-  "subtitleDesktop": "Uso del teclado, notas outliner, triage y tablero Kanban",
+  "subtitle": "Uso del teclado, notas outliner, triage, tablero Kanban y más",
   "search": "Buscar ayuda y atajos…",
   "clearSearch": "Borrar búsqueda",
   "cat": {
@@ -10,7 +9,7 @@
     "workspace": "Workspace y notas",
     "triage": "Captura rápida y triage",
     "tasks": "Tareas y Kanban",
-    "lists": "Listas compartidas",
+    "lists": "Listas",
     "collaboration": "Grupos y compartir",
     "account": "Cuenta y ajustes",
     "shortcuts": "Atajos de teclado y gestos"

@@ -22,7 +22,7 @@ describe('TimeZoneSetting (server time zone in the administration)', () => {
     );
     expect(screen.getByRole('button', { name: 'Zeitzone' }).textContent).toContain('Nicht festgelegt (UTC)');
     const time = document.querySelector('[data-server-time]')?.textContent || '';
-    expect(time).toContain('Serverzeit jetzt:');
+    expect(time).toContain('Uhrzeit jetzt:');
     expect(time).toContain('13:05');
     expect(time).toContain('(UTC)');
     expect(time).not.toContain('UTC, UTC');

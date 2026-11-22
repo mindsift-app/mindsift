@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import { isDesktopApp } from '../../../lib/api';
 import { UserTheme } from '../../../lib/types';
 import {
   AVAILABLE_THEMES,
@@ -63,7 +62,7 @@ export function AppearanceSection({
           <div className="text-xs">
             <p className="font-semibold text-main">{t('appearance.linkPreviews')}</p>
             <p className="text-[11px] text-faint">
-              {t(isDesktopApp() ? 'appearance.linkPreviewsHintDesktop' : 'appearance.linkPreviewsHint')}
+              {t('appearance.linkPreviewsHint')}
             </p>
           </div>
           <ToggleSwitch checked={linkPreviewsOn} onChange={setLinkPreviewsEnabled} title={t('appearance.linkPreviews')} />
