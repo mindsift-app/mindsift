@@ -31,6 +31,8 @@ export const DesktopSetupView: React.FC<{
   const keyboardRoom = useKeyboardRoom();
   const state = useSetupChoices(authStatus.instanceName, { createSampleData: true, timeZone: '' });
   const [backupDir, setBackupDir] = useState('');
+  // The stored folder as the person knows it (under Flatpak the host's path for the portal's), while unchanged
+  const [stored, setStored] = useState({ dir: '', shown: '' });
   const [defaultDir, setDefaultDir] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,10 @@ export const DesktopSetupView: React.FC<{
       .adminGetBackupLocation()
       .then((loc) => {
         setDefaultDir(loc.defaultDir);
-        if (loc.custom) setBackupDir(loc.dir);
+        if (loc.custom) {
+          setBackupDir(loc.dir);
+          setStored({ dir: loc.dir, shown: loc.dirShown || loc.dir });
+        }
       })
       .catch(() => {});
   }, [setInstanceName]);
@@ -199,7 +204,12 @@ export const DesktopSetupView: React.FC<{
                 </div>
                 <div>
                   <p className="text-[11px] text-muted mb-1">{t('desktopSetup.backupFolder')}</p>
-                  <BackupFolderField value={backupDir} defaultDir={defaultDir} onCommit={setBackupDir} />
+                  <BackupFolderField
+                    value={backupDir}
+                    shown={backupDir === stored.dir ? stored.shown : undefined}
+                    defaultDir={defaultDir}
+                    onCommit={setBackupDir}
+                  />
                   <p className="text-[11px] text-muted mt-1">{t('desktopSetup.backupFolderHint')}</p>
                 </div>
               </>

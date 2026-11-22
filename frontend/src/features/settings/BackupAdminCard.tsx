@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Archive, Download, LoaderCircle, Trash } from 'lucide-react';
 import { BackupFile, BackupLocation, DeletedAccountBackups, SystemSettings } from '../../lib/types';
@@ -50,7 +50,11 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
     }
   };
 
+  // A second click before the button shows it is busy starts no second run (the server also makes none)
+  const runningRef = useRef(false);
   const runNow = async () => {
+    if (runningRef.current) return;
+    runningRef.current = true;
     setRunning(true);
     setError(null);
     try {
@@ -59,27 +63,28 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
       setError(errorMessage(err, t('data.backupFailed')));
       api.adminListBackups().then(setFiles).catch(() => {});
     } finally {
+      runningRef.current = false;
       setRunning(false);
       // The folder may have been missing (drive not mounted) or be back
       if (desktop) api.adminGetBackupLocation().then(setLocation).catch(() => {});
     }
   };
 
-  const download = async (name: string) => {
+  // The backup being fetched: its button waits, so a second click does not fetch (and save) it twice
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const fetchAndSave = async (key: string, name: string, fetchBlob: () => Promise<Blob>) => {
+    setDownloading(key);
     try {
-      saveBlob(await api.adminDownloadBackup(name), name);
+      saveBlob(await fetchBlob(), name);
     } catch (err) {
       setError(errorMessage(err, t('backups.downloadFailed')));
+    } finally {
+      setDownloading(null);
     }
   };
-
-  const downloadDeleted = async (userId: string, name: string) => {
-    try {
-      saveBlob(await api.adminDownloadDeletedBackup(userId, name), name);
-    } catch (err) {
-      setError(errorMessage(err, t('backups.downloadFailed')));
-    }
-  };
+  const download = (name: string) => fetchAndSave(name, name, () => api.adminDownloadBackup(name));
+  const downloadDeleted = (userId: string, name: string) =>
+    fetchAndSave(`${userId}/${name}`, name, () => api.adminDownloadDeletedBackup(userId, name));
 
   const remove = async (name: string) => {
     if (!(await askConfirm({ message: t('backups.confirmDelete', { name }), confirmLabel: t('common:delete'), danger: true }))) return;
@@ -160,15 +165,20 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
       {desktop && location && (
         <div className="text-[11px] text-muted space-y-1">
           <p>{t('backups.folder')}</p>
-          <BackupFolderField value={location.custom ? (location.chosen ?? location.dir) : ''} defaultDir={location.defaultDir} onCommit={moveTo} />
+          <BackupFolderField
+            value={location.custom ? (location.chosen ?? location.dir) : ''}
+            shown={location.custom ? (location.chosen ? location.chosenShown : location.dirShown) : ''}
+            defaultDir={location.defaultDir}
+            onCommit={moveTo}
+          />
           {location.custom && (
             <p>
-              <Trans t={t} i18nKey="backups.folderTarget" values={{ dir: location.dir }} components={{ c: <code className="font-mono break-all" /> }} />
+              <Trans t={t} i18nKey="backups.folderTarget" values={{ dir: location.dirShown || location.dir }} components={{ c: <code className="font-mono break-all" /> }} />
             </p>
           )}
           {location.chosenMissing && (
             <p role="alert" className="p-2 rounded-card border border-status-err/40 bg-status-err/10 text-main">
-              <Trans t={t} i18nKey="backups.folderMissing" values={{ dir: location.chosen ?? '' }} components={{ c: <code className="font-mono break-all" /> }} />
+              <Trans t={t} i18nKey="backups.folderMissing" values={{ dir: location.chosenShown || location.chosen || '' }} components={{ c: <code className="font-mono break-all" /> }} />
             </p>
           )}
           <p>{t('backups.folderHint')}</p>
@@ -192,7 +202,8 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
                 <button
                   type="button"
                   onClick={() => download(f.name)}
-                  className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1"
+                  disabled={downloading === f.name}
+                  className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
                 >
                   <Download className="w-3.5 h-3.5" />
                   {t('common:download')}
@@ -236,7 +247,8 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
                       key={f.name}
                       type="button"
                       onClick={() => downloadDeleted(d.userId, f.name)}
-                      className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1"
+                      disabled={downloading === `${d.userId}/${f.name}`}
+                      className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
                       title={f.name}
                     >
                       <Download className="w-3.5 h-3.5" />

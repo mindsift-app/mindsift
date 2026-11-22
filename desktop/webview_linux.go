@@ -155,6 +155,7 @@ func setupPages(window *application.WebviewWindow, origin, scripts, marker strin
 					return
 				}
 				attachFileDrop(webView)
+				watchDownloads(webView)
 			})
 			if webView == nil {
 				return true // nothing to decide without the webview; Wails' own way

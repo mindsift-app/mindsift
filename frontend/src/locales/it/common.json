@@ -389,6 +389,8 @@
   "restore": "Ripristina",
   "discard": "Scarta",
   "download": "Scarica",
+  "fileSaved": "«{{name}}» salvato",
+  "fileSaveFailed": "Impossibile salvare «{{name}}»",
   "filterTag": "Filtra per #{{tag}}",
   "deviceName": "{{browser}} su {{os}}",
   "listMenu": {

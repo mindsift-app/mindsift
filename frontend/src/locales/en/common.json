@@ -389,6 +389,8 @@
   "restore": "Restore",
   "discard": "Discard",
   "download": "Download",
+  "fileSaved": "Saved “{{name}}”",
+  "fileSaveFailed": "Could not save “{{name}}”",
   "filterTag": "Filter by #{{tag}}",
   "deviceName": "{{browser}} on {{os}}",
   "listMenu": {

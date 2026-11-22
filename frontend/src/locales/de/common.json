@@ -387,6 +387,8 @@
   "restore": "Wiederherstellen",
   "discard": "Verwerfen",
   "download": "Download",
+  "fileSaved": "„{{name}}“ gespeichert",
+  "fileSaveFailed": "„{{name}}“ konnte nicht gespeichert werden",
   "filterTag": "Nach #{{tag}} filtern",
   "deviceName": "{{browser}} auf {{os}}",
   "listMenu": {

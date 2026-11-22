@@ -55,7 +55,7 @@ func (s *Server) runBackupsOnce() (string, error) {
 	// one tries again; the administration's backup card shows the warning (backupLocation).
 	if chosen, missing := s.chosenBackupFolderMissing(); missing {
 		slog.Warn("Backup skipped: the chosen backup folder does not exist (drive not mounted?)", "folder", chosen)
-		return "", errBackupDirMissing(chosen)
+		return "", errBackupDirMissing(s.shownPath(chosen))
 	}
 	now := clock.Now() // the file names carry the server's date and time; the scheduler reads them back
 	root := s.backupRoot()
@@ -155,8 +155,20 @@ func (s *Server) handleAdminListBackups(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, files)
 }
 
+// manualBackupMu: held while a run started by hand is going
+var manualBackupMu sync.Mutex
+
 func (s *Server) handleAdminRunBackup(w http.ResponseWriter, r *http.Request) {
 	allowLongWork(w)
+	// A second request while one started by hand is still running (a double click, a second tab) makes no
+	// second backup: it waits for that run and answers with the list it left
+	if !manualBackupMu.TryLock() {
+		manualBackupMu.Lock()
+		manualBackupMu.Unlock()
+		s.handleAdminListBackups(w, r)
+		return
+	}
+	defer manualBackupMu.Unlock()
 	if _, err := s.runBackups(); err != nil {
 		writeError(w, http.StatusInternalServerError, "Backup fehlgeschlagen: "+clientMessage(err))
 		return

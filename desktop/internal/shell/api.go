@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"unicode/utf8"
@@ -102,7 +103,9 @@ func (s *Shell) api(w http.ResponseWriter, r *http.Request, op string) {
 			writeProblem(w, err)
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]string{"path": dir})
+		// shown: the folder as the person knows it (under Flatpak the portal's path becomes the host's);
+		// path is the one to store, the app can write there
+		writeJSON(w, http.StatusOK, map[string]string{"path": dir, "shown": HostPath(dir)})
 	default:
 		http.NotFound(w, r)
 	}
@@ -158,7 +161,14 @@ func (s *Shell) pickFolder(start string) (string, error) {
 	if !filepath.IsAbs(start) {
 		start = ""
 	}
-	for start != "" && !isDir(start) {
+	// Under Flatpak the dialog is the portal's, on the host: it gets the host's path (also for a folder
+	// stored as the portal's path), which the sandbox cannot see, so it is not shortened to what exists
+	// here; the portal falls back to a folder of its own when it is not there
+	sandboxed := os.Getenv("FLATPAK_ID") != ""
+	if sandboxed && start != "" {
+		start = HostPath(start)
+	}
+	for !sandboxed && start != "" && !isDir(start) {
 		parent := filepath.Dir(start)
 		if parent == start {
 			start = ""

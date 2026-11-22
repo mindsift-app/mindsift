@@ -389,6 +389,8 @@
   "restore": "Restaurer",
   "discard": "Supprimer",
   "download": "Télécharger",
+  "fileSaved": "« {{name}} » enregistré",
+  "fileSaveFailed": "Impossible d’enregistrer « {{name}} »",
   "filterTag": "Filtrer par #{{tag}}",
   "deviceName": "{{browser}} sur {{os}}",
   "listMenu": {

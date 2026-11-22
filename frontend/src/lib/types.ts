@@ -668,6 +668,10 @@ export interface BackupLocation {
   chosen?: string;
   // chosenMissing: the chosen folder does not exist now (drive not mounted): backup runs are skipped
   chosenMissing?: boolean;
+  // dirShown, chosenShown: dir and chosen as the person knows them, for showing only (under Flatpak dir and
+  // chosen are paths of the document portal, /run/user/…/doc/…); what is sent back stays dir/chosen
+  dirShown?: string;
+  chosenShown?: string;
 }
 
 /** Desktop app: one account of a server's database snapshot, with what it owns. */
