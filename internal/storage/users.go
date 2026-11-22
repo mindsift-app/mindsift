@@ -435,7 +435,7 @@ func (s *Store) DeleteUser(userID string) error {
 	if err := s.PurgeUserData(userID); err != nil {
 		return err
 	}
-	if err := s.execInTx(
+	if err := s.execInTx(append(deleteUserTranscriptions(userID),
 		stmt(`DELETE FROM sessions WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM task_assignees WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM password_reset_tokens WHERE user_id = ?`, userID),
@@ -449,7 +449,7 @@ func (s *Store) DeleteUser(userID string) error {
 		stmt(`DELETE FROM organization_members WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM system_settings WHERE key = ?`, updateDismissedKey(userID)),
 		stmt(`DELETE FROM users WHERE id = ?`, userID),
-	); err != nil {
+	)...); err != nil {
 		return err
 	}
 	// Shares pointing at the deleted account are no longer visible to anyone
