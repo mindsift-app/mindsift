@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CircleAlert, Bell, Globe, Mail, MessageSquare, Send, X } from 'lucide-react';
+import { CircleAlert, Bell, Globe, Mail, MessageSquare, Monitor, Send, X } from 'lucide-react';
 import { NotificationEvents, User } from '../../../lib/types';
 import { pushSupported } from '../../../lib/push';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
@@ -11,8 +11,14 @@ import { TimeField } from '../../../components/TimeField';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { can } from '../../../lib/capabilities';
 
-// The routing matrix: the event, Discord and the own webhook, plus e-mail and push where available
-const MATRIX_COLS = ['grid-cols-[1fr_auto_auto]', 'grid-cols-[1fr_auto_auto_auto]', 'grid-cols-[1fr_auto_auto_auto_auto]'];
+// The routing matrix: the event, Discord and the own webhook, plus e-mail, push and system notifications
+// where available
+const MATRIX_COLS = [
+  'grid-cols-[1fr_auto_auto]',
+  'grid-cols-[1fr_auto_auto_auto]',
+  'grid-cols-[1fr_auto_auto_auto_auto]',
+  'grid-cols-[1fr_auto_auto_auto_auto_auto]',
+];
 
 // Kontoeinstellungen → Alarme (state in useAlarmSettings)
 export function AlarmsSection({
@@ -119,7 +125,9 @@ export function AlarmsSection({
           // Mail only where the instance may send it, web push only in a browser (not in the desktop app)
           const mail = can('email');
           const push = can('push');
-          const matrixCols = MATRIX_COLS[Number(mail) + Number(push)];
+          // System notifications only where the desktop app shows them (its local instances)
+          const desktop = can('desktopNotify');
+          const matrixCols = MATRIX_COLS[Number(mail) + Number(push) + Number(desktop)];
           return (
             <>
               <div className="p-4 bg-canvas border border-border space-y-3">
@@ -143,6 +151,12 @@ export function AlarmsSection({
                     <span className="w-12 sm:w-16 text-center font-semibold text-muted flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1">
                       <Bell className="w-3.5 h-3.5 text-accent" />
                       <span>Push</span>
+                    </span>
+                  )}
+                  {desktop && (
+                    <span className="w-12 sm:w-16 text-center font-semibold text-muted flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1">
+                      <Monitor className="w-3.5 h-3.5 text-accent" />
+                      <span>{t('alarms.channel.desktopShort')}</span>
                     </span>
                   )}
                 </div>
@@ -196,6 +210,15 @@ export function AlarmsSection({
                               disabled={!hasPush}
                               onChange={(v) => setEventChannel(row.key, 'push', v)}
                               title={hasPush ? t('alarms.channelTitle', { what: row.label, channel: 'Push' }) : t('alarms.needPush')}
+                            />
+                          </div>
+                        )}
+                        {desktop && (
+                          <div className="w-12 sm:w-16 flex justify-center">
+                            <ToggleSwitch
+                              checked={routing.desktop}
+                              onChange={(v) => setEventChannel(row.key, 'desktop', v)}
+                              title={t('alarms.channelTitle', { what: row.label, channel: t('alarms.channel.desktop') })}
                             />
                           </div>
                         )}
@@ -321,6 +344,20 @@ export function AlarmsSection({
                       />
                     </div>
                     )}
+                    {desktop && (
+                    <div className="flex items-center justify-between sm:justify-start gap-2">
+                      <span className="text-xs text-muted">{t('alarms.channel.desktopShort')}</span>
+                      <ToggleSwitch
+                        checked={notificationSettings.dailySummary.desktop}
+                        onChange={(v) =>
+                          setNotificationSettings((prev) => ({
+                            ...prev,
+                            dailySummary: { ...prev.dailySummary, desktop: v } }))
+                        }
+                        title={t('alarms.daily.desktop')}
+                      />
+                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -374,6 +411,33 @@ export function AlarmsSection({
           </div>
 
           <p className="pl-6 text-[11px] text-muted wrap-break-word">{t('alarms.email.recipient', { email: currentUser.email })}</p>
+        </div>
+        )}
+
+        {/* System notifications of the desktop app (its local instances, while the app is open) */}
+        {can('desktopNotify') && (
+        <div className="p-4 border border-border transition-colors space-y-3 bg-canvas">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <Monitor className="w-4 h-4 text-accent" />
+              <div>
+                <span className="font-bold text-main block">{t('alarms.desktop.title')}</span>
+                <span className="text-[11px] text-muted">
+                  {t('alarms.desktop.hint')}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleTestChannel('desktop')}
+              disabled={testingChannel === 'desktop'}
+              className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Send className="w-3 h-3 text-accent" />
+              <span>{testingChannel === 'desktop' ? t('sending') : t('alarms.desktop.test')}</span>
+            </button>
+          </div>
         </div>
         )}
 

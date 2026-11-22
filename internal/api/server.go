@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -77,6 +78,8 @@ type Server struct {
 	push              pushKeys
 	// summaryRetries: the next attempt of a daily summary's failed channels (notify.go)
 	summaryRetries summaryRetries
+	// desktopNotifier: the desktop app's system notifications, set by its shell (desktop_notify.go)
+	desktopNotifier atomic.Pointer[desktopNotifierBox]
 
 	// Background jobs (tickers, compaction, backups); Close stops them
 	stop     chan struct{}
@@ -108,6 +111,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	if srv.desktopMode() {
 		// The window asks again (handleDesktopSession) if this fails
 		logFailed("Creating the desktop account", srv.prepareDesktopAccount())
+		logFailed("Setting the desktop alarm defaults", srv.desktopAlarmDefaults())
 		srv.clearSnapshots("") // a snapshot staged before the instance last closed (desktop_restore.go)
 	}
 	srv.metrics = newAPIMetrics(srv)

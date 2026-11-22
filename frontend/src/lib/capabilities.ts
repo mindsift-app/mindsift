@@ -26,7 +26,9 @@ export type Capability =
   // Drawing together live (WebSocket)
   | 'liveDrawing'
   // Running in a browser: installable as an app, working offline
-  | 'install';
+  | 'install'
+  // Alarms as notifications of the operating system (a local instance of the desktop app), in place of web push
+  | 'desktopNotify';
 
 export type Capabilities = Record<Capability, boolean>;
 
@@ -42,6 +44,7 @@ const SERVER_DEFAULTS: Capabilities = {
   publicAddress: true,
   liveDrawing: true,
   install: true,
+  desktopNotify: false,
 };
 
 let current: Capabilities = SERVER_DEFAULTS;

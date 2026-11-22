@@ -227,7 +227,8 @@
       "email": "Récapitulatif quotidien – e-mail",
       "discord": "Récapitulatif quotidien – Discord",
       "webhook": "Récapitulatif quotidien – webhook",
-      "push": "Récapitulatif quotidien – push"
+      "push": "Récapitulatif quotidien – push",
+      "desktop": "Résumé quotidien – notification système"
     },
     "needPush": "Active d'abord le push sur un appareil ci-dessous",
     "lead": {
@@ -281,9 +282,16 @@
       "testSent_one": "Notification de test envoyée à {{count}} appareil.",
       "testSent_other": "Notification de test envoyée à {{count}} appareils."
     },
+    "desktop": {
+      "title": "Cible : notification système",
+      "hint": "Affiche les alarmes comme notifications du système d’exploitation tant que l’application est ouverte. Un clic dessus ouvre la tâche.",
+      "test": "Afficher un test"
+    },
     "channel": {
       "email": "E-mail",
-      "ownWebhook": "Webhook propre"
+      "ownWebhook": "Webhook propre",
+      "desktop": "Notification système",
+      "desktopShort": "Système"
     },
     "event": {
       "due": "Tâches échues (immédiatement)",

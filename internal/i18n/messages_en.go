@@ -343,6 +343,8 @@ var messagesEN = map[string]string{
 	"{count} morgen":                                                                                                               "{count} tomorrow",
 	"Deine Aufgaben: {counts}":                                                                                                     "Your tasks: {counts}",
 	"Dein eigener Webhook empfängt MindSift-Alarme!":                                                                               "Your own webhook receives MindSift alarms!",
+	"Systembenachrichtigungen von MindSift kommen an.":                                                                             "MindSift's system notifications arrive.",
+	"Systembenachrichtigung nicht angezeigt":                                                                                       "System notification not shown",
 	"Dein Discord-Alarmkanal funktioniert einwandfrei!":                                                                            "Your Discord alarm channel works perfectly!",
 	"Dein E-Mail-Alarmkanal funktioniert":                                                                                          "Your email alarm channel works",
 	"Dein E-Mail-Alarmkanal in MindSift ist eingerichtet und einsatzbereit. So sehen deine Alarme aus:":                            "Your email alarm channel in MindSift is set up and ready. This is what your alarms look like:",

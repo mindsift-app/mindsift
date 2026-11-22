@@ -705,7 +705,7 @@ func channelNames(ch domain.ChannelChoice) []string {
 	for _, c := range []struct {
 		on   bool
 		name string
-	}{{ch.Email, "email"}, {ch.Discord, "discord"}, {ch.Webhook, "webhook"}, {ch.Push, "push"}} {
+	}{{ch.Email, "email"}, {ch.Discord, "discord"}, {ch.Webhook, "webhook"}, {ch.Push, "push"}, {ch.Desktop, "desktop"}} {
 		if c.on {
 			out = append(out, c.name)
 		}
@@ -719,6 +719,7 @@ func onlyChannels(ch domain.ChannelChoice, names []string) domain.ChannelChoice 
 	ch.Discord = ch.Discord && slices.Contains(names, "discord")
 	ch.Webhook = ch.Webhook && slices.Contains(names, "webhook")
 	ch.Push = ch.Push && slices.Contains(names, "push")
+	ch.Desktop = ch.Desktop && slices.Contains(names, "desktop")
 	return ch
 }
 
@@ -728,12 +729,13 @@ func withoutChannels(ch domain.ChannelChoice, names []string) domain.ChannelChoi
 	ch.Discord = ch.Discord && !slices.Contains(names, "discord")
 	ch.Webhook = ch.Webhook && !slices.Contains(names, "webhook")
 	ch.Push = ch.Push && !slices.Contains(names, "push")
+	ch.Desktop = ch.Desktop && !slices.Contains(names, "desktop")
 	return ch
 }
 
 // channelItems collects what goes out on each channel.
 type channelItems struct {
-	email, discord, webhook, push []notifyItem
+	email, discord, webhook, push, desktop []notifyItem
 }
 
 func (c *channelItems) add(ch domain.ChannelChoice, items ...notifyItem) {
@@ -748,6 +750,9 @@ func (c *channelItems) add(ch domain.ChannelChoice, items ...notifyItem) {
 	}
 	if ch.Push {
 		c.push = append(c.push, items...)
+	}
+	if ch.Desktop {
+		c.desktop = append(c.desktop, items...)
 	}
 }
 
@@ -805,6 +810,14 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 		// Without a device there is nothing to deliver, and nothing to try again
 		if err := s.sendPushVia(userID, pushDigest(lang, heading, out.push, s.notifyLink()), run); !errors.Is(err, errNoPushDevice) {
 			fail("push", err)
+		}
+	}
+	if len(out.desktop) > 0 {
+		// The desktop app's system notification, worded like a push message; outside the app's local
+		// instances (no notifier) there is nothing to deliver to, and nothing to try again
+		m := pushDigest(lang, heading, out.desktop, "")
+		if err := s.notifyDesktop(DesktopNotification{Title: m.Title, Body: m.Body, Tag: m.Tag}); !errors.Is(err, errChannelNotSetUp) {
+			fail("desktop", err)
 		}
 	}
 	return failed
@@ -1089,7 +1102,7 @@ func (s *Server) sendDailySummaries(now time.Time, run *outages) {
 	for _, uid := range s.store.ActiveUserIDs() {
 		set := s.store.NotificationSettingsOf(uid)
 		ds := set.DailySummary
-		if set.Paused || !ds.Enabled || (!ds.Email && !ds.Discord && !ds.Webhook && !ds.Push) {
+		if set.Paused || !ds.Enabled || !ds.Channels().Any() {
 			continue
 		}
 		day, at, ok := dailySummarySlot(now, ds.Time)
@@ -1118,7 +1131,7 @@ func (s *Server) sendDailySummaries(now time.Time, run *outages) {
 		}
 		// Claimed before it goes out, so no channel gets it twice; a retry goes out on the channels that
 		// failed only (and are still chosen)
-		choice := domain.ChannelChoice{Email: ds.Email, Discord: ds.Discord, Webhook: ds.Webhook, Push: ds.Push}
+		choice := ds.Channels()
 		if claimed {
 			choice = onlyChannels(choice, retry)
 		} else if !s.store.ClaimDailySummary(uid, day) {

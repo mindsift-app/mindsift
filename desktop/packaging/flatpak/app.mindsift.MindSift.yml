@@ -35,7 +35,9 @@ finish-args:
   # which Flatpak lets the app own anyway; the backup folder dialog and "open folder" go through the
   # portals; the data lives in the sandbox's own $XDG_DATA_HOME (~/.var/app/app.mindsift.MindSift/data),
   # so there is no --filesystem permission. No system bus either: Wails' sleep/wake events (logind) are
-  # unused, and the app sends no desktop notifications (alarms go through Discord/webhooks).
+  # unused. Alarms as system notifications go through the notification portal
+  # (org.freedesktop.portal.Notification, internal/shell/notify_linux.go), which needs no permission; no
+  # --talk-name=org.freedesktop.Notifications.
 
 modules:
   - name: mindsift-desktop

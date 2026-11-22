@@ -94,6 +94,28 @@ func main() {
 			},
 		},
 	})
+	// Alarms of the local instances as system notifications (shell/notify.go); a click brings the window up
+	// and opens the task, if its instance is still the open one
+	notes := &shell.Notifications{}
+	notes.Shower = newNoteShower(app, notes.Click)
+	notes.Clicked = func(instanceID, taskID string) {
+		// Asked here, off the main thread: opening an instance holds the lock for a while
+		openTask := taskID != "" && local.Current() == instanceID
+		application.InvokeAsync(func() {
+			if window == nil {
+				return
+			}
+			window.Show()
+			window.Focus()
+			if openTask {
+				runInPage(window, shell.OpenTaskScript(windowOrigin(), taskID))
+			}
+		})
+	}
+	if notes.Shower != nil {
+		local.Notify = notes.Notify
+	}
+
 	sh.ShowFolder = func(dir string) error { return app.Browser.OpenFile(dir) }
 	sh.PickFolder = func(start string) (string, error) {
 		d := app.Dialog.OpenFile().CanChooseDirectories(true).CanChooseFiles(false).CanCreateDirectories(true).

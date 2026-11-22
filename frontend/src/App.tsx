@@ -541,6 +541,14 @@ export const App: React.FC = () => {
     queue?.setConsumer((launch) => {
       if (launch.targetURL) setDeepLink(parseDeepLink(new URL(launch.targetURL).search));
     });
+    // The same from the desktop app's shell: a click on one of its system notifications (an alarm) sends
+    // the link's query (?task=…) to the open window
+    const onOpenLink = (e: Event) => {
+      const search = (e as CustomEvent<unknown>).detail;
+      if (typeof search === 'string') setDeepLink(parseDeepLink(search));
+    };
+    window.addEventListener('mindsift:open-link', onOpenLink);
+    return () => window.removeEventListener('mindsift:open-link', onOpenLink);
   }, []);
   useEffect(() => {
     if (!user?.id || !(deepLink.note || deepLink.task || deepLink.list)) return;

@@ -213,6 +213,8 @@ export interface NotificationChannelRouting {
   discord: boolean;
   webhook: boolean;
   push: boolean;
+  /** A notification of the operating system, shown by the desktop app's local instances (capability desktopNotify) */
+  desktop: boolean;
 }
 
 export interface NotificationEvents {
@@ -232,6 +234,7 @@ export interface DailySummarySettings {
   discord: boolean;
   webhook: boolean;
   push: boolean;
+  desktop: boolean;
 }
 
 /** A browser or installed app that receives web push */

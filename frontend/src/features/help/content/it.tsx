@@ -607,7 +607,7 @@ const it: HelpContent = {
             </NotInDesktop>
             <InDesktop>
               <li>
-                <strong className="text-main">Notifiche automatiche:</strong> all'orario di scadenza (le attività di tutto il giorno alle 9:00, meno il tuo preavviso) MindSift ti avvisa tramite <strong className="text-main">webhook Discord</strong> o un webhook HTTP personalizzato, finché l'app desktop è in esecuzione. Se sposti la scadenza o riapri l'attività, l'avviso scatta di nuovo. Si configura nelle impostazioni dell'account, sotto «Notifiche». Tutti gli orari seguono il fuso orario dell'istanza, impostato in <em>Amministrazione → Istanza</em> (altrimenti quello del sistema).
+                <strong className="text-main">Notifiche automatiche:</strong> all'orario di scadenza (le attività di tutto il giorno alle 9:00, meno il tuo preavviso) MindSift ti avvisa tramite <strong className="text-main">notifica di sistema</strong> (un clic apre l'attività), <strong className="text-main">webhook Discord</strong> o un webhook HTTP personalizzato, finché l'app desktop è in esecuzione. Se sposti la scadenza o riapri l'attività, l'avviso scatta di nuovo. Si configura nelle impostazioni dell'account, sotto «Notifiche». Tutti gli orari seguono il fuso orario dell'istanza, impostato in <em>Amministrazione → Istanza</em> (altrimenti quello del sistema).
               </li>
             </InDesktop>
             <li>

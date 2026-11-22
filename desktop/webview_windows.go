@@ -57,3 +57,6 @@ func foreignPage(origin, marker string) string {
 func goBack(w application.Window)    { w.ExecJS("history.back()") }
 func goForward(w application.Window) { w.ExecJS("history.forward()") }
 func reload(w application.Window)    { w.Reload() }
+
+// runInPage runs js in the window's page, from any goroutine (ExecJS works here, see setupPages)
+func runInPage(w application.Window, js string) { w.ExecJS(js) }

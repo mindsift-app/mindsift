@@ -227,7 +227,8 @@
       "email": "Tageszusammenfassung – E-Mail",
       "discord": "Tageszusammenfassung – Discord",
       "webhook": "Tageszusammenfassung – Webhook",
-      "push": "Tageszusammenfassung – Push"
+      "push": "Tageszusammenfassung – Push",
+      "desktop": "Tageszusammenfassung – Systembenachrichtigung"
     },
     "needPush": "Bitte zuerst unten Push auf einem Gerät einschalten",
     "lead": {
@@ -281,9 +282,16 @@
       "testSent_one": "Test-Benachrichtigung an {{count}} Gerät gesendet.",
       "testSent_other": "Test-Benachrichtigung an {{count}} Geräte gesendet."
     },
+    "desktop": {
+      "title": "Ziel: Systembenachrichtigung",
+      "hint": "Zeigt Alarme als Benachrichtigung des Betriebssystems, solange die App geöffnet ist. Ein Klick darauf öffnet die Aufgabe.",
+      "test": "Test anzeigen"
+    },
     "channel": {
       "email": "E-Mail",
-      "ownWebhook": "Eigener Webhook"
+      "ownWebhook": "Eigener Webhook",
+      "desktop": "Systembenachrichtigung",
+      "desktopShort": "System"
     },
     "event": {
       "due": "Fällige Aufgaben (sofort)",

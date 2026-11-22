@@ -163,6 +163,41 @@ page on another origin set the window's title through a form posted to
   folder in old storage) is refused with 401; `useSessionBootstrap` then signs the window in again instead
   of showing the sign-in page, also when the 401 arrives before the status said desktop.
 
+## System notifications
+
+A local instance's alarms (task alarms and reminders, the daily summary, the other notification events
+the settings route there) can come as notifications of the operating system, while the app is open
+(closing the window quits the app; alarms missed meanwhile come at the next start, as on a server that was
+down). The instance's server runs in this process, so it needs no push service:
+
+- **Server:** the alarm channel `desktop` (`ChannelChoice.Desktop`, a column "System" under Settings →
+  Alarme, plus a test button) hands each alarm to an `api.DesktopNotifier`, which the shell sets right after
+  `api.NewServer` (`Local.Notify`, `internal/api/desktop_notify.go`). The capability `desktopNotify` is on
+  only with a notifier, i.e. only in the app's local instances; web push (`push`) stays off there. A new
+  instance (or one whose alarm settings were never saved) gets task alarms through this channel by default,
+  and the daily summary too once it is switched on; saved settings are left alone.
+- **Shell** (`internal/shell/notify.go`): each notification carries the instance's id and the task's. A
+  click brings the window up and, if that instance is still the open one, makes the app open the task (the
+  event `mindsift:open-link` with `?task=…`, as a link from the MCP server; `App.tsx`). A click on an alarm
+  of another instance only brings the window up.
+- **Linux** (`internal/shell/notify_linux.go`, D-Bus with godbus, no cgo): under Flatpak the notification
+  portal `org.freedesktop.portal.Notification` (any Flatpak app may use it, the manifest needs no
+  `--talk-name`), otherwise the desktop's notification server `org.freedesktop.Notifications` (GNOME, KDE,
+  dunst, mako …) with the app's icon and desktop entry (`app.mindsift.MindSift`) and a default action. A
+  server without actions reports a click only as "closed by the user", which counts as a click. Not Wails'
+  notification service: it talks to `org.freedesktop.Notifications` only, gives neither icon nor desktop
+  entry, and stops the whole app when the session bus is missing at its start. No bus or no notification
+  server: the alarm counts as failed and is tried again in the next runs (up to 3), the others go out.
+- **Windows** (`notify_windows.go`): Wails' notification service (go-toast), started with the app's services
+  but so that a failure leaves the app running without toasts. It registers the AppUserModelID `MindSift`
+  per user (`HKCU\Software\Classes\AppUserModelId\MindSift`, display name and the exe's icon, saved as a PNG
+  in the temp folder) and a COM activator (`HKCU\Software\Classes\CLSID\{…}\LocalServer32` = the running
+  exe), so the portable exe and the installed one need no Start menu shortcut with an AUMID. A toast clicked
+  after the app quit starts it again (it opens the instance used last, not the task). Not tried on a real
+  Windows machine yet.
+- **Servers in the window** get no system notifications (their alarms are the server's own business; the
+  window has no web push).
+
 ## Desktop mode of the server
 
 `main.go` calls `config.ApplyDesktop` after `config.Load` (no environment variable can switch it on, on a
@@ -179,7 +214,7 @@ normal server neither). Details in [Doku/architecture.md](../Doku/architecture.m
 - **Off:** registration and invites, mail, OIDC, passkeys, public links, calendar feeds, web push, demo
   mode, the setup code, `BASE_URL` (so no OAuth connectors). The administration hides people, sign-in,
   organizations, sharing, mail and legal texts; the settings hide Sicherheit, the calendar subscription,
-  the address and the mail and push channels of alarms.
+  the address and the mail and push channels of alarms (system notifications take push's place, see above).
 - **Kept:** MCP with API keys (local AI agents, over the listener above), daily backups (on unless switched off in the wizard; into
   `backups/` of the instance or, with a folder chosen in the wizard or the administration, its subfolder
   `MindSift-Backups/<instance>`), export and import. Moving to a server later is a backup restored there; the other way, Administration → Data takes one account
@@ -352,6 +387,8 @@ the WebView2 runtime (part of Windows 10/11).
 
 ## Known limits
 
-- No Web Push in the webview; alarms would come through the shell later (Discord and webhooks work).
+- No Web Push in the webview; alarms come as system notifications (see "System notifications"), only
+  while the app is open, and only from local instances: a server's page in the window gets none (its
+  alarms go out as that server sends them: mail, Discord, webhooks, and push to browsers).
 - Drawing together needs a WebSocket and is not available (one person anyway).
 - The tray needs a StatusNotifier host (KDE, most desktops; GNOME only with the AppIndicator extension).

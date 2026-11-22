@@ -349,7 +349,8 @@
       "email": "Resumen diario – correo",
       "discord": "Resumen diario – Discord",
       "webhook": "Resumen diario – webhook",
-      "push": "Resumen diario – push"
+      "push": "Resumen diario – push",
+      "desktop": "Resumen diario – notificación del sistema"
     },
     "needPush": "Activa primero las notificaciones push en un dispositivo abajo",
     "lead": {
@@ -403,9 +404,16 @@
       "testSent_one": "Notificación de prueba enviada a {{count}} dispositivo.",
       "testSent_other": "Notificación de prueba enviada a {{count}} dispositivos."
     },
+    "desktop": {
+      "title": "Destino: notificación del sistema",
+      "hint": "Muestra las alarmas como notificaciones del sistema operativo mientras la aplicación está abierta. Al hacer clic en una se abre la tarea.",
+      "test": "Mostrar prueba"
+    },
     "channel": {
       "email": "Correo",
-      "ownWebhook": "Webhook propio"
+      "ownWebhook": "Webhook propio",
+      "desktop": "Notificación del sistema",
+      "desktopShort": "Sistema"
     },
     "event": {
       "due": "Tareas que vencen (inmediato)",

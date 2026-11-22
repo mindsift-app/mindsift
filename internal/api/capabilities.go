@@ -37,12 +37,15 @@ const (
 	capLiveDrawing capability = "liveDrawing"
 	// capInstall: the app runs in a browser: it can be installed as an app and keeps working offline
 	capInstall capability = "install"
+	// capDesktopNotify: alarms as notifications of the operating system: a local instance of the desktop
+	// app, whose shell shows them (desktop_notify.go), in place of web push
+	capDesktopNotify capability = "desktopNotify"
 )
 
 // allCapabilities: the ones /auth/status reports.
 var allCapabilities = []capability{
 	capAccounts, capSignIn, capSharing, capEmail, capPush, capPasskeys, capPublicLinks, capPublicAddress,
-	capLiveDrawing, capInstall,
+	capLiveDrawing, capInstall, capDesktopNotify,
 }
 
 // can says whether the instance offers c.
@@ -63,6 +66,8 @@ func (s *Server) can(c capability) bool {
 		return s.passkeysOn()
 	case capPublicLinks:
 		return s.publicLinksEnabled()
+	case capDesktopNotify:
+		return desktop && s.desktopNotifierOf() != nil
 	}
 	return false
 }
