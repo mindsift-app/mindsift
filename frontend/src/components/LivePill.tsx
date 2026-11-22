@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { onRealtimeStatus, RealtimeTransport } from '../lib/api';
+import { useCapabilities } from '../lib/capabilities';
 
 // Connection pill in the look of the notes' header (Doku/ui-patterns.md): whether changes of others
-// arrive live, and how. Phones show the short label only.
+// arrive live, and how. Phones show the short label only. Hidden where nobody else reaches the instance
+// (the desktop app's local instance): changes still arrive live, but there are no others to name.
 export const LivePill: React.FC = () => {
   const { t } = useTranslation();
   const [status, setStatus] = useState<{ connected: boolean; transport: RealtimeTransport }>({
@@ -11,6 +13,8 @@ export const LivePill: React.FC = () => {
     transport: 'none',
   });
   useEffect(() => onRealtimeStatus((connected, transport) => setStatus({ connected, transport })), []);
+  const { publicAddress } = useCapabilities();
+  if (!publicAddress) return null;
 
   const { connected, transport } = status;
   return (

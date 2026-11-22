@@ -23,6 +23,7 @@ linters:
       # Closing and rolling back in cleanup paths (defer, error returns): the error that matters has
       # already been returned, and the close of a written file is checked where it is written.
       exclude-functions:
+        - (*database/sql.DB).Close
         - (*database/sql.Rows).Close
         - (*database/sql.Stmt).Close
         - (*database/sql.Conn).Close
@@ -30,6 +31,7 @@ linters:
         - (io.Closer).Close
         - (io.ReadCloser).Close
         - (*os.File).Close
+        - (*compress/gzip.Reader).Close
         - (*net/smtp.Client).Close
         - os.Remove
         # Streaming to an http.ResponseWriter (metrics, server-sent events): a client that went away is
