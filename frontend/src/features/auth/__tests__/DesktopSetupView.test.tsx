@@ -18,6 +18,7 @@ vi.mock('../../../lib/desktopShell', () => ({
   DesktopShellError: class extends Error {},
 }));
 
+import i18n from '../../../i18n';
 import { DesktopSetupView } from '../DesktopSetupView';
 
 const me = { id: 'u', email: '', username: 'anna', displayName: 'Anna Muster', role: 'admin', isActive: true } as never;
@@ -54,6 +55,22 @@ describe('DesktopSetupView: the desktop app’s short wizard', () => {
     expect(sent).toMatchObject({ instanceName: 'Privat', timeZone: '', createSampleData: true, backupEnabled: true, backupTime: '03:00', backupRetentionDays: 3, backupDir: '' });
     for (const key of ['email', 'smtp', 'sharingMode', 'allowRegistration']) expect(sent).not.toHaveProperty(key);
     expect(onDone).toHaveBeenCalled();
+  });
+
+  it('sends the language the wizard shows, also when the app switched after it opened', async () => {
+    await renderView();
+    // The account's or the browser's language arrives after the start language (App.tsx)
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
+    try {
+      await finish();
+      expect(finishSetup).toHaveBeenCalledWith(expect.objectContaining({ defaultLanguage: 'en' }));
+    } finally {
+      await act(async () => {
+        await i18n.changeLanguage('de');
+      });
+    }
   });
 
   it('takes the folder chosen in the system dialog', async () => {

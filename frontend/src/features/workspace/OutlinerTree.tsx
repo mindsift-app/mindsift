@@ -45,6 +45,8 @@ const DEFAULT_INDENT = 22;
 const FILE_DROP_END = '\u0000end';
 // Bullets with a text field the cursor can go to
 const TEXT_FIELD_TYPES = [...REPLACEABLE_EMPTY, 'paragraph', 'code'];
+// Bullets without a field for text: text dragged onto one goes into new bullets after it (dropTextOnto)
+const TEXTLESS_DROP_TARGETS = ['image', 'drawing', 'audio', 'divider'];
 
 export interface OutlinerTreeProps {
   docId: string;
@@ -965,18 +967,30 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   // level of what is shown, as if pasted into a new bullet there; an empty last text bullet takes them itself
   const dropTextAtEnd = (e: React.DragEvent): boolean => {
     const last = blocks[blocks.length - 1];
-    if (!canEdit || !last || !droppedText(e.dataTransfer)) return false;
+    return !!last && dropTextAfter(e, last, levelOffset || 0, true);
+  };
+
+  // Text dragged onto a bullet without a text field to put it in (an image, a drawing, a sound, a line;
+  // OutlinerBlock takes it on text bullets itself): its lines become bullets after that one (and its
+  // children), on its level, as pasting into a new bullet below it would make them
+  const dropTextOnto = (e: React.DragEvent, blockId: string): boolean => {
+    const target = blocks[indexOf(blockId)];
+    if (!target || !TEXTLESS_DROP_TARGETS.includes(target.type) || lockedBlocks?.has(blockId)) return false;
+    return dropTextAfter(e, target, Math.max(0, target.level || 0), false);
+  };
+
+  const dropTextAfter = (e: React.DragEvent, anchor: DocumentBlock, baseLevel: number, fillEmpty: boolean): boolean => {
+    if (!canEdit || !droppedText(e.dataTransfer)) return false;
     const { text } = transferText(e.dataTransfer);
     if (!text) return false;
     e.preventDefault();
     const rawLines = text.split(/\r?\n/);
-    if (last.type === 'text' && !(last.content || '').trim()) {
-      handlePasteMultiLines(last.id, '', '', rawLines);
+    if (fillEmpty && anchor.type === 'text' && !(anchor.content || '').trim()) {
+      handlePasteMultiLines(anchor.id, '', '', rawLines);
       return true;
     }
     const parsed = parsePastedLines(rawLines);
     if (parsed.length === 0) return true;
-    const baseLevel = levelOffset || 0;
     const nowBase = Date.now().toString(36);
     const newBlocks: DocumentBlock[] = parsed.map((p, j) => ({
       id: `blk_${nowBase}_${j}_${Math.random().toString(36).slice(2, 6)}`,
@@ -987,15 +1001,15 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       ...(p.type === 'code' ? { lang: p.lang || '' } : {}),
       level: Math.max(baseLevel, baseLevel + p.indent - parsed[0].indent),
       collapsed: false,
-      position: (last.position || 1000) + (j + 1) * 10,
+      position: (anchor.position || 1000) + (j + 1) * 10,
     }));
     const lastNew = newBlocks[newBlocks.length - 1];
     pendingFocusRef.current = { blockId: lastNew.id, cursor: 'end' };
     setFocusedBlockId(lastNew.id);
     if (onInsertBlocks) {
-      onInsertBlocks(last.id, last, newBlocks);
+      onInsertBlocks(anchor.id, anchor, newBlocks);
     } else {
-      newBlocks.forEach((b, k) => onCreateBlock(b, k === 0 ? last.id : newBlocks[k - 1].id));
+      newBlocks.forEach((b, k) => onCreateBlock(b, k === 0 ? anchor.id : newBlocks[k - 1].id));
     }
     return true;
   };
@@ -1454,7 +1468,10 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const indexOf = (blockId: string) => blocks.findIndex((b) => b.id === blockId);
   const stableDragStartBlock = useLatestCallback((blockId: string, e: React.DragEvent) => handleDragStartBlock(indexOf(blockId), e));
   const stableDragOverBlock = useLatestCallback((e: React.DragEvent, blockId: string) => handleDragOverBlock(e, indexOf(blockId)));
-  const stableDropBlock = useLatestCallback((blockId: string) => handleDropBlock(indexOf(blockId)));
+  const stableDropBlock = useLatestCallback((blockId: string, e?: React.DragEvent) => {
+    if (draggedIndex === null && e && dropTextOnto(e, blockId)) return;
+    handleDropBlock(indexOf(blockId));
+  });
 
   // --- Image files dragged onto the note (desktop, file manager, an image out of a browser tab) ---
   // They become image bullets like pasted images (lib/pasteImages.ts, handlePasteImages): dropped onto a

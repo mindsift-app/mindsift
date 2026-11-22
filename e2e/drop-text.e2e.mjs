@@ -1,6 +1,6 @@
 // Text dragged in from another program (desktop, Chromium, Firefox and WebKit): dropped onto a bullet's text it
 // goes in where it was dropped, several lines become bullets as when pasting, dropped below the last bullet it
-// becomes a new bullet at the end. The drag is synthetic (dragenter, dragover, drop with a DataTransfer holding
+// becomes a new bullet at the end, dropped onto a bullet showing an image they become bullets after it. The drag is synthetic (dragenter, dragover, drop with a DataTransfer holding
 // text/plain and text/html, set on the event like in paste-image.e2e.mjs); in Chromium a real drag from outside
 // the page (DevTools protocol, Input.dispatchDragEvent) is checked as well, into a bullet without and with the
 // cursor. A file or link dropped where nothing takes it (sidebar) is refused instead of opening in place of the
@@ -104,7 +104,8 @@ async function dragOnto(page, selector, types) {
       const dt = new DataTransfer();
       if (types.includes('Files')) dt.items.add(new File(['x'], 'bild.png', { type: 'image/png' }));
       if (types.includes('text/uri-list')) dt.setData('text/uri-list', 'https://example.org/');
-      dt.setData('text/plain', 'https://example.org/');
+      for (const type of types.filter((t) => t.startsWith('application/'))) dt.setData(type, 'task_1');
+      dt.setData('text/plain', types.some((t) => t.startsWith('application/')) ? 'task_1' : 'https://example.org/');
       const target = el;
       const fire = (type) => {
         const ev = new DragEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y });
@@ -265,6 +266,75 @@ const main = async () => {
         await page.evaluate(() => document.getElementById('drag-source').remove());
       }
 
+      // Onto a bullet showing an image (no text field to take it): the lines become bullets right after it. The
+      // image comes in as a dropped file (paste-image.e2e.mjs), which uploads it and puts it after the first bullet
+      const imgDoc = await api(admin, 'POST', '/api/v1/documents', {
+        title: `Bild-Ziehen ${tag} ${stamp}`,
+        blocks: [
+          { id: `di0_${stamp}`, type: 'text', content: 'Vor dem Bild', level: 0 },
+          { id: `di1_${stamp}`, type: 'text', content: 'Nach dem Bild', level: 0 },
+        ],
+      });
+      created.push(imgDoc.id);
+      await page.goto(`${BASE}/?note=${imgDoc.id}`);
+      await page.waitForFunction(() => document.querySelectorAll('[data-outline-block]').length === 2, null, { timeout: 10000 });
+      // The note is ready for drops once a bullet takes the cursor (WebKit ignored a drop right after loading)
+      await page.locator('[data-outline-block]').last().click();
+      await page.waitForFunction(() => document.activeElement?.tagName === 'TEXTAREA', null, { timeout: 5000 });
+      await page.evaluate(async () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = 140;
+        const g = canvas.getContext('2d');
+        g.fillStyle = '#3a7';
+        g.fillRect(0, 0, 240, 140);
+        const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+        const dt = new DataTransfer();
+        dt.items.add(new File([blob], 'bild.png', { type: 'image/png' }));
+        const row = document.querySelector('[data-outline-block]');
+        const r = row.getBoundingClientRect();
+        for (const type of ['dragenter', 'dragover', 'drop']) {
+          const ev = new DragEvent(type, { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 });
+          Object.defineProperty(ev, 'dataTransfer', { value: dt });
+          row.dispatchEvent(ev);
+        }
+      });
+      await page.waitForFunction(
+        () => document.querySelectorAll('[data-outline-block]').length === 3 && document.querySelector('[data-outline-block] img')?.complete,
+        null,
+        { timeout: 10000 }
+      );
+      const imageShape = (sh) => sh.map((b) => (b.startsWith('image:') ? 'image' : b));
+      const onImage = () =>
+        page.evaluate(() => {
+          const r = document.querySelector('[data-outline-block] img').getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        });
+      r = await page.evaluate(({ x, y }) => {
+        const dt = new DataTransfer();
+        dt.setData('text/plain', 'Unter dem Bild\n\nZweite Zeile');
+        const el = document.elementFromPoint(x, y);
+        const fire = (type) => {
+          const ev = new DragEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y });
+          Object.defineProperty(ev, 'dataTransfer', { value: dt });
+          el.dispatchEvent(ev);
+          return ev.defaultPrevented;
+        };
+        fire('dragenter');
+        return { over: fire('dragover'), drop: fire('drop'), target: el.tagName };
+      }, await onImage());
+      const afterImage = ['text:Vor dem Bild', 'image', 'text:Unter dem Bild', 'text:Zweite Zeile', 'text:Nach dem Bild'];
+      shape = imageShape(await waitShape(admin, imgDoc.id, (sh) => imageShape(sh).join('|') === afterImage.join('|')));
+      check(r.over && r.drop && shape.join('|') === afterImage.join('|'), `${tag}: Text auf einen Bild-Punkt gezogen wird zu Punkten unter dem Bild`, { r, shape });
+      if (tag === 'chromium') {
+        const cdp = await ctx.newCDPSession(page);
+        const p = await onImage();
+        const data = { items: [{ mimeType: 'text/plain', data: 'Echt gezogen' }], dragOperationsMask: 1 };
+        for (const type of ['dragEnter', 'dragOver', 'drop']) await cdp.send('Input.dispatchDragEvent', { type, x: p.x, y: p.y, data });
+        shape = imageShape(await waitShape(admin, imgDoc.id, (sh) => sh[2] === 'text:Echt gezogen'));
+        check(shape[1] === 'image' && shape[2] === 'text:Echt gezogen' && shape.length === 6, `${tag}: echter Drag von außen auf einen Bild-Punkt`, shape);
+      }
+
       // File and link outside any drop zone: refused, the page stays; a link into a text field still drops
       const sidebar = 'aside[data-tour="note-list"]';
       let g = await dragOnto(page, sidebar, ['Files']);
@@ -279,6 +349,9 @@ const main = async () => {
       });
       g = await dragOnto(page, '#drop-probe', ['text/uri-list']);
       check(!g.over && !g.drop, `${tag}: Link in ein Textfeld wird nicht abgewiesen`, g);
+      // A task dragged out of the calendar or a list carries its id as plain text: kept out of the field
+      g = await dragOnto(page, '#drop-probe', ['application/mindsift-task-id']);
+      check(g.over && g.effect === 'none' && g.drop, `${tag}: gezogene Aufgabe landet nicht als ID im Textfeld`, g);
       check(page.url().startsWith(BASE), `${tag}: die App bleibt geöffnet`, page.url());
 
       // A folder row takes only notes and folders of the sidebar: a file or text from outside is not allowed

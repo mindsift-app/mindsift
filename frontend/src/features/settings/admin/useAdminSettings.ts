@@ -115,6 +115,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           registrationVerifyConfiguredViaEnv: Boolean(sys.registrationVerifyConfiguredViaEnv),
           emailLinksAvailable: Boolean(sys.emailLinksAvailable),
           instanceName: sys.instanceName || 'MindSift',
+          // The language in use (the stored choice, else DEFAULT_LANGUAGE, else German): without it the field showed German
+          defaultLanguage: sys.defaultLanguage || '',
           smtpHost: sys.smtpHost || '',
           smtpPort: sys.smtpPort ? String(sys.smtpPort) : '587',
           smtpUser: sys.smtpUser || '',

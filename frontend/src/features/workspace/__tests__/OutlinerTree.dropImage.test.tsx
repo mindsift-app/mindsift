@@ -259,6 +259,24 @@ describe('dragging text onto a note', () => {
     await waitFor(() => expect(summary()).toEqual(['text:Oben', 'text:Ganz unten']));
   });
 
+  it('puts text dropped onto an image or a line into bullets after it, on its level', async () => {
+    render(<Harness initial={[mk('a', 'Oben'), mk('i', '![](media:med_00aa)', 'image', 1), mk('d', '', 'divider'), mk('b', 'Unten')]} />);
+    expect(await dropOn(rowOf('i'), clipboard({ text: 'Zum Bild\n\nNoch eins' }))).toBe(true);
+    await waitFor(() =>
+      expect(live.map((b) => `${b.type}:${b.content}:${b.level}`)).toEqual([
+        'text:Oben:0',
+        'image:![](media:med_00aa):1',
+        'text:Zum Bild:1',
+        'text:Noch eins:1',
+        'divider::0',
+        'text:Unten:0',
+      ])
+    );
+    await dropOn(rowOf('d'), clipboard({ text: 'Nach der Linie' }));
+    await waitFor(() => expect(summary().slice(4)).toEqual(['divider:', 'text:Nach der Linie', 'text:Unten']));
+    expect(media.uploads).toHaveLength(0);
+  });
+
   it('fills an empty last bullet instead of adding one', async () => {
     render(<Harness initial={[mk('a', 'Oben'), mk('b', '')]} />);
     const below = rowOf('a').parentElement!.lastElementChild!;
