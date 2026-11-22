@@ -219,7 +219,8 @@ APP_VERSION=v1.2.0 desktop/build.sh        # the app's version; default v<packag
 `mindsift-desktop-linux-amd64.flatpak`, `mindsift-desktop-windows-amd64.exe` (portable),
 `mindsift-desktop-windows-amd64-setup.exe` (installer, see "Windows") and
 `mindsift-desktop-THIRD_PARTY_LICENSES.txt`. `.github/workflows/release.yaml` runs it from the tag's
-checkout and lists the files in the release's `SHA256SUMS` together with the server archives.
+checkout and lists the files in the release's `SHA256SUMS` together with the server archives; the
+Flatpak bundle then goes into the own Flatpak repository (see "Own Flatpak repository").
 `.gitea/workflows/desktop.yaml` runs the same script for pushes to the `desktop-spike` branch and by hand
 (any branch), with the version `v<package.json>-dev`; the files are one artifact of the run in the Gitea
 UI.
@@ -284,6 +285,85 @@ flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatp
   - Checked in `golang:1.27.4-trixie` with the module cache deleted and `GOPROXY=off`, vendor filled with
     each module's complete directory (what the proxy zips contain): the Go part is byte-identical to the
     module-cache run (same modules, same texts).
+
+## Own Flatpak repository
+
+Besides the bundle on the release page, every release goes into MindSift's own signed Flatpak repository
+(an OSTree repository, independent of Flathub), so installed apps get updates through GNOME Software, KDE
+Discover or `flatpak update`. It is served by GitHub Pages from the `gh-pages` branch of
+`mindsift-app/flatpak` as `https://flatpak.mindsift.app/`.
+
+**Install** (the GNOME runtime comes from Flathub, which the `.flatpakref` adds when it is missing):
+
+```bash
+flatpak install --user https://flatpak.mindsift.app/app.mindsift.MindSift.flatpakref
+# or: add the repository, then install from it
+flatpak remote-add --user --if-not-exists mindsift https://flatpak.mindsift.app/mindsift.flatpakrepo
+flatpak install --user mindsift app.mindsift.MindSift
+```
+
+**How it is filled:** `.github/workflows/release.yaml` calls `.github/workflows/flatpak-repo.yaml` after
+the release page has all its files, for releases without `-` whose desktop build succeeded. That workflow
+downloads `mindsift-desktop-linux-amd64.flatpak` and `SHA256SUMS` of the tag (`gh release download`) and
+runs `ci/flatpak-repo.sh`, which
+
+- checks the bundle against `SHA256SUMS`, that its metainfo carries the tag's release and that the tag is
+  not older than the release the repository holds (pre-releases are refused);
+- clones `gh-pages` over SSH with the deploy key (or starts the branch when there is none), imports the
+  bundle and commits it with `flatpak build-commit-from` onto `app/app.mindsift.MindSift/x86_64/stable`,
+  whatever branch the bundle was built with (the release bundles are `master`); the previous release
+  becomes the parent, the same bundle twice makes no new commit and no push;
+- runs `flatpak build-update-repo --generate-static-deltas --prune --prune-depth=5 --default-branch=stable`
+  (summary, appstream branches for the software centers, deltas from the previous release; the last five
+  old releases stay installable with `flatpak update --commit=…`), signing commits and summary with the GPG
+  key;
+- writes the site: `repo/` (the OSTree repository), `mindsift.flatpakrepo` and
+  `app.mindsift.MindSift.flatpakref` (both carry the public key as `GPGKey`), the key as `mindsift.gpg`,
+  `icon.png`, an `index.html` with these instructions, `.nojekyll`, and `CNAME` (kept; a new branch gets
+  `flatpak.mindsift.app`);
+- commits it as `MindSift <noreply@mindsift.app>` as a **single commit without history** and force-pushes
+  it: the OSTree repository keeps its own history, git history would keep every pruned release forever
+  and grow past what Pages serves (1 GB). A release adds about 10-25 MB.
+
+Two runs never push at once (concurrency group `flatpak-repo`). A release that is missing (e.g. the
+secrets came later) is added with "Run workflow" on *Flatpak Repository*, from `main`, with its tag;
+the stable branch only moves forward (the script refuses a release older than the one it holds), so add
+missing releases oldest first. Without the secrets the workflow
+leaves a notice and does not fail the release.
+
+**Local run** (needs `flatpak`, `ostree`, `gpg`, `git`; e.g. in `debian:trixie` with those packages):
+`FLATPAK_GPG_PRIVATE_KEY="$(cat key.asc)" SHA256SUMS=SHA256SUMS PUSH=0 WORKDIR=/tmp/fr ci/flatpak-repo.sh
+v1.2.0 mindsift-desktop-linux-amd64.flatpak <git remote>` leaves the site in `/tmp/fr/site`; `SITE_URL`
+changes the URLs in the descriptors (e.g. `http://127.0.0.1:8000` to try it with
+`python3 -m http.server`), `KEEP` the number of old releases.
+
+**Setting it up** (once, by a maintainer):
+
+1. Create the public repository `mindsift-app/flatpak` (empty; the workflow creates `gh-pages`).
+2. Deploy key with write access:
+   `ssh-keygen -t ed25519 -N '' -C 'flatpak-repo deploy key' -f flatpak-deploy-key`. In
+   `mindsift-app/flatpak` → Settings → Deploy keys → Add deploy key: the content of
+   `flatpak-deploy-key.pub`, "Allow write access" checked. In `mindsift-app/mindsift` → Settings →
+   Secrets and variables → Actions → New repository secret `FLATPAK_REPO_DEPLOY_KEY`: the content of
+   `flatpak-deploy-key` (the private key). Delete both files afterwards.
+3. Signing key without passphrase, in a keyring of its own:
+
+   ```bash
+   export GNUPGHOME="$(mktemp -d)"
+   gpg --batch --passphrase '' --quick-gen-key 'MindSift Flatpak Repository <noreply@mindsift.app>' ed25519 sign never
+   gpg --armor --export-secret-keys > flatpak-signing-key.asc
+   ```
+
+   Secret `FLATPAK_GPG_PRIVATE_KEY` in `mindsift-app/mindsift`: the content of `flatpak-signing-key.asc`.
+   Keep a copy offline: everyone who added the repository trusts exactly this key, a new key means they
+   all have to add the repository again. Then remove `$GNUPGHOME` and the file.
+4. Run the workflow *Flatpak Repository* by hand once with the latest release tag (or wait for the next
+   release); this creates `gh-pages` with `CNAME`.
+5. In `mindsift-app/flatpak` → Settings → Pages: Source "Deploy from a branch", branch `gh-pages`,
+   folder `/ (root)`; Custom domain `flatpak.mindsift.app`; "Enforce HTTPS" once the certificate is there.
+6. DNS: `CNAME` record `flatpak.mindsift.app` → `mindsift-app.github.io`. Optionally verify the domain for
+   the organization (GitHub → organization settings → Pages → Add a domain, a TXT record), so nobody else
+   can claim it.
 
 ## Windows
 

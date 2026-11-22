@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Added
+- The Linux desktop app now has its own signed Flatpak repository, so it updates through GNOME Software, KDE Discover or `flatpak update` like any other app: `flatpak install --user https://flatpak.mindsift.app/app.mindsift.MindSift.flatpakref` (or add the repository with `flatpak remote-add --user mindsift https://flatpak.mindsift.app/mindsift.flatpakrepo`). Every release lands there automatically; the runtime still comes from Flathub. The Flatpak file on the release page stays available.
+
 ### Changed
 - New accounts on an instance without sharing (the desktop app's local instances, servers with sharing set to private) now get the help note about sharing again, as a short version: it says that sharing with other people needs a MindSift server with several accounts and sharing turned on, and that this instance does not offer it (in the desktop app: connect it to a server; on a server: the administration has turned sharing off), instead of describing share buttons that do not exist. Available in all five languages.
 - The desktop app's first start no longer opens the form for a local instance right away: it shows "Create a local instance" and "Connect to a server" side by side, and nothing is created before you choose. If you only use a MindSift server, you go straight to it. Later starts still open the instance or server used last.
