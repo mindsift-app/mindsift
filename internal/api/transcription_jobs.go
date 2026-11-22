@@ -25,7 +25,8 @@ import (
 // recording's caption through the note's log (open editors get it live), or as a new inbox entry. Each
 // change of a job goes to the people concerned as TRANSCRIPTION_UPDATED, its end as TRANSCRIPTION_DONE.
 //
-// Jobs share the places of the Whisper server with direct transcriptions (voiceService.slots). A failed
+// Jobs share the places of the Whisper server with direct transcriptions (voiceService.slots), behind them:
+// a job takes a place only while no direct request waits (voice_slots.go). A failed
 // attempt is tried again after a while (transcriptionRetryDelays); after the last one the job stays
 // failed, with its recording, until the person tries again or discards it.
 
@@ -92,38 +93,37 @@ func (s *Server) runTranscriptionJobs() {
 		if s.voiceMode() != "server" {
 			continue // jobs wait until speech recognition on the server is back
 		}
-		slots := s.voice.slotsFor(s.speech().MaxParallel)
-		select {
-		case slots <- struct{}{}:
-		case <-s.stop:
-			return
+		// A place of the Whisper server first, behind direct requests (voice_slots.go)
+		slot, err := s.voice.slotsFor(s.speech().MaxParallel).acquire(stopCtx, true)
+		if err != nil {
+			return // the server stops
 		}
 		job, err := s.store.ClaimTranscription(time.Now())
 		if err != nil {
 			slog.Warn("Reading the transcription queue failed", "error", err)
 		}
 		if job == nil {
-			<-slots
+			slot.release()
 			continue
 		}
 		s.transcriptionChanged(job)
 		s.background(func() {
-			defer func() { <-slots }()
-			s.runTranscription(stopCtx, job)
+			defer slot.release()
+			s.runTranscription(stopCtx, slot, job)
 		})
 		look = true // there may be more
 	}
 }
 
-// runTranscription does one attempt of a job.
-func (s *Server) runTranscription(ctx context.Context, job *storage.Transcription) {
+// runTranscription does one attempt of a job, on the Whisper server's place slot.
+func (s *Server) runTranscription(ctx context.Context, slot *sttSlot, job *storage.Transcription) {
 	started := time.Now()
 	var err error
 	switch job.Kind {
 	case storage.TranscriptionNote:
-		err = s.runNoteTranscription(ctx, job)
+		err = s.runNoteTranscription(ctx, slot, job)
 	case storage.TranscriptionInbox:
-		err = s.runInboxTranscription(ctx, job)
+		err = s.runInboxTranscription(ctx, slot, job)
 	default:
 		err = s.store.FinishTranscription(job.ID)
 	}
@@ -153,7 +153,7 @@ func (s *Server) runTranscription(ctx context.Context, job *storage.Transcriptio
 }
 
 // runNoteTranscription transcribes a recording in a note and writes the text into its caption.
-func (s *Server) runNoteTranscription(ctx context.Context, job *storage.Transcription) error {
+func (s *Server) runNoteTranscription(ctx context.Context, slot *sttSlot, job *storage.Transcription) error {
 	m, err := s.store.GetMedia(job.MediaID)
 	if err != nil {
 		return s.dropTranscription(job, "") // the recording is gone
@@ -168,6 +168,7 @@ func (s *Server) runNoteTranscription(ctx context.Context, job *storage.Transcri
 	tctx, cancel := context.WithTimeout(ctx, s.transcriptionTimeout())
 	text, err := s.transcribe(tctx, audio, "aufnahme"+storage.MediaExt(m.Mime), m.Mime, s.sttLanguage(job.UserID))
 	cancel()
+	slot.release() // the Whisper server is done; not held while the result waits for an editor below
 	if err != nil {
 		return err
 	}
@@ -205,16 +206,24 @@ func (s *Server) runNoteTranscription(ctx context.Context, job *storage.Transcri
 }
 
 // runInboxTranscription transcribes the parts of an inbox recording still without text and makes the
-// entry. Each part's text is kept at once, so a retry only sends what is missing.
-func (s *Server) runInboxTranscription(ctx context.Context, job *storage.Transcription) error {
+// entry. Each part's text is kept at once, so a retry only sends what is missing. Between the parts a
+// waiting direct request gets the place first.
+func (s *Server) runInboxTranscription(ctx context.Context, slot *sttSlot, job *storage.Transcription) error {
 	pieces, err := s.store.TranscriptionAudio(job.ID)
 	if err != nil {
 		return err
 	}
 	language := s.sttLanguage(job.UserID)
 	texts := make([]string, 0, len(pieces))
+	sent := false
 	for i, p := range pieces {
 		if p.Text == nil {
+			if sent {
+				if err := slot.yield(ctx); err != nil {
+					return err
+				}
+			}
+			sent = true
 			tctx, cancel := context.WithTimeout(ctx, s.transcriptionTimeout())
 			text, err := s.transcribe(tctx, p.Data, "aufnahme"+storage.MediaExt(p.Mime), p.Mime, language)
 			cancel()
@@ -230,6 +239,7 @@ func (s *Server) runInboxTranscription(ctx context.Context, job *storage.Transcr
 			texts = append(texts, t)
 		}
 	}
+	slot.release()
 	if _, err := s.store.GetTranscription(job.ID); err != nil {
 		return nil // discarded meanwhile
 	}
