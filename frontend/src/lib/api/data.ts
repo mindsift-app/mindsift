@@ -211,20 +211,26 @@ export const dataApi = {
     return `/api/v1/admin/backup-download/${encodeURIComponent(name)}?ticket=${encodeURIComponent(res.ticket ?? '')}`;
   },
 
-  // Restores the whole instance from a backup of the list; the server reopens afterwards (202)
-  async adminRestoreBackup(name: string): Promise<{ restarting: boolean; preRestoreBackup: string }> {
+  // Restores the whole instance from a backup of the list; the server reopens afterwards (202).
+  // acceptKeyMismatch: after 409 secrets_key_mismatch, restore anyway (features/settings/restoreKeyCheck.ts)
+  async adminRestoreBackup(name: string, acceptKeyMismatch = false): Promise<{ restarting: boolean; preRestoreBackup: string }> {
     return request(`/api/v1/admin/backups/${encodeURIComponent(name)}/restore`, {
       method: 'POST',
-      body: JSON.stringify({ confirm: name }),
+      body: JSON.stringify({ confirm: name, acceptKeyMismatch }),
       timeout: 'slow',
     });
   },
 
   // The same from an uploaded backup (lib/backupUpload.ts)
-  async adminRestoreUpload(id: string, name: string, sha256: string): Promise<{ restarting: boolean; preRestoreBackup: string }> {
+  async adminRestoreUpload(
+    id: string,
+    name: string,
+    sha256: string,
+    acceptKeyMismatch = false,
+  ): Promise<{ restarting: boolean; preRestoreBackup: string }> {
     return request(`/api/v1/admin/backups/uploads/${encodeURIComponent(id)}/restore`, {
       method: 'POST',
-      body: JSON.stringify({ confirm: name, sha256 }),
+      body: JSON.stringify({ confirm: name, sha256, acceptKeyMismatch }),
       timeout: 'slow',
     });
   },

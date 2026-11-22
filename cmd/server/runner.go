@@ -50,7 +50,7 @@ const reopenWait = 15 * time.Second
 // where a broken ADMIN_USER stops the start.
 func (rn *runner) open(first bool) (*instance, error) {
 	cfg := rn.cfg
-	storeOpts := []storage.StoreOption{storage.WithSecretsKey(cfg.SecretsKey), storage.WithDefaultInstanceName(cfg.InstanceName)}
+	storeOpts := []storage.StoreOption{storage.WithSecretsKey(cfg.SecretsKey), storage.WithBackupSecretsKey(cfg.BackupSecretsKey()), storage.WithDefaultInstanceName(cfg.InstanceName)}
 	if cfg.DemoMode {
 		storeOpts = append(storeOpts, storage.WithDemoMode())
 	}
@@ -61,6 +61,7 @@ func (rn *runner) open(first bool) (*instance, error) {
 	if restoreErr != nil {
 		slog.Error("Restoring the backup failed; MindSift runs with the data from before", "error", restoreErr)
 	}
+	cfg.TakeRestoredSecretsKey(store.SecretsKey())
 	store.ConfiguredLanguage = cfg.DefaultLanguage
 	if v, err := store.SQLiteVersion(); err == nil {
 		slog.Info("Database opened", "sqlite", v)

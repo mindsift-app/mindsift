@@ -20,6 +20,7 @@ import { BackupFolderField } from './BackupFolderField';
 import { BackupUploadRestore } from './BackupUploadRestore';
 import { useCapabilities } from '../../lib/capabilities';
 import { waitForReopen } from '../../lib/restoreReload';
+import { restoreWithKeyCheck } from './restoreKeyCheck';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
@@ -111,7 +112,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
     setError(null);
     try {
       const boot = await api.serverBoot();
-      await api.adminRestoreBackup(f.name);
+      if (!(await restoreWithKeyCheck((accept) => api.adminRestoreBackup(f.name, accept), t('backups.full.restore')))) return;
       startedRestore(boot);
     } catch (err) {
       setError(errorMessage(err, t('backups.full.restoreFailed')));
@@ -283,6 +284,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
         </div>
       )}
       {caps.restore && <p className="text-[11px] text-faint">{t('backups.full.restoreHint')}</p>}
+      {settings.backupSecretsKeyExcluded && <p className="text-[11px] text-faint">{t('backups.full.keyExcluded')}</p>}
       {caps.restore && !restoring && <BackupUploadRestore onRestoring={startedRestore} />}
 
       {/* Accounts deleted by an admin: their backups stay until the retention period ends */}

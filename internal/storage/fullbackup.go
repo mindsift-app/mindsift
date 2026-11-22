@@ -2,6 +2,7 @@ package storage
 
 import (
 	"archive/tar"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 //	mindsift-full-YYYY-MM-DD-HHMMSS/
 //	  manifest.json        what it is (format, time, counts, the size of its archive)
 //	  mindsift.db.gz       the whole database (VACUUM INTO, consistent while others write), gzipped
+//	  secrets.key          the key of the encrypted values (WithBackupSecretsKey), unless left out
 //	  media/<note>/<file>  every picture and recording, hard links to the live files where possible
 //
 // Media files are written once and never changed in place (a new upload gets a new id), so a hard link is a
@@ -28,8 +30,11 @@ import (
 // copied only when neither link works (the backups on another disk). The download is one tar archive
 // streamed from the folder (WriteFullBackupTar), with the same layout; an uploaded one is unpacked into a
 // folder like this (UnpackFullBackupTar). Not included: the accounts' own backups (backups/users, their
-// own files), caches, and secrets.key / jwt.secret (the key that decrypts hidden values must not travel
-// with the data it protects; a new server needs it copied by hand to read them).
+// own files), caches and jwt.secret (it only signs sign-ins; a new server signs with its own, everyone signs in
+// once). secrets.key is in it by default, so the restored hidden values, authenticator apps, links and the
+// SMTP password work on a new server without a manual step; BACKUP_EXCLUDE_SECRETS_KEY=true or a key given by
+// SECRETS_KEY leaves it out, and the admin keeps it separately. With the key, a backup reveals everything
+// it holds: keep it as safe as the data folder. The file is 0600 in the folder and in the archive.
 //
 // Folders are written as .part and renamed once complete, so the list never shows half a backup.
 
@@ -38,8 +43,10 @@ const (
 	FullBackupManifest = "manifest.json"
 	FullBackupDBName   = "mindsift.db.gz"
 	FullBackupMedia    = "media"
-	fullBackupFormat   = "mindsift-full-backup"
-	fullBackupVersion  = 1
+	// FullBackupSecretsKey: the key of the encrypted values, in the backup and in the data folder
+	FullBackupSecretsKey = "secrets.key"
+	fullBackupFormat     = "mindsift-full-backup"
+	fullBackupVersion    = 1
 	// FullBackupPreRestore: the reason of the backup written right before a restore
 	FullBackupPreRestore = "pre-restore"
 )
@@ -53,12 +60,14 @@ var (
 
 // FullBackupManifestData is manifest.json of a full backup.
 type FullBackupManifestData struct {
-	Format     string `json:"format"`
-	Version    int    `json:"version"`
-	CreatedAt  string `json:"createdAt"`
-	Reason     string `json:"reason,omitempty"`
-	MediaFiles int    `json:"mediaFiles"`
-	MediaBytes int64  `json:"mediaBytes"`
+	Format    string `json:"format"`
+	Version   int    `json:"version"`
+	CreatedAt string `json:"createdAt"`
+	Reason    string `json:"reason,omitempty"`
+	// SecretsKey: secrets.key is in the backup
+	SecretsKey bool  `json:"secretsKey,omitempty"`
+	MediaFiles int   `json:"mediaFiles"`
+	MediaBytes int64 `json:"mediaBytes"`
 	// ArchiveBytes: the tar archive of everything but manifest.json (FullBackupSize adds it)
 	ArchiveBytes int64 `json:"archiveBytes"`
 }
@@ -104,7 +113,7 @@ type fullBackupFile struct {
 }
 
 // fullBackupFiles lists the files of the full backup in dir in archive order: manifest.json, the database,
-// then the media sorted by path. Only regular files with names MindSift writes; the total is the exact size
+// secrets.key when there, then the media sorted by path. Only regular files with names MindSift writes; the total is the exact size
 // of the tar archive.
 func fullBackupFiles(dir string) ([]fullBackupFile, int64, error) {
 	info, err := os.Lstat(filepath.Join(dir, FullBackupManifest))
@@ -127,6 +136,10 @@ func fullBackupContent(dir string) ([]fullBackupFile, int64, error) {
 		return nil, 0, ErrNotFullBackup
 	}
 	files := []fullBackupFile{{name: FullBackupDBName, path: filepath.Join(dir, FullBackupDBName), size: info.Size(), mod: info.ModTime()}}
+	keyPath := filepath.Join(dir, FullBackupSecretsKey)
+	if info, err := os.Lstat(keyPath); err == nil && info.Mode().IsRegular() {
+		files = append(files, fullBackupFile{name: FullBackupSecretsKey, path: keyPath, size: info.Size(), mod: info.ModTime()})
+	}
 	media, err := mediaFiles(filepath.Join(dir, FullBackupMedia))
 	if err != nil {
 		return nil, 0, err
@@ -281,6 +294,11 @@ func (s *Store) WriteFullBackup(dir string, now time.Time, reason string) (strin
 	if err := s.writeSnapshot(tmp, FullBackupDBName, now); err != nil {
 		return "", err
 	}
+	if len(s.backupSecretsKey) == 32 {
+		if err := WriteFileAtomically(filepath.Join(tmp, FullBackupSecretsKey), []byte(hex.EncodeToString(s.backupSecretsKey)+"\n")); err != nil {
+			return "", fmt.Errorf("full backup, secrets key: %w", err)
+		}
+	}
 	if err := linkMediaTree(s.mediaRoot, media, prev); err != nil {
 		return "", fmt.Errorf("full backup, media: %w", err)
 	}
@@ -290,6 +308,9 @@ func (s *Store) WriteFullBackup(dir string, now time.Time, reason string) (strin
 	}
 	m := FullBackupManifestData{Format: fullBackupFormat, Version: fullBackupVersion, CreatedAt: now.UTC().Format(time.RFC3339), Reason: reason, ArchiveBytes: total}
 	for _, f := range files {
+		if f.name == FullBackupSecretsKey {
+			m.SecretsKey = true
+		}
 		if strings.HasPrefix(f.name, FullBackupMedia+"/") {
 			m.MediaFiles++
 			m.MediaBytes += f.size

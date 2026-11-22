@@ -175,7 +175,8 @@ func (l *Local) start(id, dir string) (*running, error) {
 	cfg.AppVersion = l.Version
 	cfg.ApplyDesktop(l.Desktop)
 	// A restore the administration staged (api/fullrestore.go) is swapped in here, before the store opens
-	store, restoreErr, err := storage.OpenStoreWithRestore(cfg.DatabasePath, storage.WithSecretsKey(cfg.SecretsKey), storage.WithDefaultInstanceName(cfg.InstanceName))
+	store, restoreErr, err := storage.OpenStoreWithRestore(cfg.DatabasePath, storage.WithSecretsKey(cfg.SecretsKey),
+		storage.WithBackupSecretsKey(cfg.BackupSecretsKey()), storage.WithDefaultInstanceName(cfg.InstanceName))
 	if err != nil {
 		lock.release()
 		return nil, problem("openFailed", err)
@@ -183,6 +184,7 @@ func (l *Local) start(id, dir string) (*running, error) {
 	if restoreErr != nil {
 		slog.Error("Restoring the backup failed; the instance opens with the data from before", "data", dir, "error", restoreErr)
 	}
+	cfg.TakeRestoredSecretsKey(store.SecretsKey())
 	store.ConfiguredLanguage = cfg.DefaultLanguage
 	hub := ws.NewHub()
 	srv := api.NewServer(cfg, store, hub, l.Static)

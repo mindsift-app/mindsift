@@ -912,6 +912,7 @@
     "full": {
       "autoHint": "Cada día a las {{time}}: todos los datos con imágenes y grabaciones, más una copia por usuario, en <c>backups/</c>.",
       "restoreHint": "Restaurar sustituye todos los datos de esta instancia; antes se guarda el estado actual.",
+      "keyExcluded": "La clave de los valores cifrados no está en la copia; guárdala por separado.",
       "kindFull_one": "Completa con {{count}} archivo multimedia",
       "kindFull_other": "Completa con {{count}} archivos multimedia",
       "kindDb": "Solo la base de datos",

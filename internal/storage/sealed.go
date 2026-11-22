@@ -6,8 +6,10 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"log/slog"
+	"os"
 	"strings"
 )
 
@@ -74,6 +76,41 @@ type StoreOption func(*Store)
 // server always passes it; a store without one (tests) keeps a new password as it is.
 func WithSecretsKey(key []byte) StoreOption {
 	return func(s *Store) { s.secretsKey = key }
+}
+
+// WithBackupSecretsKey gives the key complete backups carry as secrets.key (config.BackupSecretsKey; nil:
+// they carry none).
+func WithBackupSecretsKey(key []byte) StoreOption {
+	return func(s *Store) { s.backupSecretsKey = key }
+}
+
+// SecretsKey: the key the store was opened with; after a restore that brought its own secrets.key, that
+// one (OpenStoreWithRestore), which the server then takes for config.SecretsKey too.
+func (s *Store) SecretsKey() []byte { return s.secretsKey }
+
+// ParseSecretsKey reads the content of a secrets.key file (hex, 32 bytes) as config does.
+func ParseSecretsKey(raw []byte) ([]byte, error) {
+	key, err := hex.DecodeString(strings.TrimSpace(string(raw)))
+	if err != nil || len(key) != 32 {
+		return nil, errors.New("not a MindSift secrets key")
+	}
+	return key, nil
+}
+
+// ReadSecretsKeyFile reads a secrets.key file (a regular file of at most a few bytes).
+func ReadSecretsKeyFile(path string) ([]byte, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() || info.Size() > 1024 {
+		return nil, errors.New("not a MindSift secrets key")
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSecretsKey(raw)
 }
 
 // WithDefaultInstanceName gives the name an instance has until the administration sets one

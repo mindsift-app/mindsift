@@ -912,6 +912,7 @@
     "full": {
       "autoHint": "Ogni giorno alle {{time}}: tutti i dati con immagini e registrazioni, più un backup per utente, in <c>backups/</c>.",
       "restoreHint": "Il ripristino sostituisce tutti i dati di questa istanza; prima viene salvato lo stato attuale.",
+      "keyExcluded": "La chiave dei valori cifrati non è nel backup; conservala separatamente.",
       "kindFull_one": "Completo con {{count}} file multimediale",
       "kindFull_other": "Completo con {{count}} file multimediali",
       "kindDb": "Solo database",

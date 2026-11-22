@@ -44,6 +44,8 @@ type Store struct {
 	noteStorageReady atomic.Bool
 	// secretsKey seals the SMTP password in the system settings (sealed.go, WithSecretsKey)
 	secretsKey []byte
+	// backupSecretsKey: the key complete backups carry as secrets.key (WithBackupSecretsKey; nil: none)
+	backupSecretsKey []byte
 	// defaultInstanceName: the name of the instance while the administration has not set one
 	// (INSTANCE_NAME, WithDefaultInstanceName); empty means "MindSift"
 	defaultInstanceName string

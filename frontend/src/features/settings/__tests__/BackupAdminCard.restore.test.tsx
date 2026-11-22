@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import type { BackupFile, SystemSettings } from '../../../lib/types';
 import { setCapabilities } from '../../../lib/capabilities';
+import { ApiError } from '../../../lib/api/client';
 
 const api = vi.hoisted(() => ({
   adminListBackups: vi.fn(),
@@ -55,9 +56,41 @@ describe('BackupAdminCard: full backups, restore and upload', () => {
 
     askConfirm.mockResolvedValueOnce(true);
     fireEvent.click(screen.getByLabelText('Backup mindsift-full-2026-11-22-030000 wiederherstellen'));
-    await waitFor(() => expect(api.adminRestoreBackup).toHaveBeenCalledWith('mindsift-full-2026-11-22-030000'));
+    await waitFor(() => expect(api.adminRestoreBackup).toHaveBeenCalledWith('mindsift-full-2026-11-22-030000', false));
     expect(await screen.findByText('Stelle wieder her… MindSift lädt danach neu.')).toBeTruthy();
     expect(reopen.waitForReopen).toHaveBeenCalledWith('boot1');
+  });
+
+  it('asks again when the encrypted values of the backup do not open with the key, then restores anyway', async () => {
+    const question = 'Verschlüsselte Werte der Sicherung lassen sich nicht öffnen; trotzdem wiederherstellen?';
+    api.adminRestoreBackup.mockRejectedValueOnce(new ApiError(question, 409, 'secrets_key_mismatch'));
+    askConfirm.mockResolvedValue(true);
+    render(<BackupAdminCard settings={settings} onSave={vi.fn()} />);
+    await screen.findByText(/Komplett mit 2 Mediendateien/);
+    fireEvent.click(screen.getByLabelText('Backup mindsift-full-2026-11-22-030000 wiederherstellen'));
+    await waitFor(() => expect(api.adminRestoreBackup).toHaveBeenCalledWith('mindsift-full-2026-11-22-030000', true));
+    expect(askConfirm).toHaveBeenCalledTimes(2);
+    expect(askConfirm.mock.calls[1][0]).toMatchObject({ message: question, danger: true });
+    expect(await screen.findByText('Stelle wieder her… MindSift lädt danach neu.')).toBeTruthy();
+  });
+
+  it('stops when the question about the key is cancelled', async () => {
+    api.adminRestoreBackup.mockRejectedValueOnce(new ApiError('Frage', 409, 'secrets_key_mismatch'));
+    askConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    render(<BackupAdminCard settings={settings} onSave={vi.fn()} />);
+    await screen.findByText(/Komplett mit 2 Mediendateien/);
+    fireEvent.click(screen.getByLabelText('Backup mindsift-full-2026-11-22-030000 wiederherstellen'));
+    await waitFor(() => expect(askConfirm).toHaveBeenCalledTimes(2));
+    expect(api.adminRestoreBackup).toHaveBeenCalledTimes(1);
+    expect(reopen.waitForReopen).not.toHaveBeenCalled();
+  });
+
+  it('says when the key is not in the backups', async () => {
+    const { rerender } = render(<BackupAdminCard settings={settings} onSave={vi.fn()} />);
+    await screen.findByText(/Komplett mit 2 Mediendateien/);
+    expect(screen.queryByText(/nicht im Backup/)).toBeNull();
+    rerender(<BackupAdminCard settings={{ ...settings, backupSecretsKeyExcluded: true }} onSave={vi.fn()} />);
+    expect(screen.getByText('Der Schlüssel für verschlüsselte Werte ist nicht im Backup; bewahre ihn getrennt auf.')).toBeTruthy();
   });
 
   it('offers no restore where the instance cannot reopen its data', async () => {
@@ -87,7 +120,7 @@ describe('BackupAdminCard: full backups, restore and upload', () => {
     act(() => report({ phase: 'check', done: 80, total: 100 }));
     expect(screen.getByText('Prüfe… 80 %')).toBeTruthy();
     await act(async () => finish({ id: 'up1', name: 'umzug.tar', size: 100, sha256: 'abc' }));
-    await waitFor(() => expect(api.adminRestoreUpload).toHaveBeenCalledWith('up1', 'umzug.tar', 'abc'));
+    await waitFor(() => expect(api.adminRestoreUpload).toHaveBeenCalledWith('up1', 'umzug.tar', 'abc', false));
     expect(askConfirm.mock.calls[0][0].message).toContain('umzug.tar');
     expect(await screen.findByText('Stelle wieder her… MindSift lädt danach neu.')).toBeTruthy();
   });

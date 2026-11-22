@@ -512,6 +512,9 @@ type SystemSettings struct {
 	BackupTimeViaEnv            bool `json:"backupTimeConfiguredViaEnv,omitempty"`
 	BackupRetentionDaysViaEnv   bool `json:"backupRetentionDaysConfiguredViaEnv,omitempty"`
 	SMTPDisabledViaEnv          bool `json:"smtpDisabledViaEnv,omitempty"`
+	// BackupSecretsKeyExcluded (read only): complete backups carry no secrets.key (BACKUP_EXCLUDE_SECRETS_KEY
+	// or SECRETS_KEY); the admin keeps the key separately
+	BackupSecretsKeyExcluded bool `json:"backupSecretsKeyExcluded,omitempty"`
 	// PushKnownServicesOnly: web push only to the push services of the big browsers (Google, Mozilla,
 	// Apple, Microsoft) instead of any https address a browser names. Off by default.
 	PushKnownServicesOnly *bool `json:"pushKnownServicesOnly,omitempty"`

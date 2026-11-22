@@ -566,6 +566,8 @@ export interface SystemSettings {
   backupEnabledConfiguredViaEnv?: boolean;
   backupTimeConfiguredViaEnv?: boolean;
   backupRetentionDaysConfiguredViaEnv?: boolean;
+  // Complete backups carry no secrets.key (BACKUP_EXCLUDE_SECRETS_KEY or SECRETS_KEY, read only)
+  backupSecretsKeyExcluded?: boolean;
   // The mail server and user SMTP_PASS belongs to (only with SMTP_PASS): the password field is locked while
   // the form names them
   smtpPassEnvHost?: string;
