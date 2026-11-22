@@ -10,6 +10,10 @@
 # "linux/amd64 windows/amd64": one file for the binaries of several platforms, with the modules imported
 # on any of them (cgo as go's default: on for the native platform, off for cross builds). Without it the
 # environment's GOOS/GOARCH count.
+# Offline vendor builds (GOFLAGS=-mod=vendor, no module cache): go reports no module directory then, so
+# the license files are taken from vendor/<module path>/ next to the main module's go.mod instead. That
+# folder must hold the license files of each module (as flatpak-go-mod's module archives do; plain
+# `go mod vendor` copies only some).
 set -euo pipefail
 
 NPM_PART="${1:?usage: ci/third-party-licenses.sh <npm part> <go package>}"
@@ -52,7 +56,12 @@ MODULES="$(printf '%s\n' "${MODULES}" | { grep -v '^github.com/mindsift-app/mind
 [ -n "${MODULES}" ] || { echo "third-party-licenses: no Go modules found for ${GO_PKG}" >&2; exit 1; }
 # One file name per line, each used as a whole (no word splitting or globbing). grep without -q reads all
 # of its input, so pipefail never sees the writer cut off.
+VENDOR_DIR="$(dirname "$(go env GOMOD)")/vendor"
 printf '%s\n' "${MODULES}" | while read -r path version dir; do
+  if [ -z "${dir}" ]; then
+    dir="${VENDOR_DIR}/${path}"
+    [ -d "${dir}" ] || { echo "third-party-licenses: Go module ${path} ${version} has no directory (module cache) and none in ${VENDOR_DIR}" >&2; exit 1; }
+  fi
   files="$(ls -1 "${dir}" | { grep -iE "${LICENSE_FILES}" || true; } | sort)"
   if ! printf '%s\n' "${files}" | grep -iE '^(licen[cs]e|copying)' >/dev/null; then
     echo "third-party-licenses: Go module ${path} ${version} has no license file in ${dir}" >&2
