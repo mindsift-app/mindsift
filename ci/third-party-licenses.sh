@@ -4,13 +4,18 @@
 # part is made here from the modules the package really imports (go list -deps, for $GOOS/$GOARCH),
 # each with the license files of its module (and AUTHORS, which BSD licenses refer to), plus Go's
 # standard library. Needs only the go tool and the downloaded modules. Fails when a Go module has no
-# license file.
+# license file. MindSift's own module is never listed (the desktop app imports it as a dependency).
 # Usage: ci/third-party-licenses.sh <npm part> <go package> > THIRD_PARTY_LICENSES.txt
+# Optional: SUBJECT (what the file is for, default "The server binary"); GO_PLATFORMS, e.g.
+# "linux/amd64 windows/amd64": one file for the binaries of several platforms, with the modules imported
+# on any of them (cgo as go's default: on for the native platform, off for cross builds). Without it the
+# environment's GOOS/GOARCH count.
 set -euo pipefail
 
 NPM_PART="${1:?usage: ci/third-party-licenses.sh <npm part> <go package>}"
 GO_PKG="${2:?usage: ci/third-party-licenses.sh <npm part> <go package>}"
 LICENSE_FILES='^(licen[cs]e|copying|notice|patents|authors)([.-].*)?$'
+SUBJECT="${SUBJECT:-The server binary}"
 
 heading() {
   printf '%s\n' "================================================================================"
@@ -18,10 +23,10 @@ heading() {
   printf '%s\n' "================================================================================"
 }
 
-cat <<'EOF'
+cat <<EOF
 MindSift is licensed under the GNU Affero General Public License v3.0 (see LICENSE).
 
-The server binary includes the following third-party software: the web app's npm packages (bundled
+${SUBJECT} includes the following third-party software: the web app's npm packages (bundled
 into the frontend that is embedded in the binary) and the Go modules and standard library it is
 compiled from. Each is listed with its version and the license texts it ships.
 
@@ -35,7 +40,15 @@ printf '\n'
 if [ -f "$(go env GOROOT)/PATENTS" ]; then cat "$(go env GOROOT)/PATENTS"; printf '\n'; fi
 printf '\n'
 
-MODULES="$(go list -deps -f '{{with .Module}}{{if not .Main}}{{.Path}} {{.Version}} {{if .Replace}}{{.Replace.Dir}}{{else}}{{.Dir}}{{end}}{{end}}{{end}}' "${GO_PKG}" | sort -u)"
+list_modules() {
+  go list -deps -f '{{with .Module}}{{if not .Main}}{{.Path}} {{.Version}} {{if .Replace}}{{.Replace.Dir}}{{else}}{{.Dir}}{{end}}{{end}}{{end}}' "${GO_PKG}"
+}
+if [ -n "${GO_PLATFORMS:-}" ]; then
+  MODULES="$(for p in ${GO_PLATFORMS}; do GOOS="${p%/*}" GOARCH="${p#*/}" list_modules; done | sort -u)"
+else
+  MODULES="$(list_modules | sort -u)"
+fi
+MODULES="$(printf '%s\n' "${MODULES}" | { grep -v '^github.com/mindsift-app/mindsift ' || true; })"
 [ -n "${MODULES}" ] || { echo "third-party-licenses: no Go modules found for ${GO_PKG}" >&2; exit 1; }
 # One file name per line, each used as a whole (no word splitting or globbing). grep without -q reads all
 # of its input, so pipefail never sees the writer cut off.

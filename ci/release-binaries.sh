@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Takes the server binary out of a published image, once per platform, and packs it with the licence and
 # the licenses of the third-party software in it (THIRD_PARTY_LICENSES.txt, from the same image):
-# <dir>/mindsift-<version>-linux-<arch>.tar.gz and their SHA256SUMS. It is the binary of the image, so
+# <dir>/mindsift-<version>-linux-<arch>.tar.gz, and SHA256SUMS of all mindsift-* files in <dir>. It is the binary of the image, so
 # the one that was tested and scanned, and the frontend is embedded in it: the file runs on its own.
 # Usage: ci/release-binaries.sh <image> <version> <dir>
 # Optional: PLATFORMS (default "linux/amd64 linux/arm64"), ENGINE (default docker). Needs GNU tar.
@@ -43,4 +43,6 @@ for platform in ${PLATFORMS:-linux/amd64 linux/arm64}; do
   tar -C "${WORK}" --owner=0 --group=0 --numeric-owner -czf "${OUT}/${name}.tar.gz" "${name}"
 done
 
-(cd "${OUT}" && sha256sum mindsift-*.tar.gz > SHA256SUMS && cat SHA256SUMS)
+# One SHA256SUMS for every file of the release page: the desktop app's files (ci/release-desktop.sh) are
+# put into the same folder before this runs
+(cd "${OUT}" && sha256sum mindsift-* > SHA256SUMS && cat SHA256SUMS)

@@ -187,20 +187,37 @@ the server's dependencies. `desktop/internal/shell` needs no window and is teste
 ## Build
 
 ```bash
-desktop/build.sh            # frontend, Linux and Windows binary into desktop/out/
+desktop/build.sh            # frontend, Linux and Windows binary, licenses into desktop/out/
 desktop/build.sh linux      # only Linux (cgo, GTK4 + WebKitGTK 6.0, built in golang:…-trixie)
 SKIP_FRONTEND=1 desktop/build.sh windows   # reuse frontend/dist
+APP_VERSION=v1.2.0 desktop/build.sh        # the app's version; default v<package.json version>-dev
 ```
 
-Pushes to the `desktop-spike` branch are built by `.gitea/workflows/desktop-spike.yaml` (the same script,
-run with docker); the Linux binary, the Windows exe and the Flatpak bundle are artifacts of the workflow
-run in the Gitea UI.
+- **Version:** `APP_VERSION` is linked in as `main.version` (the embedded server's `AppVersion`, so a
+  release looks for newer releases like the server does) and, without the `v`, into the exe's version
+  resource; the frontend is built with it too.
+- **Licenses:** `desktop/out/THIRD_PARTY_LICENSES.txt` covers both binaries: the frontend's npm packages
+  (`ci/third-party-licenses-npm.mjs`, run where the frontend is built), the Go modules imported on Linux
+  or Windows (Wails and its dependencies, those of the server packages; `ci/third-party-licenses.sh` with
+  `GO_PLATFORMS`) and Go's standard library. The app shows the file next to its binary in *About
+  MindSift*.
+
+**Releases:** `ci/release-desktop.sh <tag> <dir>` runs `build.sh` and the Flatpak build with the tag as
+`APP_VERSION` and writes the files of the release page under fixed names (the website links to
+`releases/latest/download/<name>`): `mindsift-desktop-linux-amd64.tar.gz` (binary `mindsift-desktop`,
+`LICENSE`, `THIRD_PARTY_LICENSES.txt`, `README.txt` from `packaging/linux/`),
+`mindsift-desktop-linux-amd64.flatpak`, `mindsift-desktop-windows-amd64.exe` and
+`mindsift-desktop-THIRD_PARTY_LICENSES.txt`. `.github/workflows/release.yaml` runs it from the tag's
+checkout and lists the files in the release's `SHA256SUMS` together with the server archives.
+`.gitea/workflows/desktop.yaml` runs the same script for pushes to the `desktop-spike` branch and by hand
+(any branch), with the version `v<package.json>-dev`; the files are one artifact of the run in the Gitea
+UI.
 
 ## Flatpak
 
 ```bash
-desktop/packaging/flatpak/build.sh     # -> desktop/out/mindsift.flatpak
-flatpak install --user mindsift.flatpak && flatpak run app.mindsift.MindSift
+desktop/packaging/flatpak/build.sh     # -> desktop/out/mindsift-desktop-linux-amd64.flatpak
+flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatpak run app.mindsift.MindSift
 ```
 
 - **Files** in `packaging/flatpak/`: the manifest `app.mindsift.MindSift.yml` (each permission explained
@@ -211,8 +228,11 @@ flatpak install --user mindsift.flatpak && flatpak run app.mindsift.MindSift
   runtime's libraries; the extension is pinned to a commit in `build.sh` (Go 1.27.3), the GNOME branch
   follows its security rebuilds. The bundle names Flathub as the runtime's source, so `flatpak install`
   fetches the runtime from there.
-- **Build:** `build.sh` builds the frontend (node container), stages the repository with `frontend/dist` in
-  `desktop/dist` and the Go modules vendored (`go mod vendor` in `desktop/`, which includes the main
+- **Build:** `build.sh` builds the frontend and the license file (`desktop/build.sh licenses`), stages the
+  repository with `frontend/dist` in `desktop/dist`, `THIRD_PARTY_LICENSES.txt` (installed in
+  `/app/share/licenses/app.mindsift.MindSift/` and next to the binary), the version in
+  `desktop/app-version` (`APP_VERSION`, read by the manifest), a release entry in the metainfo when
+  `CHANGELOG.md` has a section for that version, and the Go modules vendored (`go mod vendor` in `desktop/`, which includes the main
   module through its `replace`), then runs `flatpak-builder` offline (`GOFLAGS=-mod=vendor`,
   `GOPROXY=off`) in a privileged Debian container; the runtimes stay in the volume `mindsift-flatpak`.
 - **Data:** under Flatpak `XDG_DATA_HOME` is `~/.var/app/app.mindsift.MindSift/data`, so the base folder

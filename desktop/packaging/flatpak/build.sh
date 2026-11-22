@@ -1,13 +1,18 @@
 #!/bin/sh
-# Builds the Flatpak bundle of the desktop app in containers: desktop/out/mindsift.flatpak
+# Builds the Flatpak bundle of the desktop app in containers: desktop/out/mindsift-desktop-linux-amd64.flatpak
 #   desktop/packaging/flatpak/build.sh                  frontend, vendored Go modules, flatpak-builder
 #   SKIP_FRONTEND=1 desktop/packaging/flatpak/build.sh  reuse frontend/dist
-# Install it with: flatpak install --user mindsift.flatpak (the GNOME runtime comes from Flathub).
+#   APP_VERSION=v1.2.0 …                                the app's version, as for desktop/build.sh
+# Install it with: flatpak install --user mindsift-desktop-linux-amd64.flatpak (the GNOME runtime comes
+# from Flathub).
 #
-# 1. The frontend (node, desktop/build.sh frontend), unless SKIP_FRONTEND=1.
+# 1. The frontend and the license file (node and golang, desktop/build.sh licenses); the frontend only
+#    unless SKIP_FRONTEND=1.
 # 2. A staged source tree in desktop/out/flatpak/src: the repository's files (git ls-files), the
-#    built frontend in desktop/dist, and the Go modules vendored (golang container, the only step that
-#    downloads modules), so flatpak-builder builds offline, as Flathub requires.
+#    built frontend in desktop/dist, THIRD_PARTY_LICENSES.txt, the version in desktop/app-version, a
+#    release entry for that version in the metainfo (when CHANGELOG.md has its section), and the Go
+#    modules vendored (golang container, the only step that downloads modules), so flatpak-builder builds
+#    offline, as Flathub requires.
 # 3. flatpak-builder in a privileged Debian container (bubblewrap needs its own namespaces), with the
 #    runtimes cached in the podman/docker volume mindsift-flatpak; the binary is built inside the GNOME
 #    SDK with the Go extension, so glibc, GTK and WebKitGTK are the runtime's.
@@ -28,10 +33,11 @@ GNOME_BRANCH=51
 GO_EXT_BRANCH=26.08
 GO_EXT_COMMIT=f9e1ac9f0c6f95e0df3a4a972a9b7d008715b336c9558098678045a24b81c102
 STAGE=desktop/out/flatpak
+OUT=desktop/out/mindsift-desktop-linux-amd64.flatpak
+APP_VERSION="${APP_VERSION:-v$(sed -n 's/.*"version": "\(.*\)".*/\1/p' frontend/package.json | head -1)-dev}"
 
-if [ "${SKIP_FRONTEND:-0}" != "1" ]; then
-  ENGINE="$ENGINE" COPY_MODE="$COPY_MODE" desktop/build.sh frontend >/dev/null
-fi
+# The frontend (unless SKIP_FRONTEND=1, passed on) and desktop/out/THIRD_PARTY_LICENSES.txt
+ENGINE="$ENGINE" COPY_MODE="$COPY_MODE" APP_VERSION="$APP_VERSION" desktop/build.sh licenses >/dev/null
 [ -f frontend/dist/index.html ] || { echo "frontend/dist is missing (run without SKIP_FRONTEND=1)" >&2; exit 1; }
 
 # Stage the sources
@@ -42,7 +48,25 @@ git ls-files -z --cached --others --exclude-standard -- . ':!screenshots' \
   | xargs -0 sh -c 'for f; do [ -e "$f" ] && printf "%s\0" "$f"; done' sh \
   | tar -C "$ROOT" --null -T - -cf - | tar -C "$STAGE/src" -xf -
 rm -rf "$STAGE/src/desktop/dist" && cp -r frontend/dist "$STAGE/src/desktop/dist"
+cp desktop/out/THIRD_PARTY_LICENSES.txt "$STAGE/src/THIRD_PARTY_LICENSES.txt"
+printf '%s\n' "$APP_VERSION" > "$STAGE/src/desktop/app-version"
 cp desktop/packaging/flatpak/$APP_ID.yml "$STAGE/"
+
+# A release of the CHANGELOG ("## [1.2.0] - 2026-12-01") gets its entry at the top of the metainfo's
+# <releases>, unless it is there already; other builds (…-dev) add none
+METAINFO="$STAGE/src/desktop/packaging/flatpak/$APP_ID.metainfo.xml"
+release="${APP_VERSION#v}"
+date="$(sed -n "s/^## \[$(printf '%s' "$release" | sed 's/[.]/\\./g')\] - \([0-9-]*\).*/\1/p" CHANGELOG.md | head -1)"
+if [ -n "$date" ] && ! grep -q "<release version=\"$release\"" "$METAINFO"; then
+  type=stable
+  case "$release" in *-*) type=development ;; esac
+  entry="    <release version=\"$release\" date=\"$date\" type=\"$type\">\\
+      <url type=\"details\">https://github.com/mindsift-app/mindsift/releases/tag/v$release</url>\\
+    </release>"
+  sed -i "s|^\( *\)<releases>\$|&\\
+$entry|" "$METAINFO"
+  grep -q "<release version=\"$release\"" "$METAINFO" || { echo "could not add release $release to the metainfo" >&2; exit 1; }
+fi
 
 $ENGINE volume create mindsift-desktop-gomod >/dev/null 2>&1 || true
 $ENGINE volume create mindsift-flatpak >/dev/null 2>&1 || true
@@ -84,6 +108,6 @@ run_in "$FLATPAK_IMAGE" mindsift-flatpak:/var/lib/flatpak . "set -e
   flatpak build-bundle /tmp/repo mindsift.flatpak $APP_ID --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
   rm -rf src" --privileged
 
-mv "$STAGE/mindsift.flatpak" desktop/out/mindsift.flatpak
+mv "$STAGE/mindsift.flatpak" "$OUT"
 rm -rf "$STAGE"
-ls -la desktop/out/mindsift.flatpak
+ls -la "$OUT"

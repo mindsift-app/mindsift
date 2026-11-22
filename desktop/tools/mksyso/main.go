@@ -5,7 +5,7 @@
 // does, built on the same library (github.com/tc-hib/winres, the version Wails pins), without the whole
 // Wails command line.
 //
-//	go run ./tools/mksyso -ico packaging/windows/app.ico -version 0.97.1-desktop-spike -out resource_windows_amd64.syso
+//	go run ./tools/mksyso -ico packaging/windows/app.ico -version 0.97.1-dev -out resource_windows_amd64.syso
 package main
 
 import (
@@ -44,7 +44,7 @@ const manifest = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 func main() {
 	ico := flag.String("ico", "", "the .ico file")
 	out := flag.String("out", "", "the .syso file to write")
-	ver := flag.String("version", "0.0.0", "the version, e.g. 0.97.1 or 0.97.1-desktop-spike")
+	ver := flag.String("version", "0.0.0", "the version, e.g. 0.97.1 or 0.97.1-dev")
 	arch := flag.String("arch", "amd64", "amd64, arm64 or 386")
 	flag.Parse()
 	if err := run(*ico, *out, *ver, *arch); err != nil {
@@ -62,7 +62,7 @@ func run(icoPath, outPath, ver, arch string) error {
 	if icoPath == "" || outPath == "" {
 		return fmt.Errorf("-ico and -out are required")
 	}
-	// The numeric part of the version for the fixed fields ("0.97.1-desktop-spike" → 0.97.1.0)
+	// The numeric part of the version for the fixed fields ("0.97.1-dev" → 0.97.1.0)
 	m := regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)`).FindStringSubmatch(ver)
 	if m == nil {
 		return fmt.Errorf("version %q does not start with x.y.z", ver)
@@ -104,7 +104,7 @@ func run(icoPath, outPath, ver, arch string) error {
 			return err
 		}
 	}
-	// The fixed numbers, then the strings with the full version (including a suffix like -desktop-spike)
+	// The fixed numbers, then the strings with the full version (including a suffix like -dev)
 	vi.SetFileVersion(numeric)
 	vi.SetProductVersion(numeric)
 	for _, k := range []string{version.FileVersion, version.ProductVersion} {
