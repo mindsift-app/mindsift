@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Changed
+- The desktop app's first start no longer opens the form for a local instance right away: it shows "Create a local instance" and "Connect to a server" side by side, and nothing is created before you choose. If you only use a MindSift server, you go straight to it. Later starts still open the instance or server used last.
+
 ## [0.98.0] - 2026-11-22
 
 ### Added

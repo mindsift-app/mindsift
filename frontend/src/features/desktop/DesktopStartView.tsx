@@ -29,14 +29,13 @@ export const DesktopStartView: React.FC = () => {
   const [busy, setBusy] = useState<string | null>(null);
   const [form, setForm] = useState<Form>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
+  const empty = state !== null && state.entries.length === 0 && state.found.length === 0;
 
   const load = useCallback(async () => {
     try {
       const st = await desktopShell.state();
       setState(st);
       if (st.problem) setProblem(st.problem);
-      // Nothing listed yet: the form for a first instance is open right away
-      if (st.entries.length === 0 && st.found.length === 0) setForm((f) => f ?? 'local');
     } catch (e) {
       setProblem(toProblem(e));
     }
@@ -198,7 +197,9 @@ export const DesktopStartView: React.FC = () => {
             </section>
           )}
 
-          {state && state.entries.length === 0 && state.found.length === 0 && <p className="text-muted">{t('empty')}</p>}
+          {/* First start (nothing listed): a local instance and a server side by side; nothing is created
+              before the person has chosen */}
+          {empty && form === null && <FirstRunChoice onChoose={setForm} />}
 
           {form === 'local' && (
             <LocalForm busy={busy === 'create'} onCancel={() => setForm(null)} onCreate={(name) => void run('create', () => desktopShell.create(name))} />
@@ -210,7 +211,7 @@ export const DesktopStartView: React.FC = () => {
               onConnect={(name, url) => void run('server', () => desktopShell.addServer(name, url))}
             />
           )}
-          {form === null && (
+          {state && !empty && form === null && (
             <div className="flex flex-col sm:flex-row gap-2">
               <button type="button" onClick={() => setForm('local')} className="btn-action h-11 sm:h-9 px-3 text-xs flex items-center justify-center gap-1.5">
                 <Plus className="w-3.5 h-3.5" />
@@ -243,6 +244,34 @@ export const DesktopStartView: React.FC = () => {
       {state?.version && <p className="mt-3 text-[10px] text-faint">{t('version', { version: state.version })}</p>}
       <ConfirmHost />
     </div>
+  );
+};
+
+// The first start's choice: both ways equal, each a large button with a line on what it means
+const FirstRunChoice: React.FC<{ onChoose: (form: 'local' | 'server') => void }> = ({ onChoose }) => {
+  const { t } = useTranslation('desktop');
+  const choices = [
+    { form: 'local' as const, icon: <HardDrive className="w-5 h-5 text-accent shrink-0" />, title: t('firstLocal'), hint: t('firstLocalHint') },
+    { form: 'server' as const, icon: <Globe className="w-5 h-5 text-accent shrink-0" />, title: t('firstServer'), hint: t('firstServerHint') },
+  ];
+  return (
+    <section className="space-y-3">
+      <p className="text-muted">{t('empty')}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {choices.map((c) => (
+          <button
+            key={c.form}
+            type="button"
+            onClick={() => onChoose(c.form)}
+            className="min-h-11 p-3.5 border border-border rounded-card bg-panel hover:bg-panel-elevated hover:border-accent/50 transition-colors flex flex-col items-start gap-2 text-left"
+          >
+            {c.icon}
+            <span className="text-sm font-bold text-main">{c.title}</span>
+            <span className="text-muted">{c.hint}</span>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 };
 

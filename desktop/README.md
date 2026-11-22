@@ -10,7 +10,9 @@ attached to every GitHub release with fixed names, see "Release" in ci/release-d
   listed (also ones copied there by hand), "Neue lokale Instanz…" (a name) and "Mit Server verbinden…"
   (name and address, checked with `GET /api/v1/health`: 15 s in all, a failed connection is tried once
   more after a second; a server that answers wrongly is reported at once). Entries can be renamed and removed from the list;
-  removing never deletes data. The entry opened last opens directly at the next start. The tray menu has
+  removing never deletes data. On the first start (nothing listed or found) it offers "Lokale Instanz anlegen" and
+  "Mit Server verbinden" side by side and creates nothing before the person chose. The entry opened last opens
+  directly at the next start. The tray menu has
   "MindSift öffnen", "Instanz wechseln…" (the start view, also Ctrl+Shift+O for desktops without a
   tray) and "Beenden", in the system’s language (`internal/shell/texts.go`). In a local instance the
   profile menu has "Instanz wechseln" where sign-out would be; it loads the start view too.
