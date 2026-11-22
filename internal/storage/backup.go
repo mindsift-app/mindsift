@@ -19,6 +19,8 @@ import (
 //   system/pre-migration-<id>-YYYY-MM-DD-HHMMSS.db.gz   the same, written at start before pending
 //                                                     migrations (migrations.go); the last three stay,
 //                                                     none longer than 90 days
+//   system/mindsift-full-YYYY-MM-DD-HHMMSS/          the full backup: database and media (fullbackup.go);
+//                                                     the daily run writes these, older .db.gz stay listed
 //   users/<user id>/mindsift-backup-YYYY-MM-DD-HHMMSS.zip   the same ZIP as "Backup herunterladen"
 // Names written before seconds were added (…-HHMM) are still listed, kept and pruned: the names sort
 // by time either way, and pruning goes by the file time.
@@ -53,28 +55,58 @@ type BackupFile struct {
 	Name      string `json:"name"`
 	Size      int64  `json:"size"`
 	CreatedAt string `json:"createdAt"`
+	// Full: a full backup (database and media, fullbackup.go), a folder whose download is a tar archive of
+	// Size bytes; Media: its pictures and recordings; Reason: FullBackupPreRestore for the one written
+	// before a restore
+	Full   bool   `json:"full,omitempty"`
+	Media  int    `json:"media,omitempty"`
+	Reason string `json:"reason,omitempty"`
 }
 
-// BackupPath returns the file of a backup in dir, refusing anything that is not one of our names
-// (no path tricks through the API).
+// BackupPath returns the file of a backup in dir (the folder of a full backup), refusing anything that is
+// not one of our names (no path tricks through the API).
 func BackupPath(dir, name string) (string, error) {
-	if !backupNameRe.MatchString(name) {
-		return "", ErrBackupName
-	}
 	p := filepath.Join(dir, name)
-	if _, err := os.Stat(p); err != nil {
+	switch {
+	case backupNameRe.MatchString(name):
+		if info, err := os.Lstat(p); err != nil || !info.Mode().IsRegular() {
+			return "", ErrBackupName
+		}
+	case fullBackupNameRe.MatchString(name):
+		if info, err := os.Lstat(p); err != nil || !info.IsDir() {
+			return "", ErrBackupName
+		}
+	default:
 		return "", ErrBackupName
 	}
 	return p, nil
 }
 
-// DeleteBackup removes one backup in dir; like BackupPath it only accepts our own file names.
+// DeleteBackup removes one backup in dir; like BackupPath it only accepts our own names.
 func DeleteBackup(dir, name string) error {
 	p, err := BackupPath(dir, name)
 	if err != nil {
 		return err
 	}
-	return os.Remove(p)
+	return os.RemoveAll(p)
+}
+
+// BackupDate: the date (YYYY-MM-DD) in a backup's name, "" when it has none.
+func BackupDate(name string) string {
+	if st := backupStamp(name); len(st) >= 10 {
+		return st[:10]
+	}
+	return ""
+}
+
+// backupStamp: the date and time part of a backup name, by which backups of all kinds sort.
+func backupStamp(name string) string {
+	for _, prefix := range []string{FullBackupPrefix, "mindsift-db-", "mindsift-backup-"} {
+		if rest, ok := strings.CutPrefix(name, prefix); ok {
+			return strings.TrimSuffix(strings.TrimSuffix(rest, ".db.gz"), ".zip")
+		}
+	}
+	return name
 }
 
 // ListBackups lists the backups in dir, newest first.
@@ -88,7 +120,19 @@ func ListBackups(dir string) ([]BackupFile, error) {
 	}
 	out := []BackupFile{}
 	for _, e := range entries {
-		if e.IsDir() || !backupNameRe.MatchString(e.Name()) {
+		if e.IsDir() && fullBackupNameRe.MatchString(e.Name()) {
+			size, m, err := FullBackupSize(filepath.Join(dir, e.Name()))
+			if err != nil {
+				continue // not complete: written by something else
+			}
+			created := m.CreatedAt
+			if info, err := e.Info(); err == nil {
+				created = info.ModTime().UTC().Format(time.RFC3339)
+			}
+			out = append(out, BackupFile{Name: e.Name(), Size: size, CreatedAt: created, Full: true, Media: m.MediaFiles, Reason: m.Reason})
+			continue
+		}
+		if !e.Type().IsRegular() || !backupNameRe.MatchString(e.Name()) {
 			continue
 		}
 		info, err := e.Info()
@@ -97,7 +141,12 @@ func ListBackups(dir string) ([]BackupFile, error) {
 		}
 		out = append(out, BackupFile{Name: e.Name(), Size: info.Size(), CreatedAt: info.ModTime().UTC().Format(time.RFC3339)})
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Name > out[j].Name })
+	sort.Slice(out, func(i, j int) bool {
+		if a, b := backupStamp(out[i].Name), backupStamp(out[j].Name); a != b {
+			return a > b
+		}
+		return out[i].Name > out[j].Name
+	})
 	return out, nil
 }
 
@@ -111,7 +160,7 @@ func PruneBackups(dir string, keepDays int, now time.Time) error {
 	for _, f := range files {
 		created, err := time.Parse(time.RFC3339, f.CreatedAt)
 		if err == nil && created.Before(cutoff) {
-			if err := os.Remove(filepath.Join(dir, f.Name)); err != nil {
+			if err := os.RemoveAll(filepath.Join(dir, f.Name)); err != nil {
 				return err
 			}
 		}

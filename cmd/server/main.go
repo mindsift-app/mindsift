@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -20,8 +19,6 @@ import (
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/i18n"
-	"github.com/mindsift-app/mindsift/internal/storage"
-	"github.com/mindsift-app/mindsift/internal/ws"
 )
 
 //go:embed all:dist
@@ -63,58 +60,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	storeOpts := []storage.StoreOption{storage.WithSecretsKey(cfg.SecretsKey), storage.WithDefaultInstanceName(cfg.InstanceName)}
-	if cfg.DemoMode {
-		storeOpts = append(storeOpts, storage.WithDemoMode())
-	}
-	store, err := storage.NewStore(cfg.DatabasePath, storeOpts...)
-	if err != nil {
-		slog.Error("Failed to initialize storage", "error", err)
-		os.Exit(1)
-	}
-	defer func() { _ = store.Close() }()
-	store.ConfiguredLanguage = cfg.DefaultLanguage
-	if v, err := store.SQLiteVersion(); err == nil {
-		slog.Info("Database opened", "sqlite", v)
-	}
-
-	if cfg.DemoMode {
-		slog.Info("Demo mode: resetting the database and setting up the demo accounts...")
-		_ = os.RemoveAll(filepath.Join(filepath.Dir(cfg.DatabasePath), "media")) // uploads of the last run
-		if err := store.ResetAndSeedDemo(); err != nil {
-			slog.Warn("Setting up demo mode failed", "error", err)
-		} else {
-			slog.Info("Demo accounts ready: admin / admin (admin role) and user / user (member role)")
-		}
-	}
-
-	// Seed SMTP defaults from environment variables into DB if not yet configured in DB
-	store.SeedSMTPDefaultsFromEnv(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass, cfg.SMTPFrom, cfg.SMTPFromName, cfg.SMTPTLS, cfg.SMTPSkipVerify)
-
-	wsHub := ws.NewHub()
-
 	staticFS, err := fs.Sub(embeddedDist, "dist")
 	if err != nil {
 		slog.Error("Failed to mount embedded dist filesystem", "error", err)
 		os.Exit(1)
 	}
-
-	srv := api.NewServer(cfg, store, wsHub, staticFS)
-	srv.ApplyTimeZone()
-	srv.CheckSecretsKey()
-	// ADMIN_USER / ADMIN_PASSWORD: the first admin exists before anyone can reach the setup wizard. Set
-	// but unusable, the server does not start: it would wait for the first visitor to become admin.
-	if err := srv.CreateInitialAdmin(); err != nil {
-		slog.Error("Creating the first administrator from ADMIN_USER / ADMIN_PASSWORD failed; fix or remove the variables. MindSift does not start, so the setup is not left open", "error", err)
+	rn := &runner{cfg: cfg, static: staticFS}
+	first, err := rn.open(true)
+	if err != nil {
+		slog.Error("Failed to initialize storage", "error", err)
 		os.Exit(1)
 	}
+	rn.cur = first
 
 	serverCtx, serverCancel := context.WithCancel(context.Background())
 	defer serverCancel()
 
 	httpServer := &http.Server{
 		Addr:    ":" + cfg.Port,
-		Handler: srv.Router(),
+		Handler: rn,
 		BaseContext: func(l net.Listener) context.Context {
 			return serverCtx
 		},
@@ -146,13 +110,20 @@ func main() {
 
 	slog.Info("Shutting down MindSift server gracefully...")
 	serverCancel()
-	wsHub.Close()
+	rn.mu.Lock()
+	cur := rn.cur
+	rn.mu.Unlock()
+	if cur != nil {
+		cur.hub.Close()
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	if err := httpServer.Shutdown(ctx); err != nil {
 		slog.Warn("HTTP server shutdown finished with error", "error", err)
 	}
-	// Let a running compaction finish before the deferred store.Close
-	srv.Close()
+	// Let a running compaction finish before the store closes
+	if cur != nil {
+		cur.close(0)
+	}
 }

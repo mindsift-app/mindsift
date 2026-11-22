@@ -112,10 +112,10 @@ func TestDesktopSetupWizard(t *testing.T) {
 	if rec := postJSON(t, router, "/api/v1/admin/backups", token, `{}`); rec.Code != http.StatusOK {
 		t.Fatalf("backup: %d %s", rec.Code, rec.Body.String())
 	}
-	if files, _ := filepath.Glob(filepath.Join(root, "system", "mindsift-db-*.db.gz")); len(files) != 1 {
+	if files, _ := filepath.Glob(filepath.Join(root, "system", "mindsift-full-*")); len(files) != 1 {
 		t.Errorf("system snapshots in the chosen folder: %v", files)
 	}
-	if files, _ := filepath.Glob(filepath.Join(filepath.Dir(dbPath), "backups", "system", "mindsift-db-*")); len(files) != 0 {
+	if files, _ := filepath.Glob(filepath.Join(filepath.Dir(dbPath), "backups", "system", "mindsift-*")); len(files) != 0 {
 		t.Errorf("snapshots in the default folder: %v", files)
 	}
 	var mine []struct{ Name string }

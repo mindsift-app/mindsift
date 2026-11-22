@@ -744,6 +744,11 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Importare Obsidian:</strong> In <em>Impostazioni account → Esportazione e importazione</em>, MindSift accetta un vault in .zip. Le note finiscono in una cartella propria con il nome del vault, le sottocartelle restano, le caselle restano caselle e i tag del frontmatter diventano #hashtag. Immagini e file audio incorporati vengono inclusi, altri allegati come i PDF no.
             </li>
+            <Only can="restore">
+              <li>
+                <strong className="text-main">Ripristinare tutto:</strong> gli admin ripristinano l’intera istanza con immagini e registrazioni in <em>Amministrazione → Dati</em> con <em>Ripristina</em>; prima viene salvato lo stato attuale. Per un trasloco, scarica un backup e caricalo sul nuovo server con <em>Carica backup</em>.
+              </li>
+            </Only>
             <Only can="install">
               <li>
                 <strong className="text-main">Senza Internet:</strong> installato come app (o nel browser), MindSift si avvia anche offline con l'ultimo stato caricato. Registrare pensieri e spuntare attività e voci di lista continua a funzionare; un avviso in basso mostra quante modifiche sono in attesa, e verranno inviate automaticamente appena torna la connessione.

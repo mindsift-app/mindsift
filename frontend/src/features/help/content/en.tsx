@@ -744,6 +744,11 @@ const en: HelpContent = {
             <li>
               <strong className="text-main">Importing Obsidian:</strong> Under <em>Account settings → Export &amp; import</em>, MindSift takes a vault as .zip. The notes go into a folder of their own named after the vault, subfolders are kept, checkboxes stay checkboxes and frontmatter tags become #hashtags. Embedded images and audio files come along, other attachments such as PDFs do not.
             </li>
+            <Only can="restore">
+              <li>
+                <strong className="text-main">Restoring everything:</strong> Admins restore the whole instance with its pictures and recordings under <em>Administration → Data</em> with <em>Restore</em>; the current state is backed up first. To move, download a backup and load it on the new server with <em>Upload backup</em>.
+              </li>
+            </Only>
             <Only can="install">
               <li>
                 <strong className="text-main">Without internet:</strong> installed as an app (or in the browser), MindSift also starts offline with the last loaded state. Capturing thoughts and checking off tasks and list items keeps working; a hint at the bottom shows how many changes are waiting, and they are sent automatically once the connection is back.
