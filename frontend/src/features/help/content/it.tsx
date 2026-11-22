@@ -724,7 +724,7 @@ const it: HelpContent = {
       subtitle: 'Lavorare senza Internet, ripristinare backup, reimpostare la password',
       without: { cap: 'signIn', title: 'Backup', subtitle: 'Creare backup e ripristinarli' },
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'ripristino', 'password', 'dimenticata', 'account', 'due fattori', '2fa', 'authenticator', 'sicurezza', 'passkey', 'impronta', 'sso', 'oidc'],
+      keywords: ['offline', 'internet', 'backup', 'obsidian', 'ripristino', 'password', 'dimenticata', 'account', 'due fattori', '2fa', 'authenticator', 'sicurezza', 'passkey', 'impronta', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -741,6 +741,9 @@ const it: HelpContent = {
                 <strong className="text-main">Riprendere un account da un server:</strong> in <em>Amministrazione → Dati</em> scegli un backup di un server MindSift e uno dei suoi account. Immagini e registrazioni arrivano con esso se scegli la cartella dei dati del server o la sua cartella <em>backups</em> come archivio (.zip, .tar o .tar.gz); una copia del database (.db.gz) da sola porta tutto tranne loro. Arriva solo ciò che appartiene all'account: ciò che è condiviso con esso, i valori nascosti e le impostazioni del server restano fuori.
               </li>
             </InDesktop>
+            <li>
+              <strong className="text-main">Importare Obsidian:</strong> In <em>Impostazioni account → Esportazione e importazione</em>, MindSift accetta un vault in .zip. Le note finiscono in una cartella propria con il nome del vault, le sottocartelle restano, le caselle restano caselle e i tag del frontmatter diventano #hashtag. Immagini e file audio incorporati vengono inclusi, altri allegati come i PDF no.
+            </li>
             <Only can="install">
               <li>
                 <strong className="text-main">Senza Internet:</strong> installato come app (o nel browser), MindSift si avvia anche offline con l'ultimo stato caricato. Registrare pensieri e spuntare attività e voci di lista continua a funzionare; un avviso in basso mostra quante modifiche sono in attesa, e verranno inviate automaticamente appena torna la connessione.
@@ -794,7 +797,7 @@ const it: HelpContent = {
               <strong className="text-main">Fuso orario del server:</strong> l'amministratore del server lo imposta in <em>Amministrazione → Istanza → Fuso orario</em>. Vale subito per tutti: scadenze con orario, notifiche, riepilogo giornaliero e ora dei backup.
             </li>
             <li>
-              <strong className="text-main">Qualità delle immagini:</strong> prima del caricamento l'app riduce le immagini a 2048 pixel al massimo. Quanto le comprime lo imposta l'amministratore del server in <em>Amministrazione → Dati → Qualità delle immagini</em>: Alta (predefinita), Media o Risparmio. La dimensione resta la stessa a ogni livello, il testo negli screenshot resta leggibile; l'impostazione vale per le nuove immagini.
+              <strong className="text-main">Qualità delle immagini:</strong> prima del caricamento l'app riduce le immagini a 2048 pixel al massimo. Quanto le comprime lo imposta l'amministratore del server in <em>Amministrazione → Media → Qualità delle immagini</em>: Alta (predefinita), Media o Risparmio. La dimensione resta la stessa a ogni livello, il testo negli screenshot resta leggibile; l'impostazione vale per le nuove immagini.
             </li>
             <li>
               <strong className="text-main">Gruppi:</strong> raggruppa le persone visibili in gruppi (es. famiglia, coinquilini, progetto) e condividi con tutti in una volta sola. Chi crea un gruppo ne è amministratore; solo i membri possono condividere con un gruppo.

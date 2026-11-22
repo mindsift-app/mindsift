@@ -55,9 +55,6 @@ export function ProfileSection({
     <div className="space-y-5">
       <div className="border-b border-border pb-3">
         <h2 className="text-sm font-bold text-main">{t('profile.title')}</h2>
-        <p className="text-muted mt-0.5">
-          {t('profile.intro')}
-        </p>
       </div>
 
       <StatusToast msg={profileMsg} onClose={() => setProfileMsg(null)} />
@@ -136,10 +133,6 @@ export function ProfileSection({
                   )}
                 </div>
               </div>
-
-              <p className="text-[10px] text-faint">
-                {t('profile.avatarHint')}
-              </p>
             </div>
           </div>
         </div>
@@ -173,7 +166,7 @@ export function ProfileSection({
               title={demoMode ? t('profile.demoDisabled') : t('profile.usernameRules')}
               className="w-full h-11 sm:h-9 px-3 input-field font-mono disabled:opacity-60"
             />
-            <p className="mt-1 text-[10px] text-faint">{t('profile.usernameHint')}{signIn && ` ${t('profile.usernameSignInHint')}`}</p>
+            {signIn && <p className="mt-1 text-[10px] text-faint">{t('profile.usernameSignInHint')}</p>}
           </div>
 
           {/* No sign-in (the desktop app): no address to sign in with */}

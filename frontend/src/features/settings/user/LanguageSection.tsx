@@ -36,7 +36,6 @@ export function LanguageSection({
     <div className="space-y-5">
       <div className="border-b border-border pb-3">
         <h2 className="text-sm font-bold text-main">{t('language.title')}</h2>
-        <p className="text-muted mt-0.5">{t('language.intro')}</p>
       </div>
       <InstantSaveToast save={instant} />
       <div className="space-y-2" role="radiogroup" aria-label={t('language.title')}>

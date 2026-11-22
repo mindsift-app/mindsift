@@ -38,7 +38,6 @@ export function SecuritySection({
     <div className="space-y-6">
       <div className="border-b border-border pb-3">
         <h2 className="text-sm font-bold text-main">{t('security.title')}</h2>
-        <p className="text-muted mt-0.5">{t('security.intro')}</p>
       </div>
       {oidc.enabled && <OidcCard currentUser={currentUser} name={oidc.name} />}
       {passwordUsable && (

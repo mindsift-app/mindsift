@@ -51,9 +51,6 @@ export function AppearanceSection({
         <h2 className="text-sm font-bold text-main">
           {t('appearance.title')}
         </h2>
-        <p className="text-muted mt-0.5">
-          {t('appearance.intro')}
-        </p>
       </div>
 
       {/* Only while the server offers link previews at all (the administration can switch them off) */}

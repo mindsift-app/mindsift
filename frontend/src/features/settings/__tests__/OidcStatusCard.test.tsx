@@ -23,7 +23,7 @@ describe('OidcStatusCard', () => {
     expect(screen.getByText('Redirect-URI')).toBeTruthy();
     expect(screen.getByText('Back-Channel-Logout-URL')).toBeTruthy();
     expect(screen.getByText('https://ms.example/api/v1/auth/oidc/backchannel-logout')).toBeTruthy();
-    expect(screen.getByText(/ruft sie direkt auf/)).toBeTruthy();
+    expect(screen.getByText(/muss den Server direkt erreichen/)).toBeTruthy();
   });
 
   it('leaves the row out while back-channel logout is off', () => {
