@@ -11,6 +11,9 @@ Versions without a git tag were development states and were never published as a
 ### Changed
 - Notes written by AI agents through MCP now put commands, code, config files, JSON/YAML, SQL and log excerpts into code blocks with a language (one block per command sequence, not one bullet per line), and show paths, flags, file names and single commands in text as `inline code`.
 
+### Fixed
+- Slash commands now work anywhere in a bullet that already has text, not only at the end: typing `/code`, `/h2`, `/todo`, `/table` and the other block types at the start or in the middle of the text opens the menu and turns the whole bullet into that type. Only the typed command is removed, the rest of the text stays exactly as it was, the cursor stays where you typed, and Ctrl+Z undoes the change in one step. Dividers, pictures, voice notes and drawings still need an empty bullet.
+
 ## [0.99.0] - 2026-11-22
 
 ### Added
