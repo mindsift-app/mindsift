@@ -1475,10 +1475,10 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFocus]);
   const showBubble = hasHover ? pointerMoving || pointerOnBubble : activeFocus && touchShown;
-  // A voice note's player fills the row's width, so its bubble gets a line of its own above the player (the
-  // row's top padding) instead of covering the time bar and menu. Its buttons are 44px to tap on phones
-  // while the pill stays slim
-  const bubbleAbovePlayer = block.type === 'audio' && (canEdit || !!onCopyBlockLink);
+  // A voice note's player fills the row's width on phones, so its bubble floats above the row (over the gap and
+  // the lower edge of the bullet above, or of the title for the first bullet) instead of covering the time bar
+  // and menu, and the row gets no extra space. Its buttons are 44px to tap on phones while the pill stays slim
+  const bubbleAbovePlayer = block.type === 'audio';
   const bubbleBtn =
     block.type === 'audio'
       ? 'p-1 sm:p-0.5 min-w-11 min-h-11 -my-2 sm:min-w-0 sm:min-h-0 sm:my-0'
@@ -1505,7 +1505,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       onTouchStart={showBubbleForTouch}
       // data-file-drop: image files dragged over the note would go here (OutlinerTree); looks like the target
       // of a moved bullet, with the line below the row since the images go under it
-      className={`outline-row group relative flex items-start gap-1 ${bubbleAbovePlayer ? 'pt-9 pb-1 sm:pt-8' : 'py-1'} px-0.5 sm:px-1.5 transition-all duration-300 data-file-drop:rounded-card data-file-drop:bg-accent/10 data-file-drop:border-b-2 data-file-drop:border-accent ${
+      className={`outline-row group relative flex items-start gap-1 py-1 px-0.5 sm:px-1.5 transition-all duration-300 data-file-drop:rounded-card data-file-drop:bg-accent/10 data-file-drop:border-b-2 data-file-drop:border-accent ${
         inRangeSelection ? 'bg-accent/15' : ''
       } ${
         // Round corners only on a tinted row: on the others they are invisible, but the row's content-visibility
@@ -2254,7 +2254,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         ref={bubbleRef}
         className={`absolute ${
           block.type === 'table' && canEdit ? 'right-12 sm:right-8' : 'right-1 sm:right-2'
-        } top-0.5 sm:top-1 z-20 bg-panel/90 border border-border rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
+        } ${
+          bubbleAbovePlayer ? 'bottom-[calc(100%-6px)]' : 'top-0.5 sm:top-1'
+        } z-20 bg-panel/90 border border-border rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
           lockedBy || (!canEdit && !onCopyBlockLink && block.type !== 'drawing')
             ? // Someone else is editing the block: no actions, and the lock badge stays visible. Read only
               // without a link to copy (a public page): nothing to show, not even an empty frame
