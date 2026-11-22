@@ -172,7 +172,9 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
         </div>
       ) : src ? (
         <div className="flex items-center gap-2">
-          <audio ref={audioRef} controls preload="metadata" src={src} onPlay={onPlay} className="w-full max-w-md h-11" />
+          {/* preload "auto": the file is in memory already (a blob: URL). With "metadata" the player of WebKitGTK
+              (desktop app) stopped loading after the header and showed a spinner and no length until played */}
+          <audio ref={audioRef} controls preload="auto" src={src} onPlay={onPlay} className="w-full max-w-md h-11" />
           {editable && (canTranscribe || transcribing) && (
             <button
               type="button"

@@ -4,6 +4,10 @@
 // sound goes on, and seeking does nothing. This module measures the length from the blocks in the file
 // and writes it into the header (Segment > Info > Duration); a file without any index also gets one
 // (Cues at the end, found through a SeekHead at the start), so players can seek in it.
+// The WebKitGTK of the desktop app (GStreamer) does not start the recording's clock at 0: its first cluster
+// sits at the pipeline's running time, hours into the stream (e.g. 19:43:29). Players then showed that as
+// the length (or a total like "34:25:12") and jumped to the end; such files get their times moved to start
+// at 0 (cluster timecodes and cue times, rewritten in place).
 
 const EBML_MAGIC = [0x1a, 0x45, 0xdf, 0xa3];
 
@@ -20,9 +24,11 @@ const ID_BLOCKGROUP = 0xa0;
 const ID_BLOCK = 0xa1;
 const ID_SIMPLEBLOCK = 0xa3;
 const ID_CUES = 0x1c53bb6b;
+const ID_CUEPOINT = 0xbb;
+const ID_CUETIME = 0xb3;
 
 // Master elements whose children matter; everything else is skipped by its size
-const DESCEND = new Set([ID_SEGMENT, ID_SEEKHEAD, ID_SEEK, ID_INFO, ID_CLUSTER, ID_BLOCKGROUP]);
+const DESCEND = new Set([ID_SEGMENT, ID_SEEKHEAD, ID_SEEK, ID_INFO, ID_CLUSTER, ID_BLOCKGROUP, ID_CUES, ID_CUEPOINT]);
 
 interface Vint {
   value: number;
@@ -101,16 +107,27 @@ function readFloat(b: Uint8Array, pos: number, len: number): number {
   return len === 4 ? view.getFloat32(0) : view.getFloat64(0);
 }
 
+interface UintField {
+  value: number;
+  pos: number;
+  length: number;
+}
+
 export interface WebmScan {
-  /** Length in the file's timecode units (normally milliseconds), measured from the blocks */
+  /** Length in the file's timecode units (normally milliseconds), measured from the blocks (from start) */
   measured: number;
+  /** Time of the first cluster when the file does not start at 0 (WebKitGTK), else 0: moved to 0 on repair */
+  start: number;
+  /** Cluster timecodes and cue times as stored (absolute positions) */
+  timecodes: UintField[];
+  cueTimes: UintField[];
   timecodeScale: number;
   /** Duration stored in the header, if any (timecode units) */
   stored?: { value: number; pos: number; length: number };
   segment?: { sizePos: number; sizeLength: number; size: number; unknown: boolean };
   info?: { sizePos: number; sizeLength: number; dataStart: number; dataEnd: number };
   /** Positions in a SeekHead (relative to the segment's data) */
-  seekPositions: { value: number; pos: number; length: number }[];
+  seekPositions: UintField[];
   hasSeekHead: boolean;
   hasCues: boolean;
   /** Start of each cluster (absolute) with its time */
@@ -124,6 +141,9 @@ export function scanWebm(b: Uint8Array): WebmScan | null {
   if (b.length < 4 || EBML_MAGIC.some((v, i) => b[i] !== v)) return null;
   const scan: WebmScan = {
     measured: 0,
+    start: 0,
+    timecodes: [],
+    cueTimes: [],
     timecodeScale: 1_000_000,
     seekPositions: [],
     hasSeekHead: false,
@@ -133,6 +153,7 @@ export function scanWebm(b: Uint8Array): WebmScan | null {
   };
   let clusterTime = 0;
   let last = -1;
+  let first = Infinity;
   let frame = 0;
   let pos = 0;
   while (pos < b.length) {
@@ -152,6 +173,8 @@ export function scanWebm(b: Uint8Array): WebmScan | null {
         scan.hasSeekHead = true;
       } else if (id.value === ID_CLUSTER) {
         scan.clusters.push({ pos, time: 0 });
+      } else if (id.value === ID_CUES) {
+        scan.hasCues = true;
       }
       pos = dataStart;
       continue;
@@ -160,8 +183,8 @@ export function scanWebm(b: Uint8Array): WebmScan | null {
       case ID_SEEKPOSITION:
         scan.seekPositions.push({ value: readUint(b, dataStart, dataEnd - dataStart), pos: dataStart, length: dataEnd - dataStart });
         break;
-      case ID_CUES:
-        scan.hasCues = true;
+      case ID_CUETIME:
+        scan.cueTimes.push({ value: readUint(b, dataStart, dataEnd - dataStart), pos: dataStart, length: dataEnd - dataStart });
         break;
       case ID_TIMECODESCALE:
         scan.timecodeScale = readUint(b, dataStart, dataEnd - dataStart) || 1_000_000;
@@ -171,6 +194,7 @@ export function scanWebm(b: Uint8Array): WebmScan | null {
         break;
       case ID_TIMECODE:
         clusterTime = readUint(b, dataStart, dataEnd - dataStart);
+        scan.timecodes.push({ value: clusterTime, pos: dataStart, length: dataEnd - dataStart });
         if (scan.clusters.length) scan.clusters[scan.clusters.length - 1].time = clusterTime;
         break;
       case ID_SIMPLEBLOCK:
@@ -183,6 +207,7 @@ export function scanWebm(b: Uint8Array): WebmScan | null {
         // One frame after the last block's start (the gap between the last two, at most 120 ms)
         if (last >= 0 && time > last) frame = Math.min(120_000_000 / scan.timecodeScale, time - last);
         if (time > last) last = time;
+        if (time < first) first = time;
         break;
       }
     }
@@ -190,7 +215,11 @@ export function scanWebm(b: Uint8Array): WebmScan | null {
     pos = dataEnd;
   }
   if (last < 0) return null;
-  scan.measured = last + frame;
+  // Starts later than 0: every cluster and block lies at or after the first cluster's time, so all of them
+  // can be moved back by it (a block before it would end up at a negative time: then nothing moves)
+  const start = scan.timecodes.reduce((min, t) => Math.min(min, t.value), Infinity);
+  if (Number.isFinite(start) && start > 0 && first >= start) scan.start = start;
+  scan.measured = last + frame - scan.start;
   return scan;
 }
 
@@ -198,7 +227,9 @@ export function scanWebm(b: Uint8Array): WebmScan | null {
 export function webmDurationSeconds(b: Uint8Array): number | null {
   const scan = scanWebm(b);
   if (!scan) return null;
-  const units = hasDuration(scan) ? scan.stored!.value : scan.measured;
+  // A stored length of a file that does not start at 0 is not trusted (an earlier repair wrote the time of
+  // the last block as the length)
+  const units = hasDuration(scan) && !scan.start ? scan.stored!.value : scan.measured;
   return (units * scan.timecodeScale) / 1e9;
 }
 
@@ -207,22 +238,26 @@ function hasDuration(scan: WebmScan): boolean {
 }
 
 /**
- * The WebM file with its measured length in the header (and an index when it has none), or null when
- * nothing needs to change (it has a length already, is no WebM, or cannot be changed safely).
+ * The WebM file with its measured length in the header (and an index when it has none), its times moved to
+ * start at 0, or null when nothing needs to change (it has a length already and starts at 0, is no WebM,
+ * or cannot be changed safely).
  */
 export function repairWebm(b: Uint8Array): Uint8Array | null {
   const scan = scanWebm(b);
-  if (!scan || !scan.info || !scan.segment || scan.measured <= 0 || hasDuration(scan)) return null;
-  const { stored, info, segment } = scan;
-  // Cues point into the file: with them present nothing may move, only a placeholder be filled in
-  if (scan.hasCues && !stored) return null;
+  if (!scan || !scan.info || !scan.segment || scan.measured <= 0) return null;
+  const { stored, info, segment, start } = scan;
+  if (hasDuration(scan) && !start) return null;
+  // Cues point into the file: with them present nothing may move, only a placeholder be filled in (or
+  // the times be rewritten in place)
+  const inPlace = scan.hasCues && !stored;
+  if (inPlace && !start) return null;
   if (stored && stored.length !== 4 && stored.length !== 8) return null;
   const segmentData = segment.sizePos + segment.sizeLength;
 
   // Duration into Info: a placeholder (0) is overwritten in place, else an element is added at its end
   let durationEl: number[] = [];
   let infoSize: number[] = Array.from(b.subarray(info.sizePos, info.dataStart));
-  if (!stored) {
+  if (!stored && !inPlace) {
     const value = new Uint8Array(8);
     new DataView(value.buffer).setFloat64(0, scan.measured);
     durationEl = [0x44, 0x89, 0x88, ...value];
@@ -244,7 +279,7 @@ export function repairWebm(b: Uint8Array): Uint8Array | null {
   if (addIndex) {
     for (const c of scan.clusters) {
       const positions = element([0xb7], [...uintElement([0xf7], scan.track), ...uintElement([0xf1], shift(c.pos) - segmentData)]);
-      cues.push(...element([0xbb], [...uintElement([0xb3], c.time), ...positions]));
+      cues.push(...element([0xbb], [...uintElement([0xb3], c.time - start), ...positions]));
     }
     cues = element([0x1c, 0x53, 0xbb, 0x6b], cues);
   }
@@ -278,6 +313,12 @@ export function repairWebm(b: Uint8Array): Uint8Array | null {
     const view = new DataView(out.buffer, shift(stored.pos), stored.length);
     if (stored.length === 4) view.setFloat32(0, scan.measured);
     else view.setFloat64(0, scan.measured);
+  }
+  // Times from 0: the same number of bytes each, so nothing moves
+  if (start) {
+    for (const t of [...scan.timecodes, ...scan.cueTimes]) {
+      if (t.value >= start) out.set(uintBytes(t.value - start, t.length), shift(t.pos));
+    }
   }
   // Positions in an existing SeekHead move along with what they point to
   for (const seek of scan.seekPositions) {

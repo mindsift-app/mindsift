@@ -184,6 +184,9 @@ export function resetVoiceConfig(): void {
 // Containers in order of preference; Safari only records MP4/AAC
 const RECORDING_TYPES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
 
+/** How long a level is held over reads without any signal (ms), see VoiceRecorder.level() */
+const LEVEL_HOLD_MS = 300;
+
 /** Longest wait for the browser to finish a recording after stop() (ms) */
 export const STOP_GRACE_MS = 3000;
 
@@ -204,6 +207,7 @@ export class VoiceRecorder {
   private audioCtx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private samples: Uint8Array | null = null;
+  private lastLevel = { value: 0, at: 0 };
   private done: ((blob: Blob | null) => void) | null = null;
 
   /** bitsPerSecond: the audio bitrate asked of the browser (undefined: its own choice). */
@@ -270,7 +274,14 @@ export class VoiceRecorder {
       const x = (v - 128) / 128;
       sum += x * x;
     }
-    return Math.min(1, Math.sqrt(sum / this.samples.length) * 4);
+    const now = performance.now();
+    // Not a single sample off the zero line: the WebKitGTK of the desktop app (GStreamer) hands the analyser
+    // gaps of silence while the microphone delivers late, often several in a second. The wave then dropped
+    // to nothing and back; the last level stands in for such a gap, a longer silence counts as one
+    if (sum === 0 && now - this.lastLevel.at < LEVEL_HOLD_MS) return this.lastLevel.value;
+    const level = Math.min(1, Math.sqrt(sum / this.samples.length) * 4);
+    if (sum > 0) this.lastLevel = { value: level, at: now };
+    return level;
   }
 
   stop(): Promise<Blob | null> {
