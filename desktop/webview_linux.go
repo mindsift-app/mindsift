@@ -139,10 +139,11 @@ func useWebviewDataDir(dir string) {
 // and the marker (shellMarker, no way into the app).
 // The hook comes first, so cancelling the event keeps Wails' runtime hook, the JS option and the event's
 // listeners away from that page. The first load also finds the webview (and adds the drop target for files,
-// filedrop_linux.go).
-func setupPages(window *application.WebviewWindow, origin, scripts, marker string) {
+// filedrop_linux.go). navigated gets the address of every page shown (history included), for the title.
+func setupPages(window *application.WebviewWindow, origin, scripts, marker string, navigated func(address string)) {
 	var once sync.Once
 	window.RegisterHook(events.Linux.WindowLoadFinished, func(e *application.WindowEvent) {
+		address := ""
 		own := application.InvokeSyncWithResult(func() bool {
 			once.Do(func() {
 				native := window.NativeWindow()
@@ -160,12 +161,16 @@ func setupPages(window *application.WebviewWindow, origin, scripts, marker strin
 			}
 			uri := C.ms_view_uri(webView)
 			defer C.g_free(C.gpointer(uri))
-			own := shell.OwnPage(C.GoString(uri), origin)
+			address = C.GoString(uri)
+			own := shell.OwnPage(address, origin)
 			if !own {
 				evalInPage(marker + scripts)
 			}
 			return own
 		})
+		if address != "" && navigated != nil {
+			navigated(address)
+		}
 		if !own {
 			e.Cancel()
 		}

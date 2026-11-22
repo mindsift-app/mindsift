@@ -82,6 +82,8 @@ type Server struct {
 	stop     chan struct{}
 	stopOnce sync.Once
 	bg       sync.WaitGroup
+	// backupNudge: asks the backup scheduler to look at the settings now instead of at its next tick
+	backupNudge chan struct{}
 }
 
 func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS fs.FS) *Server {
@@ -96,6 +98,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		leases:       collab.NewLeaseManager(nil),
 		notifier:     collab.NewNotifier(),
 		stop:         make(chan struct{}),
+		backupNudge:  make(chan struct{}, 1),
 		now:          time.Now,
 		docLists:     make(chan struct{}, maxDocListsBuilding),
 		stats:        newStatsCache(),
