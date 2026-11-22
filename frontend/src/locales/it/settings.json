@@ -430,6 +430,7 @@
     "serverHint": "La registrazione viene inviata solo al server di riconoscimento vocale di questa istanza MindSift. Funziona in qualsiasi browser.",
     "browser": "Browser",
     "browserHint": "Riconoscimento vocale integrato nel browser. Il testo compare mentre parli; Chrome ed Edge inviano l'audio a Google o Microsoft. Firefox non supporta questa funzione.",
+    "browserUnavailable": "Non disponibile qui: questa finestra non ha un riconoscimento vocale integrato. Viene usato il server Whisper.",
     "languageTitle": "Lingua parlata",
     "languageIntro": "La lingua in cui parli al microfono, anche quelle non disponibili nell'app.",
     "languageApp": "Come la lingua dell'app ({{name}})",

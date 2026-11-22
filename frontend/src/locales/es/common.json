@@ -183,7 +183,7 @@
     "noMic": "Sin acceso al micrófono (permiso denegado o la página no se sirve por HTTPS)",
     "denied": "Micrófono no permitido",
     "startFailed": "No se pudo iniciar la entrada de voz",
-    "unsupported": "Este navegador no admite entrada de voz",
+    "unsupported": "La entrada de voz no está disponible aquí: no hay reconocimiento de voz integrado. Funciona con un servidor Whisper (Administración → Entrada de voz e IA).",
     "off": "La entrada de voz está desactivada"
   },
   "menu": {
