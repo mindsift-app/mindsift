@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Builds the desktop app of a release with desktop/build.sh and desktop/packaging/flatpak/build.sh and puts
+# Builds the desktop app of a release with desktop/build.sh, desktop/packaging/flatpak/build.sh and
+# desktop/packaging/windows/build.sh and puts
 # the files of the release page into <dir>, under the names the website links to
 # (releases/latest/download/<name>):
 #   mindsift-desktop-linux-amd64.tar.gz       the Linux binary with LICENSE, THIRD_PARTY_LICENSES.txt and
 #                                             README.txt (GTK 4 / WebKitGTK 6.0)
 #   mindsift-desktop-linux-amd64.flatpak      the Flatpak bundle (runtime from Flathub)
-#   mindsift-desktop-windows-amd64.exe        the Windows app
+#   mindsift-desktop-windows-amd64.exe        the Windows app, portable (one file, runs where it lies)
+#   mindsift-desktop-windows-amd64-setup.exe  the Windows installer (NSIS, per user, no admin rights;
+#                                             desktop/packaging/windows/mindsift.nsi) with the same exe
 #   mindsift-desktop-THIRD_PARTY_LICENSES.txt the license file of both binaries, for the bare .exe
 # Checks that each file is for its platform and carries <version>. The files land in <dir> only when all
 # were built. SHA256SUMS is written by ci/release-binaries.sh over every file in the folder.
@@ -29,6 +32,7 @@ trap 'rm -rf "$WORK"' EXIT
 rm -f "${D}"/mindsift-desktop-* "${D}/THIRD_PARTY_LICENSES.txt" "${D}/third-party-npm.txt"
 "${ROOT}/desktop/build.sh" all
 SKIP_FRONTEND=1 "${ROOT}/desktop/packaging/flatpak/build.sh"
+"${ROOT}/desktop/packaging/windows/build.sh"
 
 fail() { echo "release-desktop: $*" >&2; exit 1; }
 # The version is linked in as a plain string (-X main.version)
@@ -40,6 +44,14 @@ pe="$(od -An -tu4 -j60 -N4 "${D}/mindsift-desktop-windows-amd64.exe" | tr -d ' '
 [ "$(od -An -tx1 -j"${pe}" -N6 "${D}/mindsift-desktop-windows-amd64.exe" | tr -d ' \n')" = "504500006486" ] || fail "the Windows exe is not for x86-64"
 # The bundle's version is in its metainfo (flatpak/build.sh); the build fails when build-bundle does
 [ -s "${D}/mindsift-desktop-linux-amd64.flatpak" ] || fail "the Flatpak bundle is missing"
+# The installer is a 32-bit NSIS stub (PE machine 0x14c), whatever it installs; its version resource is
+# UTF-16 (the NULs dropped, key and value meet)
+setup="${D}/mindsift-desktop-windows-amd64-setup.exe"
+[ -s "${setup}" ] || fail "the Windows installer is missing"
+pe="$(od -An -tu4 -j60 -N4 "${setup}" | tr -d ' ')"
+[ "$(od -An -tx1 -j"${pe}" -N6 "${setup}" | tr -d ' \n')" = "504500004c01" ] || fail "the Windows installer is no PE file"
+# (grep without -q: quitting early would end tr with SIGPIPE, which pipefail counts)
+LC_ALL=C tr -d '\000' < "${setup}" | grep -aF "ProductVersion${VERSION#v}" >/dev/null || fail "the Windows installer does not carry ${VERSION}"
 grep -q '^github.com/wailsapp/wails/v3 ' "${D}/THIRD_PARTY_LICENSES.txt" || fail "THIRD_PARTY_LICENSES.txt lists no Wails"
 
 name=mindsift-desktop-linux-amd64
@@ -47,7 +59,7 @@ mkdir -p "${WORK}/files" "${WORK}/${name}"
 install -m 755 "${D}/mindsift-desktop-linux-amd64" "${WORK}/${name}/mindsift-desktop"
 install -m 644 "${ROOT}/LICENSE" "${D}/THIRD_PARTY_LICENSES.txt" "${ROOT}/desktop/packaging/linux/README.txt" "${WORK}/${name}/"
 tar -C "${WORK}" --owner=0 --group=0 --numeric-owner -czf "${WORK}/files/${name}.tar.gz" "${name}"
-cp "${D}/mindsift-desktop-linux-amd64.flatpak" "${D}/mindsift-desktop-windows-amd64.exe" "${WORK}/files/"
+cp "${D}/mindsift-desktop-linux-amd64.flatpak" "${D}/mindsift-desktop-windows-amd64.exe" "${setup}" "${WORK}/files/"
 cp "${D}/THIRD_PARTY_LICENSES.txt" "${WORK}/files/mindsift-desktop-THIRD_PARTY_LICENSES.txt"
 
 mkdir -p "${OUT}"
