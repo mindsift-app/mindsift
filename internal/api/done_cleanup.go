@@ -40,8 +40,12 @@ func (s *Server) startDoneCleanupTicker() {
 	}
 }
 
-// allowNeverRetention: RETENTION_ALLOW_NEVER if set, else the admin's switch in the system settings.
+// allowNeverRetention: RETENTION_ALLOW_NEVER if set, else the admin's switch in the system settings. An
+// instance with one account (the desktop app) has no switch: the one person decides for themselves.
 func (s *Server) allowNeverRetention() bool {
+	if !s.can(capAccounts) {
+		return true
+	}
 	if s.cfg.RetentionAllowNever != nil {
 		return *s.cfg.RetentionAllowNever
 	}

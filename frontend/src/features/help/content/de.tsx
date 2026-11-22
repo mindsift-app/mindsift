@@ -917,6 +917,9 @@ const de: HelpContent = {
               <li>
                 <strong className="text-main">Backups:</strong> Unter <em>Administration → Daten</em> schaltest du tägliche Sicherungen ein und wählst den Ordner dafür. Unter <em>Kontoeinstellungen → Export &amp; Import</em> findest du sie; du kannst sie herunterladen oder wieder einspielen, auch nur für einzelne Bereiche wie Listen oder Aufgaben. Jedes Backup enthält im Ordner <em>Obsidian</em> deine Notizen, Aufgaben und Listen zusätzlich als Markdown, lesbar in Obsidian oder jedem Texteditor, auch ohne MindSift. Ein Backup lässt sich auch auf einem Server einspielen, falls du später dorthin wechselst.
               </li>
+              <li>
+                <strong className="text-main">Konto von einem Server übernehmen:</strong> Unter <em>Administration → Daten</em> wählst du ein Backup eines MindSift-Servers und darin ein Konto. Mit Bildern und Aufnahmen kommt es, wenn du den Datenordner des Servers oder seinen Ordner <em>backups</em> als Archiv wählst (.zip, .tar oder .tar.gz); ein Datenbank-Abzug (.db.gz) allein bringt alles außer ihnen. Übernommen wird nur, was dem Konto gehört: Mit ihm Geteiltes, versteckte Werte und die Einstellungen des Servers bleiben draußen.
+              </li>
             </InDesktop>
             <Only can="install">
               <li>

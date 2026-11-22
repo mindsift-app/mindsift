@@ -818,6 +818,9 @@ const es: HelpContent = {
               <li>
                 <strong className="text-main">Copias de seguridad:</strong> en <em>Administración → Datos</em> activas copias diarias y eliges la carpeta donde se guardan. En <em>Ajustes de la cuenta → Exportar e importar</em> las encuentras; puedes descargarlas o restaurarlas, también solo para áreas concretas como listas o tareas. Cada copia contiene además, en la carpeta <em>Obsidian</em>, tus notas, tareas y listas como Markdown, legible en Obsidian o en cualquier editor de texto, incluso sin MindSift. Una copia también se puede restaurar en un servidor si más adelante te pasas a uno.
               </li>
+              <li>
+                <strong className="text-main">Tomar una cuenta de un servidor:</strong> en <em>Administración → Datos</em> eliges una copia de seguridad de un servidor MindSift y una de sus cuentas. Sus imágenes y grabaciones vienen con ella si eliges la carpeta de datos del servidor o su carpeta <em>backups</em> como archivo (.zip, .tar o .tar.gz); una copia de la base de datos (.db.gz) sola trae todo menos ellas. Solo llega lo que es de la cuenta: lo compartido con ella, los valores ocultos y los ajustes del servidor se quedan fuera.
+              </li>
             </InDesktop>
             <Only can="install">
               <li>

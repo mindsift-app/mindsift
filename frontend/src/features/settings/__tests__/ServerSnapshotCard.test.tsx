@@ -66,6 +66,19 @@ describe('ServerSnapshotCard (desktop: take over an account of a server backup)'
     expect(screen.queryByRole('radio', { name: /Ben/ })).toBeNull();
   });
 
+  it('says how many pictures and recordings come along and how many the backup lacks', async () => {
+    api.adminTakeOverSnapshotAccount.mockResolvedValue({ ...summary(false), media: 3, mediaMissing: 1 });
+    api.adminStageServerSnapshot.mockResolvedValue({ token: 'tok', accounts: [anna] });
+    const { container } = render(<ServerSnapshotCard />);
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input.accept).toContain('.zip');
+    expect(input.accept).toContain('.tar');
+    fireEvent.change(input, { target: { files: [new File(['x'], 'mindsift-data.tar.gz')] } });
+    await screen.findByText('Vorschau: Anna');
+    expect(screen.getByText('Dazu 3 Bilder und Aufnahmen.')).toBeTruthy();
+    expect(screen.getByText('1 Bild oder Aufnahme ist nicht im Backup und fehlt danach.')).toBeTruthy();
+  });
+
   it('shows why a file was refused', async () => {
     api.adminStageServerSnapshot.mockRejectedValue(new Error('Die Datei ist kein Datenbank-Abzug von MindSift'));
     const { container } = render(<ServerSnapshotCard />);

@@ -737,6 +737,9 @@ const it: HelpContent = {
               <li>
                 <strong className="text-main">Backup:</strong> in <em>Amministrazione → Dati</em> attivi i backup giornalieri e scegli la cartella in cui vengono salvati. In <em>Impostazioni account → Esportazione e importazione</em> li trovi; puoi scaricarli o ripristinarli, anche solo per singole aree come liste o attività. Ogni backup contiene inoltre, nella cartella <em>Obsidian</em>, note, attività e liste in Markdown, leggibili in Obsidian o in qualsiasi editor di testo, anche senza MindSift. Un backup si può ripristinare anche su un server, se in seguito passi a uno.
               </li>
+              <li>
+                <strong className="text-main">Riprendere un account da un server:</strong> in <em>Amministrazione → Dati</em> scegli un backup di un server MindSift e uno dei suoi account. Immagini e registrazioni arrivano con esso se scegli la cartella dei dati del server o la sua cartella <em>backups</em> come archivio (.zip, .tar o .tar.gz); una copia del database (.db.gz) da sola porta tutto tranne loro. Arriva solo ciò che appartiene all'account: ciò che è condiviso con esso, i valori nascosti e le impostazioni del server restano fuori.
+              </li>
             </InDesktop>
             <Only can="install">
               <li>
