@@ -126,6 +126,7 @@
     "discard": "Elimina registrazione",
     "discardConfirm": "La registrazione verrà eliminata e non potrà essere ripristinata.",
     "audioFailed": "Impossibile caricare la registrazione",
-    "actionFailed": "Non ha funzionato"
+    "actionFailed": "Non ha funzionato",
+    "keptInInbox": "{{reason}} – la registrazione attende nel Quick Dump."
   }
 }

@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const jobs = vi.hoisted(() => ({
   startInboxTranscription: vi.fn(),
   waitForTranscription: vi.fn(),
-  retryTranscription: vi.fn(),
 }));
 vi.mock('../../../lib/transcriptionJobs', () => jobs);
 
@@ -11,6 +10,7 @@ const dictation = vi.hoisted(() => ({ dateFromDictation: vi.fn(), undoDictationD
 vi.mock('../captureDictation', () => dictation);
 
 import { serverDictation } from '../serverDictation';
+import { HandedOverError } from '../dictationQueue';
 import type { SegmentedTranscription } from '../../../lib/voiceTranscription';
 
 const parts = [
@@ -41,19 +41,19 @@ describe('serverDictation (hold the + with the own Whisper server)', () => {
     expect(outcome).toMatchObject({ due: '2026-11-23T14:00' });
   });
 
-  it('sends the parts again when the upload failed, and asks the server to try again once it has them', async () => {
+  it('keeps the parts while the upload fails, and lets a recording the server failed on go to the Quick Dump', async () => {
     jobs.startInboxTranscription.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ id: 'trs_2' });
-    jobs.waitForTranscription.mockRejectedValueOnce(new Error('Spracherkennung fehlgeschlagen')).mockResolvedValueOnce({ id: 'trs_2', text: 'Hallo', thoughtId: 'th_2' });
+    jobs.waitForTranscription.mockRejectedValueOnce(new Error('Spracherkennung fehlgeschlagen'));
     const source = serverDictation(recording());
 
-    await expect(source.text()).rejects.toThrow('offline');
-    await expect(source.retry!()).rejects.toThrow('Spracherkennung fehlgeschlagen');
-    expect(jobs.startInboxTranscription).toHaveBeenCalledTimes(2);
-    expect(jobs.retryTranscription).not.toHaveBeenCalled();
+    const offline = await source.text().catch((e: Error) => e);
+    expect(offline).not.toBeInstanceOf(HandedOverError);
+    expect((offline as Error).message).toBe('offline');
 
-    await expect(source.retry!()).resolves.toBe('Hallo');
-    expect(jobs.retryTranscription).toHaveBeenCalledWith('trs_2');
+    const failed = await source.text().catch((e: Error) => e);
     expect(jobs.startInboxTranscription).toHaveBeenCalledTimes(2);
+    expect(failed).toBeInstanceOf(HandedOverError);
+    expect((failed as Error).message).toBe('Spracherkennung fehlgeschlagen – die Aufnahme wartet im Quick Dump.');
   });
 
   it('counts a recording without anything in it as nothing heard, without asking the server', async () => {

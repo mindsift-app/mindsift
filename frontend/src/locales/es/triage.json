@@ -126,6 +126,7 @@
     "discard": "Descartar grabación",
     "discardConfirm": "La grabación se eliminará y no se podrá recuperar.",
     "audioFailed": "No se pudo cargar la grabación",
-    "actionFailed": "No ha funcionado"
+    "actionFailed": "No ha funcionado",
+    "keptInInbox": "{{reason}}: la grabación espera en el Quick Dump."
   }
 }

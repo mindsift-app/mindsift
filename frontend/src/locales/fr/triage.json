@@ -126,6 +126,7 @@
     "discard": "Supprimer l’enregistrement",
     "discardConfirm": "L’enregistrement sera supprimé et ne pourra pas être restauré.",
     "audioFailed": "Impossible de charger l’enregistrement",
-    "actionFailed": "Cela n’a pas fonctionné"
+    "actionFailed": "Cela n’a pas fonctionné",
+    "keptInInbox": "{{reason}} – l’enregistrement attend dans le Quick Dump."
   }
 }

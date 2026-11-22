@@ -1,7 +1,9 @@
 import type { SegmentedTranscription, RecordedPart } from '../../lib/voiceTranscription';
-import { retryTranscription, startInboxTranscription, waitForTranscription } from '../../lib/transcriptionJobs';
+import { startInboxTranscription, waitForTranscription } from '../../lib/transcriptionJobs';
 import { dateFromDictation, undoDictationDate, type DictationOutcome } from './captureDictation';
-import type { DictationSource } from './dictationQueue';
+import { HandedOverError, type DictationSource } from './dictationQueue';
+import i18n from '../../i18n';
+import { errorMessage } from '../../lib/errorMessage';
 
 /**
  * A dictation of the rail's or the phone's + with the own Whisper server, as an item of the dictation queue
@@ -11,10 +13,11 @@ import type { DictationSource } from './dictationQueue';
  * (lib/transcriptionJobs.ts). While the app is open the item waits for that; a date in the text then
  * becomes the entry's due date, read from when it was spoken, and can be taken back (undo).
  *
- * Until the upload worked the parts stay here, so "Erneut versuchen" sends them again; after it, trying
- * again asks the server to (its job keeps the recording).
+ * Until the upload worked the parts stay here, so "Erneut versuchen" sends them again. Once the server has
+ * them, a failed transcription leaves the queue (HandedOverError): the recording waits above the Quick
+ * Dump, which offers to try again, listen or discard, on every device.
  */
-export function serverDictation(transcription: SegmentedTranscription, onSaved?: () => void): DictationSource<DictationOutcome | void> {
+export function serverDictation(transcription: SegmentedTranscription): DictationSource<DictationOutcome | void> {
   const spokenAt = new Date();
   const parts: Promise<RecordedPart[]> = transcription.handOver();
   let jobId: string | null = null;
@@ -27,7 +30,12 @@ export function serverDictation(transcription: SegmentedTranscription, onSaved?:
       // Recognised in full while speaking: the server only stores and saves it
       jobId = (await startInboxTranscription(recorded)).id;
     }
-    const done = await waitForTranscription(jobId);
+    let done;
+    try {
+      done = await waitForTranscription(jobId);
+    } catch (err) {
+      throw new HandedOverError(i18n.t('triage:voiceJobs.keptInInbox', { reason: errorMessage(err, i18n.t('common:voiceJobs.failed')) }));
+    }
     thoughtId = done?.thoughtId ?? null;
     // Ended without a text this tab saw (nothing heard, or the entry was made while the event got lost)
     return done?.text ?? '';
@@ -35,19 +43,14 @@ export function serverDictation(transcription: SegmentedTranscription, onSaved?:
 
   return {
     text: finish,
-    retry: async () => {
-      if (jobId) await retryTranscription(jobId);
-      return finish();
-    },
     save: async (text) => {
-      onSaved?.();
       if (!thoughtId) return;
       const saved = await dateFromDictation(thoughtId, text, spokenAt).catch(() => null);
       if (!saved) return;
       return {
         due: saved.due,
         undo: async () => {
-          if (await undoDictationDate(saved)) onSaved?.();
+          await undoDictationDate(saved);
         },
       };
     },

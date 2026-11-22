@@ -43,9 +43,17 @@ export interface DictationQueueOptions<R> {
   /** A recording with nothing recognised in it (nothing is saved). */
   onNothing?: () => void;
   onFailed?: (message: string) => void;
+  /** A recording that failed but is kept elsewhere (HandedOverError): it leaves the queue with this message. */
+  onHandedOver?: (message: string) => void;
   /** The message of an error without one of its own. */
   fallbackMessage: () => string;
 }
+
+/**
+ * Thrown by a source whose recording failed to be transcribed but is safe elsewhere (on the server, shown
+ * above the Quick Dump with "Erneut versuchen"): the queue lets it go instead of keeping a second retry.
+ */
+export class HandedOverError extends Error {}
 
 export class DictationQueue<R = unknown> {
   private entries: Entry<R>[] = [];
@@ -109,6 +117,12 @@ export class DictationQueue<R = unknown> {
       try {
         entry.text = ((await entry.pending) ?? '').trim();
       } catch (err) {
+        if (err instanceof HandedOverError) {
+          // Kept elsewhere (the server holds the recording, the Quick Dump offers to try again): not here
+          this.remove(entry);
+          this.options.onHandedOver?.(errorMessage(err, this.options.fallbackMessage()));
+          return;
+        }
         this.fail(entry, err);
         return;
       }

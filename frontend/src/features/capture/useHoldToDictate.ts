@@ -153,6 +153,8 @@ export function useHoldToDictate({ onSave, touch = false, fallback }: HoldToDict
       onFailed: (message) => {
         if (!touch) showError(message);
       },
+      // Failed on the server, which keeps the recording above the Quick Dump: said once, not kept here
+      onHandedOver: (message) => report(message),
       fallbackMessage: () => i18n.t('triage:fab.saveFailed'),
     }));
 

@@ -126,6 +126,7 @@
     "discard": "Discard recording",
     "discardConfirm": "The recording will be deleted and cannot be restored.",
     "audioFailed": "The recording could not be loaded",
-    "actionFailed": "That did not work"
+    "actionFailed": "That did not work",
+    "keptInInbox": "{{reason}} – the recording is waiting in the Quick Dump."
   }
 }
