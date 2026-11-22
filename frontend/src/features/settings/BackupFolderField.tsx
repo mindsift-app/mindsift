@@ -8,34 +8,57 @@ import { DesktopShellError, desktopShell } from '../../lib/desktopShell';
 // folder, shown as the placeholder. onCommit gets the folder when it was chosen, reset, or typed and left
 // (Enter or leaving the field); the server checks it. Used by the desktop setup wizard and the
 // administration's backup card.
+// Under Flatpak a folder from the dialog is a path of the document portal (/run/user/1000/doc/<id>/…): the
+// app writes there, but the person chose ~/Backups. The field shows the host's path (shown, and the dialog's
+// own answer) and still hands the stored path to onCommit while that text is unchanged.
 export const BackupFolderField: React.FC<{
   value: string;
+  // value as the person knows it ('' or missing: value itself)
+  shown?: string;
   defaultDir: string;
   onCommit: (dir: string) => void;
   disabled?: boolean;
-}> = ({ value, defaultDir, onCommit, disabled }) => {
+}> = ({ value, shown, defaultDir, onCommit, disabled }) => {
   const { t } = useTranslation('settings');
-  const [draft, setDraft] = useState(value);
+  // Folders from the dialog, as they are stored → as they are shown
+  const [picked, setPicked] = useState<Record<string, string>>({});
+  const showOf = (dir: string) => (dir === value && shown ? shown : picked[dir] || dir);
+  const storedOf = (text: string) => {
+    if (shown && text === shown) return value;
+    return Object.keys(picked).find((dir) => picked[dir] === text) ?? text;
+  };
+  const [draft, setDraft] = useState(() => showOf(value));
   const [problem, setProblem] = useState<string | null>(null);
   // A new value from outside (stored, or refused and reset) replaces what was typed
-  const [shown, setShown] = useState(value);
-  if (shown !== value) {
-    setShown(value);
-    setDraft(value);
+  const [seen, setSeen] = useState(value);
+  const [seenShown, setSeenShown] = useState(shown);
+  if (seen !== value || seenShown !== shown) {
+    setSeen(value);
+    setSeenShown(shown);
+    setDraft(showOf(value));
   }
 
-  const commit = (dir: string) => {
+  // text: what the field shows; the folder sent is the stored one behind it
+  const commit = (text: string) => {
     setProblem(null);
-    const clean = dir.trim();
+    const clean = text.trim();
     setDraft(clean);
-    if (clean !== value) onCommit(clean);
+    const dir = storedOf(clean);
+    if (dir !== value) onCommit(dir);
   };
 
   const pick = async () => {
     setProblem(null);
     try {
-      const { path } = await desktopShell.pickFolder(draft.trim() || defaultDir);
-      if (path) commit(path);
+      const { path, shown: pickedShown } = await desktopShell.pickFolder(draft.trim() || defaultDir);
+      if (!path) return;
+      if (pickedShown && pickedShown !== path) {
+        setPicked((p) => ({ ...p, [path]: pickedShown }));
+        setDraft(pickedShown);
+      } else {
+        setDraft(path);
+      }
+      if (path !== value) onCommit(path);
     } catch (e) {
       const code = e instanceof DesktopShellError ? e.problem.code : 'failed';
       setProblem(t(code === 'unavailable' ? 'backups.folderPickUnavailable' : 'backups.folderPickFailed'));

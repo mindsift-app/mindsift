@@ -54,8 +54,8 @@ describe('Pfeile zum Ein- und Ausrücken an Bild, Zeichnung und Code', () => {
     unmount();
 
     render(<ImageBlock content="![Hafen am Abend](media:med_a1)" canEdit onCaptionChange={() => {}} />);
-    const filled = screen.getByRole('textbox', { name: 'Beschriftung hinzufügen…' }) as HTMLInputElement;
-    expect(filled.value).toBe('Hafen am Abend');
+    const filled = screen.getByRole('textbox', { name: 'Beschriftung hinzufügen…' });
+    expect(filled.textContent).toBe('Hafen am Abend');
     expect(filled.className).not.toContain('opacity-0');
   });
 
@@ -86,7 +86,9 @@ describe('Pfeile zum Ein- und Ausrücken an Bild, Zeichnung und Code', () => {
     expect((screen.getByRole('button', { name: 'Ausrücken' }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(indent);
     expect(onIndent).not.toHaveBeenCalled();
-    expect((screen.getByRole('textbox') as HTMLInputElement).readOnly).toBe(true);
+    // Read only: the caption shows, there is no field to type in
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.getByText('Hafen', { selector: 'figcaption div' })).toBeTruthy();
   });
 
   it('Bild nur zum Lesen: keine Pfeile und kein Beschriftungsfeld', async () => {
@@ -160,14 +162,39 @@ describe('Pfeile zum Ein- und Ausrücken an Bild, Zeichnung und Code', () => {
     expect(empty.className).toContain('group-hover/audio:opacity-100');
   });
 
+  it('Audio am Handy ohne Pfeile (die Leiste über der Tastatur rückt ein), ab sm wie bisher', async () => {
+    render(<AudioBlock content="[](media:med_a2)" canEdit onCaptionChange={() => {}} onIndent={() => {}} onOutdent={() => {}} canIndent canOutdent />);
+    const arrows = (await screen.findByRole('button', { name: 'Einrücken' })).parentElement!;
+    expect(arrows.className.split(' ')).toEqual(expect.arrayContaining(['hidden', 'sm:flex']));
+  });
+
+  it('Audio: Antippen der Beschriftung macht den Block zum bearbeiteten Punkt, Verlassen gibt ihn frei', async () => {
+    const onFocusChange = vi.fn();
+    render(
+      <>
+        <AudioBlock content="[](media:med_a2)" canEdit onCaptionChange={() => {}} onIndent={() => {}} onFocusChange={onFocusChange} />
+        <button type="button">Draußen</button>
+      </>
+    );
+    const caption = await screen.findByRole('textbox', { name: 'Beschriftung hinzufügen…' });
+    fireEvent.focus(caption);
+    expect(onFocusChange).toHaveBeenLastCalledWith(true);
+    // Moving on inside the block (to the arrows) keeps it
+    onFocusChange.mockClear();
+    fireEvent.blur(caption, { relatedTarget: screen.getByRole('button', { name: 'Einrücken' }) });
+    expect(onFocusChange).not.toHaveBeenCalled();
+    fireEvent.blur(caption, { relatedTarget: screen.getByRole('button', { name: 'Draußen' }) });
+    expect(onFocusChange).toHaveBeenLastCalledWith(false);
+  });
+
   it('Audio gesperrt: Pfeile bleiben ausgegraut stehen, die Beschriftung nur lesbar', async () => {
     render(
       <AudioBlock content="[Sprachnotiz vom Montag](media:med_a2)" canEdit={false} locked onCaptionChange={() => {}} onIndent={() => {}} onOutdent={() => {}} canIndent canOutdent />
     );
     const indent = (await screen.findByRole('button', { name: 'Einrücken' })) as HTMLButtonElement;
     expect(indent.disabled).toBe(true);
-    const caption = screen.getByRole('textbox', { name: 'Beschriftung hinzufügen…' }) as HTMLInputElement;
-    expect(caption.readOnly).toBe(true);
-    expect(caption.value).toBe('Sprachnotiz vom Montag');
+    // Read only: the text shows, there is no field to type in
+    expect(screen.getByText('Sprachnotiz vom Montag')).toBeTruthy();
+    expect(screen.queryByRole('textbox')).toBeNull();
   });
 });

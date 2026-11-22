@@ -227,7 +227,8 @@
       "email": "Récapitulatif quotidien – e-mail",
       "discord": "Récapitulatif quotidien – Discord",
       "webhook": "Récapitulatif quotidien – webhook",
-      "push": "Récapitulatif quotidien – push"
+      "push": "Récapitulatif quotidien – push",
+      "desktop": "Résumé quotidien – notification système"
     },
     "needPush": "Active d'abord le push sur un appareil ci-dessous",
     "lead": {
@@ -281,9 +282,16 @@
       "testSent_one": "Notification de test envoyée à {{count}} appareil.",
       "testSent_other": "Notification de test envoyée à {{count}} appareils."
     },
+    "desktop": {
+      "title": "Cible : notification système",
+      "hint": "Affiche les alarmes comme notifications du système d’exploitation tant que l’application est ouverte. Un clic dessus ouvre la tâche.",
+      "test": "Afficher un test"
+    },
     "channel": {
       "email": "E-mail",
-      "ownWebhook": "Webhook propre"
+      "ownWebhook": "Webhook propre",
+      "desktop": "Notification système",
+      "desktopShort": "Système"
     },
     "event": {
       "due": "Tâches échues (immédiatement)",
@@ -430,6 +438,7 @@
     "serverHint": "L'enregistrement est transmis uniquement au serveur de reconnaissance vocale de cette installation MindSift. Fonctionne dans tous les navigateurs.",
     "browser": "Navigateur",
     "browserHint": "La reconnaissance vocale intégrée au navigateur. Le texte apparaît au fur et à mesure que tu parles ; Chrome et Edge envoient l'enregistrement à Google ou Microsoft. Firefox ne la prend pas en charge.",
+    "browserUnavailable": "Indisponible ici : cette fenêtre n'a pas de reconnaissance vocale intégrée. Le serveur Whisper est utilisé.",
     "languageTitle": "Langue parlée",
     "languageIntro": "La langue dans laquelle tu parles au micro, y compris celles que l'application ne propose pas.",
     "languageApp": "Comme la langue de l'application ({{name}})",

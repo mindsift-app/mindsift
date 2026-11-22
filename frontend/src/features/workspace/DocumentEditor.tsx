@@ -128,6 +128,7 @@ import { useBranchActions } from './useBranchActions';
 import { useBlockEditing } from './useBlockEditing';
 import { useTagPage } from './useTagPage';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { saveBlob } from '../../lib/download';
 import { NOTE_TITLE_MAX, noteTitleLength } from '../../lib/noteTitle';
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
@@ -532,12 +533,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       }
     }
     const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(title || i18n.t('workspace:editor.fileName')).toLowerCase().replace(/[^\p{L}\p{N}_-]+/giu, '-')}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // saveBlob keeps the address alive until the download took it (the desktop app's WebKit reads it later)
+    saveBlob(blob, `${(title || i18n.t('workspace:editor.fileName')).toLowerCase().replace(/[^\p{L}\p{N}_-]+/giu, '-')}.md`);
   };
 
   // Offline with a copy on this device: edit it, the sync engine sends the changes later

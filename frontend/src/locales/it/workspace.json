@@ -358,6 +358,7 @@
     "uploadFailed": "Caricamento non riuscito",
     "emptyRecording": "La registrazione è vuota",
     "noMic": "Nessun accesso al microfono (permesso mancante o connessione non HTTPS)",
+    "recordUnsupported": "La registrazione non è supportata in questo browser.",
     "record": "Registra nota vocale",
     "stopSave": "Interrompi e salva registrazione",
     "start": "Avvia registrazione",
@@ -379,6 +380,8 @@
     "transcribing": "Trascrizione in corso…",
     "transcribe": "Trascrivi",
     "caption": "Aggiungi didascalia…",
+    "captionMore": "altro",
+    "captionLess": "meno",
     "imageUnavailable": "Immagine non disponibile (offline o eliminata)",
     "enlarge": "Ingrandisci",
     "resize": "Trascina per cambiare la dimensione",
@@ -393,7 +396,8 @@
     "pasteFailed_one": "Immagine non incollata: {{error}}",
     "pasteFailed_other": "{{count}} immagini non incollate: {{error}}",
     "pasteTooMany": "Al massimo {{max}} immagini alla volta, le altre non sono state incollate.",
-    "dropOnlyImages": "Si possono trascinare solo immagini."
+    "dropOnlyImages": "Si possono trascinare solo immagini.",
+    "transcribeDismiss": "Nascondi errore"
   },
   "journal": {
     "opening": "Apertura di {{date}}…",

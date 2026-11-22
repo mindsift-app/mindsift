@@ -227,7 +227,8 @@
       "email": "Riepilogo giornaliero – email",
       "discord": "Riepilogo giornaliero – Discord",
       "webhook": "Riepilogo giornaliero – webhook",
-      "push": "Riepilogo giornaliero – push"
+      "push": "Riepilogo giornaliero – push",
+      "desktop": "Riepilogo giornaliero – notifica di sistema"
     },
     "needPush": "Attiva prima le notifiche push su un dispositivo qui sotto",
     "lead": {
@@ -281,9 +282,16 @@
       "testSent_one": "Notifica di prova inviata a {{count}} dispositivo.",
       "testSent_other": "Notifica di prova inviata a {{count}} dispositivi."
     },
+    "desktop": {
+      "title": "Destinazione: notifica di sistema",
+      "hint": "Mostra gli allarmi come notifiche del sistema operativo finché l’app è aperta. Un clic apre l’attività.",
+      "test": "Mostra test"
+    },
     "channel": {
       "email": "Email",
-      "ownWebhook": "Webhook personalizzato"
+      "ownWebhook": "Webhook personalizzato",
+      "desktop": "Notifica di sistema",
+      "desktopShort": "Sistema"
     },
     "event": {
       "due": "Attività in scadenza (immediata)",
@@ -430,6 +438,7 @@
     "serverHint": "La registrazione viene inviata solo al server di riconoscimento vocale di questa istanza MindSift. Funziona in qualsiasi browser.",
     "browser": "Browser",
     "browserHint": "Riconoscimento vocale integrato nel browser. Il testo compare mentre parli; Chrome ed Edge inviano l'audio a Google o Microsoft. Firefox non supporta questa funzione.",
+    "browserUnavailable": "Non disponibile qui: questa finestra non ha un riconoscimento vocale integrato. Viene usato il server Whisper.",
     "languageTitle": "Lingua parlata",
     "languageIntro": "La lingua in cui parli al microfono, anche quelle non disponibili nell'app.",
     "languageApp": "Come la lingua dell'app ({{name}})",

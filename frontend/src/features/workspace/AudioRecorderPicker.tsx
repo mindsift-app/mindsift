@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LoaderCircle, Mic, Square, Upload, X } from 'lucide-react';
 import { audioLimitMB, audioRecordingBitrate, audioUploadsAllowed, UploadedMedia, uploadMedia } from '../../lib/media';
-import { VoiceRecorder } from '../../lib/voice';
+import { canRecord, VoiceRecorder } from '../../lib/voice';
+import { repairWebmBlob } from '../../lib/webmDuration';
 import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
 import { useTranslation } from 'react-i18next';
@@ -63,7 +64,11 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
     recorderRef.current = null;
     stopTicking();
     triggerHaptic(20);
-    const blob = await rec.stop();
+    // "Saving" right away: the browser may take a moment to hand over the end of the recording
+    setState('uploading');
+    const recorded = await rec.stop();
+    // The file gets its length written in, which MediaRecorder leaves out (lib/webmDuration.ts)
+    const blob = recorded && (await repairWebmBlob(recorded));
     if (!blob) {
       setError(t('media.emptyRecording'));
       setState('ready');
@@ -75,6 +80,12 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
 
   const start = async () => {
     setError(null);
+    // No MediaRecorder or getUserMedia: the browser cannot record at all, which is no missing permission.
+    // Outside HTTPS browsers hide getUserMedia too; the microphone message names that case
+    if (!canRecord()) {
+      setError(t(window.isSecureContext === false ? 'media.noMic' : 'media.recordUnsupported'));
+      return;
+    }
     const rec = new VoiceRecorder(audioRecordingBitrate());
     try {
       await rec.start();

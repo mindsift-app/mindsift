@@ -137,7 +137,7 @@ func TestOwnChangesPauseAndChannels(t *testing.T) {
 
 	// Settings round trip over the profile API
 	rec := sessionCall(router, "PATCH", "/api/v1/auth/settings", myToken, `{"notificationSettings":{"paused":false,"events":{"shared":{"email":false,"discord":true}},"dailySummary":{"enabled":true,"time":"6:5"}}}`, "")
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"time":"07:00"`) || !strings.Contains(rec.Body.String(), `"shared":{"email":false,"discord":true,"webhook":false,"push":false}`) {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"time":"07:00"`) || !strings.Contains(rec.Body.String(), `"shared":{"email":false,"discord":true,"webhook":false,"push":false,"desktop":false}`) {
 		t.Fatalf("settings: %d %s", rec.Code, rec.Body.String())
 	}
 }

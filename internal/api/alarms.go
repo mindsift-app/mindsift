@@ -16,7 +16,7 @@ import (
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
-// --- MULTI-CHANNEL ALARM DISPATCHER (EMAIL, DISCORD, CUSTOM WEBHOOK) ---
+// --- MULTI-CHANNEL ALARM DISPATCHER (EMAIL, DISCORD, CUSTOM WEBHOOK, PUSH, DESKTOP) ---
 
 // sendMailContent sends a mail in the common MindSift look (mailtemplate.go), as text and HTML.
 func (s *Server) sendMailContent(toEmail, subject string, c mailContent) error {
@@ -275,6 +275,9 @@ func (s *Server) checkAlarms(now time.Time) {
 		if set.Events.Due.Push {
 			channels = append(channels, "push")
 		}
+		if set.Events.Due.Desktop {
+			channels = append(channels, "desktop")
+		}
 		a.AlarmChannels = channels
 		if len(a.AlarmChannels) == 0 {
 			continue
@@ -317,6 +320,10 @@ func (s *Server) checkAlarms(now time.Time) {
 				if errors.Is(err, errNoPushDevice) {
 					err = errChannelNotSetUp
 				}
+			case "desktop":
+				// The desktop app's system notification; a click opens the task (no notifier outside the
+				// app's local instances: not set up)
+				err = s.notifyDesktop(DesktopNotification{Title: pushTitle, Body: a.Title + " – " + due, TaskID: a.TaskID, Tag: "task-" + a.TaskID})
 			case "webhook":
 				err = errChannelNotSetUp
 				if a.CustomWebhookURL != "" {

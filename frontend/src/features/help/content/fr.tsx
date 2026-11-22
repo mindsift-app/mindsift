@@ -600,7 +600,7 @@ const fr: HelpContent = {
             </NotInDesktop>
             <InDesktop>
               <li>
-                <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par <strong className="text-main">webhook Discord</strong> ou webhook HTTP personnalisé à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant), tant que l'application de bureau est ouverte. À régler dans tes paramètres, sous « Alarmes ». Toutes les heures suivent le fuseau horaire de l'instance, réglé sous <em>Administration → Instance</em> (sinon celui du système).
+                <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par <strong className="text-main">notification système</strong> (un clic dessus ouvre la tâche), <strong className="text-main">webhook Discord</strong> ou webhook HTTP personnalisé à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant), tant que l'application de bureau est ouverte. À régler dans tes paramètres, sous « Alarmes ». Toutes les heures suivent le fuseau horaire de l'instance, réglé sous <em>Administration → Instance</em> (sinon celui du système).
               </li>
             </InDesktop>
             <li>

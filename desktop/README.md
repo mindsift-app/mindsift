@@ -22,7 +22,19 @@ attached to every GitHub release with fixed names, see "Release" in ci/release-d
   `data/`, stays where it is and becomes the instance "MindSift". The start view names the folder and opens
   it in the file manager. The only folder dialog is the backup folder's (`pick-folder`, the system's dialog
   through Wails, under Flatpak through the portal); the shell hands the choice to the window, the server
-  checks it.
+  checks it. Under Flatpak the portal answers with a path of its document store (`/run/user/1000/doc/<id>/…`),
+  where the app may write; that path is stored and used, the window shows the host's path instead
+  (`shell.HostPath`: `org.freedesktop.portal.Documents.GetHostPaths`, portal version 5 and later, else the
+  path as it is).
+- **Downloads** (backups, exports, a note as Markdown, a theme; the frontend saves blobs through a link with
+  `download`): WebKitGTK asks nobody and writes into the Downloads folder, which the Flatpak may not reach, so
+  the shell takes every download of the window's network session, on any page (`download_linux.go`:
+  `download-started`, `decide-destination` kept waiting until the system's save dialog answered, the portal's
+  under Flatpak). WebKit writes into `<base>/webview/downloads/` and the finished file is moved to the chosen
+  path (renamed, else copied; into a file of the document portal a rename fails with `EXDEV`, writing it
+  works, so nothing depends on WebKit's `<name>.wkdownload` next to the destination). A cancelled dialog cancels the download; the page gets
+  `mindsift:desktop-download` (`{saved, name}`) and the frontend shows a notice (`components/DownloadNotice.tsx`).
+  Windows: WebView2's own download bar, untouched.
 - **Local instances:** the MindSift server runs inside the app. Its router is the Wails asset handler, so
   no port is opened and nothing but the app's own window can reach it (`wails://localhost/` on Linux,
   `http://wails.localhost/` on Windows are served by the webview itself). One instance at a time:
@@ -64,7 +76,8 @@ as `desktop.json.broken`.
 `POST /__desktop/api/<op>` with a JSON body (`state`, `create`, `open`, `open-found`, `add-server`,
 `rename`, `remove`, `show-base`, `pick-folder`, and for the app's settings `local-api` and `local-api-set`),
 code in `desktop/internal/shell`. `pick-folder {path}`
-opens the system's folder dialog at `path` (or its nearest existing parent) and answers `{path}`, empty when
+opens the system's folder dialog at `path` (or its nearest existing parent; under Flatpak the host's path,
+unchecked) and answers `{path, shown}` (`shown`: the folder as the person knows it), empty when
 cancelled; the setup wizard and the administration use it for the backup folder. The endpoints answer
 only requests with the header `X-MindSift-Desktop: 1`, `Content-Type: application/json`, no foreign
 `Origin` and no cross-site `Sec-Fetch-Site`. A server's page shown in the window (or any other origin) cannot send that header
@@ -144,6 +157,16 @@ page on another origin set the window's title through a form posted to
   view's address and `mindsift:desktop-shell` fires; `lib/useDesktopShellStart.ts` takes only the two
   start view addresses. Loading the start view from a server's page is a normal top-level navigation
   (checked under WebKitGTK; not yet checked on Windows).
+- **Window title** (`shell.TitleFor`): worked out from the address of the page shown, the window's own or
+  a server's, on every load and history step: "MindSift" on the start view, "<name> – MindSift" in a local
+  instance or on a server's pages (the entry whose address the page lies under). It names the instance or
+  server, not the page, so a server's own route changes (no load) need nothing. Linux: the
+  `WindowLoadFinished` hook above reads the address from WebKit. Windows: every page posts
+  `mindsift:page` through `chrome.webview.postMessage` after its load (the hook's script), and the
+  `RawMessageHandler` takes the address from WebView2 (`ICoreWebView2.Source`, Wails' `TopOrigin`), not
+  from the page; a page posting the message itself only has the title worked out again. Before, only the
+  window's own pages told their address on Windows, so on a server's pages the title stayed as the page
+  before.
 - **Keys and scripts:** Wails' `ExecJS` waits for `wails:runtime:ready`, which only its full runtime
   (`runtime.js`) sends and no page here loads, so `ExecJS("history.back()")` never ran; its Linux
   `Reload` loads `wails://` instead of the page. On Linux the keys call WebKit directly
@@ -163,6 +186,41 @@ page on another origin set the window's title through a form posted to
   folder in old storage) is refused with 401; `useSessionBootstrap` then signs the window in again instead
   of showing the sign-in page, also when the 401 arrives before the status said desktop.
 
+## System notifications
+
+A local instance's alarms (task alarms and reminders, the daily summary, the other notification events
+the settings route there) can come as notifications of the operating system, while the app is open
+(closing the window quits the app; alarms missed meanwhile come at the next start, as on a server that was
+down). The instance's server runs in this process, so it needs no push service:
+
+- **Server:** the alarm channel `desktop` (`ChannelChoice.Desktop`, a column "System" under Settings →
+  Alarme, plus a test button) hands each alarm to an `api.DesktopNotifier`, which the shell sets right after
+  `api.NewServer` (`Local.Notify`, `internal/api/desktop_notify.go`). The capability `desktopNotify` is on
+  only with a notifier, i.e. only in the app's local instances; web push (`push`) stays off there. A new
+  instance (or one whose alarm settings were never saved) gets task alarms through this channel by default,
+  and the daily summary too once it is switched on; saved settings are left alone.
+- **Shell** (`internal/shell/notify.go`): each notification carries the instance's id and the task's. A
+  click brings the window up and, if that instance is still the open one, makes the app open the task (the
+  event `mindsift:open-link` with `?task=…`, as a link from the MCP server; `App.tsx`). A click on an alarm
+  of another instance only brings the window up.
+- **Linux** (`internal/shell/notify_linux.go`, D-Bus with godbus, no cgo): under Flatpak the notification
+  portal `org.freedesktop.portal.Notification` (any Flatpak app may use it, the manifest needs no
+  `--talk-name`), otherwise the desktop's notification server `org.freedesktop.Notifications` (GNOME, KDE,
+  dunst, mako …) with the app's icon and desktop entry (`app.mindsift.MindSift`) and a default action. A
+  server without actions reports a click only as "closed by the user", which counts as a click. Not Wails'
+  notification service: it talks to `org.freedesktop.Notifications` only, gives neither icon nor desktop
+  entry, and stops the whole app when the session bus is missing at its start. No bus or no notification
+  server: the alarm counts as failed and is tried again in the next runs (up to 3), the others go out.
+- **Windows** (`notify_windows.go`): Wails' notification service (go-toast), started with the app's services
+  but so that a failure leaves the app running without toasts. It registers the AppUserModelID `MindSift`
+  per user (`HKCU\Software\Classes\AppUserModelId\MindSift`, display name and the exe's icon, saved as a PNG
+  in the temp folder) and a COM activator (`HKCU\Software\Classes\CLSID\{…}\LocalServer32` = the running
+  exe), so the portable exe and the installed one need no Start menu shortcut with an AUMID. A toast clicked
+  after the app quit starts it again (it opens the instance used last, not the task). Not tried on a real
+  Windows machine yet.
+- **Servers in the window** get no system notifications (their alarms are the server's own business; the
+  window has no web push).
+
 ## Desktop mode of the server
 
 `main.go` calls `config.ApplyDesktop` after `config.Load` (no environment variable can switch it on, on a
@@ -179,7 +237,7 @@ normal server neither). Details in [Doku/architecture.md](../Doku/architecture.m
 - **Off:** registration and invites, mail, OIDC, passkeys, public links, calendar feeds, web push, demo
   mode, the setup code, `BASE_URL` (so no OAuth connectors). The administration hides people, sign-in,
   organizations, sharing, mail and legal texts; the settings hide Sicherheit, the calendar subscription,
-  the address and the mail and push channels of alarms.
+  the address and the mail and push channels of alarms (system notifications take push's place, see above).
 - **Kept:** MCP with API keys (local AI agents, over the listener above), daily backups (on unless switched off in the wizard; into
   `backups/` of the instance or, with a folder chosen in the wizard or the administration, its subfolder
   `MindSift-Backups/<instance>`), export and import. Moving to a server later is a backup restored there; the other way, Administration → Data takes one account
@@ -219,8 +277,11 @@ APP_VERSION=v1.2.0 desktop/build.sh        # the app's version; default v<packag
 `mindsift-desktop-linux-amd64.flatpak`, `mindsift-desktop-windows-amd64.exe` (portable),
 `mindsift-desktop-windows-amd64-setup.exe` (installer, see "Windows") and
 `mindsift-desktop-THIRD_PARTY_LICENSES.txt`. `.github/workflows/release.yaml` runs it from the tag's
-checkout and lists the files in the release's `SHA256SUMS` together with the server archives.
-`.gitea/workflows/desktop.yaml` runs the same script for pushes to the `desktop-spike` branch and by hand
+checkout and lists the files in the release's `SHA256SUMS` together with the server archives; it passes
+`FLATPAK_GPG_PRIVATE_KEY`, so the Flatpak bundle of a release carries the own Flatpak repository as its
+origin (the script checks the bundle's ref and origin), and the bundle then goes into that repository
+(see "Own Flatpak repository").
+`.gitea/workflows/desktop.yaml` runs the same script for pushes to `main` and by hand
 (any branch), with the version `v<package.json>-dev`; the files are one artifact of the run in the Gitea
 UI.
 
@@ -232,8 +293,8 @@ flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatp
 ```
 
 - **Files** in `packaging/flatpak/`: the manifest `app.mindsift.MindSift.yml` (each permission explained
-  there), the AppStream metainfo and `build.sh`. The desktop file and the icons are those of
-  `packaging/linux/`.
+  there), the AppStream metainfo, `build.sh` and `bundle.sh` (makes the bundle, see below). The desktop
+  file and the icons are those of `packaging/linux/`.
 - **Runtime:** `org.gnome.Platform//51` (GTK 4, WebKitGTK 6.0). The binary is built inside
   `org.gnome.Sdk//51` with `org.freedesktop.Sdk.Extension.golang//26.08`, so it links against the
   runtime's libraries; the extension is pinned to a commit in `build.sh` (Go 1.27.3), the GNOME branch
@@ -245,7 +306,17 @@ flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatp
   `desktop/app-version` (`APP_VERSION`, read by the manifest), a release entry in the metainfo when
   `CHANGELOG.md` has a section for that version, and the Go modules vendored (`go mod vendor` in `desktop/`, which includes the main
   module through its `replace`), then runs `flatpak-builder` offline (`GOFLAGS=-mod=vendor`,
-  `GOPROXY=off`) in a privileged Debian container; the runtimes stay in the volume `mindsift-flatpak`.
+  `GOPROXY=off`, `--default-branch=stable`) in a privileged Debian container; the runtimes stay in the
+  volume `mindsift-flatpak`.
+- **Branch and origin of the bundle:** the ref is `app/app.mindsift.MindSift/x86_64/stable`, the same as
+  in the own Flatpak repository (the branch is set on the command line, not in the manifest, which stays
+  as Flathub expects it). With `FLATPAK_GPG_PRIVATE_KEY` set (the repository's ASCII-armored signing key,
+  as in the release workflow), `bundle.sh` signs the commit with it and builds the bundle with
+  `--repo-url=https://flatpak.mindsift.app/repo/` and the public key (`--gpg-keys`), so an install of the
+  bundle gets updates from the repository (see "Own Flatpak repository"). Without the variable (local
+  builds, the Gitea builds) the bundle has no origin and installs as before, without updates. The key
+  reaches only the container that makes the bundle, as a variable passed by name; the script writes it to
+  a file only root can read and drops the variable before the build steps run.
 - **Data:** under Flatpak `XDG_DATA_HOME` is `~/.var/app/app.mindsift.MindSift/data`, so the base folder
   is `~/.var/app/app.mindsift.MindSift/data/MindSift`; the app needs no access to the home folder. It
   writes no desktop entry of its own (`FLATPAK_ID`); Flatpak exports the packaged one.
@@ -285,6 +356,102 @@ flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatp
     each module's complete directory (what the proxy zips contain): the Go part is byte-identical to the
     module-cache run (same modules, same texts).
 
+## Own Flatpak repository
+
+Besides the bundle on the release page, every release goes into MindSift's own signed Flatpak repository
+(an OSTree repository, independent of Flathub), so installed apps get updates through GNOME Software, KDE
+Discover or `flatpak update`. It is served by GitHub Pages from the `gh-pages` branch of
+`mindsift-app/flatpak` as `https://flatpak.mindsift.app/`.
+
+**Install** (the GNOME runtime comes from Flathub, which the `.flatpakref` adds when it is missing):
+
+```bash
+flatpak install --user https://flatpak.mindsift.app/app.mindsift.MindSift.flatpakref
+# or: add the repository, then install from it
+flatpak remote-add --user --if-not-exists mindsift https://flatpak.mindsift.app/mindsift.flatpakrepo
+flatpak install --user mindsift app.mindsift.MindSift
+```
+
+**How it is filled:** `.github/workflows/release.yaml` calls `.github/workflows/flatpak-repo.yaml` after
+the release page has all its files, for releases without `-` whose desktop build succeeded. That workflow
+downloads `mindsift-desktop-linux-amd64.flatpak` and `SHA256SUMS` of the tag (`gh release download`) and
+runs `ci/flatpak-repo.sh`, which
+
+- checks the bundle against `SHA256SUMS`, that its metainfo carries the tag's release and that the tag is
+  not older than the release the repository holds (pre-releases are refused);
+- clones `gh-pages` over SSH with the deploy key (or starts the branch when there is none), imports the
+  bundle and commits it with `flatpak build-commit-from` onto `app/app.mindsift.MindSift/x86_64/stable`,
+  whatever branch the bundle was built with (the bundles up to v0.98.0 are on `master`, later ones on
+  `stable`); the previous release
+  becomes the parent, the same bundle twice makes no new commit and no push;
+- runs `flatpak build-update-repo --generate-static-deltas --prune --prune-depth=5 --default-branch=stable`
+  (summary, appstream branches for the software centers, deltas from the previous release; the last five
+  old releases stay installable with `flatpak update --commit=…`), signing commits and summary with the GPG
+  key;
+- writes the site: `repo/` (the OSTree repository), `mindsift.flatpakrepo` and
+  `app.mindsift.MindSift.flatpakref` (both carry the public key as `GPGKey`), the key as `mindsift.gpg`,
+  `icon.png`, an `index.html` with these instructions, `.nojekyll`, and `CNAME` (kept; a new branch gets
+  `flatpak.mindsift.app`);
+- commits it as `MindSift <noreply@mindsift.app>` as a **single commit without history** and force-pushes
+  it: the OSTree repository keeps its own history, git history would keep every pruned release forever
+  and grow past what Pages serves (1 GB). A release adds about 10-25 MB.
+
+**Updates for installs of the release bundle:** the release workflow builds the
+`mindsift-desktop-linux-amd64.flatpak` of a release (no `-`) with the repository as its origin (see
+"Flatpak", `bundle.sh`), when both secrets below are set. `flatpak install --user
+mindsift-desktop-linux-amd64.flatpak` then adds a remote `mindsift-origin` for
+`https://flatpak.mindsift.app/repo/` that trusts the repository's key (not listed in searches, priority
+0; an existing `mindsift` remote of the same repository stays as it is), and `flatpak update`, GNOME
+Software or Discover take every later release from there. The first update after installing replaces the
+bundle's commit with the repository's commit of the same release (`ci/flatpak-repo.sh` commits it anew
+on top of the previous release), a download of a few kilobytes. Pre-releases get no origin: their commit
+would be newer than the repository's, and `flatpak update` would fail with "Update is older than
+current version" until the next release. For the same reason the workflow only adds the origin when the
+deploy key is set as well, so the repository really gets each release. Bundles up to v0.98.0 are on
+`master` and have no origin: a newer bundle or an install from the repository (see "Install") lands next
+to them on `stable` and becomes the one that runs; `flatpak uninstall --user app.mindsift.MindSift//master`
+removes the old one (the data in `~/.var/app/app.mindsift.MindSift` stays).
+
+Two runs never push at once (concurrency group `flatpak-repo`). A release that is missing (e.g. the
+secrets came later) is added with "Run workflow" on *Flatpak Repository*, from `main`, with its tag;
+the stable branch only moves forward (the script refuses a release older than the one it holds), so add
+missing releases oldest first. Without the secrets the workflow
+leaves a notice and does not fail the release.
+
+**Local run** (needs `flatpak`, `ostree`, `gpg`, `git`; e.g. in `debian:trixie` with those packages):
+`FLATPAK_GPG_PRIVATE_KEY="$(cat key.asc)" SHA256SUMS=SHA256SUMS PUSH=0 WORKDIR=/tmp/fr ci/flatpak-repo.sh
+v1.2.0 mindsift-desktop-linux-amd64.flatpak <git remote>` leaves the site in `/tmp/fr/site`; `SITE_URL`
+changes the URLs in the descriptors (e.g. `http://127.0.0.1:8000` to try it with
+`python3 -m http.server`), `KEEP` the number of old releases.
+
+**Setting it up** (once, by a maintainer):
+
+1. Create the public repository `mindsift-app/flatpak` (empty; the workflow creates `gh-pages`).
+2. Deploy key with write access:
+   `ssh-keygen -t ed25519 -N '' -C 'flatpak-repo deploy key' -f flatpak-deploy-key`. In
+   `mindsift-app/flatpak` → Settings → Deploy keys → Add deploy key: the content of
+   `flatpak-deploy-key.pub`, "Allow write access" checked. In `mindsift-app/mindsift` → Settings →
+   Secrets and variables → Actions → New repository secret `FLATPAK_REPO_DEPLOY_KEY`: the content of
+   `flatpak-deploy-key` (the private key). Delete both files afterwards.
+3. Signing key without passphrase, in a keyring of its own:
+
+   ```bash
+   export GNUPGHOME="$(mktemp -d)"
+   gpg --batch --passphrase '' --quick-gen-key 'MindSift Flatpak Repository <noreply@mindsift.app>' ed25519 sign never
+   gpg --armor --export-secret-keys > flatpak-signing-key.asc
+   ```
+
+   Secret `FLATPAK_GPG_PRIVATE_KEY` in `mindsift-app/mindsift`: the content of `flatpak-signing-key.asc`.
+   Keep a copy offline: everyone who added the repository trusts exactly this key, a new key means they
+   all have to add the repository again. Then remove `$GNUPGHOME` and the file.
+4. Run the workflow *Flatpak Repository* by hand once with the latest release tag (or wait for the next
+   release); this creates `gh-pages` with `CNAME`.
+5. In `mindsift-app/flatpak` → Settings → Pages: Source "Deploy from a branch", branch `gh-pages`,
+   folder `/ (root)`; Custom domain `flatpak.mindsift.app`; "Enforce HTTPS" once the certificate is there.
+6. DNS: `CNAME` record `flatpak.mindsift.app` → `mindsift-app.github.io`. Optionally verify the domain for
+   the organization (GitHub → organization settings → Pages → Add a domain, a TXT record), so nobody else
+   can claim it.
+
 ## Windows
 
 ```bash
@@ -307,7 +474,8 @@ Start menu entry), `mindsift-desktop-windows-amd64-setup.exe` installs it. Both 
   key's `InstallLocation`, without asking for a folder) and keeping the desktop shortcut. A running app
   locks its exe, so the installer (and the uninstaller) asks to quit it, also from the tray, and retries;
   a silent run gives up with exit code 3 instead.
-- **Uninstall** removes only the files it installed, the shortcuts and the key; the folder only when
+- **Uninstall** removes only the files it installed, the shortcuts, the key and what the app registered for
+  its notifications (the AppUserModelID `MindSift`, its COM activator, `HKCU\Software\MindSift\NotificationCategories`); the folder only when
   nothing else is left in it. `%APPDATA%\MindSift` (instances, `desktop.json`, the webview's storage) is
   never deleted and there is no option for it; the confirmation page says so.
 - **WebView2:** no bootstrapper, the runtime is part of Windows 10 and 11. Wails' own NSIS template
@@ -352,6 +520,8 @@ the WebView2 runtime (part of Windows 10/11).
 
 ## Known limits
 
-- No Web Push in the webview; alarms would come through the shell later (Discord and webhooks work).
+- No Web Push in the webview; alarms come as system notifications (see "System notifications"), only
+  while the app is open, and only from local instances: a server's page in the window gets none (its
+  alarms go out as that server sends them: mail, Discord, webhooks, and push to browsers).
 - Drawing together needs a WebSocket and is not available (one person anyway).
 - The tray needs a StatusNotifier host (KDE, most desktops; GNOME only with the AppIndicator extension).

@@ -6,6 +6,7 @@ import { errorMessage } from './errorMessage';
 import { useLatestRef } from './useLatestRef';
 import { SegmentedTranscription } from './voiceTranscription';
 import { useHoldReload } from './reloadHold';
+import { useLeaveGuard } from './leaveGuard';
 
 export type VoiceState = 'idle' | 'listening' | 'transcribing';
 
@@ -27,6 +28,9 @@ export interface VoiceInputOptions {
    *  microphone is free for the next one at once (the dictation queue on the rail's +). onText then
    *  only previews the current recording (final=false); the text comes from transcription.result(). */
   onRecorded?: (transcription: SegmentedTranscription) => void;
+  /** Switching the tab or the note asks first while this input records or transcribes (lib/leaveGuard.ts).
+   *  Off for inputs of the app shell, which stay when the view changes (Quick Dump window, capture sheet). */
+  guardsLeave?: boolean;
 }
 
 const LIVE_SILENCE_MS = 800;
@@ -41,7 +45,7 @@ const BROWSER_SILENCE_STOP_MS = 5000;
  * is made depends on the server setting, see lib/voice.ts. mode is null until known, "off" or
  * "unsupported" means: do not show a microphone.
  */
-export function useVoiceInput({ onText, onError, continuous = false, live = false, chunked = true, onRecorded }: VoiceInputOptions) {
+export function useVoiceInput({ onText, onError, continuous = false, live = false, chunked = true, onRecorded, guardsLeave = true }: VoiceInputOptions) {
   const [mode, setMode] = useState<EffectiveVoiceMode | null>(null);
   // The server's setting: recordings in pieces while speaking, and how long a piece is at most
   const [serverChunked, setServerChunked] = useState(true);
@@ -51,6 +55,8 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   const [pendingChunks, setPendingChunks] = useState(0);
   // A recording or its transcription is under way: the app does not reload for a new version meanwhile
   useHoldReload(state !== 'idle' || pendingChunks > 0);
+  // Leaving the view would lose it too, unless this input lives on (global capture) or hands it on
+  useLeaveGuard(guardsLeave && !onRecorded && (state !== 'idle' || pendingChunks > 0));
   const maxSecondsRef = useRef(600);
   const recorderRef = useRef<VoiceRecorder | null>(null);
   const recognitionRef = useRef<BrowserRecognition | null>(null);

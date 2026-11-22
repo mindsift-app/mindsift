@@ -29,6 +29,7 @@ import { api, triggerHaptic } from '../../lib/api';
 import { OriginBadge } from '../../components/OriginBadge';
 import { formatDateTime } from '../../lib/format';
 import { DateField } from '../../components/DateField';
+import { VoiceCaptureJobs } from './VoiceCaptureJobs';
 
 interface TriageDeckProps {
   deck: Thought[];
@@ -459,6 +460,8 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
 
   if (!activeCard) {
     return (
+      <>
+      <VoiceCaptureJobs className="max-w-xl mx-auto mt-2 mb-3" />
       <div data-tour="triage-deck" className="max-w-xl mx-auto mt-2 p-6 panel-surface text-center">
         <div className="w-12 h-12 bg-accent text-on-accent rounded-xl flex items-center justify-center mx-auto mb-3 shadow-xs">
           <Sparkles className="w-6 h-6" />
@@ -501,6 +504,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           )}
         </div>
       </div>
+      </>
     );
   }
 
@@ -540,6 +544,8 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           )}
         </div>
       </div>
+
+      <VoiceCaptureJobs />
 
       {/* Card Stack Container */}
       <div className="relative h-[290px] sm:h-[300px] w-full flex items-center justify-center">

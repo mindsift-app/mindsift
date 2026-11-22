@@ -227,7 +227,8 @@
       "email": "Tageszusammenfassung – E-Mail",
       "discord": "Tageszusammenfassung – Discord",
       "webhook": "Tageszusammenfassung – Webhook",
-      "push": "Tageszusammenfassung – Push"
+      "push": "Tageszusammenfassung – Push",
+      "desktop": "Tageszusammenfassung – Systembenachrichtigung"
     },
     "needPush": "Bitte zuerst unten Push auf einem Gerät einschalten",
     "lead": {
@@ -281,9 +282,16 @@
       "testSent_one": "Test-Benachrichtigung an {{count}} Gerät gesendet.",
       "testSent_other": "Test-Benachrichtigung an {{count}} Geräte gesendet."
     },
+    "desktop": {
+      "title": "Ziel: Systembenachrichtigung",
+      "hint": "Zeigt Alarme als Benachrichtigung des Betriebssystems, solange die App geöffnet ist. Ein Klick darauf öffnet die Aufgabe.",
+      "test": "Test anzeigen"
+    },
     "channel": {
       "email": "E-Mail",
-      "ownWebhook": "Eigener Webhook"
+      "ownWebhook": "Eigener Webhook",
+      "desktop": "Systembenachrichtigung",
+      "desktopShort": "System"
     },
     "event": {
       "due": "Fällige Aufgaben (sofort)",
@@ -430,6 +438,7 @@
     "serverHint": "Die Aufnahme geht nur an den Spracherkennungs-Server dieser MindSift-Installation. Funktioniert in jedem Browser.",
     "browser": "Browser",
     "browserHint": "Die Spracherkennung des Browsers. Der Text erscheint sofort beim Sprechen; Chrome und Edge schicken die Aufnahme dafür an Google bzw. Microsoft. In Firefox gibt es sie nicht.",
+    "browserUnavailable": "Hier nicht verfügbar: Dieses Fenster hat keine eingebaute Spracherkennung. Es wird der Whisper-Server benutzt.",
     "languageTitle": "Sprache beim Sprechen",
     "languageIntro": "In welcher Sprache du ins Mikrofon sprichst. Auch Sprachen, die es in der App nicht gibt.",
     "languageApp": "Wie die App-Sprache ({{name}})",

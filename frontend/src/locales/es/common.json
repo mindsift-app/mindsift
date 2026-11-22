@@ -183,7 +183,7 @@
     "noMic": "Sin acceso al micrófono (permiso denegado o la página no se sirve por HTTPS)",
     "denied": "Micrófono no permitido",
     "startFailed": "No se pudo iniciar la entrada de voz",
-    "unsupported": "Este navegador no admite entrada de voz",
+    "unsupported": "La entrada de voz no está disponible aquí: no hay reconocimiento de voz integrado. Funciona con un servidor Whisper (Administración → Entrada de voz e IA).",
     "off": "La entrada de voz está desactivada"
   },
   "menu": {
@@ -389,6 +389,8 @@
   "restore": "Restaurar",
   "discard": "Descartar",
   "download": "Descargar",
+  "fileSaved": "«{{name}}» guardado",
+  "fileSaveFailed": "No se pudo guardar «{{name}}»",
   "filterTag": "Filtrar por #{{tag}}",
   "deviceName": "{{browser}} en {{os}}",
   "listMenu": {
@@ -443,5 +445,14 @@
   "naturalDate": {
     "recognized": "Fecha de vencimiento reconocida: {{date}}",
     "ignore": "No usar esta fecha"
+  },
+  "leaveGuard": {
+    "message": "El dictado aún no ha terminado. Si cambias ahora, se perderá.",
+    "leave": "Cambiar de todos modos",
+    "stay": "Quedarse"
+  },
+  "voiceJobs": {
+    "failed": "El reconocimiento de voz ha fallado",
+    "timeout": "El reconocimiento de voz tardó demasiado"
   }
 }

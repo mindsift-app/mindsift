@@ -227,7 +227,8 @@
       "email": "Daily summary – email",
       "discord": "Daily summary – Discord",
       "webhook": "Daily summary – webhook",
-      "push": "Daily summary – push"
+      "push": "Daily summary – push",
+      "desktop": "Daily summary – system notification"
     },
     "needPush": "Switch on push on a device below first",
     "lead": {
@@ -281,9 +282,16 @@
       "testSent_one": "Test notification sent to {{count}} device.",
       "testSent_other": "Test notification sent to {{count}} devices."
     },
+    "desktop": {
+      "title": "Target: system notification",
+      "hint": "Shows alarms as notifications of the operating system while the app is open. Clicking one opens the task.",
+      "test": "Show test"
+    },
     "channel": {
       "email": "Email",
-      "ownWebhook": "Own webhook"
+      "ownWebhook": "Own webhook",
+      "desktop": "System notification",
+      "desktopShort": "System"
     },
     "event": {
       "due": "Due tasks (right away)",
@@ -430,6 +438,7 @@
     "serverHint": "The recording only goes to the speech recognition server of this MindSift installation. Works in every browser.",
     "browser": "Browser",
     "browserHint": "The browser's speech recognition. The text appears right while you speak; Chrome and Edge send the recording to Google or Microsoft for this. Firefox does not have it.",
+    "browserUnavailable": "Not available here: this window has no built-in speech recognition. The Whisper server is used.",
     "languageTitle": "Spoken language",
     "languageIntro": "The language you speak into the microphone, also ones the app is not available in.",
     "languageApp": "Same as the app language ({{name}})",

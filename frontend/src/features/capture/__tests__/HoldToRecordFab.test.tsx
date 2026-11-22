@@ -334,9 +334,8 @@ describe('HoldToRecordFab', () => {
 
     expect(onTap).toHaveBeenCalledTimes(1);
     expect(onTranscript).not.toHaveBeenCalled();
-    expect(screen.getByRole('status').textContent).toContain(
-      'Spracheingabe wird von diesem Browser nicht unterstützt'
-    );
+    expect(screen.getByRole('status').textContent).toContain('Spracheingabe ist hier nicht verfügbar');
+    expect(screen.getByRole('status').textContent).toContain('Whisper-Server');
   });
 });
 

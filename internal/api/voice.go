@@ -29,12 +29,11 @@ import (
 // browser only gets a short message.
 
 type voiceService struct {
-	mu       sync.Mutex
-	slots    chan struct{} // as many places as STT_MAX_PARALLEL / the administration allow (slotsFor)
-	parallel int
-	usage    map[string][]time.Time // userID -> transcriptions within the last hour
-	status   voiceStatus
-	checked  time.Time
+	mu      sync.Mutex
+	slots   *sttSlots              // the Whisper server's places (voice_slots.go), as many as STT_MAX_PARALLEL / the administration allow
+	usage   map[string][]time.Time // userID -> transcriptions within the last hour
+	status  voiceStatus
+	checked time.Time
 
 	downloads modelDownloads // models the administration had downloaded (speech.go)
 	checking  atomic.Bool    // startVoiceCheck runs
@@ -49,22 +48,13 @@ type voiceStatus struct {
 }
 
 func newVoiceService(parallel int) *voiceService {
-	v := &voiceService{usage: map[string][]time.Time{}}
-	v.slotsFor(parallel)
-	return v
+	return &voiceService{usage: map[string][]time.Time{}, slots: newSTTSlots(parallel)}
 }
 
-// slotsFor: the places for transcriptions at the same time. A new number gets a new set of places; the
-// transcriptions under way give theirs back to the set they took it from.
-func (v *voiceService) slotsFor(parallel int) chan struct{} {
-	if parallel < 1 {
-		parallel = 1
-	}
-	v.mu.Lock()
-	defer v.mu.Unlock()
-	if v.slots == nil || v.parallel != parallel {
-		v.slots, v.parallel = make(chan struct{}, parallel), parallel
-	}
+// slotsFor: the places for transcriptions at the same time, with the number set now (a change counts at
+// once; requests under way keep theirs).
+func (v *voiceService) slotsFor(parallel int) *sttSlots {
+	v.slots.setCapacity(parallel)
 	return v.slots
 }
 
@@ -139,18 +129,17 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Wait for a free slot; the request may be cancelled meanwhile (user stopped waiting)
+	// Wait for a free slot, ahead of background jobs (voice_slots.go); the request may be cancelled
+	// meanwhile (user stopped waiting)
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(cfg.TimeoutSeconds)*time.Second)
 	defer cancel()
-	slots := s.voice.slotsFor(cfg.MaxParallel)
-	select {
-	case slots <- struct{}{}:
-		defer func() { <-slots }()
-	case <-ctx.Done():
+	slot, err := s.voice.slotsFor(cfg.MaxParallel).acquire(ctx, false)
+	if err != nil {
 		slog.Warn("Speech recognition: no free capacity within the time limit", "user_id", userID, "parallel", cfg.MaxParallel)
 		writeError(w, http.StatusServiceUnavailable, "Die Spracherkennung ist gerade ausgelastet. Bitte gleich noch einmal versuchen.")
 		return
 	}
+	defer slot.release()
 
 	started := time.Now()
 	text, err := s.transcribe(ctx, audio, header.Filename, header.Header.Get("Content-Type"), s.sttLanguage(userID))

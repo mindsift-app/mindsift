@@ -197,10 +197,13 @@ type ChannelChoice struct {
 	Discord bool `json:"discord"`
 	Webhook bool `json:"webhook"` // own webhook (customWebhookUrl), JSON payload
 	Push    bool `json:"push"`    // web push to the user's browsers and phones
+	// Desktop: a notification of the operating system, shown by the desktop app while one of its local
+	// instances is open (only there: capability desktopNotify)
+	Desktop bool `json:"desktop"`
 }
 
 // Any reports whether at least one channel is chosen.
-func (c ChannelChoice) Any() bool { return c.Email || c.Discord || c.Webhook || c.Push }
+func (c ChannelChoice) Any() bool { return c.Email || c.Discord || c.Webhook || c.Push || c.Desktop }
 
 type DailySummary struct {
 	Enabled bool   `json:"enabled"`
@@ -209,6 +212,12 @@ type DailySummary struct {
 	Discord bool   `json:"discord"`
 	Webhook bool   `json:"webhook"`
 	Push    bool   `json:"push"`
+	Desktop bool   `json:"desktop"`
+}
+
+// Channels: the summary's channels as a choice
+func (d DailySummary) Channels() ChannelChoice {
+	return ChannelChoice{Email: d.Email, Discord: d.Discord, Webhook: d.Webhook, Push: d.Push, Desktop: d.Desktop}
 }
 
 // DefaultNotificationSettings for users who never saved any; task alarms follow the old alarm channels.

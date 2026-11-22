@@ -688,7 +688,7 @@ const es: HelpContent = {
             </NotInDesktop>
             <InDesktop>
               <li>
-                <strong className="text-main">Avisos automáticos:</strong> a la hora de vencimiento (las tareas de todo el día a las 9:00, menos tu antelación) MindSift te avisa por <strong className="text-main">webhook de Discord</strong> o por un webhook HTTP propio, mientras la app de escritorio esté abierta. Si cambias el vencimiento o reabres la tarea, el aviso vuelve a saltar. Se configura en los ajustes de tu cuenta, en «Avisos». Todas las horas usan la zona horaria de la instancia, que se fija en <em>Administración → Instancia</em> (si no, la del sistema).
+                <strong className="text-main">Avisos automáticos:</strong> a la hora de vencimiento (las tareas de todo el día a las 9:00, menos tu antelación) MindSift te avisa por <strong className="text-main">notificación del sistema</strong> (al hacer clic se abre la tarea), <strong className="text-main">webhook de Discord</strong> o por un webhook HTTP propio, mientras la app de escritorio esté abierta. Si cambias el vencimiento o reabres la tarea, el aviso vuelve a saltar. Se configura en los ajustes de tu cuenta, en «Avisos». Todas las horas usan la zona horaria de la instancia, que se fija en <em>Administración → Instancia</em> (si no, la del sistema).
               </li>
             </InDesktop>
             <li>

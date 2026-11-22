@@ -358,6 +358,7 @@
     "uploadFailed": "Upload failed",
     "emptyRecording": "The recording is empty",
     "noMic": "No access to the microphone (permission, or the page is not served over HTTPS)",
+    "recordUnsupported": "Recording is not supported in this browser.",
     "record": "Record a voice note",
     "stopSave": "Stop and save the recording",
     "start": "Start recording",
@@ -379,6 +380,8 @@
     "transcribing": "Transcribing…",
     "transcribe": "Transcribe",
     "caption": "Add a caption…",
+    "captionMore": "more",
+    "captionLess": "less",
     "imageUnavailable": "Image not available (offline or deleted)",
     "enlarge": "Enlarge",
     "resize": "Drag to change the size",
@@ -393,7 +396,8 @@
     "pasteFailed_one": "Image not pasted: {{error}}",
     "pasteFailed_other": "{{count}} images not pasted: {{error}}",
     "pasteTooMany": "At most {{max}} images at once, the others were not pasted.",
-    "dropOnlyImages": "Only images can be dragged in."
+    "dropOnlyImages": "Only images can be dragged in.",
+    "transcribeDismiss": "Dismiss error"
   },
   "journal": {
     "opening": "Opening {{date}}…",

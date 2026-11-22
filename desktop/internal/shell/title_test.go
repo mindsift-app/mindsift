@@ -44,15 +44,11 @@ func TestTitleFollowsThePage(t *testing.T) {
 	check("wails://localhost/__desktop/start", "MindSift")
 	check("https://mind.example.com/", "Büro – MindSift")
 
-	// The page call of Windows (a page of the window's own origin tells its address)
+	// No page tells the shell its address: Windows takes it from WebView2 (webview_windows.go), the former
+	// page call is gone
 	var got string
 	sh.Navigated = func(a string) { got = a }
-	if code, _ := call(t, sh, "page", map[string]any{"path": "/__desktop/start"}); code != 200 || got != "wails://localhost/__desktop/start" {
+	if code, _ := call(t, sh, "page", map[string]any{"path": "/__desktop/start"}); code == 200 || got != "" {
 		t.Errorf("page call: %d, address %q", code, got)
-	}
-	got = ""
-	call(t, sh, "page", map[string]any{"path": "evil"})
-	if got != "" {
-		t.Errorf("a path without a leading slash was passed on: %q", got)
 	}
 }

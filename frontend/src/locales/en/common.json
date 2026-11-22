@@ -183,7 +183,7 @@
     "noMic": "No access to the microphone (permission, or the page is not served over HTTPS)",
     "denied": "Microphone not allowed",
     "startFailed": "Voice input could not be started",
-    "unsupported": "This browser does not support voice input",
+    "unsupported": "Voice input is not available here: there is no built-in speech recognition. It works with a Whisper server (Administration → Voice input & AI).",
     "off": "Voice input is switched off"
   },
   "menu": {
@@ -389,6 +389,8 @@
   "restore": "Restore",
   "discard": "Discard",
   "download": "Download",
+  "fileSaved": "Saved “{{name}}”",
+  "fileSaveFailed": "Could not save “{{name}}”",
   "filterTag": "Filter by #{{tag}}",
   "deviceName": "{{browser}} on {{os}}",
   "listMenu": {
@@ -443,5 +445,14 @@
   "naturalDate": {
     "recognized": "Recognized due date: {{date}}",
     "ignore": "Don't use this date"
+  },
+  "leaveGuard": {
+    "message": "The dictation is not finished yet. Switching now loses it.",
+    "leave": "Switch anyway",
+    "stay": "Stay"
+  },
+  "voiceJobs": {
+    "failed": "Speech recognition failed",
+    "timeout": "Speech recognition took too long"
   }
 }

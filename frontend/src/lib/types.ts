@@ -213,6 +213,8 @@ export interface NotificationChannelRouting {
   discord: boolean;
   webhook: boolean;
   push: boolean;
+  /** A notification of the operating system, shown by the desktop app's local instances (capability desktopNotify) */
+  desktop: boolean;
 }
 
 export interface NotificationEvents {
@@ -232,6 +234,7 @@ export interface DailySummarySettings {
   discord: boolean;
   webhook: boolean;
   push: boolean;
+  desktop: boolean;
 }
 
 /** A browser or installed app that receives web push */
@@ -668,6 +671,10 @@ export interface BackupLocation {
   chosen?: string;
   // chosenMissing: the chosen folder does not exist now (drive not mounted): backup runs are skipped
   chosenMissing?: boolean;
+  // dirShown, chosenShown: dir and chosen as the person knows them, for showing only (under Flatpak dir and
+  // chosen are paths of the document portal, /run/user/…/doc/…); what is sent back stays dir/chosen
+  dirShown?: string;
+  chosenShown?: string;
 }
 
 /** Desktop app: one account of a server's database snapshot, with what it owns. */
@@ -1125,6 +1132,37 @@ export interface WSMessage<T = unknown> {
   listId?: string;
   payload: T;
   timestamp: string;
+}
+
+// A transcription the server does in the background (lib/transcriptionJobs.ts): a recording in a note
+// ("note", its text becomes the caption) or one dictated into the inbox ("inbox", becomes an entry)
+export interface TranscriptionJob {
+  id: string;
+  userId: string;
+  kind: 'note' | 'inbox';
+  docId?: string;
+  blockId?: string;
+  mediaId?: string;
+  status: 'queued' | 'running' | 'failed';
+  /** Why the last attempt failed: failed | timeout (also while it waits for its next attempt) */
+  error?: string;
+  attempts: number;
+  /** Parts of an inbox recording */
+  pieces?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// The end of a background transcription (TRANSCRIPTION_DONE): text is empty when nothing was heard,
+// the recording is gone or the job was discarded; thoughtId names the inbox entry it became
+export interface TranscriptionDone {
+  id: string;
+  kind: 'note' | 'inbox';
+  userId: string;
+  text: string;
+  docId?: string;
+  blockId?: string;
+  thoughtId?: string;
 }
 
 // A logged-in device (Einstellungen → Sicherheit)

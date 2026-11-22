@@ -1475,6 +1475,14 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFocus]);
   const showBubble = hasHover ? pointerMoving || pointerOnBubble : activeFocus && touchShown;
+  // A voice note's player fills the row's width, so its bubble gets a line of its own above the player (the
+  // row's top padding) instead of covering the time bar and menu. Its buttons are 44px to tap on phones
+  // while the pill stays slim
+  const bubbleAbovePlayer = block.type === 'audio' && (canEdit || !!onCopyBlockLink);
+  const bubbleBtn =
+    block.type === 'audio'
+      ? 'p-1 sm:p-0.5 min-w-11 min-h-11 -my-2 sm:min-w-0 sm:min-h-0 sm:my-0'
+      : 'p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0';
 
   // Rows out of view are skipped by the browser (.outline-row in index.css); a row with the cursor or a menu
   // stays rendered (data-outline-live), and afterwards until it is a screen away (lib/outlineNear.ts)
@@ -1497,7 +1505,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       onTouchStart={showBubbleForTouch}
       // data-file-drop: image files dragged over the note would go here (OutlinerTree); looks like the target
       // of a moved bullet, with the line below the row since the images go under it
-      className={`outline-row group relative flex items-start gap-1 py-1 px-0.5 sm:px-1.5 transition-all duration-300 data-file-drop:rounded-card data-file-drop:bg-accent/10 data-file-drop:border-b-2 data-file-drop:border-accent ${
+      className={`outline-row group relative flex items-start gap-1 ${bubbleAbovePlayer ? 'pt-9 pb-1 sm:pt-8' : 'py-1'} px-0.5 sm:px-1.5 transition-all duration-300 data-file-drop:rounded-card data-file-drop:bg-accent/10 data-file-drop:border-b-2 data-file-drop:border-accent ${
         inRangeSelection ? 'bg-accent/15' : ''
       } ${
         // Round corners only on a tinted row: on the others they are invisible, but the row's content-visibility
@@ -1765,16 +1773,23 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         ) : block.type === 'audio' ? (
           <AudioBlock
             content={localContent}
+            docId={docId}
+            blockId={block.id}
             canEdit={canEdit}
             locked={indentLocked}
             onIndent={indentTable}
             onOutdent={outdentTable}
             canIndent={canIndentRow}
             canOutdent={canOutdentRow}
+            onExitBelow={canEdit ? appendBelowTable : undefined}
+            // Caption or player focused counts as the cursor in this bullet (phone bar, highlight)
+            onFocusChange={(focused) => (focused ? onFocusBlock?.(block.id) : onBlurBlock?.(block.id))}
             onCaptionChange={(caption) => {
               const ref = parseMediaContent(localContent);
               if (!ref) return;
               const content = mediaContent('audio', ref.id, caption);
+              // Enter stores the caption before the new bullet, leaving the field then stores it once more
+              if (content === localContentRef.current) return;
               setLocalContent(content);
               localContentRef.current = content;
               flushDebounce(content);
@@ -1827,10 +1842,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             onOutdent={outdentTable}
             canIndent={canIndentRow}
             canOutdent={canOutdentRow}
+            onExitBelow={canEdit ? appendBelowTable : undefined}
             onCaptionChange={(caption) => {
               const ref = parseMediaContent(localContent);
               if (!ref) return;
               const content = mediaContent('image', ref.id, caption, ref.width);
+              // Enter stores the caption before the new bullet, leaving the field then stores it once more
+              if (content === localContentRef.current) return;
               setLocalContent(content);
               localContentRef.current = content;
               flushDebounce(content);
@@ -2260,7 +2278,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
               refocusAfterTypeChangeRef.current = true;
               flushDebounce(localContent, block.type === 'todo' ? { type: 'bullet', checked: false, taskId: '' } : { type: 'bullet', checked: false });
             }}
-            className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
+            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer`}
             title={t('block.toText')}
           >
             <Type className="w-3.5 h-3.5" />
@@ -2290,7 +2308,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                 showError(errorMessage(err, t('block.createTaskFailed')));
               }
             }}
-            className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
+            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer`}
             title={t('block.toTask')}
             aria-label={t('block.toTask')}
           >
@@ -2314,7 +2332,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                 showError(errorMessage(err, t('block.unlinkFailed')));
               }
             }}
-            className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-status-warn rounded-btn transition-colors cursor-pointer"
+            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-status-warn rounded-btn transition-colors cursor-pointer`}
             title={t('block.unlink')}
             aria-label={t('block.unlink')}
           >
@@ -2327,7 +2345,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           <button
             type="button"
             onClick={() => onCopyBlockLink(block.id)}
-            className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
+            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer`}
             title={t('block.copyLink')}
             aria-label={t('block.copyLink')}
           >
@@ -2340,7 +2358,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           <button
             type="button"
             onClick={(e) => onExtractBlock(block.id, { x: e.clientX, y: e.clientY })}
-            className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
+            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer`}
             title={t('block.extract')}
           >
             <FileOutput className="w-3.5 h-3.5" />
@@ -2352,7 +2370,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           <button
             type="button"
             onClick={() => onInlineBlock(block.id)}
-            className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
+            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer`}
             title={t('block.pullBackTitle')}
             aria-label={t('block.pullBack')}
           >
@@ -2372,7 +2390,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                 onDeleteBlockRef.current(block.id, false);
               }
             }}
-            className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-status-err rounded-btn transition-colors cursor-pointer"
+            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-status-err rounded-btn transition-colors cursor-pointer`}
             title={t('block.delete')}
           >
             <Trash className="w-3.5 h-3.5" />

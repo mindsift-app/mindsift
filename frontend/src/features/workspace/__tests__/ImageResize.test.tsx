@@ -58,7 +58,7 @@ describe('Bildgröße ändern', () => {
     expect(img.className).toContain('h-auto');
     expect(img.className).not.toContain('max-h-112');
     // The caption field shows the caption without the width
-    expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('Hafen');
+    expect(screen.getByRole('textbox').textContent).toBe('Hafen');
 
     const reset = screen.getByRole('button', { name: RESET });
     expect(reset.parentElement!.className).toContain('right-1.5');

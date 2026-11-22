@@ -181,7 +181,7 @@
     "noMic": "Kein Zugriff auf das Mikrofon (Berechtigung, oder die Seite läuft nicht über HTTPS)",
     "denied": "Mikrofon nicht freigegeben",
     "startFailed": "Spracheingabe konnte nicht gestartet werden",
-    "unsupported": "Spracheingabe wird von diesem Browser nicht unterstützt",
+    "unsupported": "Spracheingabe ist hier nicht verfügbar: Es gibt keine eingebaute Spracherkennung. Mit einem Whisper-Server (Administration → Spracheingabe & KI) funktioniert sie.",
     "off": "Spracheingabe ist ausgeschaltet"
   },
   "menu": {
@@ -387,6 +387,8 @@
   "restore": "Wiederherstellen",
   "discard": "Verwerfen",
   "download": "Download",
+  "fileSaved": "„{{name}}“ gespeichert",
+  "fileSaveFailed": "„{{name}}“ konnte nicht gespeichert werden",
   "filterTag": "Nach #{{tag}} filtern",
   "deviceName": "{{browser}} auf {{os}}",
   "listMenu": {
@@ -441,5 +443,14 @@
   "naturalDate": {
     "recognized": "Erkanntes Fälligkeitsdatum: {{date}}",
     "ignore": "Datum nicht übernehmen"
+  },
+  "leaveGuard": {
+    "message": "Das Diktat ist noch nicht fertig. Beim Wechseln geht es verloren.",
+    "leave": "Trotzdem wechseln",
+    "stay": "Bleiben"
+  },
+  "voiceJobs": {
+    "failed": "Spracherkennung fehlgeschlagen",
+    "timeout": "Spracherkennung hat zu lange gedauert"
   }
 }

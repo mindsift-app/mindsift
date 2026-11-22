@@ -12,12 +12,20 @@ name: GitHub Release
 # are uploaded: the website's links to releases/latest/download/<name> never point at a release without
 # them. A failed desktop build does not hold back the page and the server binaries; the job fails at the
 # end, and a manual run with the same tag attaches the desktop files later.
+# Afterwards flatpak-repo.yaml puts the Flatpak bundle of a release (no "-") into MindSift's own Flatpak
+# repository (flatpak.mindsift.app), when the desktop app was built; without its secrets it only leaves a
+# notice.
 on:
   workflow_call:
     inputs:
       tag:
         type: string
         required: true
+    secrets:
+      FLATPAK_REPO_DEPLOY_KEY:
+        required: false
+      FLATPAK_GPG_PRIVATE_KEY:
+        required: false
   workflow_dispatch:
     inputs:
       tag:
@@ -33,6 +41,8 @@ jobs:
     name: Release ${{ inputs.tag }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    outputs:
+      desktop: ${{ steps.desktop.outputs.built }}
     steps:
       - name: Checkout Tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -45,11 +55,18 @@ jobs:
       # app has no image. desktop/build.sh and the Flatpak build run in containers (node, golang trixie
       # with GTK 4 / WebKitGTK 6.0, a Debian container with SYS_ADMIN for flatpak-builder), without .git,
       # npm without install scripts and Go only with the modules go.sum names.
+      # With FLATPAK_GPG_PRIVATE_KEY the Flatpak bundle of a release is signed with the own Flatpak
+      # repository's key and carries the repository as its origin, so installs of the bundle get updates
+      # from there (desktop/packaging/flatpak/bundle.sh; the key only goes into the container that makes
+      # the bundle, pre-releases get no origin). Only when the deploy key is there too: a repository that
+      # never gets the release would make flatpak update fail for those installs ("Update is older than
+      # current version"). Without them (e.g. a fork) the bundle is built without origin, as before.
       - name: Build Desktop App
         id: desktop
         continue-on-error: true
         env:
           TAG: ${{ inputs.tag }}
+          FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_REPO_DEPLOY_KEY != '' && secrets.FLATPAK_GPG_PRIVATE_KEY || '' }}
         run: |
           if [ ! -x ci/release-desktop.sh ]; then
             echo "::notice::${TAG} is from before the desktop release files, nothing to build"
@@ -60,6 +77,7 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           df -h /
           ENGINE=docker COPY_MODE=1 ci/release-desktop.sh "${TAG}" binaries
+          echo "built=true" >> "$GITHUB_OUTPUT"
 
       - name: Server Binaries and Checksums
         env:
@@ -100,3 +118,18 @@ jobs:
         run: |
           echo "::error::The desktop app of ${TAG} was not built (see the step Build Desktop App); the release has the server binaries only. Run this workflow by hand with ${TAG} to attach it."
           exit 1
+
+  # The release's Flatpak bundle into the own Flatpak repository; a failed desktop build fails the job
+  # above, so this one is skipped then
+  flatpak-repo:
+    name: Flatpak Repository
+    needs: release
+    if: needs.release.outputs.desktop == 'true' && !contains(inputs.tag, '-')
+    permissions:
+      contents: read
+    uses: ./.github/workflows/flatpak-repo.yaml
+    with:
+      tag: ${{ inputs.tag }}
+    secrets:
+      FLATPAK_REPO_DEPLOY_KEY: ${{ secrets.FLATPAK_REPO_DEPLOY_KEY }}
+      FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}

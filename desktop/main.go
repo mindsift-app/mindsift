@@ -55,9 +55,10 @@ func main() {
 		log.Fatal(err)
 	}
 	login, name := shell.SystemUser()
+	// ShownPath: a folder of the Flatpak document portal shown as the host's (the backup folder)
 	local := &shell.Local{
 		Static:  staticFS,
-		Desktop: config.Desktop{Platform: runtime.GOOS, Origin: windowOrigin(), Username: login, DisplayName: name},
+		Desktop: config.Desktop{Platform: runtime.GOOS, Origin: windowOrigin(), Username: login, DisplayName: name, ShownPath: shell.HostPath},
 		Version: version,
 	}
 	sh := &shell.Shell{Settings: settings, Local: local, Static: staticFS, Origin: windowOrigin(), Version: version, Base: base}
@@ -84,6 +85,8 @@ func main() {
 		// The webview's storage (local storage, IndexedDB, cookies, service workers, caches) in the base
 		// folder, whatever the program's file is called; on Linux useWebviewDataDir below
 		Windows: application.WindowsOptions{WebviewUserDataPath: webviewDir},
+		// Windows: the note every page posts after its load, for the title (webview_windows.go); nil elsewhere
+		RawMessageHandler: rawMessages,
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "app.mindsift.MindSift",
 			OnSecondInstanceLaunch: func(application.SecondInstanceData) {
@@ -94,6 +97,28 @@ func main() {
 			},
 		},
 	})
+	// Alarms of the local instances as system notifications (shell/notify.go); a click brings the window up
+	// and opens the task, if its instance is still the open one
+	notes := &shell.Notifications{}
+	notes.Shower = newNoteShower(app, notes.Click)
+	notes.Clicked = func(instanceID, taskID string) {
+		// Asked here, off the main thread: opening an instance holds the lock for a while
+		openTask := taskID != "" && local.Current() == instanceID
+		application.InvokeAsync(func() {
+			if window == nil {
+				return
+			}
+			window.Show()
+			window.Focus()
+			if openTask {
+				runInPage(window, shell.OpenTaskScript(windowOrigin(), taskID))
+			}
+		})
+	}
+	if notes.Shower != nil {
+		local.Notify = notes.Notify
+	}
+
 	sh.ShowFolder = func(dir string) error { return app.Browser.OpenFile(dir) }
 	sh.PickFolder = func(start string) (string, error) {
 		d := app.Dialog.OpenFile().CanChooseDirectories(true).CanChooseFiles(false).CanCreateDirectories(true).
@@ -106,6 +131,17 @@ func main() {
 		}
 		return d.PromptForSingleSelection()
 	}
+	// Downloads of every page (download_linux.go): the system's save dialog asks where to; "" = cancelled
+	setupDownloads(base, func(name, dir string) (string, error) {
+		d := app.Dialog.SaveFile().SetFilename(name).CanCreateDirectories(true)
+		if dir != "" {
+			d.SetDirectory(dir)
+		}
+		if window != nil {
+			d.AttachToWindow(window)
+		}
+		return d.PromptForSingleSelection()
+	})
 	sh.Opened = func(e shell.Entry) {
 		if window != nil {
 			window.SetTitle(shell.EntryTitle(e))

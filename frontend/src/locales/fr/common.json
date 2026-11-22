@@ -183,7 +183,7 @@
     "noMic": "Pas d'accès au micro (autorisation ou page non servie en HTTPS)",
     "denied": "Microphone refusé",
     "startFailed": "Impossible de démarrer la saisie vocale",
-    "unsupported": "Ce navigateur ne prend pas en charge la saisie vocale",
+    "unsupported": "La saisie vocale n'est pas disponible ici : il n'y a pas de reconnaissance vocale intégrée. Elle fonctionne avec un serveur Whisper (Administration → Saisie vocale & IA).",
     "off": "La saisie vocale est désactivée"
   },
   "menu": {
@@ -389,6 +389,8 @@
   "restore": "Restaurer",
   "discard": "Supprimer",
   "download": "Télécharger",
+  "fileSaved": "« {{name}} » enregistré",
+  "fileSaveFailed": "Impossible d’enregistrer « {{name}} »",
   "filterTag": "Filtrer par #{{tag}}",
   "deviceName": "{{browser}} sur {{os}}",
   "listMenu": {
@@ -443,5 +445,14 @@
   "naturalDate": {
     "recognized": "Échéance reconnue : {{date}}",
     "ignore": "Ne pas utiliser cette date"
+  },
+  "leaveGuard": {
+    "message": "La dictée n’est pas encore terminée. En changeant maintenant, elle sera perdue.",
+    "leave": "Changer quand même",
+    "stay": "Rester"
+  },
+  "voiceJobs": {
+    "failed": "La reconnaissance vocale a échoué",
+    "timeout": "La reconnaissance vocale a pris trop de temps"
   }
 }

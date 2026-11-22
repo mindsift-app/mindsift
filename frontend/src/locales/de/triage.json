@@ -115,5 +115,18 @@
     "label": "Schnell erfassen – tippen zum Schreiben, gedrückt halten zum Sprechen"
   },
   "dictation": "Diktat",
-  "putOnList": "Direkt auf Liste „{{title}}“ setzen"
+  "putOnList": "Direkt auf Liste „{{title}}“ setzen",
+  "voiceJobs": {
+    "title": "Sprachaufnahmen in Arbeit",
+    "pending": "Sprachaufnahme wird transkribiert…",
+    "failed": "Sprachaufnahme nicht transkribiert",
+    "retrying": "Neuer Versuch folgt gleich",
+    "retry": "Erneut versuchen",
+    "listen": "Aufnahme anhören",
+    "discard": "Aufnahme verwerfen",
+    "discardConfirm": "Die Aufnahme wird gelöscht und lässt sich nicht wiederherstellen.",
+    "audioFailed": "Aufnahme konnte nicht geladen werden",
+    "actionFailed": "Das hat nicht geklappt",
+    "keptInInbox": "{{reason}} – die Aufnahme wartet im Quick Dump."
+  }
 }

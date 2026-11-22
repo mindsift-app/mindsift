@@ -31,6 +31,12 @@ vi.mock('../../lib/useVoiceInput', () => ({
 const showError = vi.hoisted(() => vi.fn());
 vi.mock('../../components/ErrorNotice', () => ({ showError }));
 
+// The queue itself: the recording's text as the stand-in delivers it (serverDictation.test.ts covers the
+// way through the server)
+vi.mock('../../features/capture/serverDictation', () => ({
+  serverDictation: (t: { result: () => Promise<string>; retry: () => Promise<string> }) => ({ text: () => t.result(), retry: () => t.retry() }),
+}));
+
 // The real reload hold, watched: who holds the update reload back and whether it still does
 const holdReload = vi.hoisted(() => vi.fn());
 vi.mock('../../lib/reloadHold', () => ({ holdReload, useHoldReload: () => {}, reloadHeld: () => false }));

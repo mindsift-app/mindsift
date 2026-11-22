@@ -2,6 +2,8 @@
 // The CSS stays the user's own text: a colour change replaces only the value of one variable, so
 // comments, order and everything else survive, and an exported file looks like the imported one.
 
+import { saveBlob } from './download';
+
 /** The colours a custom theme row offers as tiles, in this order */
 export const THEME_COLOR_VARS = ['bg-app', 'bg-panel', 'bg-panel-elevated', 'text-main', 'text-muted', 'accent-primary'] as const;
 /** Less important colours, behind "Weitere Farben"; without a value of their own they follow the ones above */
@@ -287,10 +289,6 @@ export function themeNameFromFile(fileName: string): string {
 
 /** Offers the CSS as a download, in exactly the form an import takes */
 export function downloadThemeCss(name: string, css: string): void {
-  const url = URL.createObjectURL(new Blob([css], { type: 'text/css' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = themeFileName(name);
-  a.click();
-  URL.revokeObjectURL(url);
+  // saveBlob keeps the address alive until the download took it (the desktop app's WebKit reads it later)
+  saveBlob(new Blob([css], { type: 'text/css' }), themeFileName(name));
 }

@@ -106,6 +106,7 @@ Component: [StatusToast.tsx](../frontend/src/components/StatusToast.tsx)
 
 - The answer to a save in the account settings, the administration and the groups page ("Gespeichert", an invite code, what went wrong) floats centered at the bottom (`bg-panel-elevated`, above the bottom navigation bar on mobile) instead of standing above the content, so the page does not move.
 - A confirmation (tick, `role="status"`) goes after 4 s, or when its section is left (it does not come back on return); an error (frame and text in `status-err`, `role="alert"`) stays until it is closed with its ×. Both can be closed; the live regions stay mounted, so screen readers announce each new message.
+- Every notice is rendered into one shared stack (a portal to a fixed element at the bottom), so several at once (e.g. "Gespeichert" and the desktop app's "file saved" from `DownloadNotice`) stand one above the other and never overlap. Use `StatusToast` for any new notice of this kind instead of positioning your own.
 - Settings that save as soon as they are changed (retention, voice input, language, calendar subscription, renaming or recolouring an own theme) answer with the same notice: a short "Gespeichert" (`settings:api.saved`) or the error. Retention, voice input and language share `useInstantSave` and `InstantSaveToast` ([InstantSave.tsx](../frontend/src/features/settings/user/InstantSave.tsx)). Exceptions: two-factor sign-in and passkeys keep their messages inside their own block; device settings under Darstellung (theme, corners, accent, link previews, journal) apply visibly and say nothing.
 
 ## Notification with "Undo"
@@ -249,6 +250,13 @@ Component: [TableBlock.tsx](../frontend/src/features/workspace/TableBlock.tsx), 
 - A table is a bullet (`/table`, 2 × 2); the first row is the header. One text field per cell lies over the formatted cell text, like a bullet's field over its text.
 - **+ right of the table** adds a column: on phones always there and 44 px wide, on a desktop only on hover or with the cursor in the table. The **⋯** below it is an `ActionMenu` with the line modes, the alignment of the column with the cursor (left, centered, right; stored in the Markdown's separator row) and row/column actions; on a desktop + and ⋯ stay visible while the menu is open (a fading box would put the menu behind the bullet below).
 - Lines come from the theme's `--border-color`, drawn per cell so the default mode can fade them out towards the edge; the frame of `grid` takes `--radius-card`. Wide tables scroll sideways inside the note (`.table-scroll`).
+
+## Media Blocks in Notes (Image, Voice Note)
+
+Components: [ImageBlock.tsx](../frontend/src/features/workspace/ImageBlock.tsx), [AudioBlock.tsx](../frontend/src/features/workspace/AudioBlock.tsx), caption in [MediaCaption.tsx](../frontend/src/features/workspace/MediaCaption.tsx), arrows in [IndentArrows.tsx](../frontend/src/features/workspace/IndentArrows.tsx).
+
+- **Indent arrows** never stand between the bullet and the media: over an image or a drawing at its top left (`overlayArrowsClass`), after a voice note's player (and its transcribe button). On devices that can hover they show only over the block; held by someone else they stay, greyed out.
+- **Caption:** one line of text that wraps (line breaks become spaces). While it is edited the whole text shows; otherwise a long caption is cut to two lines with "…" and a small "mehr"/"weniger" below it (44 px to tap on phones) shows all of it; a click into an editable caption starts editing. An empty caption shows only over the block, its line stays. **Enter** goes on in a new bullet below, like Enter at the end of a text bullet; **Shift+Enter** only leaves the caption.
 
 ## Mentioning People (@)
 

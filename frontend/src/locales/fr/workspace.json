@@ -358,6 +358,7 @@
     "uploadFailed": "Échec du téléversement",
     "emptyRecording": "L'enregistrement est vide",
     "noMic": "Pas d'accès au micro (autorisation ou page non servie en HTTPS)",
+    "recordUnsupported": "L'enregistrement n'est pas pris en charge par ce navigateur.",
     "record": "Enregistrer une note vocale",
     "stopSave": "Arrêter et enregistrer l'enregistrement",
     "start": "Démarrer l'enregistrement",
@@ -379,6 +380,8 @@
     "transcribing": "Transcription en cours…",
     "transcribe": "Transcrire",
     "caption": "Ajouter une légende…",
+    "captionMore": "plus",
+    "captionLess": "moins",
     "imageUnavailable": "Image non disponible (hors ligne ou supprimée)",
     "enlarge": "Agrandir",
     "resize": "Faire glisser pour changer la taille",
@@ -393,7 +396,8 @@
     "pasteFailed_one": "Image non collée : {{error}}",
     "pasteFailed_other": "{{count}} images non collées : {{error}}",
     "pasteTooMany": "{{max}} images au maximum à la fois, les autres n’ont pas été collées.",
-    "dropOnlyImages": "Seules les images peuvent être glissées ici."
+    "dropOnlyImages": "Seules les images peuvent être glissées ici.",
+    "transcribeDismiss": "Masquer l’erreur"
   },
   "journal": {
     "opening": "Ouverture de {{date}}…",

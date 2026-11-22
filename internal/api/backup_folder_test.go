@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/config"
+	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 // Audit 2026-11-22 F1: the hourly sweep of backups/deleted/ removes only what keepUserBackups wrote (a
@@ -150,5 +152,91 @@ func TestBackupSkippedWhileChosenFolderMissing(t *testing.T) {
 	loc = backupLocation{}
 	if json.Unmarshal(rec.Body.Bytes(), &loc) != nil || loc.ChosenMissing {
 		t.Errorf("warning stays although the folder is back: %s", rec.Body.String())
+	}
+}
+
+// Under Flatpak a folder chosen in the system's dialog is a path of the document portal: the app keeps
+// writing there, but the location and the message of a skipped run show the host's path (ShownPath), and
+// what is stored and sent back stays the portal's path.
+func TestBackupLocationShowsHostPath(t *testing.T) {
+	store, dbPath := freshStore(t)
+	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
+	portal := t.TempDir() // stands for /run/user/1000/doc/<id>
+	srv.cfg.Desktop.ShownPath = func(p string) string {
+		if rest, ok := strings.CutPrefix(p, portal); ok {
+			return "/home/anna" + rest
+		}
+		return p
+	}
+	router := srv.Router()
+	token := desktopToken(t, router)
+
+	chosen := filepath.Join(portal, "Backups")
+	if err := os.MkdirAll(chosen, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body, _ := json.Marshal(map[string]string{"dir": chosen})
+	rec := putJSONWith(t, router, "/api/v1/admin/backups/location", token, string(body))
+	var loc backupLocation
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &loc) != nil {
+		t.Fatalf("set location: %d %s", rec.Code, rec.Body.String())
+	}
+	if loc.Chosen != chosen || loc.ChosenShown != "/home/anna/Backups" {
+		t.Errorf("chosen %q shown as %q", loc.Chosen, loc.ChosenShown)
+	}
+	if !strings.HasPrefix(loc.Dir, chosen) || loc.DirShown != "/home/anna/Backups/MindSift-Backups/"+srv.instanceBackupFolder() {
+		t.Errorf("dir %q shown as %q", loc.Dir, loc.DirShown)
+	}
+	if loc.DefaultDir != srv.defaultBackupRoot() {
+		t.Errorf("default folder %q", loc.DefaultDir)
+	}
+
+	if err := os.RemoveAll(chosen); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := srv.runBackups(); err == nil || !strings.Contains(err.Error(), "/home/anna/Backups") || strings.Contains(err.Error(), portal) {
+		t.Errorf("skipped run: %v, want the host's path", err)
+	}
+}
+
+// A second "Jetzt sichern" while the first is still running (a double click, a second tab) makes no second
+// backup: it waits for the running one and answers with its list.
+func TestManualBackupWhileOneRunsMakesNoSecond(t *testing.T) {
+	store, dbPath := freshStore(t)
+	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
+	router := srv.Router()
+	token := desktopToken(t, router)
+	post := func() *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/backups", strings.NewReader("{}"))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+		return rec
+	}
+	snapshots := func() int {
+		files, _ := storage.ListBackups(filepath.Join(srv.backupRoot(), "system"))
+		return len(files)
+	}
+
+	// A run started by hand is going
+	manualBackupMu.Lock()
+	done := make(chan *httptest.ResponseRecorder)
+	go func() { done <- post() }()
+	select {
+	case rec := <-done:
+		manualBackupMu.Unlock()
+		t.Fatalf("the second request did not wait for the running one: %d %s", rec.Code, rec.Body.String())
+	case <-time.After(100 * time.Millisecond):
+	}
+	manualBackupMu.Unlock()
+	if rec := <-done; rec.Code != http.StatusOK {
+		t.Fatalf("second request: %d %s", rec.Code, rec.Body.String())
+	}
+	if n := snapshots(); n != 0 {
+		t.Errorf("the second request made a backup of its own (%d snapshots)", n)
+	}
+	if rec := post(); rec.Code != http.StatusOK || snapshots() != 1 {
+		t.Errorf("a request on its own: %d, %d snapshots", rec.Code, snapshots())
 	}
 }

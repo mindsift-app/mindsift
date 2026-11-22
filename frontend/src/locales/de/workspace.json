@@ -355,6 +355,7 @@
     "uploadFailed": "Hochladen fehlgeschlagen",
     "emptyRecording": "Die Aufnahme ist leer",
     "noMic": "Kein Zugriff auf das Mikrofon (Berechtigung, oder die Seite läuft nicht über HTTPS)",
+    "recordUnsupported": "Aufnehmen wird in diesem Browser nicht unterstützt.",
     "record": "Sprachnotiz aufnehmen",
     "stopSave": "Aufnahme beenden und speichern",
     "start": "Aufnahme starten",
@@ -376,6 +377,8 @@
     "transcribing": "Wird erkannt…",
     "transcribe": "Transkribieren",
     "caption": "Beschriftung hinzufügen…",
+    "captionMore": "mehr",
+    "captionLess": "weniger",
     "imageUnavailable": "Bild nicht verfügbar (offline oder gelöscht)",
     "enlarge": "Vergrößern",
     "resize": "Ziehen, um die Größe zu ändern",
@@ -390,7 +393,8 @@
     "pasteFailed_one": "Bild nicht eingefügt: {{error}}",
     "pasteFailed_other": "{{count}} Bilder nicht eingefügt: {{error}}",
     "pasteTooMany": "Höchstens {{max}} Bilder auf einmal, die übrigen wurden nicht eingefügt.",
-    "dropOnlyImages": "Nur Bilder lassen sich hineinziehen."
+    "dropOnlyImages": "Nur Bilder lassen sich hineinziehen.",
+    "transcribeDismiss": "Fehler ausblenden"
   },
   "journal": {
     "opening": "{{date}} wird geöffnet…",

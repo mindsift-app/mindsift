@@ -1027,10 +1027,12 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     // In a table the cursor may sit in any of its cells: it stays in that one
     const active = document.activeElement;
     const cell = active instanceof HTMLTextAreaElement && active.hasAttribute('data-table-cell') ? active : null;
-    const before = cell ?? textareaMapRef.current.get(id);
+    // A media block has no field of its own: the cursor sits in its caption (voice note)
+    const caption = !textareaMapRef.current.has(id) && active instanceof HTMLTextAreaElement ? active : null;
+    const before = cell ?? caption ?? textareaMapRef.current.get(id);
     const caret = before ? before.selectionStart : null;
     flushSync(() => action(id));
-    const el = cell?.isConnected ? cell : textareaMapRef.current.get(id);
+    const el = cell?.isConnected ? cell : caption?.isConnected ? caption : textareaMapRef.current.get(id);
     if (!el) return;
     if (document.activeElement !== el) {
       el.focus({ preventScroll: true });

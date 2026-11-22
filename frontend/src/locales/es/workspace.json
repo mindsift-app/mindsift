@@ -358,6 +358,7 @@
     "uploadFailed": "Error al subir",
     "emptyRecording": "La grabación está vacía",
     "noMic": "Sin acceso al micrófono (permiso denegado o la página no se sirve por HTTPS)",
+    "recordUnsupported": "Este navegador no permite grabar audio.",
     "record": "Grabar una nota de voz",
     "stopSave": "Detener y guardar la grabación",
     "start": "Iniciar grabación",
@@ -379,6 +380,8 @@
     "transcribing": "Transcribiendo…",
     "transcribe": "Transcribir",
     "caption": "Añadir un pie de foto…",
+    "captionMore": "más",
+    "captionLess": "menos",
     "imageUnavailable": "Imagen no disponible (sin conexión o eliminada)",
     "enlarge": "Ampliar",
     "resize": "Arrastra para cambiar el tamaño",
@@ -393,7 +396,8 @@
     "pasteFailed_one": "Imagen no pegada: {{error}}",
     "pasteFailed_other": "{{count}} imágenes no pegadas: {{error}}",
     "pasteTooMany": "Como máximo {{max}} imágenes a la vez, las demás no se han pegado.",
-    "dropOnlyImages": "Solo se pueden arrastrar imágenes."
+    "dropOnlyImages": "Solo se pueden arrastrar imágenes.",
+    "transcribeDismiss": "Ocultar error"
   },
   "journal": {
     "opening": "Abriendo {{date}}…",

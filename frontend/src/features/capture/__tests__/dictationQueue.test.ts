@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { DictationQueue, type DictationItem } from '../dictationQueue';
+import { DictationQueue, HandedOverError, type DictationItem } from '../dictationQueue';
 
 // Which queue holds the update reload back, and whether it still does
 const holdReload = vi.hoisted(() => vi.fn());
@@ -131,5 +131,22 @@ describe('DictationQueue', () => {
     const { queue } = setup();
     expect('discard' in queue).toBe(false);
     expect('discardFailed' in queue).toBe(false);
+  });
+
+  it('lets a recording kept elsewhere go with its message, and uses a save of the source', async () => {
+    const save = vi.fn(async (text: string) => text);
+    const onFailed = vi.fn();
+    const onHandedOver = vi.fn();
+    const queue = new DictationQueue<string>({ save, onChange: () => {}, onFailed, onHandedOver, fallbackMessage: () => 'Fehler' });
+    queue.add({ text: () => Promise.reject(new HandedOverError('wartet im Quick Dump')) });
+    const own = vi.fn(async (text: string) => `eigen: ${text}`);
+    queue.add({ text: () => Promise.resolve('Hallo'), save: own });
+    await flush();
+    await flush();
+    expect(onHandedOver).toHaveBeenCalledWith('wartet im Quick Dump');
+    expect(onFailed).not.toHaveBeenCalled();
+    expect(own).toHaveBeenCalledWith('Hallo');
+    expect(save).not.toHaveBeenCalled();
+    expect(queue.items()).toEqual([]);
   });
 });

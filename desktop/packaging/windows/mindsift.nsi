@@ -210,6 +210,16 @@ Section "Uninstall"
   Delete "$DESKTOP\${PRODUCT}.lnk"
   SetRegView 64
   DeleteRegKey HKCU "${UNINST_KEY}"
+  # What the app registered for its system notifications (Wails' notification service, see desktop/README.md):
+  # the AppUserModelID with its COM activator, and the notification categories. A portable exe registers
+  # them again when it runs.
+  ReadRegStr $1 HKCU "Software\Classes\AppUserModelId\${PRODUCT}" "CustomActivator"
+  ${If} $1 != ""
+    DeleteRegKey HKCU "Software\Classes\CLSID\$1"
+  ${EndIf}
+  DeleteRegKey HKCU "Software\Classes\AppUserModelId\${PRODUCT}"
+  DeleteRegKey HKCU "Software\${PRODUCT}\NotificationCategories"
+  DeleteRegKey /ifempty HKCU "Software\${PRODUCT}"
 SectionEnd
 
 Function un.onInit

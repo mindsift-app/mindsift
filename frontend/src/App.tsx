@@ -27,6 +27,7 @@ import { DemoHint } from './components/DemoHint';
 import { useConnectionState } from './lib/useConnectionState';
 import { SharedImportToast } from './components/SharedImportToast';
 import { EmailConfirmToast } from './components/EmailConfirmToast';
+import { DownloadNotice } from './components/DownloadNotice';
 import { useMobileActions } from './context/MobileActionContext';
 import { MobileHeaderMenu } from './components/MobileHeaderMenu';
 import { AboutModal } from './components/AboutModal';
@@ -39,6 +40,7 @@ import { UpdateReloadNotice } from './components/UpdateReloadNotice';
 import { useUpdateCheck } from './lib/useUpdateCheck';
 import { consumePendingShares, formatSharedThought } from './lib/shareTarget';
 import { readViewSession, writeViewSession } from './lib/viewSession';
+import { guardLeave } from './lib/leaveGuard';
 import { reportNav, onNavStep } from './lib/navHistory';
 import { setVoiceLanguage, setVoicePreference } from './lib/voice';
 import { setTypedRecognition } from './lib/typedRecognition';
@@ -144,6 +146,16 @@ export const App: React.FC = () => {
     return tab && APP_TABS.includes(tab) ? tab : 'triage';
   });
   useEffect(() => writeViewSession('app', { tab: activeTab }), [activeTab]);
+  // A switch of the tab by the person (navigation, menus, opening an item) asks first while a dictation
+  // into a text field would be lost (lib/leaveGuard.ts); the app's own switches go straight
+  const activeTabRef = useLatestRef(activeTab);
+  const navigateTab = useCallback(
+    (tab: ActiveTab) => {
+      if (tab === activeTabRef.current) setActiveTab(tab);
+      else guardLeave(() => setActiveTab(tab));
+    },
+    [activeTabRef]
+  );
   // Browser back/forward steps through the app's pages (lib/navHistory.ts)
   useEffect(() => reportNav({ tab: activeTab }), [activeTab]);
   useEffect(
@@ -504,23 +516,30 @@ export const App: React.FC = () => {
   const capture = useMobileCapture(handleCaptured);
   const { openMobileTriageCapture } = capture;
 
-  const handleOpenDocument = (docId: string, blockId?: string) => {
-    setSelectedDocId(docId);
-    // Counts up, so the same note opens again after another one was picked in the sidebar
-    setOpenDocNonce((n) => n + 1);
-    setSelectedBlockId(blockId || null);
-    setActiveTab('workspace');
-  };
+  // Opening an item leaves the view: asks first while a dictation into a text field would be lost
+  const handleOpenDocument = (docId: string, blockId?: string) =>
+    guardLeave(() => {
+      setSelectedDocId(docId);
+      // Counts up, so the same note opens again after another one was picked in the sidebar
+      setOpenDocNonce((n) => n + 1);
+      setSelectedBlockId(blockId || null);
+      setActiveTab('workspace');
+    });
 
-  const handleOpenTask = useCallback((taskId: string) => {
-    setSelectedTaskId(taskId);
-    setActiveTab('tasks');
-  }, []);
+  const handleOpenTask = useCallback(
+    (taskId: string) =>
+      guardLeave(() => {
+        setSelectedTaskId(taskId);
+        setActiveTab('tasks');
+      }),
+    []
+  );
 
-  const handleOpenList = (listId: string) => {
-    setSelectedListId(listId);
-    setActiveTab('lists');
-  };
+  const handleOpenList = (listId: string) =>
+    guardLeave(() => {
+      setSelectedListId(listId);
+      setActiveTab('lists');
+    });
 
   // An entry of the notification center: its task, note (at the bullet) or list
   const handleOpenCenterEntry = (entry: CenterEntry) => {
@@ -528,8 +547,8 @@ export const App: React.FC = () => {
     if (entry.targetType === 'task') handleOpenTask(entry.targetId);
     else if (entry.targetType === 'note') handleOpenDocument(entry.targetId, entry.blockId || undefined);
     else if (entry.targetType === 'list') handleOpenList(entry.targetId);
-    else if (entry.targetType === 'tasklist') setActiveTab('tasks');
-    else if (entry.targetType === 'folder') setActiveTab('workspace');
+    else if (entry.targetType === 'tasklist') navigateTab('tasks');
+    else if (entry.targetType === 'folder') navigateTab('workspace');
   };
 
   // Links from the MCP server (?note=…, ?task=…, ?list=…): open the item once signed in, then drop the
@@ -541,6 +560,14 @@ export const App: React.FC = () => {
     queue?.setConsumer((launch) => {
       if (launch.targetURL) setDeepLink(parseDeepLink(new URL(launch.targetURL).search));
     });
+    // The same from the desktop app's shell: a click on one of its system notifications (an alarm) sends
+    // the link's query (?task=…) to the open window
+    const onOpenLink = (e: Event) => {
+      const search = (e as CustomEvent<unknown>).detail;
+      if (typeof search === 'string') setDeepLink(parseDeepLink(search));
+    };
+    window.addEventListener('mindsift:open-link', onOpenLink);
+    return () => window.removeEventListener('mindsift:open-link', onOpenLink);
   }, []);
   useEffect(() => {
     if (!user?.id || !(deepLink.note || deepLink.task || deepLink.list)) return;
@@ -773,7 +800,7 @@ export const App: React.FC = () => {
       {/* Desktop: navigation rail on the left (fixed; the page keeps its width when it is expanded) */}
       <NavRail
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={navigateTab}
         stats={stats}
         authStatus={authStatus}
         demoDeadline={demoDeadline}
@@ -796,7 +823,7 @@ export const App: React.FC = () => {
             user={user}
             roleLabel={roleLabel}
             activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            setActiveTab={navigateTab}
             activeTheme={activeTheme}
             allThemes={allThemes}
             handleChangeTheme={handleChangeTheme}
@@ -807,6 +834,8 @@ export const App: React.FC = () => {
           />
         }
       />
+      {/* The desktop app's shell reports saved downloads (a browser shows its own) */}
+      <DownloadNotice />
       {quickDumpUsed && (
         <Suspense fallback={null}>
           <QuickDumpWindow
@@ -966,7 +995,7 @@ export const App: React.FC = () => {
       {/* MOBILE BOTTOM NAVIGATION BAR (5 equal columns -> + FAB is dead-center) */}
       <MobileNav
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={navigateTab}
         stats={stats}
         primaryAction={primaryAction}
         openMobileTriageCapture={openMobileTriageCapture}
@@ -982,7 +1011,7 @@ export const App: React.FC = () => {
           user={user}
           roleLabel={roleLabel}
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={navigateTab}
           activeTheme={activeTheme}
           allThemes={allThemes}
           handleChangeTheme={handleChangeTheme}

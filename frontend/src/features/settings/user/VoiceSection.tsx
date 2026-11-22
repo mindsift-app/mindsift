@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../../../lib/types';
 import i18n, { languageName } from '../../../i18n';
-import type { EffectiveVoiceMode } from '../../../lib/voice';
+import { browserRecognition, type EffectiveVoiceMode } from '../../../lib/voice';
 import { voiceLanguageOptions } from '../../../lib/voiceLanguages';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { InstantSaveToast, useInstantSave } from './InstantSave';
@@ -32,8 +32,11 @@ export function VoiceSection({
 }) {
   const { t } = useTranslation('settings');
   const { instant, voiceSaving, handleChangeVoiceInput, handleChangeVoiceLanguage } = voice;
+  // Without recognition in this browser (e.g. the desktop app's WebKitGTK) the Whisper server does it, whatever was picked
+  const browserMissing = !browserRecognition();
+  const picked = browserMissing ? '' : currentUser.voiceInput || '';
   // Whisper does the recognition (only then "automatic" works)
-  const whisper = choice ? (currentUser.voiceInput || '') === '' : mode === 'server';
+  const whisper = choice ? picked === '' : mode === 'server';
   // No choice yet means automatic
   const spoken = currentUser.voiceLanguage || 'auto';
   const languages = voiceLanguageOptions();
@@ -54,16 +57,18 @@ export function VoiceSection({
             {
               value: 'browser' as const,
               title: t('voice.browser'),
-              text: t('voice.browserHint') },
+              text: t('voice.browserHint'),
+              unavailable: browserMissing },
           ]).map((opt) => {
-            const selected = (currentUser.voiceInput || '') === opt.value;
+            const selected = picked === opt.value;
+            const unavailable = 'unavailable' in opt && opt.unavailable;
             return (
               <button
                 key={opt.value || 'server'}
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                disabled={voiceSaving}
+                disabled={voiceSaving || unavailable}
                 onClick={() => !selected && void handleChangeVoiceInput(opt.value)}
                 className={`w-full text-left p-3 rounded-card border flex items-start gap-3 transition-colors disabled:opacity-60 ${
                   selected ? 'border-accent bg-accent/10' : 'border-border bg-canvas hover:bg-panel-hover'
@@ -76,6 +81,7 @@ export function VoiceSection({
                 <span className="space-y-0.5">
                   <span className="block font-semibold text-main">{opt.title}</span>
                   <span className="block text-muted leading-relaxed">{opt.text}</span>
+                  {unavailable && <span className="block text-status-err leading-relaxed">{t('voice.browserUnavailable')}</span>}
                 </span>
               </button>
             );

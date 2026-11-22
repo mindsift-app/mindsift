@@ -32,8 +32,10 @@ let spokenLanguage = '';
 /** Fired when the effective mode changes (the account setting was loaded or changed). */
 export const VOICE_CONFIG_EVENT = 'mindsift:voice-config';
 
+// The account's pick of the browser only counts where the browser has recognition at all (WebKitGTK, Firefox
+// and others have none): there the Whisper server stays in charge, whatever was picked on another device.
 function applyPreference(mode: VoiceMode | undefined): VoiceMode | undefined {
-  return mode === 'server' && browserAllowed && preference === 'browser' ? 'browser' : mode;
+  return mode === 'server' && browserAllowed && preference === 'browser' && browserRecognition() ? 'browser' : mode;
 }
 
 /** The account's choice ('' = Whisper server, 'browser'); set when the user is loaded or changes it. */
@@ -182,6 +184,9 @@ export function resetVoiceConfig(): void {
 // Containers in order of preference; Safari only records MP4/AAC
 const RECORDING_TYPES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
 
+/** Longest wait for the browser to finish a recording after stop() (ms) */
+export const STOP_GRACE_MS = 3000;
+
 function recordingType(): string | undefined {
   const MR: typeof MediaRecorder | undefined = window.MediaRecorder;
   if (!MR?.isTypeSupported) return undefined;
@@ -208,7 +213,12 @@ export class VoiceRecorder {
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
-    this.startSegmentRecorder();
+    try {
+      this.startSegmentRecorder();
+    } catch (err) {
+      this.release(); // e.g. WebKitGTK refuses the recorder: the microphone must not stay open
+      throw err;
+    }
     try {
       const Ctx = window.AudioContext || (window as PrefixedWindow).webkitAudioContext;
       if (!Ctx) throw new Error('no AudioContext');
@@ -270,8 +280,27 @@ export class VoiceRecorder {
         resolve(null);
         return;
       }
-      this.done = resolve;
-      this.recorder.stop();
+      const rec = this.recorder;
+      const chunks = this.chunks;
+      // The WebKitGTK of the desktop app can take long to finish a recording after stop(): what arrived
+      // until then (a piece every second) is used, so stopping never hangs
+      const timer = window.setTimeout(() => {
+        if (this.done !== finish) return;
+        this.done = null;
+        this.release();
+        resolve(chunks.length ? new Blob(chunks, { type: rec.mimeType || chunks[0].type || 'audio/webm' }) : null);
+      }, STOP_GRACE_MS);
+      const finish = (blob: Blob | null) => {
+        window.clearTimeout(timer);
+        resolve(blob);
+      };
+      this.done = finish;
+      try {
+        rec.requestData(); // hands over the last piece at once
+      } catch {
+        // not recording any more
+      }
+      rec.stop();
     });
   }
 

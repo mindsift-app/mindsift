@@ -157,12 +157,28 @@ type backupLocation struct {
 	Custom        bool   `json:"custom"`
 	Chosen        string `json:"chosen"`
 	ChosenMissing bool   `json:"chosenMissing"`
+	// DirShown and ChosenShown: Dir and Chosen as the person knows them (shownPath); Dir and Chosen are
+	// what is stored and sent back
+	DirShown    string `json:"dirShown"`
+	ChosenShown string `json:"chosenShown"`
 }
 
 func (s *Server) backupLocation() backupLocation {
 	chosen := s.store.BackupDir()
 	_, missing := s.chosenBackupFolderMissing()
-	return backupLocation{Dir: s.backupRoot(), DefaultDir: s.defaultBackupRoot(), Custom: chosen != "", Chosen: chosen, ChosenMissing: missing}
+	dir := s.backupRoot()
+	return backupLocation{Dir: dir, DefaultDir: s.defaultBackupRoot(), Custom: chosen != "", Chosen: chosen, ChosenMissing: missing,
+		DirShown: s.shownPath(dir), ChosenShown: s.shownPath(chosen)}
+}
+
+// shownPath: a folder as the person knows it, for showing only. Under Flatpak a folder chosen in the
+// system's dialog is a path of the document portal (/run/user/1000/doc/<id>/…), which works for writing
+// but means nothing to the person; the app turns it into the host's path (config.Desktop.ShownPath).
+func (s *Server) shownPath(p string) string {
+	if !s.desktopMode() {
+		return p
+	}
+	return s.cfg.Desktop.Shown(p)
 }
 
 // handleBackupLocation: GET /admin/backups/location (desktop app only)

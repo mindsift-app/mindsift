@@ -5,7 +5,7 @@ name: MindSift Desktop (Gitea)
 # the files as one artifact of the workflow run in the Gitea UI (Actions -> run -> Artifacts): the Linux
 # archive, the Flatpak bundle, the Windows exe, the Windows installer (NSIS in a Debian container) and the
 # license file, under their release names, with the version v<package.json>-dev.
-# Runs for pushes to the desktop-spike branch and by hand ("Run workflow", for any branch, main too); it
+# Runs for pushes to main (the branch the Gitea builds) and by hand ("Run workflow", for any branch); it
 # builds no images and touches no registry. Releases are built by .github/workflows/release.yaml.
 # The scripts run with docker and copy the sources into the build containers, because the job may itself
 # run in a container. flatpak-builder runs in a container with SYS_ADMIN and NET_ADMIN, no seccomp or
@@ -17,7 +17,7 @@ name: MindSift Desktop (Gitea)
 on:
   push:
     branches:
-      - desktop-spike
+      - main
   workflow_dispatch:
 
 concurrency:

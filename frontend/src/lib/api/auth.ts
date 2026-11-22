@@ -329,7 +329,7 @@ export const authApi = {
   },
 
   async testAlarmChannel(
-    channel: 'email' | 'discord' | 'webhook',
+    channel: 'email' | 'discord' | 'webhook' | 'desktop',
     target?: string
   ): Promise<{ status: string }> {
     return request<{ status: string }>('/api/v1/auth/alarms/test', {
