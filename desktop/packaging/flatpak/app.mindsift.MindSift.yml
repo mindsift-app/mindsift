@@ -49,15 +49,20 @@ modules:
         GOTOOLCHAIN: local
         GOPROXY: 'off'
     build-commands:
-      # The version from frontend/package.json, as desktop/build.sh sets it
+      # The version build.sh staged in desktop/app-version (the release's tag, or v<package.json>-dev),
+      # without it the one from frontend/package.json as for a development build
       - |
-        version="$(sed -n 's/.*"version": "\(.*\)".*/\1/p' frontend/package.json | head -1)"
+        version="$(cat desktop/app-version 2>/dev/null || echo "v$(sed -n 's/.*"version": "\(.*\)".*/\1/p' frontend/package.json | head -1)-dev")"
         cd desktop
-        GOCACHE="$PWD/.gocache" go build -ldflags "-s -w -X main.version=v$version-desktop" -o /app/bin/mindsift-desktop .
+        GOCACHE="$PWD/.gocache" go build -ldflags "-s -w -X main.version=$version" -o /app/bin/mindsift-desktop .
       - install -Dm644 desktop/packaging/linux/app.mindsift.MindSift.desktop /app/share/applications/app.mindsift.MindSift.desktop
       - cp -r desktop/packaging/linux/icons /app/share/icons
       - install -Dm644 desktop/packaging/flatpak/app.mindsift.MindSift.metainfo.xml /app/share/metainfo/app.mindsift.MindSift.metainfo.xml
       - install -Dm644 LICENSE /app/share/licenses/app.mindsift.MindSift/LICENSE
+      # The licenses of the bundled npm packages and Go modules (build.sh, desktop/build.sh licenses): in
+      # the licenses folder, and next to the binary, where the app reads it for "About MindSift"
+      - install -Dm644 THIRD_PARTY_LICENSES.txt /app/share/licenses/app.mindsift.MindSift/THIRD_PARTY_LICENSES.txt
+      - install -Dm644 THIRD_PARTY_LICENSES.txt /app/bin/THIRD_PARTY_LICENSES.txt
     sources:
       - type: dir
         path: src

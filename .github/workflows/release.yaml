@@ -1,11 +1,17 @@
 name: GitHub Release
 
 # Creates the release page of a version tag, with its CHANGELOG section as text (ci/release-notes.sh), and
-# attaches the server binaries for Linux, taken out of the images of that tag (ci/release-binaries.sh).
+# attaches the server binaries for Linux, taken out of the images of that tag (ci/release-binaries.sh),
+# and the desktop app built from the tag (ci/release-desktop.sh: Linux binary, Flatpak bundle, Windows
+# exe), with one SHA256SUMS for all of them.
 # Called by build-and-publish.yaml once the images of a tag are pushed; by hand ("Run workflow") for a tag
 # that has no release yet, or to refresh the text and files of an existing one. It runs with the workflow
 # token, so the release shows github-actions[bot] as author, not a person. Tags with "-" become
 # pre-releases.
+# All files are built before the page is created, and gh creates a new release as a draft until its files
+# are uploaded: the website's links to releases/latest/download/<name> never point at a release without
+# them. A failed desktop build does not hold back the page and the server binaries; the job fails at the
+# end, and a manual run with the same tag attaches the desktop files later.
 on:
   workflow_call:
     inputs:
@@ -26,29 +32,34 @@ jobs:
   release:
     name: Release ${{ inputs.tag }}
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout Tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.tag }}
 
-      - name: Create or Update Release
+      # From the tag's sources, not from an image: a tag build only retags the tested :latest, the desktop
+      # app has no image. desktop/build.sh and the Flatpak build run in containers (node, golang trixie
+      # with GTK 4 / WebKitGTK 6.0, a privileged Debian container for flatpak-builder).
+      - name: Build Desktop App
+        id: desktop
+        continue-on-error: true
         env:
-          GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: |
-          ci/release-notes.sh "${TAG}" > notes.md
-          if gh release view "${TAG}" >/dev/null 2>&1; then
-            gh release edit "${TAG}" --title "MindSift ${TAG}" --notes-file notes.md
-          elif [[ "${TAG}" == *-* ]]; then
-            gh release create "${TAG}" --verify-tag --title "MindSift ${TAG}" --notes-file notes.md --prerelease
-          else
-            gh release create "${TAG}" --verify-tag --title "MindSift ${TAG}" --notes-file notes.md --latest
+          if [ ! -x ci/release-desktop.sh ]; then
+            echo "::notice::${TAG} is from before the desktop release files, nothing to build"
+            exit 0
           fi
+          # Room for the GNOME runtime and SDK of the Flatpak build and the build images; the runner's
+          # preinstalled toolchains are not needed here
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+          ENGINE=docker COPY_MODE=1 ci/release-desktop.sh "${TAG}" binaries
 
-      - name: Attach Binaries
+      - name: Server Binaries and Checksums
         env:
-          GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: |
           # The checkout is the tag's: versions from before the binaries have neither the script nor
@@ -58,5 +69,31 @@ jobs:
             exit 0
           fi
           IMAGE="$(echo "ghcr.io/${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]'):${TAG}"
+          # Also writes SHA256SUMS over the desktop files already in the folder
           ci/release-binaries.sh "${IMAGE}" "${TAG}" binaries
-          gh release upload "${TAG}" binaries/* --clobber
+
+      - name: Create or Update Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          ci/release-notes.sh "${TAG}" > notes.md
+          shopt -s nullglob
+          FILES=(binaries/*)
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release edit "${TAG}" --title "MindSift ${TAG}" --notes-file notes.md
+            if [ "${#FILES[@]}" -gt 0 ]; then gh release upload "${TAG}" "${FILES[@]}" --clobber; fi
+          else
+            KIND=--latest
+            if [[ "${TAG}" == *-* ]]; then KIND=--prerelease; fi
+            # With files, gh keeps the new release a draft until they are uploaded, then publishes it
+            gh release create "${TAG}" --verify-tag --title "MindSift ${TAG}" --notes-file notes.md "${KIND}" "${FILES[@]}"
+          fi
+
+      - name: Report Failed Desktop Build
+        if: steps.desktop.outcome == 'failure'
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          echo "::error::The desktop app of ${TAG} was not built (see the step Build Desktop App); the release has the server binaries only. Run this workflow by hand with ${TAG} to attach it."
+          exit 1
