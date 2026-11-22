@@ -10,6 +10,7 @@
 import { authHeaders } from './api';
 import i18n from '../i18n';
 import { publicMediaRequest } from './publicNote';
+import { repairWebmBlob } from './webmDuration';
 
 const MEDIA_RE = /^!?\[((?:[^\]\\]|\\.)*)\]\(media:(med_[0-9a-f]+)\)$/;
 
@@ -76,9 +77,23 @@ export function loadAuthorized(path: string, headers: Record<string, string> = a
   return p;
 }
 
-/** blob: URL of a file for <img>/<audio>. */
-export function mediaObjectURL(id: string): Promise<string> {
-  return loadMedia(id).then((m) => m.url);
+// Audio files as played: WebM recordings with their length written in (see webmDuration.ts)
+const playable = new Map<string, Promise<string>>();
+
+/** blob: URL of a file for <img>/<audio>. For 'audio', a WebM recording without length (made with
+ *  MediaRecorder) gets it written into the file first, so every player shows it and can seek. */
+export function mediaObjectURL(id: string, kind?: 'audio'): Promise<string> {
+  if (kind !== 'audio') return loadMedia(id).then((m) => m.url);
+  let p = playable.get(id);
+  if (!p) {
+    p = loadMedia(id).then(async (m) => {
+      const fixed = await repairWebmBlob(m.blob);
+      return fixed === m.blob ? m.url : URL.createObjectURL(fixed);
+    });
+    p.catch(() => playable.delete(id));
+    playable.set(id, p);
+  }
+  return p;
 }
 
 /** The file itself, e.g. to send a recording to the speech recognition. */

@@ -14,6 +14,9 @@ Versions without a git tag were development states and were never published as a
 
 ### Fixed
 - An image dropped onto a note (or anything typed or pasted) right after opening the note's page is kept: it showed up and vanished again a moment later when the note's sync had not loaded yet, which happened most often in Safari and other WebKit browsers, also in the desktop app on Linux.
+- Voice notes in notes play properly in the Linux desktop app: the player shows the length right away, the playhead moves along and you can jump to any point. Before, the player guessed a length of a fraction of a second, stopped its playhead there while the sound went on, and only knew the real length at the end; Chrome showed no length until the end either. New recordings are saved with their length, older ones get it when they are played.
+- A voice note stops playing when you leave the note, and starting one voice note pauses another that is still playing. In the Linux desktop app a voice note went on playing after switching notes, and pressing play again started it a second time that could no longer be stopped.
+- Stopping a voice recording no longer seems to hang: "Saving" shows at once, and if the browser takes long to finish the recording (seen in the Linux desktop app), what was recorded until then is saved after at most three seconds. This also applies to dictation with the own speech recognition server.
 
 ## [0.98.0] - 2026-11-22
 
