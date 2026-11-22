@@ -1,8 +1,8 @@
 # MindSift desktop
 
-A Wails v3 shell around MindSift for Linux and Windows (no macOS). Phase 0 proved the approach, phase 1
-added the server's desktop mode, phase 2 the start view with several instances and servers; it is not a
-release yet.
+A Wails v3 shell around MindSift for Linux and Windows (no macOS): local instances without a server, or a
+window onto a MindSift server. Release builds (Flatpak, Linux binary, Windows exe) are attached to every
+GitHub release with fixed names, see "Release" in ci/release-desktop.sh.
 
 - **Start view** (`/__desktop/start`): a view of the frontend (`features/desktop/DesktopStartView.tsx`),
   in the look of the sign-in page and the system's language. It lists the entries used lately (local
