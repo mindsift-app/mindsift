@@ -88,12 +88,7 @@ export function AlarmsSection({
         {/* Global Pause & Own Watched Toggles */}
         <div className="p-3.5 bg-canvas border border-border space-y-3">
           <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="font-semibold text-main">{t('alarms.pauseAll')}</p>
-              <p className="text-[11px] text-muted">
-                {t('alarms.pauseAllHint')}
-              </p>
-            </div>
+            <p className="font-semibold text-main">{t('alarms.pauseAll')}</p>
             <ToggleSwitch
               checked={notificationSettings.paused}
               onChange={(v) => setNotificationSettings((prev) => ({ ...prev, paused: v }))}
@@ -101,14 +96,9 @@ export function AlarmsSection({
             />
           </div>
           <div className="flex items-center justify-between gap-4 pt-3 border-t border-border">
-            <div>
-              <p className="font-semibold text-main">
-                {t('alarms.ownChanges')}
-              </p>
-              <p className="text-[11px] text-muted">
-                {t('alarms.ownChangesHint')}
-              </p>
-            </div>
+            <p className="font-semibold text-main">
+              {t('alarms.ownChanges')}
+            </p>
             <ToggleSwitch
               checked={notificationSettings.includeOwnWatched}
               onChange={(v) => setNotificationSettings((prev) => ({ ...prev, includeOwnWatched: v }))}
@@ -367,14 +357,9 @@ export function AlarmsSection({
 
         {/* Lead Time Selector */}
         <div className="p-3.5 bg-canvas border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <label className="font-semibold text-main block">
-              {t('alarms.lead.title')}
-            </label>
-            <p className="text-[11px] text-muted">
-              {t('alarms.lead.hint')}
-            </p>
-          </div>
+          <label className="font-semibold text-main block">
+            {t('alarms.lead.title')}
+          </label>
           <div className="w-full sm:w-auto sm:min-w-[200px]">
             <SelectMenu
               ariaLabel={t('alarms.lead.title')}
@@ -391,12 +376,7 @@ export function AlarmsSection({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
               <Mail className="w-4 h-4 text-accent" />
-              <div>
-                <span className="font-bold text-main block">{t('alarms.email.title')}</span>
-                <span className="text-[11px] text-muted">
-                  {t('alarms.email.hint')}
-                </span>
-              </div>
+              <span className="font-bold text-main block">{t('alarms.email.title')}</span>
             </div>
 
             <button
@@ -446,12 +426,7 @@ export function AlarmsSection({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
               <MessageSquare className="w-4 h-4 text-accent" />
-              <div>
-                <span className="font-bold text-main block">{t('alarms.discord.title')}</span>
-                <span className="text-[11px] text-muted">
-                  {t('alarms.discord.hint')}
-                </span>
-              </div>
+              <span className="font-bold text-main block">{t('alarms.discord.title')}</span>
             </div>
 
             <button

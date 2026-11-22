@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Archive, Download, LoaderCircle, Trash } from 'lucide-react';
+import { Archive, Download, LoaderCircle, RotateCcw, Trash } from 'lucide-react';
 import { BackupFile, BackupLocation, DeletedAccountBackups, SystemSettings } from '../../lib/types';
 import { api, isDesktopApp } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
-import { formatBytes, saveBlob } from '../../lib/download';
+import { formatBytes, saveBlob, saveFromUrl } from '../../lib/download';
 import { formatDateTime } from '../../lib/format';
 import { askConfirm } from '../../components/askConfirm';
 import { TimeField } from '../../components/TimeField';
@@ -17,13 +17,18 @@ import {
 } from '../../lib/backupDefaults';
 import { errorMessage } from '../../lib/errorMessage';
 import { BackupFolderField } from './BackupFolderField';
+import { BackupUploadRestore } from './BackupUploadRestore';
+import { useCapabilities } from '../../lib/capabilities';
+import { waitForReopen } from '../../lib/restoreReload';
+import { restoreWithKeyCheck } from './restoreKeyCheck';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
   onSave: (patch: Partial<SystemSettings>) => void;
 }
 
-// Admin: automatic daily backups (whole database + one backup per user), list and manual run
+// Admin: automatic daily backups (everything incl. media + one backup per user), list, manual run, download
+// and restore of the whole instance (from the list or an upload)
 export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSave }) => {
   const { t } = useTranslation('settings');
   const [files, setFiles] = useState<BackupFile[]>([]);
@@ -33,6 +38,13 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
   // Desktop app: the folder the backups go to (the list shows that folder's)
   const desktop = isDesktopApp();
   const [location, setLocation] = useState<BackupLocation | null>(null);
+  const caps = useCapabilities();
+  // The restore was accepted: the server reopens its data, the page reloads once it is back
+  const [restoring, setRestoring] = useState(false);
+  const startedRestore = (boot: string | null) => {
+    setRestoring(true);
+    void waitForReopen(boot);
+  };
 
   useEffect(() => {
     api.adminListBackups().then(setFiles).catch(() => {});
@@ -82,7 +94,30 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
       setDownloading(null);
     }
   };
-  const download = (name: string) => fetchAndSave(name, name, () => api.adminDownloadBackup(name));
+  // The browser's own download (a link with a one-time ticket): several GB go straight to disk
+  const download = async (f: BackupFile) => {
+    setDownloading(f.name);
+    try {
+      saveFromUrl(await api.adminBackupDownloadUrl(f.name), f.full ? `${f.name}.tar` : f.name);
+    } catch (err) {
+      setError(errorMessage(err, t('backups.downloadFailed')));
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const restore = async (f: BackupFile) => {
+    const message = t('backups.full.confirmRestore', { date: formatDateTime(f.createdAt) });
+    if (!(await askConfirm({ message, confirmLabel: t('backups.full.restore'), danger: true }))) return;
+    setError(null);
+    try {
+      const boot = await api.serverBoot();
+      if (!(await restoreWithKeyCheck((accept) => api.adminRestoreBackup(f.name, accept), t('backups.full.restore')))) return;
+      startedRestore(boot);
+    } catch (err) {
+      setError(errorMessage(err, t('backups.full.restoreFailed')));
+    }
+  };
   const downloadDeleted = (userId: string, name: string) =>
     fetchAndSave(`${userId}/${name}`, name, () => api.adminDownloadDeletedBackup(userId, name));
 
@@ -114,7 +149,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           <p className="text-[11px] text-muted mt-0.5">
             <Trans
               t={t}
-              i18nKey={desktop ? 'backups.autoHintDesktop' : 'backups.autoHint'}
+              i18nKey={desktop ? 'backups.full.autoHintDesktop' : 'backups.full.autoHint'}
               values={{ time: settings.backupTime || DEFAULT_BACKUP_TIME }}
               components={{ c: <code className="font-mono" /> }}
             />
@@ -191,45 +226,66 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
       )}
       {error && <p className="text-[11px] text-status-err">{error}</p>}
 
-      <div className="border border-border divide-y divide-border bg-panel">
-        {files.length === 0 ? (
-          <p className="p-3 text-[11px] text-faint">{t('backups.none')}</p>
-        ) : (
-          files.map((f) => (
-            <div key={f.name} className="px-3 py-2 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-mono text-main truncate">{f.name}</p>
-                <p className="text-[11px] text-faint">
-                  {formatDateTime(f.createdAt)} · {formatBytes(f.size)}
-                </p>
+      {restoring ? (
+        <p role="status" className="p-3 border border-border bg-panel text-xs text-main flex items-center gap-2">
+          <LoaderCircle className="w-3.5 h-3.5 animate-spin text-accent" />
+          {t('backups.full.restoring')}
+        </p>
+      ) : (
+        <div className="border border-border divide-y divide-border bg-panel">
+          {files.length === 0 ? (
+            <p className="p-3 text-[11px] text-faint">{t('backups.none')}</p>
+          ) : (
+            files.map((f) => (
+              <div key={f.name} className="px-3 py-2 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-mono text-main truncate">{f.name}</p>
+                  <p className="text-[11px] text-faint">
+                    {formatDateTime(f.createdAt)} · {formatBytes(f.size)} ·{' '}
+                    {f.full ? t('backups.full.kindFull', { count: f.media ?? 0 }) : t('backups.full.kindDb')}
+                    {f.reason === 'pre-restore' && ` · ${t('backups.full.preRestore')}`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => void download(f)}
+                    disabled={downloading === f.name}
+                    className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    {t('common:download')}
+                  </button>
+                  {caps.restore && (
+                    <button
+                      type="button"
+                      onClick={() => void restore(f)}
+                      title={t('backups.full.restore')}
+                      aria-label={t('backups.full.restoreNamed', { name: f.name })}
+                      className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      {t('backups.full.restore')}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => remove(f.name)}
+                    title={t('backups.delete')}
+                    aria-label={t('backups.deleteNamed', { name: f.name })}
+                    className="btn-action h-11 w-11 sm:h-7 sm:w-7 inline-flex items-center justify-center text-faint hover:text-status-err"
+                  >
+                    <Trash className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => download(f.name)}
-                  disabled={downloading === f.name}
-                  className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1 disabled:opacity-50"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  {t('common:download')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => remove(f.name)}
-                  title={t('backups.delete')}
-                  aria-label={t('backups.deleteNamed', { name: f.name })}
-                  className="btn-action h-11 w-11 sm:h-7 sm:w-7 inline-flex items-center justify-center text-faint hover:text-status-err"
-                >
-                  <Trash className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-      <p className="text-[11px] text-faint">
-        <Trans t={t} i18nKey={desktop ? 'backups.restoreHintDesktop' : 'backups.restoreHint'} components={{ c: <code className="font-mono" /> }} />
-      </p>
+            ))
+          )}
+        </div>
+      )}
+      {caps.restore && <p className="text-[11px] text-faint">{t('backups.full.restoreHint')}</p>}
+      {settings.backupSecretsKeyExcluded && <p className="text-[11px] text-faint">{t('backups.full.keyExcluded')}</p>}
+      {caps.restore && !restoring && <BackupUploadRestore onRestoring={startedRestore} />}
 
       {/* Accounts deleted by an admin: their backups stay until the retention period ends */}
       {deleted.length > 0 && (

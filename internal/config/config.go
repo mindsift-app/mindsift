@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -86,6 +87,9 @@ type Config struct {
 	BackupEnabled         *bool
 	BackupTime            string
 	BackupRetentionDays   int
+	// BackupExcludeSecretsKey: BACKUP_EXCLUDE_SECRETS_KEY=true keeps secrets.key out of the complete backups
+	// (BackupSecretsKey); the admin then keeps the key separately like a master password
+	BackupExcludeSecretsKey bool
 
 	// Legal notices (Impressum, Datenschutz): an external URL and/or Markdown text, shown even before login
 	Legal LegalTexts
@@ -131,6 +135,9 @@ type Config struct {
 	// up to 1 MB). Unset: derived from the memory the server may use (drawLiveDefaultMB), since the
 	// server's memory grows by about 3 MB per MB held, more for a moment while full sessions end.
 	DrawLiveMaxMB int
+	// RestoreUploadMaxGB: RESTORE_UPLOAD_MAX_GB, the largest backup the administration takes as an upload to
+	// restore (default 100)
+	RestoreUploadMaxGB int
 
 	// Web push (VAPID_*): keys are generated and stored in the database when not set
 	VAPIDPublicKey  string
@@ -477,7 +484,7 @@ func resolveSecretsKey(fromEnv, dataDir string) (key []byte, source string) {
 			slog.Warn("SECRETS_KEY is shorter than 32 characters – please use a longer random value")
 		}
 		sum := sha256.Sum256([]byte(v))
-		return sum[:], "SECRETS_KEY"
+		return sum[:], SecretsKeyFromEnv
 	}
 	path := filepath.Join(dataDir, secretsKeyFile)
 	if data, err := os.ReadFile(path); err == nil {
@@ -494,6 +501,47 @@ func resolveSecretsKey(fromEnv, dataDir string) (key []byte, source string) {
 		slog.Error("Saving the generated key for hidden values failed – they cannot be read after a restart", "path", path, "error", err)
 	}
 	return key, "generated"
+}
+
+// SecretsKeyFromEnv: SecretsKeySource of a key given by the SECRETS_KEY variable
+const SecretsKeyFromEnv = "SECRETS_KEY"
+
+// BackupSecretsKey: the key complete backups carry as secrets.key, so a move to a new server needs no
+// manual step. nil when SECRETS_KEY gives the key (it lives outside the data directory on purpose and
+// travels the same way) or BACKUP_EXCLUDE_SECRETS_KEY=true.
+func (c *Config) BackupSecretsKey() []byte {
+	if c.BackupExcludeSecretsKey || c.SecretsKeySource == SecretsKeyFromEnv || len(c.SecretsKey) != 32 {
+		return nil
+	}
+	return c.SecretsKey
+}
+
+// TakeRestoredSecretsKey: the key the store opened with after a restore that brought its own secrets.key
+// (storage.OpenStoreWithRestore), now in the data folder; the server seals and opens with it from here on.
+func (c *Config) TakeRestoredSecretsKey(key []byte) {
+	if len(key) == 32 && !bytes.Equal(key, c.SecretsKey) && c.SecretsKeySource != SecretsKeyFromEnv {
+		c.SecretsKey, c.SecretsKeySource = key, secretsKeyFile
+	}
+}
+
+// BackupSecretsKeyFromEnv is BackupSecretsKey for the command line (mindsift check --backup), which loads
+// no whole configuration: secrets.key of the data directory as it is (nothing generated), nil as above.
+func BackupSecretsKeyFromEnv(dataDir string) []byte {
+	if strings.TrimSpace(os.Getenv("SECRETS_KEY")) != "" {
+		return nil
+	}
+	if v := envBoolPtr("BACKUP_EXCLUDE_SECRETS_KEY"); v != nil && *v {
+		return nil
+	}
+	data, err := os.ReadFile(filepath.Join(dataDir, secretsKeyFile))
+	if err != nil {
+		return nil
+	}
+	key, err := hex.DecodeString(strings.TrimSpace(string(data)))
+	if err != nil || len(key) != 32 {
+		return nil
+	}
+	return key
 }
 
 // MinMetricsTokenLength: shorter tokens leave /metrics off (it would be guessable).
@@ -656,6 +704,7 @@ func Load() *Config {
 		BackupEnabled:           envBoolPtr("BACKUP_ENABLED"),
 		BackupTime:              backupTimeFromEnv(),
 		BackupRetentionDays:     envInt("BACKUP_RETENTION_DAYS", 0, 1, 365),
+		BackupExcludeSecretsKey: envBoolPtr("BACKUP_EXCLUDE_SECRETS_KEY") != nil && *envBoolPtr("BACKUP_EXCLUDE_SECRETS_KEY"),
 		Speech: SpeechConfig{
 			URL:            strings.TrimRight(getEnv("STT_URL", ""), "/"),
 			Model:          strings.TrimSpace(getEnv("STT_MODEL", "")),
@@ -675,6 +724,7 @@ func Load() *Config {
 		},
 		NotifyDigestMinutes: envInt("NOTIFY_DIGEST_MINUTES", 5, 1, 1440),
 		DrawLiveMaxMB:       envInt("DRAW_LIVE_MAX_MB", drawLiveDefaultMB(memoryLimit()), 1, 4096),
+		RestoreUploadMaxGB:  envInt("RESTORE_UPLOAD_MAX_GB", 100, 1, 10000),
 		VAPIDPublicKey:      strings.TrimSpace(os.Getenv("VAPID_PUBLIC_KEY")),
 		VAPIDPrivateKey:     strings.TrimSpace(os.Getenv("VAPID_PRIVATE_KEY")),
 		VAPIDSubject:        strings.TrimSpace(os.Getenv("VAPID_SUBJECT")),

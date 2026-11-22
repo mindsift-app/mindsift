@@ -724,7 +724,7 @@ const en: HelpContent = {
       subtitle: 'Keep working without internet, restore backups, reset your password',
       without: { cap: 'signIn', title: 'Backups', subtitle: 'Create backups and restore them' },
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'restore', 'password', 'forgot', 'account', 'two-factor', '2fa', 'authenticator', 'security', 'passkey', 'fingerprint', 'sso', 'oidc'],
+      keywords: ['offline', 'internet', 'backup', 'obsidian', 'restore', 'password', 'forgot', 'account', 'two-factor', '2fa', 'authenticator', 'security', 'passkey', 'fingerprint', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -741,6 +741,14 @@ const en: HelpContent = {
                 <strong className="text-main">Taking over an account from a server:</strong> under <em>Administration → Data</em> you pick a backup of a MindSift server and one of its accounts. Its pictures and recordings come along when you pick the server's data folder or its <em>backups</em> folder as an archive (.zip, .tar or .tar.gz); a database snapshot (.db.gz) alone brings everything but them. Only what the account owns comes over: things shared with it, hidden values and the server's settings stay out.
               </li>
             </InDesktop>
+            <li>
+              <strong className="text-main">Importing Obsidian:</strong> Under <em>Account settings → Export &amp; import</em>, MindSift takes a vault as .zip. The notes go into a folder of their own named after the vault, subfolders are kept, checkboxes stay checkboxes and frontmatter tags become #hashtags. Embedded images and audio files come along, other attachments such as PDFs do not.
+            </li>
+            <Only can="restore">
+              <li>
+                <strong className="text-main">Restoring everything:</strong> Admins restore the whole instance with its pictures and recordings under <em>Administration → Data</em> with <em>Restore</em>; the current state is backed up first. To move, download a backup and load it on the new server with <em>Upload backup</em>.
+              </li>
+            </Only>
             <Only can="install">
               <li>
                 <strong className="text-main">Without internet:</strong> installed as an app (or in the browser), MindSift also starts offline with the last loaded state. Capturing thoughts and checking off tasks and list items keeps working; a hint at the bottom shows how many changes are waiting, and they are sent automatically once the connection is back.
@@ -794,7 +802,7 @@ const en: HelpContent = {
               <strong className="text-main">Server time zone:</strong> server admins set it under <em>Administration → Instance → Time zone</em>. It applies to everyone at once: due times, alarms, the daily summary and the backup time.
             </li>
             <li>
-              <strong className="text-main">Image quality:</strong> the app shrinks images to at most 2048 pixels before uploading them. How strongly it compresses them is set by server admins under <em>Administration → Data → Image quality</em>: High (default), Medium or Economy. The size stays the same at every level, so text in screenshots stays readable; the setting applies to newly added images.
+              <strong className="text-main">Image quality:</strong> the app shrinks images to at most 2048 pixels before uploading them. How strongly it compresses them is set by server admins under <em>Administration → Media → Image quality</em>: High (default), Medium or Economy. The size stays the same at every level, so text in screenshots stays readable; the setting applies to newly added images.
             </li>
             <li>
               <strong className="text-main">Groups:</strong> combine people you can see into groups (e.g. family, flatmates, a project) and share with all of them at once. Whoever creates a group is its admin; only members can share with a group.

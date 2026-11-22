@@ -28,7 +28,9 @@ export type Capability =
   // Running in a browser: installable as an app, working offline
   | 'install'
   // Alarms as notifications of the operating system (a local instance of the desktop app), in place of web push
-  | 'desktopNotify';
+  | 'desktopNotify'
+  // The administration restores the whole instance from a backup (the server can reopen its data)
+  | 'restore';
 
 export type Capabilities = Record<Capability, boolean>;
 
@@ -45,13 +47,14 @@ const SERVER_DEFAULTS: Capabilities = {
   liveDrawing: true,
   install: true,
   desktopNotify: false,
+  restore: false,
 };
 
 let current: Capabilities = SERVER_DEFAULTS;
 const listeners = new Set<() => void>();
 
 // From /auth/status (lib/api/auth.ts); what the status leaves out counts as a server's default (on, but
-// desktopNotify off: an older server does not know it)
+// desktopNotify and restore off: an older server does not know them)
 export function setCapabilities(caps: Partial<Capabilities> | undefined) {
   current = { ...SERVER_DEFAULTS, ...caps };
   listeners.forEach((listener) => listener());

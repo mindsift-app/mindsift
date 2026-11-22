@@ -55,9 +55,6 @@ export function DataSection({
     <div className="space-y-5">
       <div className="border-b border-border pb-3">
         <h2 className="text-sm font-bold text-main">{t('data.title')}</h2>
-        <p className="text-muted mt-0.5">
-          {t('data.intro')}
-        </p>
       </div>
 
       <ServerBackupsCard onRestored={onDataChanged} />

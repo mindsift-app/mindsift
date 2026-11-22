@@ -358,3 +358,62 @@ func TestDesktopAlwaysAllowsRetentionNever(t *testing.T) {
 		t.Errorf("stored %v, allowed %v", store.RetentionAllowNeverSetting(), srv.allowNeverRetention())
 	}
 }
+
+// fullBackupOf writes a full backup of the server's data folder (as the daily run now does) and returns its
+// folder and its download (the tar archive).
+func fullBackupOf(t *testing.T, dataDir string) (string, string) {
+	t.Helper()
+	store, err := storage.NewStore(filepath.Join(dataDir, "mindsift.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	dir := filepath.Join(dataDir, "backups", "system")
+	name, err := store.WriteFullBackup(dir, time.Now(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, write, err := storage.WriteFullBackupTar(filepath.Join(dir, name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(t.TempDir(), name+".tar")
+	f, _ := os.Create(out)
+	if err := write(f); err != nil {
+		t.Fatal(err)
+	}
+	_ = f.Close()
+	return filepath.Join(dir, name), out
+}
+
+// The full backup as downloaded from the administration (tar with mindsift.db.gz and media/) brings the
+// account's pictures along, and so does a backups folder holding full backups (the newest one counts).
+func TestDesktopTakesOverAccountFromFullBackup(t *testing.T) {
+	dataDir, anna, annaImg, _ := serverWithMedia(t)
+	_, file := fullBackupOf(t, dataDir)
+	store, _, me, prev, _ := takeOverAnna(t, file, anna)
+	if prev.Media != 1 || prev.MediaMissing != 0 {
+		t.Errorf("media counts: %+v", prev)
+	}
+	if got := localMedia(t, store, me.ID); len(got) != 1 || !bytes.Equal(got[0], annaImg) {
+		t.Fatalf("local media: %d files", len(got))
+	}
+
+	// The backups folder with the full backup, without the accounts' own backups and without media/ of the
+	// data folder
+	src := t.TempDir()
+	if err := os.CopyFS(filepath.Join(src, "system"), os.DirFS(filepath.Join(dataDir, "backups", "system"))); err != nil {
+		t.Fatal(err)
+	}
+	olds, _ := filepath.Glob(filepath.Join(src, "system", "mindsift-db-*.db.gz"))
+	for _, old := range olds {
+		_ = os.Remove(old)
+	}
+	store2, _, me2, prev2, _ := takeOverAnna(t, packDir(t, src, "backups", uploadZip), anna)
+	if prev2.Media != 1 || prev2.MediaMissing != 0 {
+		t.Errorf("media counts from the backups folder: %+v", prev2)
+	}
+	if got := localMedia(t, store2, me2.ID); len(got) != 1 || !bytes.Equal(got[0], annaImg) {
+		t.Fatalf("local media from the backups folder: %d files", len(got))
+	}
+}

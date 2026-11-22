@@ -3,6 +3,7 @@ package api
 import (
 	"strings"
 
+	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
@@ -36,6 +37,7 @@ func (s *Server) withEnvLocks(sys *domain.SystemSettings) *domain.SystemSettings
 	if c.BackupRetentionDays > 0 {
 		out.BackupRetentionDays, out.BackupRetentionDaysViaEnv = c.BackupRetentionDays, true
 	}
+	out.BackupSecretsKeyExcluded = c.BackupExcludeSecretsKey || c.SecretsKeySource == config.SecretsKeyFromEnv
 	return &out
 }
 
@@ -80,6 +82,7 @@ func (s *Server) keepEnvLocked(update, stored *domain.SystemSettings) {
 	}
 	update.AllowPrivateWebhooksViaEnv, update.PushKnownServicesOnlyViaEnv, update.LinkPreviewsViaEnv = false, false, false
 	update.BackupEnabledViaEnv, update.BackupTimeViaEnv, update.BackupRetentionDaysViaEnv, update.SMTPDisabledViaEnv = false, false, false, false
+	update.BackupSecretsKeyExcluded = false
 }
 
 // smtpFromEnv: the mail server the SMTP_* variables describe (SMTP_HOST set).

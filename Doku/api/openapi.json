@@ -90,8 +90,8 @@
     },
     "/api/v1/admin/backups": {
       "get": {
-        "summary": "List database dumps",
-        "description": "List database dumps or create backup immediately (database dump + all user backups)",
+        "summary": "List system backups",
+        "description": "Full backups (database and media) and older database dumps, newest first",
         "tags": [
           "Administration"
         ],
@@ -102,8 +102,8 @@
         }
       },
       "post": {
-        "summary": "Back up now (database dump and all user backups)",
-        "description": "List database dumps or create backup immediately (database dump + all user backups)",
+        "summary": "Back up now (full backup and all user backups)",
+        "description": "Writes a full backup (database and media) and every user's backup, answers the list",
         "tags": [
           "Administration"
         ],
@@ -228,8 +228,8 @@
     },
     "/api/v1/admin/backups/{name}": {
       "delete": {
-        "summary": "Delete a database dump",
-        "description": "Delete database dump (returns remaining list; disabled in demo)",
+        "summary": "Delete a system backup",
+        "description": "Delete a system backup (returns remaining list; disabled in demo)",
         "tags": [
           "Administration"
         ],
@@ -250,8 +250,8 @@
         }
       },
       "get": {
-        "summary": "Download database dump",
-        "description": "Download database dump",
+        "summary": "Download a system backup",
+        "description": "A full backup as one streamed tar archive (manifest.json, mindsift.db.gz, media/), an older database dump as it is",
         "tags": [
           "Administration"
         ],
@@ -5156,6 +5156,160 @@
         "description": "Waiting, running and failed jobs for recordings in the note (read permission), as GET /voice/jobs",
         "tags": [
           "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/{name}/restore": {
+      "post": {
+        "summary": "Restore the instance from a backup",
+        "description": "Body {confirm: name, acceptKeyMismatch?}. Checks the backup (409 code secrets_key_mismatch when its encrypted values do not open with the key the restored instance will use; acceptKeyMismatch: true restores anyway), restores its secrets.key with the data, writes a full backup of the current state, answers 202 and reopens the server with the restored data (previous data back if they do not open); capability restore",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backup-download/{name}": {
+      "get": {
+        "summary": "Download a system backup with a ticket",
+        "description": "For the browser's own download: ?ticket= from POST /auth/stream-ticket instead of the Authorization header; admins only",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/uploads": {
+      "post": {
+        "summary": "Start the upload of a backup to restore",
+        "description": "Body {name, size} → {id, offset, chunkSize, maxChunkSize}; 413 above RESTORE_UPLOAD_MAX_GB",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/uploads/{id}": {
+      "get": {
+        "summary": "State of a backup upload",
+        "description": "{id, name, size, offset}: where to resume",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Upload one chunk",
+        "description": "?offset=N, raw body (max. 64 MB), optional X-Chunk-SHA256; 409 {offset} when N is not the end so far",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Discard a backup upload",
+        "description": "Removes the uploaded file",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/uploads/{id}/restore": {
+      "post": {
+        "summary": "Restore an uploaded backup",
+        "description": "Body {confirm: name, sha256, acceptKeyMismatch?}: SHA-256 over the SHA-256 of each 32 MiB block; then as /admin/backups/{name}/restore",
+        "tags": [
+          "Administration"
         ],
         "parameters": [
           {

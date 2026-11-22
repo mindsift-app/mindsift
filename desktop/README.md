@@ -241,7 +241,7 @@ normal server neither). Details in [Doku/architecture.md](../Doku/architecture.m
 - **Kept:** MCP with API keys (local AI agents, over the listener above), daily backups (on unless switched off in the wizard; into
   `backups/` of the instance or, with a folder chosen in the wizard or the administration, its subfolder
   `MindSift-Backups/<instance>`), export and import. Moving to a server later is a backup restored there; the other way, Administration → Data takes one account
-  over from a server's backup: its data or backups folder packed as .zip/.tar/.tar.gz (with the account's pictures and recordings) or a database snapshot alone (see Desktop Mode in Doku/architecture.md).
+  over from a server's backup: a full backup as downloaded from its administration (.tar), its data or backups folder packed as .zip/.tar/.tar.gz (with the account's pictures and recordings) or a database snapshot alone (see Desktop Mode in Doku/architecture.md). Hidden values in notes come along when the backup carries the server's `secrets.key` (complete backups do): opened with it and sealed again with the instance's own key, which stays as it is; without that key they stay behind and their notes are listed. The local backups are full backups (database and media, unchanged media as hard links); Administration → Data restores one, and the app reopens the instance with it.
 - **Realtime without WebSocket:** server-sent events on Linux, long polling on Windows (Wails buffers
   responses there). The server names the transport in `/auth/status` (`desktop.realtime`).
 - **Time zone and language** come from the system unless `TZ` or `DEFAULT_LANGUAGE` are set: on Linux

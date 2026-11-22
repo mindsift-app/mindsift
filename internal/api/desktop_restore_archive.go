@@ -6,10 +6,12 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -23,10 +25,13 @@ import (
 //
 //	<data>/mindsift.db                                         the live database (with mindsift.db-wal)
 //	<data>/media/<note id>/<media id><ext>                     pictures and recordings
-//	<data>/backups/system/mindsift-db-….db.gz                  the daily database snapshots (no media)
+//	<data>/backups/system/mindsift-full-…/                     the daily full backups (database and media)
+//	<data>/backups/system/mindsift-db-….db.gz                  older daily database snapshots (no media)
 //	<data>/backups/users/<account id>/mindsift-backup-….zip    each account's daily backup, with its media
 //
-// A copy of the data folder or of its backups folder, packed as .zip, .tar or .tar.gz, is taken as it is:
+// A full backup as downloaded from the administration (a tar with manifest.json, mindsift.db.gz and media/,
+// storage/fullbackup.go) is read like a data folder. A copy of the data folder or of its backups folder,
+// packed as .zip, .tar or .tar.gz, is taken as it is:
 // the database is the live one (with its -wal) or else the newest daily snapshot; the chosen account's
 // pictures and recordings come from media/ of the data folder, or else from that account's newest daily
 // backup. A database snapshot alone (.db.gz) still works, without media.
@@ -43,6 +48,10 @@ const (
 	// data and backups folders are
 	stagedArchiveName = "archive"
 	stagedArchiveInfo = "archive.json"
+	// stagedServerKey: the server's secrets.key from the archive, checked (stageServerKey)
+	stagedServerKey = "server-secrets.key"
+	// maxSecretsKeyFileBytes: a secrets.key is 65 bytes; a larger file of that name is no key
+	maxSecretsKeyFileBytes = 1024
 )
 
 var (
@@ -146,16 +155,22 @@ func stageArchive(kind uploadKind, file, dir string) (*stagedArchive, error) {
 	defer os.Remove(snapTmp)
 	var live, snap string
 	wals := map[string]string{} // folder in the archive → its -wal, staged
+	keys := map[string]string{} // folder in the archive → its secrets.key, staged
 	defer func() {
 		for _, f := range wals {
+			_ = os.Remove(f)
+		}
+		for _, f := range keys {
 			_ = os.Remove(f)
 		}
 	}()
 	err := walkArchive(kind, file, func(e archiveEntry) error {
 		base, parent := path.Base(e.name), entryDir(e.name)
 		switch {
-		case base == snapshotDBName:
-			if live != "" && depth(e.name) >= depth(live) {
+		case base == snapshotDBName, base == storage.FullBackupDBName:
+			// A full backup (mindsift.db.gz with media/ beside it) counts like a data folder; of several at
+			// the same depth the newest (the folder names carry the time), a plain database before them
+			if live != "" && !betterLiveDB(e.name, live) {
 				return nil
 			}
 			if err := copyEntry(e, liveTmp, maxSnapshotBytes); err != nil {
@@ -171,6 +186,19 @@ func stageArchive(kind uploadKind, file, dir string) (*stagedArchive, error) {
 				return err
 			}
 			wals[parent] = dst
+		case base == storage.FullBackupSecretsKey:
+			dst := filepath.Join(dir, fmt.Sprintf("key-%d", len(keys)))
+			if old, ok := keys[parent]; ok {
+				dst = old
+			}
+			err := copyEntry(e, dst, maxSecretsKeyFileBytes)
+			if errors.Is(err, errSnapshotTooLarge) {
+				return nil // no key file of MindSift
+			}
+			if err != nil {
+				return err
+			}
+			keys[parent] = dst
 		case path.Base(parent) == "system" && snapshotFileRe.MatchString(base):
 			if snap != "" && base <= path.Base(snap) {
 				return nil
@@ -212,7 +240,32 @@ func stageArchive(kind uploadKind, file, dir string) (*stagedArchive, error) {
 	default:
 		return nil, errNotSnapshot
 	}
+	// The server's key: beside the database (a data folder, a full backup); for a daily snapshot the one of
+	// the data folder its backups folder lies in
+	keyDir, haveKeyDir := "", false
+	switch {
+	case live != "":
+		keyDir, haveKeyDir = entryDir(live), true
+	case info.Media != "":
+		keyDir, haveKeyDir = entryDir(info.Media), true
+	}
+	if key, ok := keys[keyDir]; ok && haveKeyDir {
+		stageServerKey(key, dir)
+	}
 	return info, nil
+}
+
+// stageServerKey keeps the server's secrets.key found in the archive as dir/server-secrets.key when it is
+// one (storage.ReadSecretsKeyFile: hex, 32 bytes); anything else is dropped and the hidden values stay
+// behind as without a key. The key is only read by a take-over (snapshotHiddenValuesOf) and goes with
+// the staging folder; it never becomes the instance's key.
+func stageServerKey(src, dir string) {
+	key, err := storage.ReadSecretsKeyFile(src)
+	if err != nil {
+		slog.Warn("The secrets.key in the server's backup is not a MindSift key and is ignored", "error", err)
+		return
+	}
+	logFailed("Staging the server's secrets key", storage.WriteFileAtomically(filepath.Join(dir, stagedServerKey), []byte(hex.EncodeToString(key)+"\n")))
 }
 
 // extractAccountMedia puts the pictures and recordings of the account's notes from the staged archive into
@@ -416,6 +469,19 @@ func entryDir(name string) string {
 }
 
 func depth(name string) int { return strings.Count(name, "/") }
+
+// betterLiveDB: the database entry name is a better choice than cur: closer to the archive's root, or at
+// the same depth a plain database over a full backup's, and the newer of two full backups.
+func betterLiveDB(name, cur string) bool {
+	if depth(name) != depth(cur) {
+		return depth(name) < depth(cur)
+	}
+	gz, curGz := path.Base(name) == storage.FullBackupDBName, path.Base(cur) == storage.FullBackupDBName
+	if gz != curGz {
+		return !gz
+	}
+	return gz && entryDir(name) > entryDir(cur)
+}
 
 // copyEntry writes the entry to dst, at most limit bytes (more: errSnapshotTooLarge, nothing stays).
 func copyEntry(e archiveEntry, dst string, limit int64) error {

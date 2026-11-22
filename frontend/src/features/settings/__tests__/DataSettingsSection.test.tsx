@@ -29,7 +29,7 @@ describe('DataSettingsSection (Administration → Data)', () => {
   it('on a server: backups at their time and the switch for keeping things for good', () => {
     render(<DataSettingsSection admin={admin} />);
     expect(screen.getByText('Tägliche Backups und ob Erledigtes und Gelöschtes für immer bleiben darf.')).toBeTruthy();
-    expect(screen.getByText(/Täglich um 02:30: die ganze Datenbank/)).toBeTruthy();
+    expect(screen.getByText(/Täglich um 02:30: alle Daten samt Bildern und Aufnahmen/)).toBeTruthy();
     expect(screen.getByText('Dauerhaftes Aufbewahren erlauben')).toBeTruthy();
     expect(screen.queryByText('Konto aus einem Server-Backup übernehmen')).toBeNull();
   });

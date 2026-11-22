@@ -566,6 +566,8 @@ export interface SystemSettings {
   backupEnabledConfiguredViaEnv?: boolean;
   backupTimeConfiguredViaEnv?: boolean;
   backupRetentionDaysConfiguredViaEnv?: boolean;
+  // Complete backups carry no secrets.key (BACKUP_EXCLUDE_SECRETS_KEY or SECRETS_KEY, read only)
+  backupSecretsKeyExcluded?: boolean;
   // The mail server and user SMTP_PASS belongs to (only with SMTP_PASS): the password field is locked while
   // the form names them
   smtpPassEnvHost?: string;
@@ -659,6 +661,12 @@ export interface BackupFile {
   name: string;
   size: number;
   createdAt: string;
+  /** A full backup (database and media): a folder, downloaded as one tar archive of size bytes */
+  full?: boolean;
+  /** Its pictures and recordings */
+  media?: number;
+  /** "pre-restore": written right before a restore */
+  reason?: string;
 }
 
 /** Desktop app: where the backups go; defaultDir is backups/ in the instance's folder, custom: chosen. */

@@ -204,6 +204,53 @@ export const dataApi = {
     return downloadBlob(`/api/v1/admin/backups/${encodeURIComponent(name)}`);
   },
 
+  // The browser's own download of a backup (a link: several GB go to disk, not into the page's memory),
+  // authorized by a one-time stream ticket
+  async adminBackupDownloadUrl(name: string): Promise<string> {
+    const res = await request<{ ticket?: string }>('/api/v1/auth/stream-ticket', { method: 'POST' });
+    return `/api/v1/admin/backup-download/${encodeURIComponent(name)}?ticket=${encodeURIComponent(res.ticket ?? '')}`;
+  },
+
+  // Restores the whole instance from a backup of the list; the server reopens afterwards (202).
+  // acceptKeyMismatch: after 409 secrets_key_mismatch, restore anyway (features/settings/restoreKeyCheck.ts)
+  async adminRestoreBackup(name: string, acceptKeyMismatch = false): Promise<{ restarting: boolean; preRestoreBackup: string }> {
+    return request(`/api/v1/admin/backups/${encodeURIComponent(name)}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({ confirm: name, acceptKeyMismatch }),
+      timeout: 'slow',
+    });
+  },
+
+  // The same from an uploaded backup (lib/backupUpload.ts)
+  async adminRestoreUpload(
+    id: string,
+    name: string,
+    sha256: string,
+    acceptKeyMismatch = false,
+  ): Promise<{ restarting: boolean; preRestoreBackup: string }> {
+    return request(`/api/v1/admin/backups/uploads/${encodeURIComponent(id)}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({ confirm: name, sha256, acceptKeyMismatch }),
+      timeout: 'slow',
+    });
+  },
+
+  async adminDiscardUpload(id: string): Promise<void> {
+    await request(`/api/v1/admin/backups/uploads/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
+
+  // The id of the server's current start (/health): it changes once a restore has reopened the data
+  async serverBoot(): Promise<string | null> {
+    try {
+      const res = await fetch('/api/v1/health', { cache: 'no-store' });
+      if (!res.ok) return null;
+      const body = (await res.json()) as { boot?: string };
+      return body.boot ?? null;
+    } catch {
+      return null;
+    }
+  },
+
   // Backups of accounts an admin deleted, kept for the backup retention period
   async adminDeletedBackups(): Promise<DeletedAccountBackups[]> {
     return ensureArray(await request<DeletedAccountBackups[]>('/api/v1/admin/backups/deleted'));

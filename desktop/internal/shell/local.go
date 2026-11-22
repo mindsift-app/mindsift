@@ -174,11 +174,17 @@ func (l *Local) start(id, dir string) (*running, error) {
 	cfg := config.Load()
 	cfg.AppVersion = l.Version
 	cfg.ApplyDesktop(l.Desktop)
-	store, err := storage.NewStore(cfg.DatabasePath, storage.WithSecretsKey(cfg.SecretsKey), storage.WithDefaultInstanceName(cfg.InstanceName))
+	// A restore the administration staged (api/fullrestore.go) is swapped in here, before the store opens
+	store, restoreErr, err := storage.OpenStoreWithRestore(cfg.DatabasePath, storage.WithSecretsKey(cfg.SecretsKey),
+		storage.WithBackupSecretsKey(cfg.BackupSecretsKey()), storage.WithDefaultInstanceName(cfg.InstanceName))
 	if err != nil {
 		lock.release()
 		return nil, problem("openFailed", err)
 	}
+	if restoreErr != nil {
+		slog.Error("Restoring the backup failed; the instance opens with the data from before", "data", dir, "error", restoreErr)
+	}
+	cfg.TakeRestoredSecretsKey(store.SecretsKey())
 	store.ConfiguredLanguage = cfg.DefaultLanguage
 	hub := ws.NewHub()
 	srv := api.NewServer(cfg, store, hub, l.Static)
@@ -186,6 +192,7 @@ func (l *Local) start(id, dir string) (*running, error) {
 		// Before the window asks for the status (capability desktopNotify) and the first alarm run
 		srv.SetDesktopNotifier(api.DesktopNotifierFunc(func(n api.DesktopNotification) error { return notify(id, n) }))
 	}
+	srv.SetRestarter(func() { l.reopen(id, dir) })
 	srv.ApplyTimeZone()
 	srv.CheckSecretsKey()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -207,6 +214,31 @@ func (l *Local) start(id, dir string) (*running, error) {
 	}
 	slog.Info("Local MindSift server ready", "data", dir)
 	return r, nil
+}
+
+// reopen closes the open instance id and opens it again, after the administration staged a restore of a
+// backup (the store swaps it in when it opens). Its listener for local programs comes back on its port.
+func (l *Local) reopen(id, dir string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.cur == nil || l.cur.id != id {
+		return
+	}
+	port := l.cur.apiPort
+	l.cur.close()
+	l.cur = nil
+	r, err := l.start(id, dir)
+	if err != nil {
+		slog.Error("Reopening the instance after a restore failed", "data", dir, "error", err)
+		return
+	}
+	l.cur = r
+	if port > 0 {
+		if err := r.listenLocalAPI(port); err != nil {
+			slog.Warn("Making the instance reachable for local programs failed after a restore", "port", port, "error", err)
+		}
+	}
+	slog.Info("Instance reopened after a restore", "data", dir)
 }
 
 // mergeDone: the request's context, also cancelled when the instance closes (long polls and streams end)

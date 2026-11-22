@@ -89,6 +89,10 @@ type Server struct {
 	bg       sync.WaitGroup
 	// backupNudge: asks the backup scheduler to look at the settings now instead of at its next tick
 	backupNudge chan struct{}
+	// restarter: the runner's reopen after a restore is staged (fullrestore.go); nil: no restore here
+	restarter func()
+	// bootID: this server's start, in /health, so the app sees when a restore has reopened it
+	bootID string
 }
 
 func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS fs.FS) *Server {
@@ -109,6 +113,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		docLists:          make(chan struct{}, maxDocListsBuilding),
 		stats:             newStatsCache(),
 	}
+	srv.bootID, _ = randomToken(8)
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
 	srv.prepareSetupCode()
 	if srv.desktopMode() {
@@ -117,6 +122,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		logFailed("Setting the desktop alarm defaults", srv.desktopAlarmDefaults())
 		srv.clearSnapshots("") // a snapshot staged before the instance last closed (desktop_restore.go)
 	}
+	srv.recordRestoreDone() // a restore swapped in at this start goes into the restored audit log
 	srv.metrics = newAPIMetrics(srv)
 	var oidcOff string
 	srv.oidc, oidcOff = newOIDCService(cfg)
@@ -279,6 +285,8 @@ func (s *Server) Router() http.Handler {
 		r.Get("/metrics", s.handleMetrics)
 	}
 	r.Get("/api/v1/auth/status", s.handleAuthStatus)
+	// A backup as the browser's own download: a one-time stream ticket instead of the header (fullrestore.go)
+	r.Get("/api/v1/admin/backup-download/{name}", s.handleTicketBackupDownload)
 	r.Get("/api/v1/legal/{type}", s.handleLegalText)
 	r.Post("/api/v1/auth/setup", s.notInDesktop(s.handleFirstBootSetup))
 	// The desktop app's window signs its one account in (desktop.go; 404 on a normal server)
@@ -587,6 +595,13 @@ func (s *Server) Router() http.Handler {
 			r.Post("/api/v1/admin/backups", s.notInDemo(s.handleAdminRunBackup))
 			r.Get("/api/v1/admin/backups/{name}", s.handleAdminDownloadBackup)
 			r.Delete("/api/v1/admin/backups/{name}", s.notInDemo(s.handleAdminDeleteBackup))
+			// Restoring the whole instance from a backup of the list or an upload (fullrestore.go, backup_upload.go)
+			r.Post("/api/v1/admin/backups/{name}/restore", s.notInDemo(s.handleAdminRestoreBackup))
+			r.Post("/api/v1/admin/backups/uploads", s.notInDemo(s.handleUploadStart))
+			r.Get("/api/v1/admin/backups/uploads/{id}", s.notInDemo(s.handleUploadStatus))
+			r.Put("/api/v1/admin/backups/uploads/{id}", s.notInDemo(s.handleUploadChunk))
+			r.Delete("/api/v1/admin/backups/uploads/{id}", s.notInDemo(s.handleUploadDiscard))
+			r.Post("/api/v1/admin/backups/uploads/{id}/restore", s.notInDemo(s.handleUploadRestore))
 			r.Get("/api/v1/admin/backups/location", s.onlyInDesktop(s.handleBackupLocation))
 			r.Put("/api/v1/admin/backups/location", s.onlyInDesktop(s.handleSetBackupLocation))
 			// A server's database snapshot: take one of its accounts over (desktop_restore.go)

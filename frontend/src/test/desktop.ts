@@ -2,7 +2,7 @@ import { setCurrentDesktop } from '../lib/api/client';
 import { setCapabilities, type Capabilities } from '../lib/capabilities';
 
 // What the desktop app's server reports (internal/api/capabilities.go): every capability off but the
-// system notifications its shell shows
+// system notifications its shell shows and the restore of a backup (its shell reopens the instance)
 export const DESKTOP_CAPABILITIES: Capabilities = {
   accounts: false,
   signIn: false,
@@ -15,6 +15,7 @@ export const DESKTOP_CAPABILITIES: Capabilities = {
   liveDrawing: false,
   install: false,
   desktopNotify: true,
+  restore: true,
 };
 
 // The desktop app as /auth/status tells it: its shell and its capabilities

@@ -20,26 +20,12 @@ func (s *Server) CheckSecretsKey() (checked, unreadable int) {
 		slog.Warn("Checking the secrets key against the stored encrypted values failed", "error", err)
 		return 0, 0
 	}
-	failedKinds := map[string]int{}
-	for _, sample := range samples {
-		id := sample.SealID
-		switch sample.Kind {
-		case storage.SealedTOTP:
-			id = totpSealID(id)
-		case storage.SealedCalFeed:
-			id = calendarFeedSealID(id)
-		}
-		checked++
-		if _, err := s.openSecret(id, sample.Ciphertext); err != nil {
-			unreadable++
-			failedKinds[sample.Kind]++
-		}
-	}
+	checked, unreadable, failedKinds := trySealedSamples(s.cfg.SecretsKey, samples)
 	if unreadable == 0 {
 		return checked, unreadable
 	}
 	attrs := []any{"key", s.cfg.SecretsKeySource, "checked", checked, "unreadable", unreadable}
-	for _, kind := range []string{storage.SealedNoteSecret, storage.SealedTOTP, storage.SealedPublicLink, storage.SealedCalFeed, storage.SealedSMTPPass} {
+	for _, kind := range []string{storage.SealedNoteSecret, storage.SealedTOTP, storage.SealedPublicLink, storage.SealedCalFeed, storage.SealedSMTPPass, storage.SealedSpeechKey} {
 		if n := failedKinds[kind]; n > 0 {
 			attrs = append(attrs, kind, n)
 		}
@@ -55,4 +41,24 @@ func (s *Server) CheckSecretsKey() (checked, unreadable int) {
 		"(Doku/operations.md, \"Restoring a whole server\"). Do not change those values in the meantime: values stored now use the new key.",
 		attrs...)
 	return checked, unreadable
+}
+
+// trySealedSamples opens the samples with key: how many were tried, how many did not open, and of which kind.
+func trySealedSamples(key []byte, samples []storage.SealedSample) (checked, unreadable int, failedKinds map[string]int) {
+	failedKinds = map[string]int{}
+	for _, sample := range samples {
+		id := sample.SealID
+		switch sample.Kind {
+		case storage.SealedTOTP:
+			id = totpSealID(id)
+		case storage.SealedCalFeed:
+			id = calendarFeedSealID(id)
+		}
+		checked++
+		if _, err := storage.OpenValue(key, id, sample.Ciphertext); err != nil {
+			unreadable++
+			failedKinds[sample.Kind]++
+		}
+	}
+	return checked, unreadable, failedKinds
 }
