@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import { Download } from 'lucide-react';
-import { api, isDesktopApp } from '../../../lib/api';
+import { api } from '../../../lib/api';
 import { saveBlob } from '../../../lib/download';
 import { ImportCard } from '../ImportCard';
 import { ServerBackupsCard } from '../ServerBackupsCard';
@@ -56,7 +56,7 @@ export function DataSection({
       <div className="border-b border-border pb-3">
         <h2 className="text-sm font-bold text-main">{t('data.title')}</h2>
         <p className="text-muted mt-0.5">
-          {isDesktopApp() ? t('data.introDesktop') : t('data.intro')}
+          {t('data.intro')}
         </p>
       </div>
 

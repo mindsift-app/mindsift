@@ -1,7 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { HelpView } from '../HelpView';
-import { setCurrentDesktop } from '../../../lib/api/client';
+import { actAsDesktopApp, actAsServer } from '../../../test/desktop';
+import { setCapabilities } from '../../../lib/capabilities';
 
 describe('HelpView footer', () => {
   it('shows the imprint link of the instance and the About button at the bottom, like the settings', () => {
@@ -20,7 +21,7 @@ describe('HelpView footer', () => {
 });
 
 describe('HelpView in the desktop app', () => {
-  afterEach(() => setCurrentDesktop(null));
+  afterEach(() => actAsServer());
 
   it('shows the collaboration category and its cards in the browser', async () => {
     render(<HelpView />);
@@ -30,7 +31,7 @@ describe('HelpView in the desktop app', () => {
   });
 
   it('leaves out the collaboration category and the cards about working with others', async () => {
-    setCurrentDesktop({ platform: 'linux', realtime: 'sse' });
+    actAsDesktopApp();
     render(<HelpView />);
     expect(await screen.findByText('API: curl & KI-Agenten (MCP)')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Gruppen & Freigaben' })).toBeNull();
@@ -39,10 +40,9 @@ describe('HelpView in the desktop app', () => {
   });
 
   it('words the cards for one person on one computer: no collaboration, no mail, no sign-in, no installing', async () => {
-    setCurrentDesktop({ platform: 'linux', realtime: 'sse' });
+    actAsDesktopApp();
     render(<HelpView />);
     expect(await screen.findByText('Hierarchischer Outliner')).toBeTruthy();
-    expect(screen.getByText('Tastaturbedienung, Outliner-Notizen, Triage und Kanban-Board')).toBeTruthy();
     // the card's desktop title replaces the one for servers, so nothing about collaborative sync or offline sync is left
     expect(screen.queryByText('Hierarchischer Outliner & Offline-Sync')).toBeNull();
     expect(screen.queryByText(/kollaborativem Echtzeit-Abgleich/)).toBeNull();
@@ -60,6 +60,16 @@ describe('HelpView in the desktop app', () => {
     expect(await screen.findByText('Hierarchischer Outliner & Offline-Sync')).toBeTruthy();
     expect(screen.getByText('Offline, Backups & Passwort')).toBeTruthy();
     expect(screen.getByText(/Als App installiert/)).toBeTruthy();
+    expect(screen.getByText('Passkeys:')).toBeTruthy();
+  });
+
+  it('on a server with sharing off: no collaboration, the rest worded for servers', async () => {
+    setCapabilities({ sharing: false });
+    render(<HelpView />);
+    expect(await screen.findByText('Hierarchischer Outliner & Offline-Sync')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Gruppen & Freigaben' })).toBeNull();
+    expect(screen.queryByText('Organisationen, Gruppen & Freigaben')).toBeNull();
+    expect(screen.queryByText('Zuweisen:')).toBeNull();
     expect(screen.getByText('Passkeys:')).toBeTruthy();
   });
 });

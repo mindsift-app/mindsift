@@ -36,7 +36,7 @@ function renderSection(over: Partial<Admin> = {}) {
 describe('ServerSection (Administration → Server)', () => {
   it('groups name, default language and time zone as rows of one frame', () => {
     renderSection();
-    expect(screen.getByRole('heading', { name: 'Server' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Instanz' })).toBeTruthy();
     const group = document.querySelector('[data-admin-instance]') as HTMLElement;
     expect(group.querySelector('input[aria-label="Name der MindSift-Instanz"]')).toBeTruthy();
     expect(group.textContent).toContain('Standardsprache');

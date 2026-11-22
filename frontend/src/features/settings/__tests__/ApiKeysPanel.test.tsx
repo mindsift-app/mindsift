@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, within } from '@testing-library/react';
+import { setCapabilities } from '../../../lib/capabilities';
+import { DESKTOP_CAPABILITIES } from '../../../test/desktop';
 
 const createAPIKey = vi.fn(async () => ({ id: 'k1', userId: 'u', name: 'HA', keyPrefix: 'mindsift_sec_ab', scopes: 'webhook:triage,webhook:list', createdAt: '' }));
 const updateAPIKey = vi.fn(async () => ({}));
@@ -41,6 +43,7 @@ describe('ApiKeysPanel', () => {
   beforeEach(() => {
     createAPIKey.mockClear();
     desktop = false;
+    setCapabilities(undefined);
   });
 
   it('shows the rights of existing keys as badges', async () => {
@@ -128,6 +131,7 @@ describe('ApiKeysPanel', () => {
 
   it('desktop app: makes the instance reachable for local programs and shows its address in the examples', async () => {
     desktop = true;
+    setCapabilities(DESKTOP_CAPABILITIES);
     render(<ApiKeysPanel />);
     const toggle = await screen.findByRole('switch', { name: 'Für lokale Programme erreichbar' });
     expect(toggle.getAttribute('aria-checked')).toBe('false');
@@ -151,6 +155,7 @@ describe('ApiKeysPanel', () => {
 
   it('desktop app: a port taken by another program is explained', async () => {
     desktop = true;
+    setCapabilities(DESKTOP_CAPABILITIES);
     localApi.mockResolvedValueOnce({ enabled: true, port: 18890, listening: false, problem: { code: 'portInUse', detail: '18890' } });
     render(<ApiKeysPanel />);
     expect(await screen.findByText('Port 18890 ist schon von einem anderen Programm belegt. Wähle einen anderen Port.')).toBeTruthy();

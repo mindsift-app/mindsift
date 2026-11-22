@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
 import { SelectMenu } from '../../../components/SelectMenu';
-import { isDesktopApp } from '../../../lib/api';
+import { can } from '../../../lib/capabilities';
 
 // Administration → Server: the instance itself, its version and what the server may reach outside
 // (state in useAdminSettings)
@@ -23,8 +23,8 @@ export function ServerSection({
   const { settings, demoMode, handleSaveSystemSettings, setSettings } = admin;
   return (
     <AdminPage
-      title={isDesktopApp() ? t('admin.nav.serverDesktop') : t('admin.nav.server')}
-      intro={isDesktopApp() ? t('admin.pages.serverIntroDesktop') : t('admin.pages.serverIntro')}
+      title={t('admin.nav.server')}
+      intro={t('admin.pages.serverIntro')}
       demoMode={demoMode}
     >
       {/* Installed and latest release (read only) */}
@@ -61,7 +61,7 @@ export function ServerSection({
         <div className="p-4 flex flex-wrap items-center justify-between gap-4">
           <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
             <p className="font-bold text-main">{t('defaultLanguage.title')}</p>
-            <p className="text-[11px] text-muted mt-0.5">{isDesktopApp() ? t('defaultLanguage.hintDesktop') : t('defaultLanguage.hint')}</p>
+            <p className="text-[11px] text-muted mt-0.5">{t('defaultLanguage.hint')}{can('accounts') && ` ${t('defaultLanguage.hintAccounts')}`}</p>
           </div>
           <SelectMenu
             size="sm"
@@ -76,8 +76,8 @@ export function ServerSection({
         <TimeZoneSetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
       </div>
 
-      {/* Imprint, privacy notice and the footer's own link; the desktop app has no public pages */}
-      {!isDesktopApp() && <LegalSettingsCard settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />}
+      {/* Imprint, privacy notice and the footer's own link: only for an instance others reach */}
+      {can('publicAddress') && <LegalSettingsCard settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />}
 
       {/* Link previews for the whole server: off, nothing is fetched and the app shows no cards */}
       <LinkPreviewSetting settings={settings} demoMode={demoMode} onSave={(patch) => handleSaveSystemSettings(patch)} />
@@ -98,8 +98,8 @@ export function ServerSection({
         />
       </div>
 
-      {/* Web push only via the push services of the big browsers; the desktop app has no web push */}
-      {!isDesktopApp() && (
+      {/* Web push only via the push services of the big browsers */}
+      {can('push') && (
         <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
           <div className="pr-4">
             <p className="font-bold text-main">{t('server.pushKnownOnly')}</p>

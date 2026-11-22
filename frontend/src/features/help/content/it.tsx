@@ -26,7 +26,7 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
-import { InDesktop, NotInDesktop } from './desktop';
+import { InDesktop, NotInDesktop, Only } from './desktop';
 
 const kbd = 'px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent';
 
@@ -39,7 +39,7 @@ const it: HelpContent = {
       category: 'workspace',
       title: 'Outliner gerarchico e sincronizzazione offline',
       subtitle: 'Archiviazione atomica con sincronizzazione collaborativa in tempo reale',
-      desktop: { title: 'Outliner gerarchico', subtitle: 'Archiviazione atomica, in locale sul tuo computer' },
+      without: { cap: 'install', title: 'Outliner gerarchico', subtitle: 'Archiviazione atomica, in locale sul tuo computer' },
       icon: FileText,
       keywords: ['titolo', 'incollare', 'chatgpt', 'claude', 'codice', 'workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'esportazione', 'markdown', 'salvataggio'],
       content: (
@@ -50,12 +50,12 @@ const it: HelpContent = {
             <strong className="text-main">IndexedDB</strong>.
           </p>
           <ul className="space-y-1 list-disc list-inside">
-            <NotInDesktop>
+            <Only can="install">
               <li>
                 <strong className="text-main">Pienamente utilizzabile offline:</strong> puoi continuare a lavorare anche senza connessione a Internet;
                 le modifiche si sincronizzano automaticamente appena torni online.
               </li>
-            </NotInDesktop>
+            </Only>
             <li>
               <strong className="text-main">Titolo:</strong> Il titolo di una nota ha al massimo 60 caratteri, così sta su una riga e resta un nome di file utilizzabile nell'esportazione. Vicino al limite il campo mostra il conteggio.
             </li>
@@ -227,11 +227,11 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Nella nota:</strong> Il disegno occupa la larghezza della nota. Fai clic dentro, poi trascinare sposta la vista, Ctrl + rotellina o due dita zoomano; la rotellina da sola continua a scorrere la pagina. Un altro clic termina, una vista non salvata torna indietro con dolcezza. Trascina il bordo inferiore per cambiare l’altezza. «Salva vista» fissa inquadratura, zoom e altezza per tutti, Il pulsante della dimensione passa tra la dimensione consigliata e «tutto in grande» (disegni alti) o l’altezza consigliata da spostare di lato (disegni larghi). Doppio clic o «Modifica» apre l’editor; parte con la mano (si muove solo la vista), scegli un altro strumento per modificare. Il pulsante con le frecce accanto a «Fatto» esce senza salvare e chiede prima se ci sono modifiche.
             </li>
-            <NotInDesktop>
+            <Only can={['sharing', 'liveDrawing']}>
               <li>
                 <strong className="text-main">Disegnare insieme:</strong> Chi apre un disegno disegna da solo; gli altri vedono il punto bloccato («… sta modificando») e possono solo guardare il disegno. Nelle note condivise, «Disegna insieme» in alto nell’editor avvia un disegno dal vivo con lo stato attuale (sul telefono l’icona delle persone); chi lo avvia è l’host e la nota mostra «Disegno dal vivo: …». Chi lo apre poi sceglie «Disegna anche tu» o «Guarda» e vede forme, puntatori e selezioni degli altri nel loro colore, con tutti i partecipanti in alto nell’editor. L’host salva con «Fatto» per tutti; gli altri hanno «Esci». Chi chiude senza salvare mentre altri disegnano esce soltanto dal disegno, anche l’host: subentra chi è presente da più tempo. Solo l’ultimo a uscire scarta (con una domanda se ci sono modifiche) e può recuperarlo per qualche secondo con «Annulla». Annulla riprende solo le tue modifiche. Disegnare insieme richiede una connessione WebSocket; senza (alcuni proxy aziendali) puoi guardare dal vivo.
               </li>
-            </NotInDesktop>
+            </Only>
             <li>
               <strong className="text-main">Offline e bozze:</strong> Ciò che disegni offline viene salvato appena torna la connessione; una bozza non salvata viene proposta per il ripristino alla prossima apertura. Se tutti escono da un disegno dal vivo senza «Fatto», il server ne conserva lo stato per circa 10 minuti; chi sceglie di nuovo «Disegna insieme» in quel tempo continua da lì.
             </li>
@@ -510,7 +510,7 @@ const it: HelpContent = {
       category: 'triage',
       title: 'API: curl, smart home e agenti IA (MCP)',
       subtitle: 'Leggi e modifica attività e liste via curl o Home Assistant, invia pensieri, collega agenti IA come Claude Code.',
-      desktop: { title: 'API: curl e agenti IA (MCP)', subtitle: 'Leggi e modifica attività e liste via curl, invia pensieri, collega agenti IA come Claude Code.' },
+      without: { cap: 'publicAddress', title: 'API: curl e agenti IA (MCP)', subtitle: 'Leggi e modifica attività e liste via curl, invia pensieri, collega agenti IA come Claude Code.' },
       icon: Bell,
       keywords: ['webhook', 'api', 'token', 'home assistant', 'siri', 'scorciatoie', 'automazione', 'curl', 'mcp', 'ia', 'agente', 'claude', 'codex'],
       content: (
@@ -589,11 +589,11 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Priorità e note:</strong> imposta la priorità (<em className="text-accent">Urgente</em>, <em className="text-main">Importante</em>, <em>Normale</em>) e aggiungi note dettagliate in formato Markdown.
             </li>
-            <NotInDesktop>
+            <Only can="sharing">
               <li>
                 <strong className="text-main">Assegnazione:</strong> nelle liste condivise puoi assegnare un'attività a una o più persone con accesso (digita il nome, Invio). Gli assegnatari compaiono come piccole immagini del profilo sull'attività; chi perde l'accesso alla lista viene rimosso automaticamente.
               </li>
-            </NotInDesktop>
+            </Only>
             <li>
               <strong className="text-main">Attività ricorrenti:</strong> scegli una ripetizione nella finestra dei dettagli (giornaliera, nei giorni feriali dal lunedì al venerdì, settimanale, mensile o annuale). Spuntandola viene creata automaticamente l'attività successiva al ritmo della data precedente; se la spunti in ritardo, le scadenze perse vengono saltate (giornaliera, scadenza sabato, spuntata lunedì: la successiva scade martedì). La riconosci dall'icona 🔁.
             </li>
@@ -602,7 +602,7 @@ const it: HelpContent = {
             </li>
             <NotInDesktop>
               <li>
-                <strong className="text-main">Notifiche automatiche:</strong> all'orario di scadenza (per le attività valide tutto il giorno alle 9:00, meno il tuo tempo di preavviso) MindSift ti avvisa via <strong className="text-main">email</strong>, <strong className="text-main">webhook Discord</strong> o il tuo webhook HTTP. Se sposti la data di scadenza o riapri l'attività, l'avviso scatterà di nuovo. Configurabile nelle impostazioni dell'account. Le notifiche via email vanno al tuo indirizzo di accesso. Un nuovo indirizzo di accesso vale solo dopo che hai cliccato il link nell'e-mail di conferma inviata a quell'indirizzo; fino ad allora resta quello precedente. Tutti gli orari seguono il fuso orario del server, che l'amministratore del server imposta in <em>Amministrazione del server → Server</em>.
+                <strong className="text-main">Notifiche automatiche:</strong> all'orario di scadenza (per le attività valide tutto il giorno alle 9:00, meno il tuo tempo di preavviso) MindSift ti avvisa via <strong className="text-main">email</strong>, <strong className="text-main">webhook Discord</strong> o il tuo webhook HTTP. Se sposti la data di scadenza o riapri l'attività, l'avviso scatterà di nuovo. Configurabile nelle impostazioni dell'account. Le notifiche via email vanno al tuo indirizzo di accesso. Un nuovo indirizzo di accesso vale solo dopo che hai cliccato il link nell'e-mail di conferma inviata a quell'indirizzo; fino ad allora resta quello precedente. Tutti gli orari seguono il fuso orario del server, che l'amministratore del server imposta in <em>Amministrazione → Istanza</em>.
               </li>
             </NotInDesktop>
             <InDesktop>
@@ -623,26 +623,26 @@ const it: HelpContent = {
                 <strong className="text-main">Altre notifiche:</strong> La <strong className="text-main">campanella</strong> (in basso nella barra a sinistra) raccoglie le notifiche degli ultimi 14 giorni, ad es. le attività in scadenza; un clic su una voce apre l'attività o la nota. Le attività che <strong className="text-main">segui</strong> segnalano anche le tue modifiche se lo attivi nelle impostazioni, sotto «Notifiche».
               </li>
             </InDesktop>
-            <NotInDesktop>
+            <Only can="publicAddress">
               <li>
                 <strong className="text-main">Abbonamento al calendario:</strong> In <em className="text-main">Impostazioni account → Abbonamento calendario</em> ottieni un link segreto da aggiungere come abbonamento in Google Calendar, Calendario di Apple, Thunderbird o Outlook. Mostra le tue attività aperte con scadenza e quelle degli elenchi condivisi (in scadenza da 30 giorni fa fino a un anno): quelle di tutto il giorno come eventi di tutto il giorno, quelle con orario come eventi di 30 minuti, quelle ricorrenti con la prossima data. Il calendario le mostra soltanto, le modifiche si fanno in MindSift; le app di calendario aggiornano l’abbonamento solo ogni qualche ora. Chi conosce il link vede le tue attività: «Crea nuovo link» invalida quello vecchio, disattivarlo lo elimina.
               </li>
-            </NotInDesktop>
-            <NotInDesktop>
+            </Only>
+            <Only can="sharing">
               <li>
                 <strong className="text-main">Menzioni con @:</strong> Nella descrizione di un'attività, nelle sottoattività e nelle note, <strong className="text-main">@</strong> apre un elenco di persone (frecce, Invio). Chi non ha accesso appare in grigio. La persona menzionata riceve una notifica (Impostazioni → Notifiche, “Sono stato menzionato”), anche da una lista silenziata; salvare di nuovo non ne invia una seconda.
               </li>
-            </NotInDesktop>
-            <NotInDesktop>
+            </Only>
+            <Only can="sharing">
               <li>
                 <strong className="text-main">Menu della lista (⋯):</strong> A destra sopra la lista: <strong className="text-main">Silenzia</strong> (solo liste condivise: nessuna notifica da questa lista; assegnazioni, menzioni e attività seguite arrivano comunque), Condividi, Rinomina ed Elimina. Se non tutte le liste entrano nella riga, le altre sono dietro “⋯ n”. In una lista condivisa una nuova attività è assegnata prima a te; l'avviso di scadenza va alle persone assegnate o, se non c'è nessuno, a tutti i membri.
               </li>
-            </NotInDesktop>
-            <InDesktop>
+            </Only>
+            <Only not="sharing">
               <li>
                 <strong className="text-main">Menu della lista (⋯):</strong> A destra sopra la lista: Rinomina ed Elimina. Se non tutte le liste stanno nella riga, le altre sono dietro «⋯ n».
               </li>
-            </InDesktop>
+            </Only>
             <li>
               <strong className="text-main">Calendario:</strong> Una terza vista accanto a lista e Kanban: mese o settimana sul desktop, la settimana sul telefono. Le attività senza data sono in “Senza data”; trascinane una su un giorno per darle una data (l'orario resta) o di nuovo in “Senza data” per toglierla, <strong className="text-main">Ctrl + Z</strong> annulla. Le attività ricorrenti mostrano anche le prossime date, in grigio con ↻. A sinistra una colonna passa dal giorno scelto (oggi finché non ne scegli un altro) con le sue attività alle attività senza data. ← → per sfogliare, T torna a oggi. Sul desktop da lunedì a venerdì occupano la larghezza; il fine settimana si raggiunge scorrendo di lato o con “sab – dom ›”. Mese o settimana si sceglie a destra degli hashtag; uno scatto della rotellina fa scorrere via le barre sopra.
             </li>
@@ -655,21 +655,20 @@ const it: HelpContent = {
     {
       id: 'lists-shared-shopping',
       category: 'lists',
-      title: 'Liste condivise, quantità e categorie hashtag',
-      subtitle: 'Liste della spesa, liste bagagli e liste di controllo in tempo reale',
-      desktop: { title: 'Liste, quantità e categorie hashtag', subtitle: 'Liste della spesa, liste bagagli e liste di controllo' },
+      title: 'Liste, quantità e categorie hashtag',
+      subtitle: 'Liste della spesa, liste bagagli e liste di controllo',
       icon: ShoppingCart,
       keywords: ['liste', 'spesa', 'checklist', 'quantità', 'categorie', 'hashtag', 'tempo reale', 'suggerimenti'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
-          <NotInDesktop>
+          <Only can="sharing">
             <p>Le liste condivise sono ideali per fare la spesa, preparare la valigia o gestire commissioni insieme:</p>
-          </NotInDesktop>
-          <InDesktop>
+          </Only>
+          <Only not="sharing">
             <p>
               Le liste sono ideali per fare la spesa, preparare la valigia o gestire commissioni:
             </p>
-          </InDesktop>
+          </Only>
           <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Scrivi la quantità insieme all’articolo:</strong> con <code className="text-accent font-mono">2x latte bio</code>, <code className="text-accent font-mono">500g pasta</code>, <code className="text-accent font-mono">3 mele</code> o <code className="text-accent font-mono">pomodori 2 lattine</code> il campo evidenzia la quantità e la inserisce subito nel campo quantità; un piccolo fumetto accanto al campo quantità te la indica. All’aggiunta il nome finisce nella lista senza di essa. Tocca la × nel fumetto o svuota il campo quantità per lasciare il testo com’è; una quantità scritta da te nel campo ha la precedenza. Vengono riconosciuti un numero con x, un numero con un’unità (g, kg, l, ml, pz, confezione, lattina, bottiglia, mazzo …) e un numero all’inizio. Un numero alla fine senza unità fa parte del nome (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">cola 0,5</code>), come pure uno attaccato a una parola (<code className="text-accent font-mono">7up</code>). Nel campo quantità puoi scrivere anche le unità, ad esempio <code className="text-accent font-mono">500 g</code>. L’interruttore <em>Riconoscere date e quantità durante la digitazione</em> in Impostazioni account → Lingua disattiva anche questo.
@@ -678,18 +677,18 @@ const it: HelpContent = {
               <strong className="text-main">Categorie tramite hashtag:</strong> aggiungi un hashtag come <code className="text-accent font-mono">#frigo</code> o <code className="text-accent font-mono">#verdure</code>. La lista raggruppa automaticamente gli elementi nelle sezioni corrispondenti.
             </li>
             <li>
-              <strong className="text-main">Suggerimenti durante la digitazione:</strong> da due lettere in poi la lista mostra sotto il campo ciò che hai già aggiunto qui, anche elementi spuntati e rimossi da tempo: prima ciò che inizia così, poi ciò che lo contiene, con gli acquisti frequenti e recenti in cima. Ciò che è già aperto nella lista non compare. Tocca un suggerimento, oppure sceglilo con le frecce e Invio, per aggiungerlo con il suo hashtag; Esc chiude i suggerimenti e continuare a scrivere funziona come prima. Mentre scrivi un #hashtag compaiono i suggerimenti degli hashtag. <NotInDesktop>{' '}Le liste condivise hanno una cronologia comune; funziona anche offline e sparisce con la lista.</NotInDesktop>
+              <strong className="text-main">Suggerimenti durante la digitazione:</strong> da due lettere in poi la lista mostra sotto il campo ciò che hai già aggiunto qui, anche elementi spuntati e rimossi da tempo: prima ciò che inizia così, poi ciò che lo contiene, con gli acquisti frequenti e recenti in cima. Ciò che è già aperto nella lista non compare. Tocca un suggerimento, oppure sceglilo con le frecce e Invio, per aggiungerlo con il suo hashtag; Esc chiude i suggerimenti e continuare a scrivere funziona come prima. Mentre scrivi un #hashtag compaiono i suggerimenti degli hashtag. <Only can="sharing">{' '}Le liste condivise hanno una cronologia comune; funziona anche offline e sparisce con la lista.</Only>
             </li>
-            <NotInDesktop>
+            <Only can="sharing">
               <li>
                 <strong className="text-main">Sincronizzazione in tempo reale e rimozione completati:</strong> gli elementi spuntati si sincronizzano in tempo reale e mostrano chi li ha spuntati. Il pulsante di pulizia rimuove tutti gli elementi spuntati in un colpo solo.
               </li>
-            </NotInDesktop>
-            <InDesktop>
+            </Only>
+            <Only not="sharing">
               <li>
                 <strong className="text-main">Rimozione completati:</strong> Il pulsante di pulizia rimuove in blocco gli articoli completati.
               </li>
-            </InDesktop>
+            </Only>
           </ul>
         </div>
       ),
@@ -723,7 +722,7 @@ const it: HelpContent = {
       category: 'account',
       title: 'Offline, backup e password',
       subtitle: 'Lavorare senza Internet, ripristinare backup, reimpostare la password',
-      desktop: { title: 'Backup', subtitle: 'Creare backup e ripristinarli' },
+      without: { cap: 'signIn', title: 'Backup', subtitle: 'Creare backup e ripristinarli' },
       icon: CloudOff,
       keywords: ['offline', 'internet', 'backup', 'ripristino', 'password', 'dimenticata', 'account', 'due fattori', '2fa', 'authenticator', 'sicurezza', 'passkey', 'impronta', 'sso', 'oidc'],
       content: (
@@ -739,36 +738,36 @@ const it: HelpContent = {
                 <strong className="text-main">Backup:</strong> in <em>Amministrazione → Dati</em> attivi i backup giornalieri e scegli la cartella in cui vengono salvati. In <em>Impostazioni account → Esportazione e importazione</em> li trovi; puoi scaricarli o ripristinarli, anche solo per singole aree come liste o attività. Ogni backup contiene inoltre, nella cartella <em>Obsidian</em>, note, attività e liste in Markdown, leggibili in Obsidian o in qualsiasi editor di testo, anche senza MindSift. Un backup si può ripristinare anche su un server, se in seguito passi a uno.
               </li>
             </InDesktop>
-            <NotInDesktop>
+            <Only can="install">
               <li>
                 <strong className="text-main">Senza Internet:</strong> installato come app (o nel browser), MindSift si avvia anche offline con l'ultimo stato caricato. Registrare pensieri e spuntare attività e voci di lista continua a funzionare; un avviso in basso mostra quante modifiche sono in attesa, e verranno inviate automaticamente appena torna la connessione.
               </li>
-            </NotInDesktop>
-            <NotInDesktop>
+            </Only>
+            <Only can="install">
               <li>
                 <strong className="text-main">Dove restano le modifiche offline:</strong> Le note che hai già aperto su questo dispositivo si possono leggere e modificare offline. Ciò che non è ancora stato inviato è salvato solo in questo browser: resiste a chiusura, riavvio e spegnimento, e viene inviato automaticamente al prossimo avvio di MindSift con la connessione. Si perde se ti disconnetti (MindSift chiede prima), cancelli i dati del browser o lavori in una finestra privata. Perciò, dopo aver lavorato offline, torna presto online con lo stesso dispositivo. Se nel frattempo qualcuno ha modificato lo stesso punto, non si perde nulla: la tua versione compare sotto come copia di conflitto.
               </li>
-            </NotInDesktop>
-            <NotInDesktop>
+            </Only>
+            <Only can="signIn">
               <li>
                 <strong className="text-main">Password dimenticata:</strong> se l'amministrazione ha configurato l'invio delle email, la schermata di accesso mostra «Password dimenticata?». Ricevi un link valido per un'ora; impostando la nuova password verrai disconnesso su tutti i dispositivi.
               </li>
-            </NotInDesktop>
-            <NotInDesktop>
+            </Only>
+            <Only can="signIn">
               <li>
                 <strong className="text-main">Accesso a due fattori:</strong> in <em>Impostazioni account → Sicurezza</em> colleghi un'app di autenticazione (scansiona il codice QR, inserisci il primo codice); da quel momento l'accesso chiede, dopo la password, il codice di sei cifre dell'app. I dieci codici di recupero mostrati una sola volta aiutano quando manca il telefono: ognuno funziona una volta. Con «Considera attendibile questo dispositivo per 30 giorni» un tuo dispositivo non chiede il codice per un mese. «Password dimenticata» non disattiva l'accesso a due fattori.
               </li>
-            </NotInDesktop>
-            <NotInDesktop>
+            </Only>
+            <Only can="signIn">
               <li>
                 <strong className="text-main">Passkey:</strong> in <em>Impostazioni account → Sicurezza → Passkey</em> crei una passkey (conferma la password, dalle un nome, impronta digitale, volto o PIN del dispositivo). Da quel momento «Accedi con una passkey» ti fa entrare senza password; alcuni browser la propongono anche direttamente nel campo di accesso. Se accedi con la password, dopo viene chiesta la passkey: una passkey conta come secondo fattore, anche senza app di autenticazione. I codici di recupero compaiono con la prima passkey. Rimuovendo l'ultimo secondo fattore, l'accesso a due fattori si disattiva di nuovo. Le passkey sono disponibili solo se il server ha un indirizzo https fisso (BASE_URL).
               </li>
-            </NotInDesktop>
-            <NotInDesktop>
+            </Only>
+            <Only can="signIn">
               <li>
                 <strong className="text-main">Accesso tramite un provider (SSO):</strong> Se l'amministrazione ha configurato un provider come Authentik, Authelia o Keycloak, la schermata di accesso mostra «Accedi con …». La prima volta viene creato il tuo account, oppure ne viene collegato uno esistente con lo stesso indirizzo verificato; un account con un indirizzo diverso lo colleghi in <em>Impostazioni account → Sicurezza</em>. L'accesso a due fattori spetta allora al provider. Le modifiche delicate come un nuovo indirizzo, una password, le chiavi API o l'eliminazione le confermi accedendo di nuovo lì; dopo hai cinque minuti. Se l'accesso con password è disattivato resta solo questo pulsante, e l'amministrazione ha un accesso di emergenza su <em>/?login=password</em>.
               </li>
-            </NotInDesktop>
+            </Only>
           </ul>
         </div>
       ),
@@ -789,10 +788,10 @@ const it: HelpContent = {
               <strong className="text-main">Chi può condividere con chi:</strong> lo decide l'amministratore del server: con tutti, solo con le persone con cui hai almeno un'<em>organizzazione</em> in comune, o con nessuno (modalità «Privato»: nessuna condivisione, nessun gruppo). Puoi appartenere a più organizzazioni; le gestiscono gli amministratori e la gestione utenti. Se la ricerca persone è disattivata, durante la condivisione inserisci l'indirizzo e-mail o il nome utente esatti. Chi lavora con te a qualcosa compare sempre lì con il nome.
             </li>
             <li>
-              <strong className="text-main">Fuso orario del server:</strong> l'amministratore del server lo imposta in <em>Amministrazione del server → Server → Fuso orario</em>. Vale subito per tutti: scadenze con orario, notifiche, riepilogo giornaliero e ora dei backup.
+              <strong className="text-main">Fuso orario del server:</strong> l'amministratore del server lo imposta in <em>Amministrazione → Istanza → Fuso orario</em>. Vale subito per tutti: scadenze con orario, notifiche, riepilogo giornaliero e ora dei backup.
             </li>
             <li>
-              <strong className="text-main">Qualità delle immagini:</strong> prima del caricamento l'app riduce le immagini a 2048 pixel al massimo. Quanto le comprime lo imposta l'amministratore del server in <em>Amministrazione del server → Dati → Qualità delle immagini</em>: Alta (predefinita), Media o Risparmio. La dimensione resta la stessa a ogni livello, il testo negli screenshot resta leggibile; l'impostazione vale per le nuove immagini.
+              <strong className="text-main">Qualità delle immagini:</strong> prima del caricamento l'app riduce le immagini a 2048 pixel al massimo. Quanto le comprime lo imposta l'amministratore del server in <em>Amministrazione → Dati → Qualità delle immagini</em>: Alta (predefinita), Media o Risparmio. La dimensione resta la stessa a ogni livello, il testo negli screenshot resta leggibile; l'impostazione vale per le nuove immagini.
             </li>
             <li>
               <strong className="text-main">Gruppi:</strong> raggruppa le persone visibili in gruppi (es. famiglia, coinquilini, progetto) e condividi con tutti in una volta sola. Chi crea un gruppo ne è amministratore; solo i membri possono condividere con un gruppo.

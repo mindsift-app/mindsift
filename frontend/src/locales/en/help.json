@@ -1,8 +1,7 @@
 {
   "back": "Back",
   "title": "Help & documentation",
-  "subtitle": "Keyboard use, outliner notes, triage, Kanban board and collaboration",
-  "subtitleDesktop": "Keyboard use, outliner notes, triage and Kanban board",
+  "subtitle": "Keyboard use, outliner notes, triage, Kanban board and more",
   "search": "Search help & shortcuts…",
   "clearSearch": "Clear search",
   "cat": {
@@ -10,7 +9,7 @@
     "workspace": "Workspace & notes",
     "triage": "Quick capture & triage",
     "tasks": "Tasks & Kanban",
-    "lists": "Shared lists",
+    "lists": "Lists",
     "collaboration": "Groups & sharing",
     "account": "Account & settings",
     "shortcuts": "Keyboard shortcuts & gestures"

@@ -15,7 +15,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { AuthStatus, User, UserTheme } from '../../lib/types';
 import { ApiKeysPanel } from './ApiKeysPanel';
-import { api, isDesktopApp } from '../../lib/api';
+import { api } from '../../lib/api';
+import { can } from '../../lib/capabilities';
 import { EffectiveVoiceMode, loadVoiceConfig, voiceChoiceAvailable } from '../../lib/voice';
 import {
   ThemeId,
@@ -61,9 +62,11 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   onDataChanged,
   onBack }) => {
   const [section, setSection] = useState<UserSettingsSection>('profile');
-  // The desktop app has no sign-in (Sicherheit: password, second factor, passkeys, devices) and no address
-  // a calendar app could subscribe to
-  const desktop = isDesktopApp();
+  // Sicherheit (password, second factor, passkeys, devices) needs sign-in, the calendar feed an address
+  // a calendar app reaches, the role several accounts (not in the desktop app)
+  const signIn = can('signIn');
+  const publicAddress = can('publicAddress');
+  const accounts = can('accounts');
   // Voice input: the language whenever there is voice input; the choice Whisper/browser only with a
   // Whisper server that allows the browser
   const [voiceChoice, setVoiceChoice] = useState(false);
@@ -134,8 +137,8 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           </div>
         </div>
 
-        {/* One person in the desktop app: no role to show */}
-        {!desktop && (
+        {/* One account only (the desktop app): no role to show */}
+        {accounts && (
           <span className="px-2.5 py-1 bg-panel border border-border text-xs text-muted font-medium">
             {t('user.role')} <strong className="text-accent">{roleBadgeLabel}</strong>
           </span>
@@ -157,11 +160,11 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             <UserIcon className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('user.nav.profile')}</p>
-              <p className="text-[10px] text-faint">{t(desktop ? 'user.nav.profileHintDesktop' : 'user.nav.profileHint')}</p>
+              <p className="text-[10px] text-faint">{t('user.nav.profileHint')}</p>
             </div>
           </button>
 
-          {!desktop && (
+          {signIn && (
           <button
             onClick={() => setSection('security')}
             className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
@@ -219,7 +222,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             <Bell className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('user.nav.alarms')}</p>
-              <p className="text-[10px] text-faint">{t(desktop ? 'user.nav.alarmsHintDesktop' : 'user.nav.alarmsHint')}</p>
+              <p className="text-[10px] text-faint">{t('user.nav.alarmsHint')}</p>
             </div>
           </button>
 
@@ -255,7 +258,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             </div>
           </button>
 
-          {!desktop && (
+          {publicAddress && (
           <button
             onClick={() => setSection('calendar')}
             className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${

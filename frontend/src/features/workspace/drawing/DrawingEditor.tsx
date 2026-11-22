@@ -88,7 +88,8 @@ import { AvatarStack } from '../../../components/AvatarStack';
 import { userColor } from '../../../lib/userColor';
 import { Applied, patchDrawing } from '../../../lib/drawing/live';
 import { LiveCursor, LiveMode, LiveRefusal, useLiveDrawing } from './useLiveDrawing';
-import { isDesktopApp, isWebSocketConnected, tryWebSocket } from '../../../lib/api';
+import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
+import { can } from '../../../lib/capabilities';
 import { isTouchPointer } from '../../../lib/useAnchoredPopover';
 import { useLatestRef } from '../../../lib/useLatestRef';
 
@@ -1847,7 +1848,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           </div>
         )}
         {/* Drawing alone in a shared note: start a session the others may join (phones: the icon only) */}
-        {!liveState && live?.canStart && !readOnly && !isDesktopApp() && (
+        {!liveState && live?.canStart && !readOnly && can('liveDrawing') && (
           <button
             type="button"
             onClick={() => void startTogether()}

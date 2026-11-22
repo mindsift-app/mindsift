@@ -4,6 +4,7 @@ import i18n from '../../i18n';
 import { TaskList } from '../../lib/types';
 import { MobileActionItem, MobileMenuGroup } from '../../context/MobileActionContext';
 import { ViewMode } from './taskViewTypes';
+import { can } from '../../lib/capabilities';
 
 interface TasksMenuInput {
   currentSelectedList: TaskList | undefined;
@@ -100,12 +101,15 @@ export function buildTasksMenu({
   ];
 
   if (currentSelectedList) {
-    listManagementItems.push({
-      id: 'share-task-list',
-      label: i18n.t('tasks:menu.shareList', { title: currentSelectedList.title }),
-      icon: <Users className="w-4 h-4" />,
-      onClick: () => handleOpenShareModal(currentSelectedList),
-    });
+    // Sharing off (sharing mode private, the desktop app): nobody to share with
+    if (can('sharing')) {
+      listManagementItems.push({
+        id: 'share-task-list',
+        label: i18n.t('tasks:menu.shareList', { title: currentSelectedList.title }),
+        icon: <Users className="w-4 h-4" />,
+        onClick: () => handleOpenShareModal(currentSelectedList),
+      });
+    }
     if (currentSelectedList.permission !== 'viewer') {
       listManagementItems.push({
         id: 'rename-task-list',

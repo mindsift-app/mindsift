@@ -18,6 +18,7 @@ Versions without a git tag were development states and were never published as a
 - A file or link dropped somewhere in the app that does not take it (sidebar, header, sign-in page) is now refused instead of opening in place of the app, which left no way back in the installed app.
 - Clicking into the text of a bullet in Safari (and other WebKit browsers) now puts the cursor where you clicked; before, it often went to the end of the bullet, and the buttons of a bullet you had just left (bullet, checkbox, collapse) did not react.
 - Files and text dragged in from outside over a folder in the sidebar now show that they cannot be dropped there; before, the folder looked like it would take them, though nothing happened.
+- On a server whose sharing is set to private, notes, folders, task lists and lists no longer offer "Share" (which only answered that sharing is off), and the task list menu no longer shows a greyed-out "Mute" for lists nobody else sees; event notifications about sharing, assigning and mentions and the help about working together are hidden there too.
 
 ## [0.97.1] - 2026-11-20
 

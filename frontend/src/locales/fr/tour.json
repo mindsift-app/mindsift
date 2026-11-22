@@ -51,9 +51,8 @@
   },
   "end": {
     "title": "C’est tout !",
-    "text": "Tout le reste – raccourcis, listes, partage et plus – se trouve ici sur la page d’aide (le <b>?</b> en bas de la barre de gauche). « Lancer la visite » la montre à nouveau quand tu veux.",
-    "textPhone": "Tout le reste – listes, partage et plus – se trouve ici sur la page d’aide (via ta photo de profil en haut à droite). « Lancer la visite » la montre à nouveau quand tu veux.",
-    "textDesktop": "Tout le reste – raccourcis, listes et plus – se trouve ici sur la page d’aide (le <b>?</b> en bas de la barre de gauche). « Lancer la visite » la montre à nouveau quand tu veux.",
+    "text": "Tout le reste – raccourcis, listes et plus – se trouve ici sur la page d’aide (le <b>?</b> en bas de la barre de gauche). « Lancer la visite » la montre à nouveau quand tu veux.",
+    "textPhone": "Tout le reste – listes et plus – se trouve ici sur la page d’aide (via ta photo de profil en haut à droite). « Lancer la visite » la montre à nouveau quand tu veux.",
     "share": "Au passage : tu peux partager notes, listes de tâches et listes avec d’autres et les modifier ensemble."
   },
   "demo": {

@@ -1,4 +1,5 @@
 import i18n from '../i18n';
+import type { Capabilities } from './capabilities';
 
 export type ThoughtStatus = 'inbox' | 'kept' | 'discarded' | 'converted';
 export type PriorityLevel = 'low' | 'normal' | 'high' | 'urgent';
@@ -48,6 +49,8 @@ export interface AuthStatus {
   // The server runs inside the desktop app: one account, no sign-in (POST /auth/desktop gives the session),
   // nothing that needs other people or a public address; realtime is the transport the window can use
   desktop?: DesktopInfo;
+  // What this instance offers (lib/capabilities.ts, internal/api/capabilities.go)
+  capabilities?: Partial<Capabilities>;
   sharingMode?: SharingMode;
   // "Passwort vergessen?" works (SMTP and BASE_URL configured)
   passwordReset?: boolean;

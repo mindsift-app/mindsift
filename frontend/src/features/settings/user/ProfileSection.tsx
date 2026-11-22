@@ -6,7 +6,8 @@ import { FormSheet } from '../../../components/FormSheet';
 import { StatusToast } from '../../../components/StatusToast';
 import { useProfileSettings } from './useProfileSettings';
 import { PendingEmailNote } from './PendingEmailNote';
-import { getCurrentOidc, isDesktopApp } from '../../../lib/api';
+import { getCurrentOidc } from '../../../lib/api';
+import { can } from '../../../lib/capabilities';
 
 // Kontoeinstellungen → Profil (state in useProfileSettings); password, two-factor sign-in and sessions
 // are in Sicherheit (SecuritySection)
@@ -20,8 +21,9 @@ export function ProfileSection({
   onOpenSecurity: () => void;
 }) {
   const { t } = useTranslation('settings');
-  // The desktop app has one account without sign-in: no address, no Sicherheit, no account to delete
-  const desktop = isDesktopApp();
+  // Without sign-in (the desktop app): no address, no Sicherheit; one account only: none to delete
+  const signIn = can('signIn');
+  const accounts = can('accounts');
   const {
     currentUser,
     onUserUpdated,
@@ -52,9 +54,9 @@ export function ProfileSection({
   return (
     <div className="space-y-5">
       <div className="border-b border-border pb-3">
-        <h2 className="text-sm font-bold text-main">{t(desktop ? 'profile.titleDesktop' : 'profile.title')}</h2>
+        <h2 className="text-sm font-bold text-main">{t('profile.title')}</h2>
         <p className="text-muted mt-0.5">
-          {t(desktop ? 'profile.introDesktop' : 'profile.intro')}
+          {t('profile.intro')}
         </p>
       </div>
 
@@ -136,7 +138,7 @@ export function ProfileSection({
               </div>
 
               <p className="text-[10px] text-faint">
-                {t(desktop ? 'profile.avatarHintDesktop' : 'profile.avatarHint')}
+                {t('profile.avatarHint')}
               </p>
             </div>
           </div>
@@ -171,11 +173,11 @@ export function ProfileSection({
               title={demoMode ? t('profile.demoDisabled') : t('profile.usernameRules')}
               className="w-full h-11 sm:h-9 px-3 input-field font-mono disabled:opacity-60"
             />
-            <p className="mt-1 text-[10px] text-faint">{t(desktop ? 'profile.usernameHintDesktop' : 'profile.usernameHint')}</p>
+            <p className="mt-1 text-[10px] text-faint">{t('profile.usernameHint')}{signIn && ` ${t('profile.usernameSignInHint')}`}</p>
           </div>
 
-          {/* The desktop app sends no mail and has no sign-in: no address */}
-          {!desktop && (
+          {/* No sign-in (the desktop app): no address to sign in with */}
+          {signIn && (
           <div>
             <label className="block text-muted font-medium mb-1">
               {t('settings:profile.emailLogin')}
@@ -235,7 +237,7 @@ export function ProfileSection({
       </form>
 
       {/* Password, two-factor sign-in and sessions: Sicherheit (SecuritySection) */}
-      {!desktop && (
+      {signIn && (
         <p className="text-[11px] text-muted">
           <Trans
             t={t}
@@ -255,7 +257,7 @@ export function ProfileSection({
           <div>
             <p className="text-main font-medium">{t('profile.deleteData')}</p>
             <p className="text-[11px] text-muted">
-              {t(desktop ? 'profile.deleteDataHintDesktop' : 'profile.deleteDataHint')}
+              {t('profile.deleteDataHint')}{accounts && ` ${t('profile.deleteDataSharedHint')}`}
             </p>
           </div>
           <button
@@ -268,8 +270,8 @@ export function ProfileSection({
             {t('profile.deleteDataButton')}
           </button>
         </div>
-        {/* The desktop app has one account that cannot be deleted */}
-        {!desktop && (
+        {/* One account only (the desktop app): it cannot be deleted */}
+        {accounts && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-status-err/20">
             <div>
               <p className="text-main font-medium">{t('profile.deleteAccount')}</p>
@@ -296,11 +298,11 @@ export function ProfileSection({
   );
 }
 
-// Asks for the password before own data or the whole account is deleted. In the desktop app the person at the
-// machine is the account (no password, no provider): the sheet is the plain confirmation.
+// Asks for the password before own data or the whole account is deleted. Without sign-in (the desktop app) the
+// person at the machine is the account (no password, no provider): the sheet is the plain confirmation.
 export function DangerConfirmSheet({ profile }: { profile: ReturnType<typeof useProfileSettings> }) {
   const { t } = useTranslation('settings');
-  const desktop = isDesktopApp();
+  const signIn = can('signIn');
   const {
     dangerAction,
     dangerPassword,
@@ -318,7 +320,7 @@ export function DangerConfirmSheet({ profile }: { profile: ReturnType<typeof use
       onSubmit={handleDangerSubmit}
       submitLabel={dangerAction === 'account' ? t('profile.deleteAccountButton') : t('profile.deleteDataButton')}
       danger
-      busy={dangerBusy || (!desktop && !profile.currentUser.noPassword && !dangerPassword)}
+      busy={dangerBusy || (signIn && !profile.currentUser.noPassword && !dangerPassword)}
     >
       <p className="text-xs text-muted">
         {dangerAction === 'account'
@@ -326,7 +328,7 @@ export function DangerConfirmSheet({ profile }: { profile: ReturnType<typeof use
           : t('profile.confirmData')}
       </p>
       {/* An account of the OIDC provider without a password confirms there (withSecondFactor) */}
-      {desktop ? null : profile.currentUser.noPassword ? (
+      {!signIn ? null : profile.currentUser.noPassword ? (
         <p className="text-xs text-muted">{t('security.oidc.confirmHint', { name: getCurrentOidc().name })}</p>
       ) : (
         <label className="block text-xs text-muted">

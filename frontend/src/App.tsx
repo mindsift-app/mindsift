@@ -10,14 +10,8 @@ import {
   Users,
 } from 'lucide-react';
 import { CenterEntry, Thought, User, UserTheme } from './lib/types';
-import {
-  api,
-  clearToken,
-  triggerHaptic,
-  disconnectWebSocket,
-  isSharingDisabled,
-  isDesktopApp,
-} from './lib/api';
+import { api, clearToken, triggerHaptic, disconnectWebSocket, isDesktopApp } from './lib/api';
+import { can } from './lib/capabilities';
 import {
   AVAILABLE_THEMES,
   customThemeOption,
@@ -304,7 +298,7 @@ export const App: React.FC = () => {
               badge: stats.listsCount,
               onClick: () => setActiveTab('lists'),
             },
-            ...(isSharingDisabled()
+            ...(!can('sharing')
               ? []
               : [
                   {

@@ -14,7 +14,8 @@ import {
   User,
   NotificationSettings,
 } from '../types';
-import { setToken, clearToken, ensureArray, request, setCurrentSharingMode, setCurrentPeopleSearch, setCurrentOidc, setCurrentDesktop } from './client';
+import { setToken, clearToken, ensureArray, request, setCurrentPeopleSearch, setCurrentOidc, setCurrentDesktop } from './client';
+import { setCapabilities } from '../capabilities';
 import { forgetTrust, rememberTrust, trustedDeviceId, trustTokens } from '../trustedDevice';
 import { clearStoredNotes } from '../docSync/persist';
 import type { PasskeyJSON } from '../webauthn';
@@ -24,7 +25,7 @@ export const authApi = {
   // --- AUTH, FIRST-BOOT SETUP & SETTINGS ---
   async getAuthStatus(): Promise<AuthStatus> {
     const st = await request<AuthStatus>('/api/v1/auth/status');
-    if (st.sharingMode) setCurrentSharingMode(st.sharingMode);
+    setCapabilities(st.capabilities);
     setCurrentPeopleSearch(st.peopleSearch !== false);
     setCurrentOidc(st.oidc, st.passwordLogin);
     // Also picks the realtime transport of the desktop app's window (realtime.ts)

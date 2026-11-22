@@ -16,6 +16,7 @@ import {
 import { APIKey, ApiKeyScope, PriorityLevel, SharedList, TaskList } from '../../lib/types';
 import { SCOPES, scopeGroups, scopeChip, toggleScopeIn } from '../../lib/apiScopes';
 import { api, ApiError, isDesktopApp, triggerHaptic } from '../../lib/api';
+import { can } from '../../lib/capabilities';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatDate } from '../../lib/format';
 import { askConfirm } from '../../components/askConfirm';
@@ -79,10 +80,12 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   const [newKeyScopes, setNewKeyScopes] = useState<ApiKeyScope[]>(['webhook:triage']);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
-  // Desktop app: no address others reach (no connectors); local programs use 127.0.0.1 (DesktopLocalAccess)
+  // Desktop app (its shell): local programs use 127.0.0.1 (DesktopLocalAccess). Connectors from claude.ai or
+  // ChatGPT need an address others reach
   const desktop = isDesktopApp();
+  const connectors = can('publicAddress');
   const [localBase, setLocalBase] = useState<string | null>(null);
-  const [mcpClient, setMcpClient] = useState<McpClient>(desktop ? 'claude' : 'connector');
+  const [mcpClient, setMcpClient] = useState<McpClient>(connectors ? 'connector' : 'claude');
   // Address for claude.ai / ChatGPT connectors; empty while the server has no OAuth (no BASE_URL)
   const [connectorUrl, setConnectorUrl] = useState('');
   const [copiedConnector, setCopiedConnector] = useState(false);
@@ -634,7 +637,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                   ['codex', 'OpenAI Codex'],
                   ['json', 'Claude Desktop / Cursor'],
                 ] as const
-              ).filter(([value]) => !desktop || value !== 'connector').map(([value, label]) => (
+              ).filter(([value]) => connectors || value !== 'connector').map(([value, label]) => (
                 <button
                   key={value}
                   type="button"

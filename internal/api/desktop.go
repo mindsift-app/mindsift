@@ -17,7 +17,8 @@ import (
 // for a session with POST /api/v1/auth/desktop whenever it has none. A short setup wizard without the
 // account and the server's questions follows once (setup_pending, handleFinishSetup). What needs other people or an address
 // others can reach (registration, invites, mail, OIDC, passkeys, public links, web push, calendar feeds) is
-// off; config.ApplyDesktop switches the settings, notInDesktop the routes, /auth/status tells the app.
+// off; config.ApplyDesktop switches the settings, capabilities.go decides what the instance offers (and
+// requires refuses those routes), /auth/status tells the app.
 
 // desktopMode: the server runs inside the desktop app.
 func (s *Server) desktopMode() bool { return s.cfg.Desktop != nil }
@@ -26,9 +27,10 @@ func (s *Server) desktopMode() bool { return s.cfg.Desktop != nil }
 // provider sign-in or second factor. In the desktop app the person at the machine is the account: it has no
 // password and no provider, and nothing signs in. The one place that decides it; the confirmations
 // (confirmWithSecondFactor, confirmSecondFactor) ask here, and the app shows a plain confirmation instead.
-func (s *Server) confirmsWithoutCredentials() bool { return s.desktopMode() }
+func (s *Server) confirmsWithoutCredentials() bool { return !s.can(capSignIn) }
 
-// notInDesktop refuses a route that makes no sense in the desktop app (registration, invites, push …).
+// notInDesktop refuses a route of the server's own shell that the desktop app replaces (the first-boot
+// wizard); what depends on a capability uses requires (capabilities.go).
 func (s *Server) notInDesktop(h http.HandlerFunc) http.HandlerFunc {
 	if !s.desktopMode() {
 		return h

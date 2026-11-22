@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import i18n from '../../../i18n';
 import { Organization, SharingMode, SystemSettings, User, UserInvite, UserRole } from '../../../lib/types';
-import { api, isDesktopApp, setCurrentPeopleSearch, setCurrentSharingMode, triggerHaptic } from '../../../lib/api';
+import { api, setCurrentPeopleSearch, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
 import { DEFAULT_BACKUP_RETENTION_DAYS, DEFAULT_BACKUP_TIME } from '../../../lib/backupDefaults';
 import { askConfirm } from '../../../components/askConfirm';
@@ -543,7 +543,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
         smtpPassUnreadable: Boolean(saved.smtpPassUnreadable),
         smtpPassViaEnv: Boolean(saved.smtpPassViaEnv),
       }));
-      setCurrentSharingMode(saved.sharingMode);
+      // The capabilities follow the new sharing mode (share buttons, groups)
+      void api.getAuthStatus().catch(() => {});
       setSharingMode(saved.sharingMode);
       if (saved.peopleSearch !== undefined) setCurrentPeopleSearch(saved.peopleSearch);
       // This app follows the server's switch at once (others at their next start or preview request)
@@ -555,7 +556,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       if (saved.audioCompression) {
         setServerAudioSettings({ compression: saved.audioCompression, bitrate: saved.audioBitrate, limitMB: saved.audioLimitMB, uploads: saved.audioUploads });
       }
-      setStatusMsg({ type: 'ok', text: isDesktopApp() ? i18n.t('settings:server.savedDesktop') : i18n.t('settings:server.saved') });
+      setStatusMsg({ type: 'ok', text: i18n.t('settings:server.saved') });
     } catch (err) {
       setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:profile.saveFailed')) });
     }

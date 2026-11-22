@@ -83,6 +83,8 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		"peopleSearch":      s.peopleSearchEnabled(),
 		"publicLinks":       s.publicLinksEnabled(),
 		"publicLinkMaxDays": s.publicLinkMaxDays(),
+		// What this instance offers (capabilities.go): the app hides what it cannot do
+		"capabilities": s.capabilities(),
 		// Preview cards for web addresses in notes (the admin's switch; off in the demo)
 		"linkPreviews": s.linkPreviewsEnabled(),
 		// How strongly the app compresses pictures before uploading them (high | medium | low | off)
@@ -340,7 +342,7 @@ func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupCh
 	}
 
 	if c.CreateSampleData {
-		logFailed("Creating the help notes", s.store.SeedHelpNotes(user, s.desktopMode()), "user_id", user.ID)
+		logFailed("Creating the help notes", s.store.SeedHelpNotes(user, storage.HelpEdition{Sharing: s.can(capSharing), Desktop: s.desktopMode()}), "user_id", user.ID)
 	}
 	return nil
 }

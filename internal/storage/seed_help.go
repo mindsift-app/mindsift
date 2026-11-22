@@ -9,8 +9,8 @@ import (
 // SeedHelpNotes gives an account only the MindSift help as notes (folder "MindSift help" and its notes in
 // the account's language): what the setup wizard offers. The full sample data of the online demo is
 // SeedStarterContent.
-func (s *Store) SeedHelpNotes(user *domain.User, desktop bool) error {
-	s.seedHelpNotes(user, desktop)
+func (s *Store) SeedHelpNotes(user *domain.User, ed HelpEdition) error {
+	s.seedHelpNotes(user, ed)
 	// The help notes link each other by title; links carry the note's id like ones made in the app
 	s.LinkWikiTitles(user.ID)
 	return nil
@@ -18,20 +18,20 @@ func (s *Store) SeedHelpNotes(user *domain.User, desktop bool) error {
 
 // seedHelpNotes: a short guide to MindSift as notes in the account's language (German, English, Spanish,
 // French or Italian, English for anything else), so the notes explain the app while showing the block
-// types (headings, callouts, numbered lists, code, links to notes). The notes link only each other. The
-// desktop app gets them without sharing and teams, and its API note names the switch for local programs.
-func (s *Store) seedHelpNotes(user *domain.User, desktop bool) {
+// types (headings, callouts, numbered lists, code, links to notes). The notes link only each other. Without
+// sharing they leave out sharing and teams; the desktop app's API note names the switch for local programs.
+func (s *Store) seedHelpNotes(user *domain.User, ed HelpEdition) {
 	switch s.MessageLanguage(user.ID) {
 	case "de":
-		s.seedHelpNotesDE(user, false, desktop)
+		s.seedHelpNotesDE(user, false, ed)
 	case "es":
-		s.seedHelpNotesES(user, desktop)
+		s.seedHelpNotesES(user, ed)
 	case "fr":
-		s.seedHelpNotesFR(user, desktop)
+		s.seedHelpNotesFR(user, ed)
 	case "it":
-		s.seedHelpNotesIT(user, desktop)
+		s.seedHelpNotesIT(user, ed)
 	default:
-		s.seedHelpNotesEN(user, false, desktop)
+		s.seedHelpNotesEN(user, false, ed)
 	}
 }
 
@@ -98,26 +98,26 @@ func (s *Store) seedLinkedTodos(user *domain.User, listID, title, folder, tag st
 }
 
 // seedHelpNotesDE: the help notes in German, see seedHelpNotes. demo adds what only fits the online demo.
-func (s *Store) seedHelpNotesDE(user *domain.User, demo, desktop bool) {
+func (s *Store) seedHelpNotesDE(user *domain.User, demo bool, ed HelpEdition) {
 	_, _ = s.CreateFolder(user.ID, "MindSift-Hilfe")
 	help := func(title, icon string, spec []seedBlock) {
-		_, _ = s.CreateDocument(user.ID, "", title, icon, "MindSift-Hilfe", seedBlocks(forEdition(spec, desktop)), []string{"hilfe"}, false)
+		_, _ = s.CreateDocument(user.ID, "", title, icon, "MindSift-Hilfe", seedBlocks(forEdition(spec, ed)), []string{"hilfe"}, false)
 	}
 	help("Erste Schritte", "", []seedBlock{
 		{typ: "callout", text: "Willkommen! Diese Notizen erklären MindSift. Alles hier ist Beispielinhalt – ändern, verschieben und löschen ist ausdrücklich erlaubt. #hilfe"},
 		{typ: "h2", text: "Die Idee in drei Schritten"},
 		{typ: "numbered", text: "**Erfassen:** Alles, was dir einfällt, sofort in die Leiste oben (Quick Dump) – Taste `C` oder `/`, am Handy das +."},
 		{typ: "numbered", text: "**Sortieren:** In der Triage gehst du die Gedanken später durch: verwerfen, Aufgabe, Notiz oder Listeneintrag."},
-		{typ: "numbered", text: orDesktop(desktop, "**Vertiefen:** Aufgaben bekommen Unteraufgaben und Termine, Notizen werden zu Gliederungen, Listen teilst du mit der Familie.", "**Vertiefen:** Aufgaben bekommen Unteraufgaben und Termine, Notizen werden zu Gliederungen, Listen helfen beim Einkaufen und Packen.")},
+		{typ: "numbered", text: "**Vertiefen:** Aufgaben bekommen Unteraufgaben und Termine, Notizen werden zu Gliederungen, Listen helfen beim Einkaufen und Packen."},
 		{typ: "h2", text: "Weiterlesen"},
 		{level: 1, text: "[[Notizen & Outliner]] – Punkte, Ebenen, Zoom und Verlinken"},
 		{level: 1, text: "[[Zoom ausprobieren]] – eine Gliederung zehn Ebenen tief"},
 		{level: 1, text: "[[Aufgaben & Kanban]] – Listen, Spalten, Papierkorb"},
-		{level: 1, text: "[[Listen & Einkauf]] – " + orDesktop(desktop, "gemeinsam einkaufen und packen", "einkaufen und packen")},
+		{level: 1, text: "[[Listen & Einkauf]] – einkaufen und packen"},
 		{level: 1, text: "[[Tastenkürzel]] – schneller arbeiten"},
 		{level: 1, text: "[[Spracheingabe]] – diktieren statt tippen"},
-		{serverOnly: true, level: 1, text: "[[Teilen & gemeinsam bearbeiten]]"},
-		{level: 1, text: "[[API & Smart Home]] – " + orDesktop(desktop, "Home Assistant und KI-Agenten anbinden", "KI-Agenten und Skripte anbinden")},
+		{sharingOnly: true, level: 1, text: "[[Teilen & gemeinsam bearbeiten]]"},
+		{level: 1, text: "[[API & Smart Home]] – KI-Agenten und Skripte anbinden"},
 	})
 	help("Notizen & Outliner", "", []seedBlock{
 		{typ: "h2", text: "Punkte und Ebenen"},
@@ -175,7 +175,7 @@ func (s *Store) seedHelpNotesDE(user *domain.User, demo, desktop bool) {
 	help("Listen & Einkauf", "🛒", []seedBlock{
 		{text: "Kategorien entstehen aus Hashtags: `Hafermilch #Kühlregal` landet unter „Kühlregal“"},
 		{text: "Mengen ins eigene Feld, z. B. `500 g` oder `3x`"},
-		{serverOnly: true, text: "Geteilte Listen zeigen Abhaken bei allen sofort – ideal für den Wocheneinkauf"},
+		{sharingOnly: true, text: "Geteilte Listen zeigen Abhaken bei allen sofort – ideal für den Wocheneinkauf"},
 		{text: "Abgehakte Einträge verschwinden nach einer Woche von selbst (einstellbar unter Aufbewahrung)"},
 	})
 	help("Tastenkürzel", "⌨️", []seedBlock{
@@ -195,8 +195,8 @@ func (s *Store) seedHelpNotesDE(user *domain.User, demo, desktop bool) {
 		{text: "Am Handy: das + gedrückt halten startet sofort eine Aufnahme"},
 		{text: "Mit eigenem Whisper-Server bleibt die Aufnahme auf deinem Server; unter Kontoeinstellungen → Spracheingabe wählst du Whisper oder die Erkennung des Browsers"},
 	}, demoBlock(demo, seedBlock{typ: "callout", text: "In dieser Demo nutzt MindSift die Spracherkennung des Browsers."})))
-	// Nobody to share with in the desktop app
-	if !desktop {
+	// Only where people share (not in the desktop app, nor in sharing mode private)
+	if ed.Sharing {
 		help("Teilen & gemeinsam bearbeiten", "🤝", slices.Concat([]seedBlock{
 			{text: "Notizen, Ordner, Aufgabenlisten und Listen lassen sich mit Personen oder Gruppen teilen – zum Bearbeiten oder nur zum Lesen"},
 			{text: "In einer geteilten Notiz schreiben mehrere gleichzeitig; wer in einem Punkt tippt, hält ihn kurz für sich"},

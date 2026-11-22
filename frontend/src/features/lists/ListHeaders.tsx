@@ -14,7 +14,7 @@ import { canWriteList, deduplicateItems } from './listItems';
 import { useListDrag } from './useListDrag';
 import { useTabReorder } from '../../lib/useTabReorder';
 import { TabDropMarker } from '../../components/TabDropMarker';
-import { isDesktopApp } from '../../lib/api';
+import { can } from '../../lib/capabilities';
 
 // Desktop: the list tabs in one row (an entry dropped on a tab moves into that list; what does not fit goes
 // behind "⋯ n"), "Neue Liste" and on the right the status (live, shared) and the menu of the open list
@@ -170,8 +170,8 @@ export function ListTabsHeader({
                 buttonClassName="tool-icon"
                 label={t('common:listMenu.more')}
                 items={[
-                  // Nobody to share with in the desktop app
-                  ...(isDesktopApp()
+                  // Sharing off (sharing mode private, the desktop app): nobody to share with
+                  ...(!can('sharing')
                     ? []
                     : [
                         {
@@ -257,7 +257,7 @@ export function MobileListHeader({
         <LivePill />
         {activeList && (
           <>
-            {!isDesktopApp() && (
+            {can('sharing') && (
               <>
                 <span className="w-px h-5 bg-border" aria-hidden />
                 <button
