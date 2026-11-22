@@ -3,13 +3,14 @@ import {
   APIKey,
   OAuthAuthorizeInfo,
   BackupFile,
+  BackupLocation,
   DataSection,
   ApiKeyScope,
   PriorityLevel,
   UserTheme,
   ImportSummary,
   SearchResults,
-  SearchFilter, DeletedAccountBackups, SecondFactorProof, CalendarFeedState } from '../types';
+  SearchFilter, DeletedAccountBackups, SecondFactorProof, CalendarFeedState, SnapshotStaged, SnapshotTakeOver } from '../types';
 import { authHeaders, ensureArray, request, downloadBlob } from './client';
 import i18n from '../../i18n';
 
@@ -150,6 +151,45 @@ export const dataApi = {
   // --- Automatic server backups ---
   async adminListBackups(): Promise<BackupFile[]> {
     return ensureArray(await request<BackupFile[]>('/api/v1/admin/backups'));
+  },
+
+  // Desktop app only: where the backups go (the default is backups/ in the instance's folder)
+  async adminGetBackupLocation(): Promise<BackupLocation> {
+    return request<BackupLocation>('/api/v1/admin/backups/location');
+  },
+
+  // Desktop app only: '' goes back to the default folder; the server checks the folder and creates it
+  async adminSetBackupLocation(dir: string): Promise<BackupLocation> {
+    return request<BackupLocation>('/api/v1/admin/backups/location', { method: 'PUT', body: JSON.stringify({ dir }) });
+  },
+
+  // Desktop app only: a server's database snapshot (.db.gz) is staged; the answer lists its accounts
+  async adminStageServerSnapshot(file: File): Promise<SnapshotStaged> {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch('/api/v1/admin/backups/server-snapshot', { method: 'POST', headers: authHeaders(), body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || i18n.t('common:errors.importFailed', { status: res.status }));
+    return { token: data.token, accounts: ensureArray(data.accounts) };
+  },
+
+  // Desktop app only: the chosen account of the staged snapshot into the local account (preview: only the summary)
+  async adminTakeOverSnapshotAccount(
+    token: string,
+    account: string,
+    opts: { preview: boolean; mode: 'merge' | 'restore'; sections: DataSection[]; settings: boolean }
+  ): Promise<SnapshotTakeOver> {
+    const params = new URLSearchParams({ account, mode: opts.mode, sections: opts.sections.join(',') });
+    if (opts.preview) params.set('preview', '1');
+    if (!opts.settings) params.set('settings', '0');
+    return request<SnapshotTakeOver>(`/api/v1/admin/backups/server-snapshot/${encodeURIComponent(token)}?${params}`, {
+      method: 'POST',
+      timeout: 'slow',
+    });
+  },
+
+  async adminDiscardServerSnapshot(token: string): Promise<void> {
+    await request(`/api/v1/admin/backups/server-snapshot/${encodeURIComponent(token)}`, { method: 'DELETE' });
   },
 
   async adminRunBackup(): Promise<BackupFile[]> {

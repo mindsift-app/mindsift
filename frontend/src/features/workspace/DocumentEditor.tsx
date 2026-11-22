@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { Document, DocumentBlock, User } from '../../lib/types';
 import { api } from '../../lib/api';
+import { can } from '../../lib/capabilities';
 import { ConflictChoice, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
 import { formatNumber } from '../../lib/format';
 import { Presence } from '../../lib/docSync/transport';
@@ -660,7 +661,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         )
       ) : (
         doc &&
-        !inTrash && (
+        !inTrash &&
+        can('sharing') && (
           <button
             type="button"
             onClick={() => onOpenShareModal(doc)}
@@ -692,7 +694,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             role="menu"
             className="absolute right-0 top-full mt-1.5 w-max min-w-60 max-w-[calc(100vw-2rem)] rounded-card bg-panel border border-border shadow-lg p-1 z-30 text-xs origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150"
           >
-            {desktopBar && doc && !inTrash && (
+            {desktopBar && doc && !inTrash && can('sharing') && (
               <button
                 type="button"
                 role="menuitem"

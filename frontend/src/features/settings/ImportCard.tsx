@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import i18n from '../../i18n';
 import { Upload, Check, CircleAlert, FileArchive } from 'lucide-react';
 import { DATA_SECTIONS, DataSection, ImportSummary } from '../../lib/types';
 import { SectionPicker } from './SectionPicker';
+import { summaryParts } from './importSummary';
 import { api } from '../../lib/api';
 import { errorMessage } from '../../lib/errorMessage';
 
@@ -16,16 +16,6 @@ interface ImportCardProps {
   onImported?: () => void;
 }
 
-const summaryParts = (s: ImportSummary) =>
-  [
-    s.folders && i18n.t('settings:import.summary.folders', { count: s.folders }),
-    s.notes && i18n.t('settings:import.summary.notes', { count: s.notes }),
-    s.taskLists && i18n.t('settings:import.summary.taskLists', { count: s.taskLists }),
-    s.tasks && i18n.t('settings:import.summary.tasks', { count: s.tasks }),
-    s.lists && i18n.t('settings:import.summary.lists', { count: s.lists, items: s.listItems }),
-    s.inbox && i18n.t('settings:import.summary.inbox', { count: s.inbox }),
-    s.themes && i18n.t('settings:import.summary.themes', { count: s.themes }),
-  ].filter(Boolean) as string[];
 
 // One import path: drop or pick a file, see a preview of what would be created, then import.
 // Touch targets are large enough for phones; the file picker works on mobile browsers.

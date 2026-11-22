@@ -68,7 +68,7 @@ const PAGES: [string, string[]][] = [
     'Längste Laufzeit eines Links',
     'Kalender-Abos',
   ]],
-  ['Server', [
+  ['Instanz', [
     'MindSift-Version',
     'Name der MindSift-Instanz',
     'Standardsprache',

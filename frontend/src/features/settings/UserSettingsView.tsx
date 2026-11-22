@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthStatus, User, UserTheme } from '../../lib/types';
 import { ApiKeysPanel } from './ApiKeysPanel';
 import { api } from '../../lib/api';
+import { can } from '../../lib/capabilities';
 import { EffectiveVoiceMode, loadVoiceConfig, voiceChoiceAvailable } from '../../lib/voice';
 import {
   ThemeId,
@@ -61,6 +62,11 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   onDataChanged,
   onBack }) => {
   const [section, setSection] = useState<UserSettingsSection>('profile');
+  // Sicherheit (password, second factor, passkeys, devices) needs sign-in, the calendar feed an address
+  // a calendar app reaches, the role several accounts (not in the desktop app)
+  const signIn = can('signIn');
+  const publicAddress = can('publicAddress');
+  const accounts = can('accounts');
   // Voice input: the language whenever there is voice input; the choice Whisper/browser only with a
   // Whisper server that allows the browser
   const [voiceChoice, setVoiceChoice] = useState(false);
@@ -131,9 +137,12 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           </div>
         </div>
 
-        <span className="px-2.5 py-1 bg-panel border border-border text-xs text-muted font-medium">
-          {t('user.role')} <strong className="text-accent">{roleBadgeLabel}</strong>
-        </span>
+        {/* One account only (the desktop app): no role to show */}
+        {accounts && (
+          <span className="px-2.5 py-1 bg-panel border border-border text-xs text-muted font-medium">
+            {t('user.role')} <strong className="text-accent">{roleBadgeLabel}</strong>
+          </span>
+        )}
       </div>
 
       {/* Main 2-Column Layout */}
@@ -155,6 +164,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             </div>
           </button>
 
+          {signIn && (
           <button
             onClick={() => setSection('security')}
             className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
@@ -169,6 +179,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
               <p className="text-[10px] text-faint">{t('security.navHint')}</p>
             </div>
           </button>
+          )}
 
           <button
             onClick={() => setSection('appearance')}
@@ -247,6 +258,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             </div>
           </button>
 
+          {publicAddress && (
           <button
             onClick={() => setSection('calendar')}
             className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
@@ -261,6 +273,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
               <p className="text-[10px] text-faint">{t('user.nav.calendarHint')}</p>
             </div>
           </button>
+          )}
 
           <button
             onClick={() => setSection('webhooks')}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import i18n from '../../../i18n';
 import { Organization, SharingMode, SystemSettings, User, UserInvite, UserRole } from '../../../lib/types';
-import { api, setCurrentPeopleSearch, setCurrentSharingMode, triggerHaptic } from '../../../lib/api';
+import { api, setCurrentPeopleSearch, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
 import { DEFAULT_BACKUP_RETENTION_DAYS, DEFAULT_BACKUP_TIME } from '../../../lib/backupDefaults';
 import { askConfirm } from '../../../components/askConfirm';
@@ -115,6 +115,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           registrationVerifyConfiguredViaEnv: Boolean(sys.registrationVerifyConfiguredViaEnv),
           emailLinksAvailable: Boolean(sys.emailLinksAvailable),
           instanceName: sys.instanceName || 'MindSift',
+          // The language in use (the stored choice, else DEFAULT_LANGUAGE, else German): without it the field showed German
+          defaultLanguage: sys.defaultLanguage || '',
           smtpHost: sys.smtpHost || '',
           smtpPort: sys.smtpPort ? String(sys.smtpPort) : '587',
           smtpUser: sys.smtpUser || '',
@@ -543,7 +545,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
         smtpPassUnreadable: Boolean(saved.smtpPassUnreadable),
         smtpPassViaEnv: Boolean(saved.smtpPassViaEnv),
       }));
-      setCurrentSharingMode(saved.sharingMode);
+      // The capabilities follow the new sharing mode (share buttons, groups)
+      void api.getAuthStatus().catch(() => {});
       setSharingMode(saved.sharingMode);
       if (saved.peopleSearch !== undefined) setCurrentPeopleSearch(saved.peopleSearch);
       // This app follows the server's switch at once (others at their next start or preview request)

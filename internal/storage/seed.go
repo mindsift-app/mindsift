@@ -16,6 +16,34 @@ type seedBlock struct {
 	text    string
 	checked bool
 	lang    string
+	// sharingOnly: only where people share (HelpEdition.Sharing); serverOnly / desktopOnly: only on a server
+	// or only in the desktop app, for what truly differs there (the API's address). Used by the help notes
+	// (forEdition).
+	sharingOnly bool
+	serverOnly  bool
+	desktopOnly bool
+}
+
+// HelpEdition: what the help notes are written for, from the instance's capabilities (api/capabilities.go):
+// whether people share at all, and whether it is the desktop app (its API is reached on this computer).
+type HelpEdition struct {
+	Sharing bool
+	Desktop bool
+}
+
+// demoEdition: the online demo shares everything with the account user
+var demoEdition = HelpEdition{Sharing: true}
+
+// forEdition leaves out the blocks that do not belong to the edition.
+func forEdition(spec []seedBlock, ed HelpEdition) []seedBlock {
+	out := make([]seedBlock, 0, len(spec))
+	for _, b := range spec {
+		if (b.sharingOnly && !ed.Sharing) || (ed.Desktop && b.serverOnly) || (!ed.Desktop && b.desktopOnly) {
+			continue
+		}
+		out = append(out, b)
+	}
+	return out
 }
 
 // seedNetworkDrawing: the sample drawing in the homelab note (block type "drawing"), a small network plan
@@ -86,9 +114,9 @@ func (s *Store) SeedStarterContent(user *domain.User) error {
 	// The sample notes link the help notes by their German or English title, so the demo gets the help in
 	// the language of its sample data (the setup offers it in all five)
 	if s.MessageLanguage(user.ID) == "de" {
-		s.seedHelpNotesDE(user, true)
+		s.seedHelpNotesDE(user, true, demoEdition)
 	} else {
-		s.seedHelpNotesEN(user, true)
+		s.seedHelpNotesEN(user, true, demoEdition)
 	}
 	// The sample notes link each other by title; links carry the note's id like ones made in the app
 	s.LinkWikiTitles(user.ID)

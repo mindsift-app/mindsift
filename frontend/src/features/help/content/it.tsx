@@ -26,6 +26,7 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
+import { InDesktop, NotInDesktop, Only } from './desktop';
 
 const kbd = 'px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent';
 
@@ -38,6 +39,7 @@ const it: HelpContent = {
       category: 'workspace',
       title: 'Outliner gerarchico e sincronizzazione offline',
       subtitle: 'Archiviazione atomica con sincronizzazione collaborativa in tempo reale',
+      without: { cap: 'install', title: 'Outliner gerarchico', subtitle: 'Archiviazione atomica, in locale sul tuo computer' },
       icon: FileText,
       keywords: ['titolo', 'incollare', 'chatgpt', 'claude', 'codice', 'workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'esportazione', 'markdown', 'salvataggio'],
       content: (
@@ -48,10 +50,12 @@ const it: HelpContent = {
             <strong className="text-main">IndexedDB</strong>.
           </p>
           <ul className="space-y-1 list-disc list-inside">
-            <li>
-              <strong className="text-main">Pienamente utilizzabile offline:</strong> puoi continuare a lavorare anche senza connessione a Internet;
-              le modifiche si sincronizzano automaticamente appena torni online.
-            </li>
+            <Only can="install">
+              <li>
+                <strong className="text-main">Pienamente utilizzabile offline:</strong> puoi continuare a lavorare anche senza connessione a Internet;
+                le modifiche si sincronizzano automaticamente appena torni online.
+              </li>
+            </Only>
             <li>
               <strong className="text-main">Titolo:</strong> Il titolo di una nota ha al massimo 60 caratteri, così sta su una riga e resta un nome di file utilizzabile nell'esportazione. Vicino al limite il campo mostra il conteggio.
             </li>
@@ -223,9 +227,11 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Nella nota:</strong> Il disegno occupa la larghezza della nota. Fai clic dentro, poi trascinare sposta la vista, Ctrl + rotellina o due dita zoomano; la rotellina da sola continua a scorrere la pagina. Un altro clic termina, una vista non salvata torna indietro con dolcezza. Trascina il bordo inferiore per cambiare l’altezza. «Salva vista» fissa inquadratura, zoom e altezza per tutti, Il pulsante della dimensione passa tra la dimensione consigliata e «tutto in grande» (disegni alti) o l’altezza consigliata da spostare di lato (disegni larghi). Doppio clic o «Modifica» apre l’editor; parte con la mano (si muove solo la vista), scegli un altro strumento per modificare. Il pulsante con le frecce accanto a «Fatto» esce senza salvare e chiede prima se ci sono modifiche.
             </li>
-            <li>
-              <strong className="text-main">Disegnare insieme:</strong> Chi apre un disegno disegna da solo; gli altri vedono il punto bloccato («… sta modificando») e possono solo guardare il disegno. Nelle note condivise, «Disegna insieme» in alto nell’editor avvia un disegno dal vivo con lo stato attuale (sul telefono l’icona delle persone); chi lo avvia è l’host e la nota mostra «Disegno dal vivo: …». Chi lo apre poi sceglie «Disegna anche tu» o «Guarda» e vede forme, puntatori e selezioni degli altri nel loro colore, con tutti i partecipanti in alto nell’editor. L’host salva con «Fatto» per tutti; gli altri hanno «Esci». Chi chiude senza salvare mentre altri disegnano esce soltanto dal disegno, anche l’host: subentra chi è presente da più tempo. Solo l’ultimo a uscire scarta (con una domanda se ci sono modifiche) e può recuperarlo per qualche secondo con «Annulla». Annulla riprende solo le tue modifiche. Disegnare insieme richiede una connessione WebSocket; senza (alcuni proxy aziendali) puoi guardare dal vivo.
-            </li>
+            <Only can={['sharing', 'liveDrawing']}>
+              <li>
+                <strong className="text-main">Disegnare insieme:</strong> Chi apre un disegno disegna da solo; gli altri vedono il punto bloccato («… sta modificando») e possono solo guardare il disegno. Nelle note condivise, «Disegna insieme» in alto nell’editor avvia un disegno dal vivo con lo stato attuale (sul telefono l’icona delle persone); chi lo avvia è l’host e la nota mostra «Disegno dal vivo: …». Chi lo apre poi sceglie «Disegna anche tu» o «Guarda» e vede forme, puntatori e selezioni degli altri nel loro colore, con tutti i partecipanti in alto nell’editor. L’host salva con «Fatto» per tutti; gli altri hanno «Esci». Chi chiude senza salvare mentre altri disegnano esce soltanto dal disegno, anche l’host: subentra chi è presente da più tempo. Solo l’ultimo a uscire scarta (con una domanda se ci sono modifiche) e può recuperarlo per qualche secondo con «Annulla». Annulla riprende solo le tue modifiche. Disegnare insieme richiede una connessione WebSocket; senza (alcuni proxy aziendali) puoi guardare dal vivo.
+              </li>
+            </Only>
             <li>
               <strong className="text-main">Offline e bozze:</strong> Ciò che disegni offline viene salvato appena torna la connessione; una bozza non salvata viene proposta per il ripristino alla prossima apertura. Se tutti escono da un disegno dal vivo senza «Fatto», il server ne conserva lo stato per circa 10 minuti; chi sceglie di nuovo «Disegna insieme» in quel tempo continua da lì.
             </li>
@@ -504,6 +510,7 @@ const it: HelpContent = {
       category: 'triage',
       title: 'API: curl, smart home e agenti IA (MCP)',
       subtitle: 'Leggi e modifica attività e liste via curl o Home Assistant, invia pensieri, collega agenti IA come Claude Code.',
+      without: { cap: 'publicAddress', title: 'API: curl e agenti IA (MCP)', subtitle: 'Leggi e modifica attività e liste via curl, invia pensieri, collega agenti IA come Claude Code.' },
       icon: Bell,
       keywords: ['webhook', 'api', 'token', 'home assistant', 'siri', 'scorciatoie', 'automazione', 'curl', 'mcp', 'ia', 'agente', 'claude', 'codex'],
       content: (
@@ -511,6 +518,11 @@ const it: HelpContent = {
           <p>
             MindSift dispone di un'API. In <em className="text-main">Impostazioni account → API</em> crei chiavi personali e decidi con appositi selettori cosa ciascuna può fare: leggere, creare o modificare attività, liste, note e la posta in arrivo. Questi permessi si applicano a entrambi i tipi di accesso allo stesso modo; le note e la lettura/organizzazione della posta in arrivo sono disponibili solo via MCP. Una chiave non ha mai accesso alle impostazioni.
           </p>
+          <InDesktop>
+            <p>
+              <strong className="text-main">Nell'app desktop:</strong> l'API inizialmente è disponibile solo per l'app stessa. In <em className="text-main">Impostazioni account → API</em> attiva «Raggiungibile dai programmi locali»: i programmi su questo computer raggiungono allora MCP e l'API REST su <code className="font-mono">127.0.0.1</code> (porta ed esempi pronti sono mostrati lì). Non è raggiungibile dalla rete, ad es. da Home Assistant su un altro dispositivo, e non c'è collegamento tramite claude.ai o ChatGPT.
+            </p>
+          </InDesktop>
           <p>
             <strong className="text-main">curl e smart home:</strong> con accesso in lettura, <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> restituisce tutto ciò che scade oggi, ad es. per un sensore di Home Assistant. Altri filtri: <code className="font-mono">due=overdue</code>, una data, <code className="font-mono">taskListId</code>. Le liste si ottengono tramite <code className="font-mono">GET /api/v1/lists</code>. Con accesso in modifica puoi spuntare elementi via <code className="font-mono">PATCH /api/v1/thoughts/ID</code>. Nelle impostazioni trovi esempi già pronti.
           </p>
@@ -577,33 +589,60 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Priorità e note:</strong> imposta la priorità (<em className="text-accent">Urgente</em>, <em className="text-main">Importante</em>, <em>Normale</em>) e aggiungi note dettagliate in formato Markdown.
             </li>
-            <li>
-              <strong className="text-main">Assegnazione:</strong> nelle liste condivise puoi assegnare un'attività a una o più persone con accesso (digita il nome, Invio). Gli assegnatari compaiono come piccole immagini del profilo sull'attività; chi perde l'accesso alla lista viene rimosso automaticamente.
-            </li>
+            <Only can="sharing">
+              <li>
+                <strong className="text-main">Assegnazione:</strong> nelle liste condivise puoi assegnare un'attività a una o più persone con accesso (digita il nome, Invio). Gli assegnatari compaiono come piccole immagini del profilo sull'attività; chi perde l'accesso alla lista viene rimosso automaticamente.
+              </li>
+            </Only>
             <li>
               <strong className="text-main">Attività ricorrenti:</strong> scegli una ripetizione nella finestra dei dettagli (giornaliera, nei giorni feriali dal lunedì al venerdì, settimanale, mensile o annuale). Spuntandola viene creata automaticamente l'attività successiva al ritmo della data precedente; se la spunti in ritardo, le scadenze perse vengono saltate (giornaliera, scadenza sabato, spuntata lunedì: la successiva scade martedì). La riconosci dall'icona 🔁.
             </li>
             <li>
               <strong className="text-main">Data di scadenza con ora:</strong> nella finestra dei dettagli puoi impostare un orario accanto alla data; «✕ Ora» rende nuovamente l'attività valida per l'intera giornata. Mostra ad esempio «Oggi, 14:30», gli elementi scaduti in rosso.
             </li>
-            <li>
-              <strong className="text-main">Notifiche automatiche:</strong> all'orario di scadenza (per le attività valide tutto il giorno alle 9:00, meno il tuo tempo di preavviso) MindSift ti avvisa via <strong className="text-main">email</strong>, <strong className="text-main">webhook Discord</strong> o il tuo webhook HTTP. Se sposti la data di scadenza o riapri l'attività, l'avviso scatterà di nuovo. Configurabile nelle impostazioni dell'account. Le notifiche via email vanno al tuo indirizzo di accesso. Un nuovo indirizzo di accesso vale solo dopo che hai cliccato il link nell'e-mail di conferma inviata a quell'indirizzo; fino ad allora resta quello precedente. Tutti gli orari seguono il fuso orario del server, che l'amministratore del server imposta in <em>Amministrazione del server → Server</em>.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Notifiche automatiche:</strong> all'orario di scadenza (per le attività valide tutto il giorno alle 9:00, meno il tuo tempo di preavviso) MindSift ti avvisa via <strong className="text-main">email</strong>, <strong className="text-main">webhook Discord</strong> o il tuo webhook HTTP. Se sposti la data di scadenza o riapri l'attività, l'avviso scatterà di nuovo. Configurabile nelle impostazioni dell'account. Le notifiche via email vanno al tuo indirizzo di accesso. Un nuovo indirizzo di accesso vale solo dopo che hai cliccato il link nell'e-mail di conferma inviata a quell'indirizzo; fino ad allora resta quello precedente. Tutti gli orari seguono il fuso orario del server, che l'amministratore del server imposta in <em>Amministrazione → Istanza</em>.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Notifiche automatiche:</strong> all'orario di scadenza (le attività di tutto il giorno alle 9:00, meno il tuo preavviso) MindSift ti avvisa tramite <strong className="text-main">webhook Discord</strong> o un webhook HTTP personalizzato, finché l'app desktop è in esecuzione. Se sposti la scadenza o riapri l'attività, l'avviso scatta di nuovo. Si configura nelle impostazioni dell'account, sotto «Notifiche». Tutti gli orari seguono il fuso orario dell'istanza, impostato in <em>Amministrazione → Istanza</em> (altrimenti quello del sistema).
+              </li>
+            </InDesktop>
             <li>
               <strong className="text-main">Promemoria per attività:</strong> Nella finestra dei dettagli, spunta uno o più orari in «Promemoria», ad es. 2 settimane prima e il giorno della scadenza. Per questa attività sostituiscono il tuo preavviso e valgono per tutti quelli che ricevono il suo allarme di scadenza; «Predefinito» torna al preavviso delle impostazioni. Senza orario, MindSift ricorda giorni interi prima alle 9. Le attività con promemoria propri hanno una piccola 🔔.
             </li>
-            <li>
-              <strong className="text-main">Altre notifiche:</strong> Quando qualcuno ti assegna un'attività, una nuova attività arriva in una lista condivisa o lì ne viene completata una, MindSift può avvisarti; ogni evento si attiva o disattiva singolarmente nelle impostazioni, alla voce “Notifiche”. Le attività che <strong className="text-main">segui</strong> segnalano ogni modifica (stato, priorità, scadenza, testo, descrizione, sottoattività, assegnazione …), anche se spuntate in una nota. MindSift non ti avvisa mai di ciò che fai tu. Più eventi arrivano raggruppati in un unico messaggio. La <strong className="text-main">campanella</strong> (desktop: in basso nella barra a sinistra; telefono: accanto alla ricerca) raccoglie tutto degli ultimi 14 giorni, anche senza canali attivi; un clic su una voce apre l'attività o la nota.
-            </li>
-            <li>
-              <strong className="text-main">Abbonamento al calendario:</strong> In <em className="text-main">Impostazioni account → Abbonamento calendario</em> ottieni un link segreto da aggiungere come abbonamento in Google Calendar, Calendario di Apple, Thunderbird o Outlook. Mostra le tue attività aperte con scadenza e quelle degli elenchi condivisi (in scadenza da 30 giorni fa fino a un anno): quelle di tutto il giorno come eventi di tutto il giorno, quelle con orario come eventi di 30 minuti, quelle ricorrenti con la prossima data. Il calendario le mostra soltanto, le modifiche si fanno in MindSift; le app di calendario aggiornano l’abbonamento solo ogni qualche ora. Chi conosce il link vede le tue attività: «Crea nuovo link» invalida quello vecchio, disattivarlo lo elimina.
-            </li>
-            <li>
-              <strong className="text-main">Menzioni con @:</strong> Nella descrizione di un'attività, nelle sottoattività e nelle note, <strong className="text-main">@</strong> apre un elenco di persone (frecce, Invio). Chi non ha accesso appare in grigio. La persona menzionata riceve una notifica (Impostazioni → Notifiche, “Sono stato menzionato”), anche da una lista silenziata; salvare di nuovo non ne invia una seconda.
-            </li>
-            <li>
-              <strong className="text-main">Menu della lista (⋯):</strong> A destra sopra la lista: <strong className="text-main">Silenzia</strong> (solo liste condivise: nessuna notifica da questa lista; assegnazioni, menzioni e attività seguite arrivano comunque), Condividi, Rinomina ed Elimina. Se non tutte le liste entrano nella riga, le altre sono dietro “⋯ n”. In una lista condivisa una nuova attività è assegnata prima a te; l'avviso di scadenza va alle persone assegnate o, se non c'è nessuno, a tutti i membri.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Altre notifiche:</strong> Quando qualcuno ti assegna un'attività, una nuova attività arriva in una lista condivisa o lì ne viene completata una, MindSift può avvisarti; ogni evento si attiva o disattiva singolarmente nelle impostazioni, alla voce “Notifiche”. Le attività che <strong className="text-main">segui</strong> segnalano ogni modifica (stato, priorità, scadenza, testo, descrizione, sottoattività, assegnazione …), anche se spuntate in una nota. MindSift non ti avvisa mai di ciò che fai tu. Più eventi arrivano raggruppati in un unico messaggio. La <strong className="text-main">campanella</strong> (desktop: in basso nella barra a sinistra; telefono: accanto alla ricerca) raccoglie tutto degli ultimi 14 giorni, anche senza canali attivi; un clic su una voce apre l'attività o la nota.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Altre notifiche:</strong> La <strong className="text-main">campanella</strong> (in basso nella barra a sinistra) raccoglie le notifiche degli ultimi 14 giorni, ad es. le attività in scadenza; un clic su una voce apre l'attività o la nota. Le attività che <strong className="text-main">segui</strong> segnalano anche le tue modifiche se lo attivi nelle impostazioni, sotto «Notifiche».
+              </li>
+            </InDesktop>
+            <Only can="publicAddress">
+              <li>
+                <strong className="text-main">Abbonamento al calendario:</strong> In <em className="text-main">Impostazioni account → Abbonamento calendario</em> ottieni un link segreto da aggiungere come abbonamento in Google Calendar, Calendario di Apple, Thunderbird o Outlook. Mostra le tue attività aperte con scadenza e quelle degli elenchi condivisi (in scadenza da 30 giorni fa fino a un anno): quelle di tutto il giorno come eventi di tutto il giorno, quelle con orario come eventi di 30 minuti, quelle ricorrenti con la prossima data. Il calendario le mostra soltanto, le modifiche si fanno in MindSift; le app di calendario aggiornano l’abbonamento solo ogni qualche ora. Chi conosce il link vede le tue attività: «Crea nuovo link» invalida quello vecchio, disattivarlo lo elimina.
+              </li>
+            </Only>
+            <Only can="sharing">
+              <li>
+                <strong className="text-main">Menzioni con @:</strong> Nella descrizione di un'attività, nelle sottoattività e nelle note, <strong className="text-main">@</strong> apre un elenco di persone (frecce, Invio). Chi non ha accesso appare in grigio. La persona menzionata riceve una notifica (Impostazioni → Notifiche, “Sono stato menzionato”), anche da una lista silenziata; salvare di nuovo non ne invia una seconda.
+              </li>
+            </Only>
+            <Only can="sharing">
+              <li>
+                <strong className="text-main">Menu della lista (⋯):</strong> A destra sopra la lista: <strong className="text-main">Silenzia</strong> (solo liste condivise: nessuna notifica da questa lista; assegnazioni, menzioni e attività seguite arrivano comunque), Condividi, Rinomina ed Elimina. Se non tutte le liste entrano nella riga, le altre sono dietro “⋯ n”. In una lista condivisa una nuova attività è assegnata prima a te; l'avviso di scadenza va alle persone assegnate o, se non c'è nessuno, a tutti i membri.
+              </li>
+            </Only>
+            <Only not="sharing">
+              <li>
+                <strong className="text-main">Menu della lista (⋯):</strong> A destra sopra la lista: Rinomina ed Elimina. Se non tutte le liste stanno nella riga, le altre sono dietro «⋯ n».
+              </li>
+            </Only>
             <li>
               <strong className="text-main">Calendario:</strong> Una terza vista accanto a lista e Kanban: mese o settimana sul desktop, la settimana sul telefono. Le attività senza data sono in “Senza data”; trascinane una su un giorno per darle una data (l'orario resta) o di nuovo in “Senza data” per toglierla, <strong className="text-main">Ctrl + Z</strong> annulla. Le attività ricorrenti mostrano anche le prossime date, in grigio con ↻. A sinistra una colonna passa dal giorno scelto (oggi finché non ne scegli un altro) con le sue attività alle attività senza data. ← → per sfogliare, T torna a oggi. Sul desktop da lunedì a venerdì occupano la larghezza; il fine settimana si raggiunge scorrendo di lato o con “sab – dom ›”. Mese o settimana si sceglie a destra degli hashtag; uno scatto della rotellina fa scorrere via le barre sopra.
             </li>
@@ -616,13 +655,20 @@ const it: HelpContent = {
     {
       id: 'lists-shared-shopping',
       category: 'lists',
-      title: 'Liste condivise, quantità e categorie hashtag',
-      subtitle: 'Liste della spesa, liste bagagli e liste di controllo in tempo reale',
+      title: 'Liste, quantità e categorie hashtag',
+      subtitle: 'Liste della spesa, liste bagagli e liste di controllo',
       icon: ShoppingCart,
       keywords: ['liste', 'spesa', 'checklist', 'quantità', 'categorie', 'hashtag', 'tempo reale', 'suggerimenti'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
-          <p>Le liste condivise sono ideali per fare la spesa, preparare la valigia o gestire commissioni insieme:</p>
+          <Only can="sharing">
+            <p>Le liste condivise sono ideali per fare la spesa, preparare la valigia o gestire commissioni insieme:</p>
+          </Only>
+          <Only not="sharing">
+            <p>
+              Le liste sono ideali per fare la spesa, preparare la valigia o gestire commissioni:
+            </p>
+          </Only>
           <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Scrivi la quantità insieme all’articolo:</strong> con <code className="text-accent font-mono">2x latte bio</code>, <code className="text-accent font-mono">500g pasta</code>, <code className="text-accent font-mono">3 mele</code> o <code className="text-accent font-mono">pomodori 2 lattine</code> il campo evidenzia la quantità e la inserisce subito nel campo quantità; un piccolo fumetto accanto al campo quantità te la indica. All’aggiunta il nome finisce nella lista senza di essa. Tocca la × nel fumetto o svuota il campo quantità per lasciare il testo com’è; una quantità scritta da te nel campo ha la precedenza. Vengono riconosciuti un numero con x, un numero con un’unità (g, kg, l, ml, pz, confezione, lattina, bottiglia, mazzo …) e un numero all’inizio. Un numero alla fine senza unità fa parte del nome (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">cola 0,5</code>), come pure uno attaccato a una parola (<code className="text-accent font-mono">7up</code>). Nel campo quantità puoi scrivere anche le unità, ad esempio <code className="text-accent font-mono">500 g</code>. L’interruttore <em>Riconoscere date e quantità durante la digitazione</em> in Impostazioni account → Lingua disattiva anche questo.
@@ -631,11 +677,18 @@ const it: HelpContent = {
               <strong className="text-main">Categorie tramite hashtag:</strong> aggiungi un hashtag come <code className="text-accent font-mono">#frigo</code> o <code className="text-accent font-mono">#verdure</code>. La lista raggruppa automaticamente gli elementi nelle sezioni corrispondenti.
             </li>
             <li>
-              <strong className="text-main">Suggerimenti durante la digitazione:</strong> da due lettere in poi la lista mostra sotto il campo ciò che hai già aggiunto qui, anche elementi spuntati e rimossi da tempo: prima ciò che inizia così, poi ciò che lo contiene, con gli acquisti frequenti e recenti in cima. Ciò che è già aperto nella lista non compare. Tocca un suggerimento, oppure sceglilo con le frecce e Invio, per aggiungerlo con il suo hashtag; Esc chiude i suggerimenti e continuare a scrivere funziona come prima. Mentre scrivi un #hashtag compaiono i suggerimenti degli hashtag. Le liste condivise hanno una cronologia comune; funziona anche offline e sparisce con la lista.
+              <strong className="text-main">Suggerimenti durante la digitazione:</strong> da due lettere in poi la lista mostra sotto il campo ciò che hai già aggiunto qui, anche elementi spuntati e rimossi da tempo: prima ciò che inizia così, poi ciò che lo contiene, con gli acquisti frequenti e recenti in cima. Ciò che è già aperto nella lista non compare. Tocca un suggerimento, oppure sceglilo con le frecce e Invio, per aggiungerlo con il suo hashtag; Esc chiude i suggerimenti e continuare a scrivere funziona come prima. Mentre scrivi un #hashtag compaiono i suggerimenti degli hashtag. <Only can="sharing">{' '}Le liste condivise hanno una cronologia comune; funziona anche offline e sparisce con la lista.</Only>
             </li>
-            <li>
-              <strong className="text-main">Sincronizzazione in tempo reale e rimozione completati:</strong> gli elementi spuntati si sincronizzano in tempo reale e mostrano chi li ha spuntati. Il pulsante di pulizia rimuove tutti gli elementi spuntati in un colpo solo.
-            </li>
+            <Only can="sharing">
+              <li>
+                <strong className="text-main">Sincronizzazione in tempo reale e rimozione completati:</strong> gli elementi spuntati si sincronizzano in tempo reale e mostrano chi li ha spuntati. Il pulsante di pulizia rimuove tutti gli elementi spuntati in un colpo solo.
+              </li>
+            </Only>
+            <Only not="sharing">
+              <li>
+                <strong className="text-main">Rimozione completati:</strong> Il pulsante di pulizia rimuove in blocco gli articoli completati.
+              </li>
+            </Only>
           </ul>
         </div>
       ),
@@ -669,32 +722,52 @@ const it: HelpContent = {
       category: 'account',
       title: 'Offline, backup e password',
       subtitle: 'Lavorare senza Internet, ripristinare backup, reimpostare la password',
+      without: { cap: 'signIn', title: 'Backup', subtitle: 'Creare backup e ripristinarli' },
       icon: CloudOff,
       keywords: ['offline', 'internet', 'backup', 'ripristino', 'password', 'dimenticata', 'account', 'due fattori', '2fa', 'authenticator', 'sicurezza', 'passkey', 'impronta', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
-            <li>
-              <strong className="text-main">Backup del server:</strong> se l'amministrazione ha abilitato i backup automatici, trovi i backup giornalieri dei tuoi dati in <em>Impostazioni account → Esportazione e importazione</em>. Puoi scaricarli o ripristinarli, anche per singole aree come liste o attività. Ogni backup contiene inoltre le tue note, attività e liste in Markdown nella cartella <em>Obsidian</em>, leggibili in Obsidian o in qualsiasi editor di testo, anche senza MindSift.
-            </li>
-            <li>
-              <strong className="text-main">Senza Internet:</strong> installato come app (o nel browser), MindSift si avvia anche offline con l'ultimo stato caricato. Registrare pensieri e spuntare attività e voci di lista continua a funzionare; un avviso in basso mostra quante modifiche sono in attesa, e verranno inviate automaticamente appena torna la connessione.
-            </li>
-            <li>
-              <strong className="text-main">Dove restano le modifiche offline:</strong> Le note che hai già aperto su questo dispositivo si possono leggere e modificare offline. Ciò che non è ancora stato inviato è salvato solo in questo browser: resiste a chiusura, riavvio e spegnimento, e viene inviato automaticamente al prossimo avvio di MindSift con la connessione. Si perde se ti disconnetti (MindSift chiede prima), cancelli i dati del browser o lavori in una finestra privata. Perciò, dopo aver lavorato offline, torna presto online con lo stesso dispositivo. Se nel frattempo qualcuno ha modificato lo stesso punto, non si perde nulla: la tua versione compare sotto come copia di conflitto.
-            </li>
-            <li>
-              <strong className="text-main">Password dimenticata:</strong> se l'amministrazione ha configurato l'invio delle email, la schermata di accesso mostra «Password dimenticata?». Ricevi un link valido per un'ora; impostando la nuova password verrai disconnesso su tutti i dispositivi.
-            </li>
-            <li>
-              <strong className="text-main">Accesso a due fattori:</strong> in <em>Impostazioni account → Sicurezza</em> colleghi un'app di autenticazione (scansiona il codice QR, inserisci il primo codice); da quel momento l'accesso chiede, dopo la password, il codice di sei cifre dell'app. I dieci codici di recupero mostrati una sola volta aiutano quando manca il telefono: ognuno funziona una volta. Con «Considera attendibile questo dispositivo per 30 giorni» un tuo dispositivo non chiede il codice per un mese. «Password dimenticata» non disattiva l'accesso a due fattori.
-            </li>
-            <li>
-              <strong className="text-main">Passkey:</strong> in <em>Impostazioni account → Sicurezza → Passkey</em> crei una passkey (conferma la password, dalle un nome, impronta digitale, volto o PIN del dispositivo). Da quel momento «Accedi con una passkey» ti fa entrare senza password; alcuni browser la propongono anche direttamente nel campo di accesso. Se accedi con la password, dopo viene chiesta la passkey: una passkey conta come secondo fattore, anche senza app di autenticazione. I codici di recupero compaiono con la prima passkey. Rimuovendo l'ultimo secondo fattore, l'accesso a due fattori si disattiva di nuovo. Le passkey sono disponibili solo se il server ha un indirizzo https fisso (BASE_URL).
-            </li>
-            <li>
-              <strong className="text-main">Accesso tramite un provider (SSO):</strong> Se l'amministrazione ha configurato un provider come Authentik, Authelia o Keycloak, la schermata di accesso mostra «Accedi con …». La prima volta viene creato il tuo account, oppure ne viene collegato uno esistente con lo stesso indirizzo verificato; un account con un indirizzo diverso lo colleghi in <em>Impostazioni account → Sicurezza</em>. L'accesso a due fattori spetta allora al provider. Le modifiche delicate come un nuovo indirizzo, una password, le chiavi API o l'eliminazione le confermi accedendo di nuovo lì; dopo hai cinque minuti. Se l'accesso con password è disattivato resta solo questo pulsante, e l'amministrazione ha un accesso di emergenza su <em>/?login=password</em>.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Backup del server:</strong> se l'amministrazione ha abilitato i backup automatici, trovi i backup giornalieri dei tuoi dati in <em>Impostazioni account → Esportazione e importazione</em>. Puoi scaricarli o ripristinarli, anche per singole aree come liste o attività. Ogni backup contiene inoltre le tue note, attività e liste in Markdown nella cartella <em>Obsidian</em>, leggibili in Obsidian o in qualsiasi editor di testo, anche senza MindSift.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Backup:</strong> in <em>Amministrazione → Dati</em> attivi i backup giornalieri e scegli la cartella in cui vengono salvati. In <em>Impostazioni account → Esportazione e importazione</em> li trovi; puoi scaricarli o ripristinarli, anche solo per singole aree come liste o attività. Ogni backup contiene inoltre, nella cartella <em>Obsidian</em>, note, attività e liste in Markdown, leggibili in Obsidian o in qualsiasi editor di testo, anche senza MindSift. Un backup si può ripristinare anche su un server, se in seguito passi a uno.
+              </li>
+            </InDesktop>
+            <Only can="install">
+              <li>
+                <strong className="text-main">Senza Internet:</strong> installato come app (o nel browser), MindSift si avvia anche offline con l'ultimo stato caricato. Registrare pensieri e spuntare attività e voci di lista continua a funzionare; un avviso in basso mostra quante modifiche sono in attesa, e verranno inviate automaticamente appena torna la connessione.
+              </li>
+            </Only>
+            <Only can="install">
+              <li>
+                <strong className="text-main">Dove restano le modifiche offline:</strong> Le note che hai già aperto su questo dispositivo si possono leggere e modificare offline. Ciò che non è ancora stato inviato è salvato solo in questo browser: resiste a chiusura, riavvio e spegnimento, e viene inviato automaticamente al prossimo avvio di MindSift con la connessione. Si perde se ti disconnetti (MindSift chiede prima), cancelli i dati del browser o lavori in una finestra privata. Perciò, dopo aver lavorato offline, torna presto online con lo stesso dispositivo. Se nel frattempo qualcuno ha modificato lo stesso punto, non si perde nulla: la tua versione compare sotto come copia di conflitto.
+              </li>
+            </Only>
+            <Only can="signIn">
+              <li>
+                <strong className="text-main">Password dimenticata:</strong> se l'amministrazione ha configurato l'invio delle email, la schermata di accesso mostra «Password dimenticata?». Ricevi un link valido per un'ora; impostando la nuova password verrai disconnesso su tutti i dispositivi.
+              </li>
+            </Only>
+            <Only can="signIn">
+              <li>
+                <strong className="text-main">Accesso a due fattori:</strong> in <em>Impostazioni account → Sicurezza</em> colleghi un'app di autenticazione (scansiona il codice QR, inserisci il primo codice); da quel momento l'accesso chiede, dopo la password, il codice di sei cifre dell'app. I dieci codici di recupero mostrati una sola volta aiutano quando manca il telefono: ognuno funziona una volta. Con «Considera attendibile questo dispositivo per 30 giorni» un tuo dispositivo non chiede il codice per un mese. «Password dimenticata» non disattiva l'accesso a due fattori.
+              </li>
+            </Only>
+            <Only can="signIn">
+              <li>
+                <strong className="text-main">Passkey:</strong> in <em>Impostazioni account → Sicurezza → Passkey</em> crei una passkey (conferma la password, dalle un nome, impronta digitale, volto o PIN del dispositivo). Da quel momento «Accedi con una passkey» ti fa entrare senza password; alcuni browser la propongono anche direttamente nel campo di accesso. Se accedi con la password, dopo viene chiesta la passkey: una passkey conta come secondo fattore, anche senza app di autenticazione. I codici di recupero compaiono con la prima passkey. Rimuovendo l'ultimo secondo fattore, l'accesso a due fattori si disattiva di nuovo. Le passkey sono disponibili solo se il server ha un indirizzo https fisso (BASE_URL).
+              </li>
+            </Only>
+            <Only can="signIn">
+              <li>
+                <strong className="text-main">Accesso tramite un provider (SSO):</strong> Se l'amministrazione ha configurato un provider come Authentik, Authelia o Keycloak, la schermata di accesso mostra «Accedi con …». La prima volta viene creato il tuo account, oppure ne viene collegato uno esistente con lo stesso indirizzo verificato; un account con un indirizzo diverso lo colleghi in <em>Impostazioni account → Sicurezza</em>. L'accesso a due fattori spetta allora al provider. Le modifiche delicate come un nuovo indirizzo, una password, le chiavi API o l'eliminazione le confermi accedendo di nuovo lì; dopo hai cinque minuti. Se l'accesso con password è disattivato resta solo questo pulsante, e l'amministrazione ha un accesso di emergenza su <em>/?login=password</em>.
+              </li>
+            </Only>
           </ul>
         </div>
       ),
@@ -715,10 +788,10 @@ const it: HelpContent = {
               <strong className="text-main">Chi può condividere con chi:</strong> lo decide l'amministratore del server: con tutti, solo con le persone con cui hai almeno un'<em>organizzazione</em> in comune, o con nessuno (modalità «Privato»: nessuna condivisione, nessun gruppo). Puoi appartenere a più organizzazioni; le gestiscono gli amministratori e la gestione utenti. Se la ricerca persone è disattivata, durante la condivisione inserisci l'indirizzo e-mail o il nome utente esatti. Chi lavora con te a qualcosa compare sempre lì con il nome.
             </li>
             <li>
-              <strong className="text-main">Fuso orario del server:</strong> l'amministratore del server lo imposta in <em>Amministrazione del server → Server → Fuso orario</em>. Vale subito per tutti: scadenze con orario, notifiche, riepilogo giornaliero e ora dei backup.
+              <strong className="text-main">Fuso orario del server:</strong> l'amministratore del server lo imposta in <em>Amministrazione → Istanza → Fuso orario</em>. Vale subito per tutti: scadenze con orario, notifiche, riepilogo giornaliero e ora dei backup.
             </li>
             <li>
-              <strong className="text-main">Qualità delle immagini:</strong> prima del caricamento l'app riduce le immagini a 2048 pixel al massimo. Quanto le comprime lo imposta l'amministratore del server in <em>Amministrazione del server → Dati → Qualità delle immagini</em>: Alta (predefinita), Media o Risparmio. La dimensione resta la stessa a ogni livello, il testo negli screenshot resta leggibile; l'impostazione vale per le nuove immagini.
+              <strong className="text-main">Qualità delle immagini:</strong> prima del caricamento l'app riduce le immagini a 2048 pixel al massimo. Quanto le comprime lo imposta l'amministratore del server in <em>Amministrazione → Dati → Qualità delle immagini</em>: Alta (predefinita), Media o Risparmio. La dimensione resta la stessa a ogni livello, il testo negli screenshot resta leggibile; l'impostazione vale per le nuove immagini.
             </li>
             <li>
               <strong className="text-main">Gruppi:</strong> raggruppa le persone visibili in gruppi (es. famiglia, coinquilini, progetto) e condividi con tutti in una volta sola. Chi crea un gruppo ne è amministratore; solo i membri possono condividere con un gruppo.

@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   flushOfflineQueue: vi.fn(),
   oidcExchange: vi.fn(),
   getStats: vi.fn(),
+  desktopSignIn: vi.fn(),
+  desktop: false,
   lastWrite: 0,
 }));
 
@@ -23,7 +25,9 @@ vi.mock('../../lib/api', () => ({
     flushOfflineQueue: mocks.flushOfflineQueue,
     oidcExchange: mocks.oidcExchange,
     getStats: mocks.getStats,
+    desktopSignIn: mocks.desktopSignIn,
   },
+  isDesktopApp: () => mocks.desktop,
   lastLocalWriteAt: () => mocks.lastWrite,
   getToken: () => mocks.token || null,
   clearToken: () => {
@@ -52,6 +56,11 @@ beforeEach(() => {
   mocks.oidcExchange.mockResolvedValue({ token: 'neu' });
   mocks.getStats.mockResolvedValue({ inboxCount: 1 });
   mocks.lastWrite = 0;
+  mocks.desktop = false;
+  mocks.desktopSignIn.mockImplementation(async () => {
+    mocks.token = 'desktop-tok';
+    return me.user;
+  });
 });
 
 afterEach(() => {
@@ -303,5 +312,69 @@ describe('demo reset countdown', () => {
     expect(secondsLeft(result.current.demoDeadline)).toBe(590);
     // The deadline had not passed: no reset, nothing reloaded
     expect(mocks.getMe).not.toHaveBeenCalled();
+  });
+});
+
+describe('desktop app', () => {
+  const desktopStatus = { needsSetup: false, allowRegistration: false, instanceName: 'MindSift', desktop: { platform: 'linux', realtime: 'sse' } };
+
+  it('signs in by itself on the first start, without a sign-in screen', async () => {
+    mocks.token = '';
+    mocks.desktop = true;
+    mocks.getAuthStatus.mockResolvedValue(desktopStatus);
+    const { result } = await boot();
+    expect(mocks.desktopSignIn).toHaveBeenCalledTimes(1);
+    expect(mocks.token).toBe('desktop-tok');
+    expect(result.current.user?.id).toBe('usr_1');
+  });
+
+  it('keeps a stored session at a restart', async () => {
+    mocks.desktop = true;
+    mocks.getAuthStatus.mockResolvedValue(desktopStatus);
+    const { result } = await boot();
+    expect(mocks.desktopSignIn).not.toHaveBeenCalled();
+    expect(result.current.user?.id).toBe('usr_1');
+  });
+
+  it('gets a new session when the old one ended, instead of showing the sign-in', async () => {
+    mocks.desktop = true;
+    mocks.getAuthStatus.mockResolvedValue(desktopStatus);
+    const signedOut = vi.fn();
+    const hook = renderHook(() => useSessionBootstrap(signedOut));
+    await waitFor(() => expect(hook.result.current.bootLoading).toBe(false));
+    mocks.token = '';
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('mindsift:unauthorized'));
+    });
+    await waitFor(() => expect(mocks.desktopSignIn).toHaveBeenCalledTimes(1));
+    expect(signedOut).not.toHaveBeenCalled();
+    expect(hook.result.current.user?.id).toBe('usr_1');
+  });
+
+  it('a stored session the instance refuses at the start gives way to a new one, not the sign-in', async () => {
+    // The 401 comes before the status said desktop and before the hook listens (as in main.tsx)
+    mocks.token = 'stale';
+    mocks.getAuthStatus.mockResolvedValue(desktopStatus);
+    mocks.getMe.mockImplementationOnce(async () => {
+      mocks.token = '';
+      window.dispatchEvent(new CustomEvent('mindsift:unauthorized'));
+      throw new Error('HTTP 401');
+    });
+    prefetchAuthStatus();
+    await Promise.resolve();
+    mocks.desktop = true;
+    const signedOut = vi.fn();
+    const hook = renderHook(() => useSessionBootstrap(signedOut));
+    await waitFor(() => expect(hook.result.current.bootLoading).toBe(false));
+    expect(mocks.desktopSignIn).toHaveBeenCalledTimes(1);
+    expect(mocks.token).toBe('desktop-tok');
+    expect(hook.result.current.user?.id).toBe('usr_1');
+    expect(signedOut).not.toHaveBeenCalled();
+  });
+
+  it('a normal server never asks for a desktop session', async () => {
+    mocks.token = '';
+    await boot();
+    expect(mocks.desktopSignIn).not.toHaveBeenCalled();
   });
 });

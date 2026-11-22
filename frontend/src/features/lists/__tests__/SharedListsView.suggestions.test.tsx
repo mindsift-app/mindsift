@@ -43,6 +43,7 @@ vi.mock('../../../lib/api', () => ({
     getAuthStatus: vi.fn(async () => ({})),
   },
   triggerHaptic: vi.fn(),
+  isDesktopApp: () => false,
   onRealtimeStatus: () => () => {},
 }));
 vi.mock('../useListRealtime', () => ({ useListRealtime: () => {} }));

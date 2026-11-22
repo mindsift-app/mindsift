@@ -1,7 +1,7 @@
 {
   "back": "Indietro",
   "title": "Aiuto e documentazione",
-  "subtitle": "Uso della tastiera, note outliner, triage, bacheca Kanban e collaborazione",
+  "subtitle": "Uso della tastiera, note outliner, triage, bacheca Kanban e altro",
   "search": "Cerca nella guida e nelle scorciatoie…",
   "clearSearch": "Cancella ricerca",
   "cat": {
@@ -9,7 +9,7 @@
     "workspace": "Workspace e note",
     "triage": "Registrazione rapida e Triage",
     "tasks": "Attività e Kanban",
-    "lists": "Liste condivise",
+    "lists": "Liste",
     "collaboration": "Gruppi e condivisioni",
     "account": "Account e impostazioni",
     "shortcuts": "Scorciatoie da tastiera e gesti"

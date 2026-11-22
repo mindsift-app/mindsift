@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>app.mindsift.MindSift</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>AGPL-3.0-only</project_license>
+  <name>MindSift</name>
+  <summary>Notes, tasks and lists in one app</summary>
+  <developer id="app.mindsift">
+    <name>MindSift</name>
+  </developer>
+  <description>
+    <p>
+      MindSift brings nested notes, tasks with a board and a calendar, lists and an inbox for everything
+      that has no place yet together in one app.
+    </p>
+    <p>
+      The desktop app keeps your data on your computer: each local instance is a folder of its own, with
+      no account and no port opened. It can also open a MindSift server, so the same notes are reachable
+      from the browser and the phone.
+    </p>
+    <ul>
+      <li>Notes as outlines, with headings, checkboxes, tables, images, drawings and voice notes</li>
+      <li>Tasks with due dates, alarms, a Kanban board and a calendar</li>
+      <li>Lists for shopping and everything else</li>
+      <li>An inbox for quick captures and a journal for each day</li>
+      <li>Daily backups, export and import</li>
+      <li>MCP access for local AI agents, switched on per instance</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">app.mindsift.MindSift.desktop</launchable>
+  <url type="homepage">https://mindsift.app/</url>
+  <url type="bugtracker">https://github.com/mindsift-app/mindsift/issues</url>
+  <url type="vcs-browser">https://github.com/mindsift-app/mindsift</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Notes as outlines, edited together</caption>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/workspace_desktop.webp</image>
+    </screenshot>
+    <screenshot>
+      <caption>Tasks on a board</caption>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/aufgaben_desktop.webp</image>
+    </screenshot>
+    <screenshot>
+      <caption>The calendar</caption>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/calendar_desktop.webp</image>
+    </screenshot>
+    <screenshot>
+      <caption>The journal</caption>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/main/screenshots/journal_desktop.webp</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1"/>
+  <branding>
+    <color type="primary" scheme_preference="light">#93c5fd</color>
+    <color type="primary" scheme_preference="dark">#1e3a8a</color>
+  </branding>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+  <categories>
+    <category>Office</category>
+    <category>Utility</category>
+  </categories>
+  <keywords>
+    <keyword>notes</keyword>
+    <keyword>tasks</keyword>
+    <keyword>lists</keyword>
+    <keyword>outliner</keyword>
+  </keywords>
+  <releases>
+    <release version="0.97.1" date="2026-11-20">
+      <description>
+        <p>First Flatpak build of the desktop app.</p>
+      </description>
+    </release>
+  </releases>
+</component>

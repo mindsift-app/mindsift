@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=MindSift
+GenericName=Notes and tasks
+Comment=Notes, tasks and lists
+Exec=mindsift-desktop
+Icon=app.mindsift.MindSift
+Terminal=false
+Categories=Office;Utility;
+Keywords=notes;tasks;lists;outliner;
+StartupNotify=true
+StartupWMClass=app.mindsift.MindSift

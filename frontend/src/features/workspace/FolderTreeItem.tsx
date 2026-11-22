@@ -7,6 +7,7 @@ import { isFolderShared } from './workspaceListing';
 import { TemplateMark } from './NoteTemplates';
 import { isFolderDrop } from './useDocDragDrop';
 import { useTranslation } from 'react-i18next';
+import { can } from '../../lib/capabilities';
 
 interface FolderTreeItemProps {
   node: FolderTreeNode;
@@ -241,12 +242,17 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
                   label: t('folder.menuRename'),
                   onSelect: (e) => handleRenameFolder(node.fullPath, clickPoint(e)),
                 },
-                {
-                  key: 'share',
-                  icon: <Users className="w-3.5 h-3.5" />,
-                  label: t('folder.menuShare'),
-                  onSelect: () => handleShareFolderClick(node.fullPath, node.sharedFolderObj),
-                },
+                // Sharing off (sharing mode private, the desktop app): nobody to share with
+                ...(!can('sharing')
+                  ? []
+                  : [
+                      {
+                        key: 'share',
+                        icon: <Users className="w-3.5 h-3.5" />,
+                        label: t('folder.menuShare'),
+                        onSelect: () => handleShareFolderClick(node.fullPath, node.sharedFolderObj),
+                      },
+                    ]),
                 {
                   key: 'delete',
                   icon: <Trash className="w-3.5 h-3.5" />,

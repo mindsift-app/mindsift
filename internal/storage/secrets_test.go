@@ -487,8 +487,9 @@ func TestSecretsGoWithTheAccount(t *testing.T) {
 }
 
 // The import preview names the notes whose hidden value becomes a placeholder (a value of a note the
-// person may not read), as it does for files; a value of a readable note (copied) or a reference to no
-// value (stays) is not named.
+// person may not read), as it does for files, and those whose value is gone (a backup holds references
+// only: from another server, or of a deleted note); a value of a readable note (copied, also a backup of
+// this server) is not named.
 func TestImportPreviewNamesNotesWithForeignSecrets(t *testing.T) {
 	s, anna, ben := newSecretStore(t)
 	annaDoc, _ := s.CreateDocument(anna.ID, "", "Annas", "", "", nil, nil, false)
@@ -511,8 +512,15 @@ func TestImportPreviewNamesNotesWithForeignSecrets(t *testing.T) {
 	}
 	s.CheckImportMedia(ben.ID, plan)
 	sum := plan.Summary(false)
-	if len(sum.Skipped) != 1 || sum.Skipped[0].Path != "Beute" || !strings.Contains(sum.Skipped[0].Reason, "Versteckter Wert") {
-		t.Fatalf("preview should name only the note with Anna's value: %+v", sum.Skipped)
+	if len(sum.Skipped) != 2 {
+		t.Fatalf("preview should name the note with Anna's value and the one without a value: %+v", sum.Skipped)
+	}
+	reasons := map[string]string{}
+	for _, sk := range sum.Skipped {
+		reasons[sk.Path] = sk.Reason
+	}
+	if !strings.Contains(reasons["Beute"], "ohne Zugriff") || !strings.Contains(reasons["Verwaist"], "nicht im Backup enthalten") {
+		t.Fatalf("wrong reasons: %+v", sum.Skipped)
 	}
 
 	// Applying gives the placeholder where the preview said so

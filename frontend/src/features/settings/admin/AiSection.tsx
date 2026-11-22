@@ -5,6 +5,7 @@ import { SpeechSettingsCard } from './SpeechSettingsCard';
 import { AdminPage } from './AdminPage';
 import { useAdminSettings } from './useAdminSettings';
 import { useTranslation } from 'react-i18next';
+import { can } from '../../../lib/capabilities';
 
 // Administration → Voice input & AI: the server's speech recognition and AI agents over MCP
 // (state in useAdminSettings)
@@ -39,6 +40,7 @@ export function AiSection({
           <p className="font-bold text-main">{t('server.mcp')}</p>
           <p className="text-[11px] text-muted mt-0.5">
             {t('server.mcpHint')}
+            {can('publicAddress') && ` ${t('server.mcpHintConnectors')}`}
             {settings.mcpConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MCP_ENABLED' })}`}
           </p>
         </div>

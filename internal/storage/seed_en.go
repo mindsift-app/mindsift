@@ -260,27 +260,27 @@ func (s *Store) seedStarterEN(user *domain.User) error {
 }
 
 // seedHelpNotesEN: the help notes in English, see seedHelpNotes. demo adds what only fits the online demo.
-func (s *Store) seedHelpNotesEN(user *domain.User, demo bool) {
+func (s *Store) seedHelpNotesEN(user *domain.User, demo bool, ed HelpEdition) {
 	const folder = "MindSift help"
 	_, _ = s.CreateFolder(user.ID, folder)
 	help := func(title, icon string, spec []seedBlock) {
-		_, _ = s.CreateDocument(user.ID, "", title, icon, folder, seedBlocks(spec), []string{"help"}, false)
+		_, _ = s.CreateDocument(user.ID, "", title, icon, folder, seedBlocks(forEdition(spec, ed)), []string{"help"}, false)
 	}
 	help("Getting started", "", []seedBlock{
 		{typ: "callout", text: "Welcome! These notes explain MindSift. Everything here is sample content – changing, moving and deleting it is very much allowed. #help"},
 		{typ: "h2", text: "The idea in three steps"},
 		{typ: "numbered", text: "**Capture:** whatever comes to mind goes straight into the bar at the top (quick dump) – key `C` or `/`, the + on your phone."},
 		{typ: "numbered", text: "**Sort:** later you go through your thoughts in triage: discard, task, note or list item."},
-		{typ: "numbered", text: "**Go deeper:** tasks get subtasks and due dates, notes become outlines, lists are shared with your family."},
+		{typ: "numbered", text: "**Go deeper:** tasks get subtasks and due dates, notes become outlines, lists help with shopping and packing."},
 		{typ: "h2", text: "Read on"},
 		{level: 1, text: "[[Notes & outliner]] – bullets, levels, zoom and links"},
 		{level: 1, text: "[[Try zooming]] – an outline ten levels deep"},
 		{level: 1, text: "[[Tasks & kanban]] – lists, columns, trash"},
-		{level: 1, text: "[[Lists & groceries]] – shop and pack together"},
+		{level: 1, text: "[[Lists & groceries]] – shop and pack"},
 		{level: 1, text: "[[Keyboard shortcuts]] – work faster"},
 		{level: 1, text: "[[Voice input]] – dictate instead of typing"},
-		{level: 1, text: "[[Sharing & editing together]]"},
-		{level: 1, text: "[[API & smart home]] – connect Home Assistant and AI agents"},
+		{sharingOnly: true, level: 1, text: "[[Sharing & editing together]]"},
+		{level: 1, text: "[[API & smart home]] – connect AI agents and scripts"},
 	})
 	help("Notes & outliner", "", []seedBlock{
 		{typ: "h2", text: "Bullets and levels"},
@@ -338,7 +338,7 @@ func (s *Store) seedHelpNotesEN(user *domain.User, demo bool) {
 	help("Lists & groceries", "🛒", []seedBlock{
 		{text: "Categories come from hashtags: `oat milk #fridge` ends up under “fridge”"},
 		{text: "Quantities go into their own field, e.g. `500 g` or `3x`"},
-		{text: "Shared lists show ticked items for everyone right away – perfect for the weekly shop"},
+		{sharingOnly: true, text: "Shared lists show ticked items for everyone right away – perfect for the weekly shop"},
 		{text: "Ticked items disappear by themselves after a week (adjustable under Retention)"},
 	})
 	help("Keyboard shortcuts", "⌨️", []seedBlock{
@@ -358,16 +358,21 @@ func (s *Store) seedHelpNotesEN(user *domain.User, demo bool) {
 		{text: "On the phone: holding the + starts a recording right away"},
 		{text: "With your own Whisper server the recording stays on your server; under Account settings → Voice input you choose Whisper or the browser's recognition"},
 	}, demoBlock(demo, seedBlock{typ: "callout", text: "In this demo MindSift uses the browser's speech recognition."})))
-	help("Sharing & editing together", "🤝", slices.Concat([]seedBlock{
-		{text: "Notes, folders, task lists and lists can be shared with people or groups – for editing or read-only"},
-		{text: "Several people write in a shared note at the same time; whoever types in a bullet holds it for a moment"},
-	}, demoBlock(demo, seedBlock{level: 1, text: "Try it: in the demo everything is shared with the account **user** – sign in as user/user in a second browser"}), []seedBlock{
-		{text: "Tasks in shared lists can be assigned to people and watched"},
-	}))
+	// Only where people share (not in the desktop app, nor in sharing mode private)
+	if ed.Sharing {
+		help("Sharing & editing together", "🤝", slices.Concat([]seedBlock{
+			{text: "Notes, folders, task lists and lists can be shared with people or groups – for editing or read-only"},
+			{text: "Several people write in a shared note at the same time; whoever types in a bullet holds it for a moment"},
+		}, demoBlock(demo, seedBlock{level: 1, text: "Try it: in the demo everything is shared with the account **user** – sign in as user/user in a second browser"}), []seedBlock{
+			{text: "Tasks in shared lists can be assigned to people and watched"},
+		}))
+	}
 	help("API & smart home", "🔌", []seedBlock{
 		{text: "Under Account settings → API you create keys with exactly the permissions a device needs"},
+		{desktopOnly: true, text: "In the desktop app the API is at first only there for the app itself: under Account settings → API switch on “Reachable for local programs”, then programs on this computer reach it at 127.0.0.1 (the port is shown there)"},
 		{typ: "h3", text: "Get the tasks due today"},
-		{typ: "code", lang: "bash", text: "curl -H \"X-API-Key: mindsift_sec_…\" \\\n  \"https://mindsift.example.com/api/v1/tasks?due=today&status=open\""},
+		{serverOnly: true, typ: "code", lang: "bash", text: "curl -H \"X-API-Key: mindsift_sec_…\" \\\n  \"https://mindsift.example.com/api/v1/tasks?due=today&status=open\""},
+		{desktopOnly: true, typ: "code", lang: "bash", text: "curl -H \"X-API-Key: mindsift_sec_…\" \\\n  \"http://127.0.0.1:18890/api/v1/tasks?due=today&status=open\""},
 		{typ: "h3", text: "AI agents (MCP)"},
 		{text: "Claude Code, Codex and other agents read and manage tasks, lists and notes through `/api/v1/mcp`"},
 		{text: "Whatever a key creates or changes carries a small badge with its name"},

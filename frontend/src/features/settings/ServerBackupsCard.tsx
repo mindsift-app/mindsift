@@ -123,16 +123,30 @@ export const ServerBackupsCard: React.FC<{ onRestored?: () => void }> = ({ onRes
                   </div>
                   <SectionPicker value={sections} onChange={setSections} />
                   {result ? (
-                    <p className="text-[11px] text-status-ok flex items-center gap-1">
-                      <Check className="w-3.5 h-3.5" />{' '}
-                      {t('backups.restored', {
-                        notes: result.notes,
-                        tasks: result.tasks,
-                        lists: result.lists,
-                        inbox: result.inbox,
-                        themes: result.themes ?? 0,
-                      })}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-[11px] text-status-ok flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" />{' '}
+                        {t('backups.restored', {
+                          notes: result.notes,
+                          tasks: result.tasks,
+                          lists: result.lists,
+                          inbox: result.inbox,
+                          themes: result.themes ?? 0,
+                        })}
+                      </p>
+                      {result.skipped.length > 0 && (
+                        <details className="text-[11px] text-muted">
+                          <summary className="cursor-pointer">{t('import.skipped', { count: result.skipped.length })}</summary>
+                          <ul className="mt-1 space-y-0.5 max-h-40 overflow-y-auto">
+                            {result.skipped.map((s, i) => (
+                              <li key={i}>
+                                <span className="font-mono text-main">{s.path}</span> – {s.reason}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </div>
                   ) : (
                     <button
                       type="button"

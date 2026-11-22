@@ -15,6 +15,7 @@ import { AvatarPerson } from '../../components/AvatarStack';
 import { ActionMenu } from '../../components/ActionMenu';
 import { MoreTabsButton } from '../../components/MoreTabsButton';
 import { OVERFLOW_HIDDEN_TAB, useOverflowTabs } from '../../lib/useOverflowTabs';
+import { can } from '../../lib/capabilities';
 
 interface TaskListTabsProps {
   // Result of useTaskDrag in TasksView (tasks can be dropped onto a list tab)
@@ -224,21 +225,31 @@ export function TaskListTabs({
                 buttonClassName="tool-icon"
                 label={t('common:listMenu.more')}
                 items={[
-                  {
-                    key: 'mute',
-                    icon: currentSelectedList.isMuted ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />,
-                    label: currentSelectedList.isMuted ? t('common:listMenu.unmute') : t('common:listMenu.mute'),
-                    hint: isTaskListShared(currentSelectedList) ? undefined : t('common:listMenu.muteOnlyShared'),
-                    tooltip: isTaskListShared(currentSelectedList) ? t('common:listMenu.muteHint') : undefined,
-                    disabled: !isTaskListShared(currentSelectedList),
-                    onSelect: () => onToggleMute(currentSelectedList),
-                  },
-                  {
-                    key: 'share',
-                    icon: <Users className="w-3.5 h-3.5" />,
-                    label: t('common:listMenu.share'),
-                    onSelect: () => handleOpenShareModal(currentSelectedList),
-                  },
+                  // Muting is for shared lists: hidden while sharing is off, unless the list is shared from before
+                  ...(!can('sharing') && !isTaskListShared(currentSelectedList)
+                    ? []
+                    : [
+                        {
+                          key: 'mute',
+                          icon: currentSelectedList.isMuted ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />,
+                          label: currentSelectedList.isMuted ? t('common:listMenu.unmute') : t('common:listMenu.mute'),
+                          hint: isTaskListShared(currentSelectedList) ? undefined : t('common:listMenu.muteOnlyShared'),
+                          tooltip: isTaskListShared(currentSelectedList) ? t('common:listMenu.muteHint') : undefined,
+                          disabled: !isTaskListShared(currentSelectedList),
+                          onSelect: () => onToggleMute(currentSelectedList),
+                        },
+                      ]),
+                  // Sharing off (sharing mode private, the desktop app): nobody to share with
+                  ...(!can('sharing')
+                    ? []
+                    : [
+                        {
+                          key: 'share',
+                          icon: <Users className="w-3.5 h-3.5" />,
+                          label: t('common:listMenu.share'),
+                          onSelect: () => handleOpenShareModal(currentSelectedList),
+                        },
+                      ]),
                   {
                     key: 'rename',
                     icon: <Pencil className="w-3.5 h-3.5" />,

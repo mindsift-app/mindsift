@@ -74,7 +74,6 @@ type keyRoute struct {
 
 var keyRoutes = []keyRoute{
 	{http.MethodPost, regexp.MustCompile(`^/api/v1/inbox$`), nil},
-	{http.MethodPost, regexp.MustCompile(`^` + regexp.QuoteMeta(mcpPath) + `$`), nil},
 	{http.MethodGet, regexp.MustCompile(`^/api/v1/task-lists$`), []string{storage.ScopeTasksRead}},
 	{http.MethodGet, regexp.MustCompile(`^/api/v1/tasks$`), []string{storage.ScopeTasksRead}},
 	{http.MethodPatch, regexp.MustCompile(`^/api/v1/thoughts/[^/]+$`), []string{storage.ScopeTasksWrite}},
@@ -90,20 +89,33 @@ var keyRoutes = []keyRoute{
 // apiKeyRouteDenied returns why an API key may not make this request, or "" if it may.
 // /webhooks/ingest is not listed: it authenticates on its own and checks requireDeliveryScope.
 func apiKeyRouteDenied(r *http.Request, scopes []string) string {
+	// The MCP endpoint takes every method past this check (the tools check the rights): POST is the
+	// protocol, anything else gets the endpoint's own 405 with Allow: POST, as a session does
+	if r.URL.Path == mcpPath {
+		return ""
+	}
+	kr := findKeyRoute(r)
+	if kr == nil {
+		return "Mit einem API-Schlüssel nicht erreichbar (nur Aufgaben, Listen, Inbox und MCP; Notizen und Einstellungen brauchen eine Anmeldung)"
+	}
+	if kr.scopes == nil || hasAnyScope(scopes, kr.scopes...) {
+		return ""
+	}
+	return "Dem API-Schlüssel fehlt die Berechtigung für diese Aktion"
+}
+
+// findKeyRoute: the entry of keyRoutes the request matches, nil when an API key may not call it at all
+func findKeyRoute(r *http.Request) *keyRoute {
 	method := r.Method
 	if method == http.MethodHead { // answered by the GET route (middleware.GetHead)
 		method = http.MethodGet
 	}
-	for _, kr := range keyRoutes {
-		if method != kr.method || !kr.path.MatchString(r.URL.Path) {
-			continue
+	for i := range keyRoutes {
+		if method == keyRoutes[i].method && keyRoutes[i].path.MatchString(r.URL.Path) {
+			return &keyRoutes[i]
 		}
-		if kr.scopes == nil || hasAnyScope(scopes, kr.scopes...) {
-			return ""
-		}
-		return "Dem API-Schlüssel fehlt die Berechtigung für diese Aktion"
 	}
-	return "Mit einem API-Schlüssel nicht erreichbar (nur Aufgaben, Listen, Inbox und MCP; Notizen und Einstellungen brauchen eine Anmeldung)"
+	return nil
 }
 
 // requireDeliveryScope: delivering into the inbox, a task list or a list (POST /inbox,

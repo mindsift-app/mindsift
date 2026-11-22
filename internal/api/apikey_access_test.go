@@ -94,6 +94,42 @@ func TestAPIKeyRESTAccess(t *testing.T) {
 	}
 }
 
+// The MCP endpoint has no server stream: every method but POST answers 405 with Allow: POST, for an API
+// key as for a session (not 403, which says the key lacks a right). POST keeps its checks.
+func TestMCPOtherMethodsAnswer405(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	key, _ := store.CreateAPIKey(claims.UserID, "Agent", []string{"tasks:read"})
+
+	for _, method := range []string{http.MethodGet, http.MethodDelete, http.MethodPut, http.MethodPatch} {
+		for who, setAuth := range map[string]func(*http.Request){
+			"key":     func(r *http.Request) { r.Header.Set("X-API-Key", key.RawKey) },
+			"session": func(r *http.Request) { r.Header.Set("Authorization", "Bearer "+token) },
+		} {
+			req := httptest.NewRequest(method, mcpPath, nil)
+			setAuth(req)
+			rec := httptest.NewRecorder()
+			router.ServeHTTP(rec, req)
+			// GET and DELETE are the endpoint's own 405; the router answers any other method
+			ownAnswer := method == http.MethodGet || method == http.MethodDelete
+			if rec.Code != http.StatusMethodNotAllowed || (ownAnswer && rec.Header().Get("Allow") != "POST") {
+				t.Errorf("%s %s with a %s: %d Allow=%q, want 405 (Allow=POST for GET and DELETE)", method, mcpPath, who, rec.Code, rec.Header().Get("Allow"))
+			}
+		}
+	}
+	// Without a login it stays 401, and POST still works with the key
+	req := httptest.NewRequest(http.MethodGet, mcpPath, nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("GET without a login: %d", rec.Code)
+	}
+	if code, body := keyRequest(t, router, key.RawKey, http.MethodPost, mcpPath, `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`); code != http.StatusOK {
+		t.Errorf("POST with the key: %d %s", code, body)
+	}
+}
+
 // The day filters count in the server's time zone, whatever the time of day.
 func TestFilterTasks(t *testing.T) {
 	now := time.Date(2026, 11, 1, 23, 30, 0, 0, clock.Location())

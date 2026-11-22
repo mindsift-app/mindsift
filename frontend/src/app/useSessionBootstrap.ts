@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AuthStatus, DashboardStats, SharedList, Thought, User, WSMessage } from '../lib/types';
-import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken, lastLocalWriteAt } from '../lib/api';
+import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken, isDesktopApp, lastLocalWriteAt } from '../lib/api';
 import { clearOfflineData, outboxCount } from '../lib/offline';
 import { flushClosedNotes } from '../lib/docSync/flushClosed';
 import { finishOidcReturn, oidcReturnPending } from '../lib/oidc';
@@ -135,10 +135,22 @@ export function useSessionBootstrap(onSignedOut: () => void) {
         // Back from the OIDC provider: the ticket gives the session (or confirms this one) before anything else
         await finishOidcReturn();
 
+        // Desktop app: no sign-in, the window gets the session of the app's one account
+        if (st.desktop && !getToken()) await api.desktopSignIn();
+
         if (getToken() && account) {
           // Loading since main.tsx; nothing was waiting in the outbox then
           void flushClosedNotes();
-          applyAccount(await account);
+          const loaded = await account;
+          if (st.desktop && loaded[0].status === 'rejected') {
+            // Desktop app: the stored session was refused (another instance's, a new database in the same
+            // folder). Its 401 may have come before the status said desktop, or before anyone listened for it
+            // (mindsift:unauthorized below), so the window gets the app's session here, not the sign-in.
+            if (!getToken()) await api.desktopSignIn();
+            await refreshAll();
+          } else {
+            applyAccount(loaded);
+          }
         } else if (getToken()) {
           await api.flushOfflineQueue();
           void flushClosedNotes();
@@ -155,6 +167,18 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     checkBootAndAuth();
 
     const onUnauthorized = async () => {
+      // Desktop app: the session ended (idle for a month), so the window simply gets a new one. The boot
+      // check above signs in as well when the session it loaded with was refused; whoever comes second
+      // keeps the first one's session.
+      if (isDesktopApp()) {
+        try {
+          if (!getToken()) await api.desktopSignIn();
+          await refreshAll();
+          return;
+        } catch {
+          // falls through to the signed-out state
+        }
+      }
       setUser(null);
       onSignedOutRef.current();
       try {

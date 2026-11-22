@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CircleAlert } from 'lucide-react';
 import { api } from '../../../lib/api';
+import { can } from '../../../lib/capabilities';
 import i18n from '../../../i18n';
 import type { AuditEntry, User } from '../../../lib/types';
 import { SelectMenu } from '../../../components/SelectMenu';
@@ -105,9 +106,12 @@ export function AuditSection({ users }: { users: User[] }) {
         <div className="flex-1 min-w-0 sm:flex-none">
           <SelectMenu<string> size="sm" buttonClassName={FILTER_BUTTON} ariaLabel={t('audit.filter.action')} title={t('audit.filter.action')} value={action} onChange={(v) => changeFilter({ action: v })} options={actionOptions} />
         </div>
-        <div className="flex-1 min-w-0 sm:flex-none">
-          <SelectMenu<string> size="sm" buttonClassName={FILTER_BUTTON} ariaLabel={t('audit.filter.account')} title={t('audit.filter.account')} value={account} onChange={(v) => changeFilter({ account: v })} options={accountOptions} />
-        </div>
+        {/* One account (the desktop app): nothing to filter by */}
+        {can('accounts') && (
+          <div className="flex-1 min-w-0 sm:flex-none">
+            <SelectMenu<string> size="sm" buttonClassName={FILTER_BUTTON} ariaLabel={t('audit.filter.account')} title={t('audit.filter.account')} value={account} onChange={(v) => changeFilter({ account: v })} options={accountOptions} />
+          </div>
+        )}
         {filtered && (
           <button
             type="button"

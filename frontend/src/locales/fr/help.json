@@ -1,7 +1,7 @@
 {
   "back": "Retour",
   "title": "Aide & documentation",
-  "subtitle": "Utilisation du clavier, notes outliner, triage, tableau Kanban et collaboration",
+  "subtitle": "Utilisation du clavier, notes outliner, triage, tableau Kanban et plus",
   "search": "Rechercher dans l'aide & les raccourcis…",
   "clearSearch": "Effacer la recherche",
   "cat": {
@@ -9,7 +9,7 @@
     "workspace": "Workspace & notes",
     "triage": "Saisie rapide & triage",
     "tasks": "Tâches & Kanban",
-    "lists": "Listes partagées",
+    "lists": "Listes",
     "collaboration": "Groupes & partages",
     "account": "Compte et réglages",
     "shortcuts": "Raccourcis clavier & gestes"

@@ -50,6 +50,7 @@ type Server struct {
 	streamTickets streamTickets // one-time tickets for WebSocket/SSE (streamticket.go)
 	loginGuard    *loginGuard   // brute-force protection (loginguard.go)
 	imports       importGate    // imports running at a time (importgate.go)
+	snapshot      snapshotStage // a server's database snapshot staged for the desktop app (desktop_restore.go)
 	mcpLarge      mcpLargeGate  // large MCP requests (images) handled at a time (mcp_image.go)
 	// docLists: note lists being built at a time (handleGetDocuments); a burst of sign-ins waits here
 	// instead of building hundreds of lists in memory at once
@@ -81,6 +82,8 @@ type Server struct {
 	stop     chan struct{}
 	stopOnce sync.Once
 	bg       sync.WaitGroup
+	// backupNudge: asks the backup scheduler to look at the settings now instead of at its next tick
+	backupNudge chan struct{}
 }
 
 func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS fs.FS) *Server {
@@ -95,12 +98,18 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		leases:       collab.NewLeaseManager(nil),
 		notifier:     collab.NewNotifier(),
 		stop:         make(chan struct{}),
+		backupNudge:  make(chan struct{}, 1),
 		now:          time.Now,
 		docLists:     make(chan struct{}, maxDocListsBuilding),
 		stats:        newStatsCache(),
 	}
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
 	srv.prepareSetupCode()
+	if srv.desktopMode() {
+		// The window asks again (handleDesktopSession) if this fails
+		logFailed("Creating the desktop account", srv.prepareDesktopAccount())
+		srv.clearSnapshots("") // a snapshot staged before the instance last closed (desktop_restore.go)
+	}
 	srv.metrics = newAPIMetrics(srv)
 	var oidcOff string
 	srv.oidc, oidcOff = newOIDCService(cfg)
@@ -216,6 +225,9 @@ func (s *Server) taskAudience(th *domain.Thought) []string {
 func (s *Server) Close() {
 	s.stopOnce.Do(func() { close(s.stop) })
 	s.bg.Wait()
+	if s.desktopMode() {
+		s.clearSnapshots("")
+	}
 }
 
 func (s *Server) Router() http.Handler {
@@ -234,6 +246,10 @@ func (s *Server) Router() http.Handler {
 	allowedOrigins := []string{"*"}
 	if s.cfg.BaseURLSet {
 		allowedOrigins = []string{strings.TrimRight(s.cfg.BaseURL, "/")}
+	}
+	if s.desktopMode() {
+		// Only the app's own window (desktop.go)
+		allowedOrigins = []string{s.cfg.Desktop.Origin}
 	}
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
@@ -255,11 +271,13 @@ func (s *Server) Router() http.Handler {
 	}
 	r.Get("/api/v1/auth/status", s.handleAuthStatus)
 	r.Get("/api/v1/legal/{type}", s.handleLegalText)
-	r.Post("/api/v1/auth/setup", s.handleFirstBootSetup)
+	r.Post("/api/v1/auth/setup", s.notInDesktop(s.handleFirstBootSetup))
+	// The desktop app's window signs its one account in (desktop.go; 404 on a normal server)
+	r.Post("/api/v1/auth/desktop", s.handleDesktopSession)
 	r.Post("/api/v1/auth/verify-email", s.handleVerifyEmail)
 	r.Post("/api/v1/auth/confirm-email", s.handleConfirmEmailChange)
 	r.Post("/api/v1/auth/resend-verification", s.handleResendVerification)
-	r.Post("/api/v1/auth/register", s.handleRegister)
+	r.Post("/api/v1/auth/register", s.requires(capAccounts, s.handleRegister))
 	r.Post("/api/v1/auth/login", s.handleLogin)
 	r.Post("/api/v1/auth/login/mfa", s.handleLoginMFA)
 	r.Post("/api/v1/auth/login/mfa/passkey/options", s.passkeysOnly(s.handleMFAPasskeyOptions))
@@ -430,11 +448,11 @@ func (s *Server) Router() http.Handler {
 		r.Put("/api/v1/workspace/tags/{tag}/note", s.handleUpdateTagPageNote)
 
 		r.Get("/api/v1/journal", s.handleGetJournal)
-		r.Get("/api/v1/push/key", s.handlePushKey)
+		r.Get("/api/v1/push/key", s.requires(capPush, s.handlePushKey))
 		r.Get("/api/v1/push/devices", s.handlePushDevices)
-		r.Post("/api/v1/push/subscribe", s.handlePushSubscribe)
+		r.Post("/api/v1/push/subscribe", s.requires(capPush, s.handlePushSubscribe))
 		r.Post("/api/v1/push/unsubscribe", s.handlePushUnsubscribe)
-		r.Post("/api/v1/push/test", s.handlePushTest)
+		r.Post("/api/v1/push/test", s.requires(capPush, s.handlePushTest))
 		r.Post("/api/v1/journal/{date}", s.handleOpenJournalDay)
 		r.Get("/api/v1/documents", s.handleGetDocuments)
 		r.Get("/api/v1/documents/todos", s.handleGetNoteTodos)
@@ -497,7 +515,8 @@ func (s *Server) Router() http.Handler {
 		r.Delete("/api/v1/teams/{id}/members/{userId}", s.handleRemoveTeamMember)
 
 		// MCP endpoint for AI agents (API key with agent scopes or a session); no server stream, so
-		// GET and DELETE answer 405 instead of the SPA fallback
+		// GET and DELETE answer 405 with Allow: POST instead of the SPA fallback (any other method gets
+		// the router's own 405; apiKeyRouteDenied lets every method of a key through to them)
 		r.Post(mcpPath, s.handleMCP)
 		r.Get(mcpPath, handleMCPNoStream)
 		r.Delete(mcpPath, handleMCPNoStream)
@@ -519,15 +538,15 @@ func (s *Server) Router() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(s.staffMiddleware)
 			r.Get("/api/v1/admin/users", s.handleAdminGetUsers)
-			r.Post("/api/v1/admin/users", s.notInDemo(s.handleAdminCreateUser))
+			r.Post("/api/v1/admin/users", s.requires(capAccounts, s.notInDemo(s.handleAdminCreateUser)))
 			r.Patch("/api/v1/admin/users/{id}", s.notInDemo(s.handleAdminUpdateUser))
 			r.Delete("/api/v1/admin/users/{id}", s.notInDemo(s.handleAdminDeleteUser))
-			r.Post("/api/v1/admin/users/{id}/approve", s.notInDemo(s.handleAdminApproveUser))
+			r.Post("/api/v1/admin/users/{id}/approve", s.requires(capAccounts, s.notInDemo(s.handleAdminApproveUser)))
 
 			r.Get("/api/v1/admin/invites", s.handleAdminGetInvites)
-			r.Post("/api/v1/admin/invites", s.handleAdminCreateInvite)
+			r.Post("/api/v1/admin/invites", s.requires(capAccounts, s.handleAdminCreateInvite))
 			r.Delete("/api/v1/admin/invites/{id}", s.handleAdminDeleteInvite)
-			r.Post("/api/v1/admin/invites/{id}/send", s.notInDemo(s.handleAdminSendInvite))
+			r.Post("/api/v1/admin/invites/{id}/send", s.requires(capAccounts, s.notInDemo(s.handleAdminSendInvite)))
 
 			// Organizations decide who may share with whom
 			r.Get("/api/v1/admin/organizations", s.handleAdminGetOrganizations)
@@ -551,6 +570,12 @@ func (s *Server) Router() http.Handler {
 			r.Post("/api/v1/admin/backups", s.notInDemo(s.handleAdminRunBackup))
 			r.Get("/api/v1/admin/backups/{name}", s.handleAdminDownloadBackup)
 			r.Delete("/api/v1/admin/backups/{name}", s.notInDemo(s.handleAdminDeleteBackup))
+			r.Get("/api/v1/admin/backups/location", s.onlyInDesktop(s.handleBackupLocation))
+			r.Put("/api/v1/admin/backups/location", s.onlyInDesktop(s.handleSetBackupLocation))
+			// A server's database snapshot: take one of its accounts over (desktop_restore.go)
+			r.Post("/api/v1/admin/backups/server-snapshot", s.onlyInDesktop(s.handleSnapshotUpload))
+			r.Post("/api/v1/admin/backups/server-snapshot/{token}", s.onlyInDesktop(s.handleSnapshotTakeOver))
+			r.Delete("/api/v1/admin/backups/server-snapshot/{token}", s.onlyInDesktop(s.handleSnapshotDiscard))
 			r.Get("/api/v1/admin/backups/deleted", s.handleAdminDeletedBackups)
 			r.Get("/api/v1/admin/backups/deleted/{userId}/{name}", s.handleAdminDownloadDeletedBackup)
 			r.Put("/api/v1/admin/settings", s.notInDemo(s.handleAdminUpdateSettings))

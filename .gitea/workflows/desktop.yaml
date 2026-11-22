@@ -1,0 +1,49 @@
+name: MindSift Desktop (Gitea)
+
+# Builds the desktop app (desktop/, Wails v3) exactly as a GitHub release does (ci/release-desktop.sh:
+# desktop/build.sh, desktop/packaging/flatpak/build.sh and desktop/packaging/windows/build.sh) and offers
+# the files as one artifact of the workflow run in the Gitea UI (Actions -> run -> Artifacts): the Linux
+# archive, the Flatpak bundle, the Windows exe, the Windows installer (NSIS in a Debian container) and the
+# license file, under their release names, with the version v<package.json>-dev.
+# Runs for pushes to the desktop-spike branch and by hand ("Run workflow", for any branch, main too); it
+# builds no images and touches no registry. Releases are built by .github/workflows/release.yaml.
+# The scripts run with docker and copy the sources into the build containers, because the job may itself
+# run in a container. flatpak-builder runs in a container with SYS_ADMIN and NET_ADMIN, no seccomp or
+# AppArmor profile and unmasked /proc (not privileged) on the runner's Docker host (bubblewrap needs
+# namespaces and a proc mount of its own, desktop/packaging/flatpak/build.sh); the runtimes are cached in
+# the Docker volume mindsift-flatpak, so only the first run downloads the GNOME SDK (~1 GB).
+# The actions are the same releases as in build-and-publish.yaml, pinned to commits. They run on Node 24,
+# which the runner's job image (Gitea runner images, ubuntu-latest) ships.
+on:
+  push:
+    branches:
+      - desktop-spike
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Linux, Flatpak and Windows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing is pushed; the token does not stay in .git for the build steps
+          persist-credentials: false
+
+      - name: Build the desktop app's release files
+        run: |
+          VERSION="v$(sed -n 's/.*"version": "\(.*\)".*/\1/p' frontend/package.json | head -1)-dev"
+          ENGINE=docker COPY_MODE=1 ci/release-desktop.sh "${VERSION}" desktop-release
+
+      - name: Upload files
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mindsift-desktop
+          path: desktop-release/
+          if-no-files-found: error
+          retention-days: 7

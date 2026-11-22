@@ -9,7 +9,10 @@ import { useAlarmSettings } from './useAlarmSettings';
 import { formatDate } from '../../../lib/format';
 import { TimeField } from '../../../components/TimeField';
 import { SelectMenu } from '../../../components/SelectMenu';
+import { can } from '../../../lib/capabilities';
 
+// The routing matrix: the event, Discord and the own webhook, plus e-mail and push where available
+const MATRIX_COLS = ['grid-cols-[1fr_auto_auto]', 'grid-cols-[1fr_auto_auto_auto]', 'grid-cols-[1fr_auto_auto_auto_auto]'];
 
 // Kontoeinstellungen → Alarme (state in useAlarmSettings)
 export function AlarmsSection({
@@ -21,15 +24,17 @@ export function AlarmsSection({
   demoMode: boolean;
 }) {
   const { t } = useTranslation('settings');
-  const NOTIFICATION_EVENT_ROWS: { key: keyof NotificationEvents; label: string }[] = [
+  const eventRows: { key: keyof NotificationEvents; label: string; sharing?: boolean }[] = [
     { key: 'due', label: t('alarms.event.due') },
-    { key: 'shared', label: t('alarms.event.shared') },
-    { key: 'assigned', label: t('alarms.event.assigned') },
-    { key: 'mentioned', label: t('alarms.event.mentioned') },
-    { key: 'taskCreated', label: t('alarms.event.taskCreated') },
-    { key: 'taskDone', label: t('alarms.event.taskDone') },
+    { key: 'shared', label: t('alarms.event.shared'), sharing: true },
+    { key: 'assigned', label: t('alarms.event.assigned'), sharing: true },
+    { key: 'mentioned', label: t('alarms.event.mentioned'), sharing: true },
+    { key: 'taskCreated', label: t('alarms.event.taskCreated'), sharing: true },
+    { key: 'taskDone', label: t('alarms.event.taskDone'), sharing: true },
     { key: 'watched', label: t('alarms.event.watched') },
   ];
+  // Sharing off (sharing mode private, the desktop app): nothing is shared, assigned or mentioned
+  const NOTIFICATION_EVENT_ROWS = eventRows.filter((row) => !row.sharing || can('sharing'));
   const {
     notificationSettings,
     setNotificationSettings,
@@ -111,15 +116,21 @@ export function AlarmsSection({
           const hasDiscordWebhook = Boolean(discordWebhookUrl.trim());
           const hasCustomWebhook = Boolean(customWebhookUrl.trim());
           const hasPush = pushDevices.length > 0;
+          // Mail only where the instance may send it, web push only in a browser (not in the desktop app)
+          const mail = can('email');
+          const push = can('push');
+          const matrixCols = MATRIX_COLS[Number(mail) + Number(push)];
           return (
             <>
               <div className="p-4 bg-canvas border border-border space-y-3">
-                <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-1 sm:gap-4 pb-2 border-b border-border">
+                <div className={`grid ${matrixCols} items-center gap-1 sm:gap-4 pb-2 border-b border-border`}>
                   <span className="font-bold text-main">{t('alarms.eventHeader')}</span>
-                  <span className="w-12 sm:w-16 text-center font-semibold text-muted flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1">
-                    <Mail className="w-3.5 h-3.5 text-accent" />
-                    <span>{t('alarms.channel.email')}</span>
-                  </span>
+                  {mail && (
+                    <span className="w-12 sm:w-16 text-center font-semibold text-muted flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1">
+                      <Mail className="w-3.5 h-3.5 text-accent" />
+                      <span>{t('alarms.channel.email')}</span>
+                    </span>
+                  )}
                   <span className="w-12 sm:w-16 text-center font-semibold text-muted flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1">
                     <MessageSquare className="w-3.5 h-3.5 text-accent" />
                     <span>Discord</span>
@@ -128,10 +139,12 @@ export function AlarmsSection({
                     <Globe className="w-3.5 h-3.5 text-accent" />
                     <span>Webhook</span>
                   </span>
-                  <span className="w-12 sm:w-16 text-center font-semibold text-muted flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1">
-                    <Bell className="w-3.5 h-3.5 text-accent" />
-                    <span>Push</span>
-                  </span>
+                  {push && (
+                    <span className="w-12 sm:w-16 text-center font-semibold text-muted flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1">
+                      <Bell className="w-3.5 h-3.5 text-accent" />
+                      <span>Push</span>
+                    </span>
+                  )}
                 </div>
 
                 <div className="divide-y divide-border">
@@ -140,16 +153,18 @@ export function AlarmsSection({
                     return (
                       <div
                         key={row.key}
-                        className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-1 sm:gap-4 py-2.5"
+                        className={`grid ${matrixCols} items-center gap-1 sm:gap-4 py-2.5`}
                       >
                         <span className="font-medium text-main">{row.label}</span>
-                        <div className="w-12 sm:w-16 flex justify-center">
-                          <ToggleSwitch
-                            checked={routing.email}
-                            onChange={(v) => setEventChannel(row.key, 'email', v)}
-                            title={t('alarms.channelTitle', { what: row.label, channel: t('alarms.channel.email') })}
-                          />
-                        </div>
+                        {mail && (
+                          <div className="w-12 sm:w-16 flex justify-center">
+                            <ToggleSwitch
+                              checked={routing.email}
+                              onChange={(v) => setEventChannel(row.key, 'email', v)}
+                              title={t('alarms.channelTitle', { what: row.label, channel: t('alarms.channel.email') })}
+                            />
+                          </div>
+                        )}
                         <div className="w-12 sm:w-16 flex justify-center">
                           <ToggleSwitch
                             checked={routing.discord}
@@ -174,14 +189,16 @@ export function AlarmsSection({
                             }
                           />
                         </div>
-                        <div className="w-12 sm:w-16 flex justify-center">
-                          <ToggleSwitch
-                            checked={routing.push}
-                            disabled={!hasPush}
-                            onChange={(v) => setEventChannel(row.key, 'push', v)}
-                            title={hasPush ? t('alarms.channelTitle', { what: row.label, channel: 'Push' }) : t('alarms.needPush')}
-                          />
-                        </div>
+                        {push && (
+                          <div className="w-12 sm:w-16 flex justify-center">
+                            <ToggleSwitch
+                              checked={routing.push}
+                              disabled={!hasPush}
+                              onChange={(v) => setEventChannel(row.key, 'push', v)}
+                              title={hasPush ? t('alarms.channelTitle', { what: row.label, channel: 'Push' }) : t('alarms.needPush')}
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -241,6 +258,7 @@ export function AlarmsSection({
 
                   {/* Phones: 2×2 grid, the four switches do not fit in one row */}
                   <div className="grid grid-cols-2 gap-x-6 gap-y-3 w-full sm:w-auto sm:flex sm:items-center sm:gap-5">
+                    {can('email') && (
                     <div className="flex items-center justify-between sm:justify-start gap-2">
                       <span className="text-xs text-muted">{t('alarms.channel.email')}</span>
                       <ToggleSwitch
@@ -253,6 +271,7 @@ export function AlarmsSection({
                         title={t('alarms.daily.email')}
                       />
                     </div>
+                    )}
                     <div className="flex items-center justify-between sm:justify-start gap-2">
                       <span className="text-xs text-muted">Discord</span>
                       <ToggleSwitch
@@ -287,6 +306,7 @@ export function AlarmsSection({
                         }
                       />
                     </div>
+                    {can('push') && (
                     <div className="flex items-center justify-between sm:justify-start gap-2">
                       <span className="text-xs text-muted">Push</span>
                       <ToggleSwitch
@@ -300,6 +320,7 @@ export function AlarmsSection({
                         title={hasPush ? t('alarms.daily.push') : t('alarms.needPush')}
                       />
                     </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -327,7 +348,8 @@ export function AlarmsSection({
           </div>
         </div>
 
-        {/* Channel 1: E-Mail */}
+        {/* Channel 1: E-Mail, where the instance may send mail */}
+        {can('email') && (
         <div className="p-4 border border-border transition-colors space-y-3 bg-canvas">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
@@ -353,6 +375,7 @@ export function AlarmsSection({
 
           <p className="pl-6 text-[11px] text-muted wrap-break-word">{t('alarms.email.recipient', { email: currentUser.email })}</p>
         </div>
+        )}
 
         {/* Channel 2: Discord Webhook */}
         <div className="p-4 border border-border transition-colors space-y-3 bg-canvas">
@@ -434,7 +457,8 @@ export function AlarmsSection({
           </div>
         </div>
 
-        {/* Web push: this browser or installed app */}
+        {/* Web push: this browser or installed app (not in the desktop app's webview) */}
+        {can('push') && (
         <div className={`p-4 border transition-colors space-y-3 bg-canvas ${pushHere ? 'border-accent' : 'border-border'}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -497,6 +521,7 @@ export function AlarmsSection({
             </div>
           )}
         </div>
+        )}
 
         <div className="pt-2 border-t border-border flex justify-end">
           <button

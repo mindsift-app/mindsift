@@ -14,6 +14,7 @@ import {
   LoaderCircle,
   CloudOff,
 } from 'lucide-react';
+import { useCapabilities, type Capability } from '../../lib/capabilities';
 import { AboutModal } from '../../components/AboutModal';
 import { LegalLinks } from '../../components/LegalLinks';
 import type { AuthStatus } from '../../lib/types';
@@ -22,6 +23,10 @@ import { loadedHelpContent, loadHelpContent } from './content';
 import type { DocCard, HelpCategory, HelpContent } from './content/types';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { TourStartCard } from '../tour/TourStartCard';
+
+// Cards about working together with other people: gone while sharing is off (sharing mode private, the
+// desktop app)
+const CARD_NEEDS: Record<string, Capability> = { 'workspace-collab-locks': 'sharing', 'collab-teams-sharing': 'sharing' };
 
 interface HelpViewProps {
   onBack?: () => void;
@@ -49,7 +54,18 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
     };
   }, [language]);
   const help = content === 'failed' ? undefined : content;
-  const cards: DocCard[] = useMemo(() => help?.cards ?? [], [help]);
+  const caps = useCapabilities();
+  const cards: DocCard[] = useMemo(
+    () =>
+      (help?.cards ?? [])
+        .filter((card) => !CARD_NEEDS[card.id] || caps[CARD_NEEDS[card.id]])
+        .map((card) => {
+          if (!card.without || caps[card.without.cap]) return card;
+          const { cap: _cap, ...topic } = card.without;
+          return { ...card, ...topic };
+        }),
+    [help, caps]
+  );
 
   // Filtered cards based on active category & search query
   const filteredCards = useMemo(() => {
@@ -149,7 +165,14 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
           { id: 'collaboration', label: t('cat.collaboration'), icon: Users },
           { id: 'account', label: t('cat.account'), icon: UserCog },
           { id: 'shortcuts', label: t('cat.shortcuts'), icon: Keyboard },
-        ].map((cat) => {
+        ]
+          // A category without any card left (collaboration while sharing is off) is not offered
+          .filter((cat) =>
+            help
+              ? cat.id === 'all' || cat.id === 'shortcuts' || cards.some((card) => card.category === cat.id)
+              : cat.id !== 'collaboration' || caps.sharing
+          )
+          .map((cat) => {
           const Icon = cat.icon;
           const isActive = activeCategory === cat.id;
           return (

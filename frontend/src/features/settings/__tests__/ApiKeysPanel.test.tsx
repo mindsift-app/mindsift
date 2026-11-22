@@ -1,10 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, within } from '@testing-library/react';
+import { setCapabilities } from '../../../lib/capabilities';
+import { DESKTOP_CAPABILITIES } from '../../../test/desktop';
 
 const createAPIKey = vi.fn(async () => ({ id: 'k1', userId: 'u', name: 'HA', keyPrefix: 'mindsift_sec_ab', scopes: 'webhook:triage,webhook:list', createdAt: '' }));
 const updateAPIKey = vi.fn(async () => ({}));
 const getAuthStatus = vi.fn(async (): Promise<{ mcpConnectorUrl?: string; mcpEnabled?: boolean; restApiKeys?: boolean }> => ({
   mcpConnectorUrl: 'https://ms.example/api/v1/mcp',
+}));
+let desktop = false;
+type LocalApi = { enabled: boolean; port?: number; listening: boolean; problem?: { code: string; detail?: string } };
+const localApi = vi.fn(async (): Promise<LocalApi> => ({ enabled: false, listening: false }));
+const setLocalApi = vi.fn(async (enabled: boolean, port?: number): Promise<LocalApi> => ({ enabled, port: port || 18890, listening: enabled }));
+vi.mock('../../../lib/desktopShell', () => ({
+  desktopShell: {
+    localApi: () => localApi(),
+    setLocalApi: (enabled: boolean, port?: number) => setLocalApi(enabled, port),
+  },
+  DesktopShellError: class extends Error {},
 }));
 vi.mock('../../../lib/api', () => ({
   api: {
@@ -21,12 +34,17 @@ vi.mock('../../../lib/api', () => ({
     testWebhookIngest: vi.fn(),
   },
   triggerHaptic: vi.fn(),
+  isDesktopApp: () => desktop,
 }));
 
 import { ApiKeysPanel } from '../ApiKeysPanel';
 
 describe('ApiKeysPanel', () => {
-  beforeEach(() => createAPIKey.mockClear());
+  beforeEach(() => {
+    createAPIKey.mockClear();
+    desktop = false;
+    setCapabilities(undefined);
+  });
 
   it('shows the rights of existing keys as badges', async () => {
     render(<ApiKeysPanel />);
@@ -109,5 +127,37 @@ describe('ApiKeysPanel', () => {
       name: 'Rauchmelder Flur',
       scopes: ['webhook:triage', 'webhook:task', 'tasks:read'],
     });
+  });
+
+  it('desktop app: makes the instance reachable for local programs and shows its address in the examples', async () => {
+    desktop = true;
+    setCapabilities(DESKTOP_CAPABILITIES);
+    render(<ApiKeysPanel />);
+    const toggle = await screen.findByRole('switch', { name: 'Für lokale Programme erreichbar' });
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+    await act(async () => {
+      fireEvent.click(toggle);
+    });
+    expect(setLocalApi).toHaveBeenCalledWith(true, undefined);
+    expect(screen.getByText('http://127.0.0.1:18890/api/v1/mcp')).toBeTruthy();
+    // The examples use the local address; claude.ai cannot reach it, so no connector
+    fireEvent.click(screen.getByRole('tab', { name: /KI-Agenten/ }));
+    expect(screen.queryByRole('radio', { name: 'claude.ai / ChatGPT' })).toBeNull();
+    expect(screen.getByText(/claude mcp add --transport http mindsift http:\/\/127\.0\.0\.1:18890\/api\/v1\/mcp/)).toBeTruthy();
+    // Another port
+    fireEvent.change(screen.getByLabelText('Port'), { target: { value: '18999' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Port ändern' }));
+    });
+    expect(setLocalApi).toHaveBeenLastCalledWith(true, 18999);
+    expect(screen.getByText('http://127.0.0.1:18999/api/v1/mcp')).toBeTruthy();
+  });
+
+  it('desktop app: a port taken by another program is explained', async () => {
+    desktop = true;
+    setCapabilities(DESKTOP_CAPABILITIES);
+    localApi.mockResolvedValueOnce({ enabled: true, port: 18890, listening: false, problem: { code: 'portInUse', detail: '18890' } });
+    render(<ApiKeysPanel />);
+    expect(await screen.findByText('Port 18890 ist schon von einem anderen Programm belegt. Wähle einen anderen Port.')).toBeTruthy();
   });
 });

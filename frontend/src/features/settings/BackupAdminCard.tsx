@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Archive, Download, LoaderCircle, Trash } from 'lucide-react';
-import { BackupFile, DeletedAccountBackups, SystemSettings } from '../../lib/types';
-import { api } from '../../lib/api';
+import { BackupFile, BackupLocation, DeletedAccountBackups, SystemSettings } from '../../lib/types';
+import { api, isDesktopApp } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatBytes, saveBlob } from '../../lib/download';
 import { formatDateTime } from '../../lib/format';
@@ -16,6 +16,7 @@ import {
   validBackupRetentionDays,
 } from '../../lib/backupDefaults';
 import { errorMessage } from '../../lib/errorMessage';
+import { BackupFolderField } from './BackupFolderField';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
@@ -29,11 +30,25 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
   const [deleted, setDeleted] = useState<DeletedAccountBackups[]>([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Desktop app: the folder the backups go to (the list shows that folder's)
+  const desktop = isDesktopApp();
+  const [location, setLocation] = useState<BackupLocation | null>(null);
 
   useEffect(() => {
     api.adminListBackups().then(setFiles).catch(() => {});
     api.adminDeletedBackups().then(setDeleted).catch(() => {});
-  }, []);
+    if (desktop) api.adminGetBackupLocation().then(setLocation).catch(() => {});
+  }, [desktop]);
+
+  const moveTo = async (dir: string) => {
+    setError(null);
+    try {
+      setLocation(await api.adminSetBackupLocation(dir));
+      setFiles(await api.adminListBackups());
+    } catch (err) {
+      setError(errorMessage(err, t('backups.folderFailed')));
+    }
+  };
 
   const runNow = async () => {
     setRunning(true);
@@ -45,6 +60,8 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
       api.adminListBackups().then(setFiles).catch(() => {});
     } finally {
       setRunning(false);
+      // The folder may have been missing (drive not mounted) or be back
+      if (desktop) api.adminGetBackupLocation().then(setLocation).catch(() => {});
     }
   };
 
@@ -90,7 +107,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
             {t('backups.autoTitle')}
           </p>
           <p className="text-[11px] text-muted mt-0.5">
-            <Trans t={t} i18nKey="backups.autoHint" components={{ c: <code className="font-mono" /> }} />
+            <Trans t={t} i18nKey={desktop ? 'backups.autoHintDesktop' : 'backups.autoHint'} components={{ c: <code className="font-mono" /> }} />
             {lockedBy.length > 0 && ` ${t('settings:server.fixedBy', { env: lockedBy.join(', ') })}`}
           </p>
         </div>
@@ -140,6 +157,23 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           {running ? t('backups.running') : t('backups.runNow')}
         </button>
       </div>
+      {desktop && location && (
+        <div className="text-[11px] text-muted space-y-1">
+          <p>{t('backups.folder')}</p>
+          <BackupFolderField value={location.custom ? (location.chosen ?? location.dir) : ''} defaultDir={location.defaultDir} onCommit={moveTo} />
+          {location.custom && (
+            <p>
+              <Trans t={t} i18nKey="backups.folderTarget" values={{ dir: location.dir }} components={{ c: <code className="font-mono break-all" /> }} />
+            </p>
+          )}
+          {location.chosenMissing && (
+            <p role="alert" className="p-2 rounded-card border border-status-err/40 bg-status-err/10 text-main">
+              <Trans t={t} i18nKey="backups.folderMissing" values={{ dir: location.chosen ?? '' }} components={{ c: <code className="font-mono break-all" /> }} />
+            </p>
+          )}
+          <p>{t('backups.folderHint')}</p>
+        </div>
+      )}
       {error && <p className="text-[11px] text-status-err">{error}</p>}
 
       <div className="border border-border divide-y divide-border bg-panel">
@@ -178,7 +212,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
         )}
       </div>
       <p className="text-[11px] text-faint">
-        <Trans t={t} i18nKey="backups.restoreHint" components={{ c: <code className="font-mono" /> }} />
+        <Trans t={t} i18nKey={desktop ? 'backups.restoreHintDesktop' : 'backups.restoreHint'} components={{ c: <code className="font-mono" /> }} />
       </p>
 
       {/* Accounts deleted by an admin: their backups stay until the retention period ends */}

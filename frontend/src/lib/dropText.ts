@@ -13,6 +13,15 @@ export function draggedText(data: DataTransfer | null | undefined): boolean {
   return types.includes('text/plain') || types.includes('text/uri-list') || types.includes('text');
 }
 
+/** The drop effect for text dragged in from another program: a copy, unless the drag only allows moving or
+ *  linking. A copy the drag does not allow cancels the drop without a drop event: a program may offer only to
+ *  move its text, and WebKitGTK under Wayland reports only the action the compositor chose. */
+export function textDropEffect(data: DataTransfer): DataTransfer['dropEffect'] {
+  const allowed = data.effectAllowed;
+  if (allowed === 'move' || allowed === 'linkMove') return 'move';
+  return allowed === 'link' ? 'link' : 'copy';
+}
+
 /** Whether a drop puts text into the note: text as above, and no image dragged out of a browser tab (its
  *  address or HTML), which becomes an image bullet (OutlinerTree, lib/pasteImages.ts). */
 export function droppedText(data: DataTransfer | null | undefined): boolean {

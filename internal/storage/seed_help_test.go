@@ -75,7 +75,7 @@ func TestHilfeNotizenAllerSprachen(t *testing.T) {
 			return n
 		}
 		thoughts, taskLists, lists := count("thoughts"), count("task_lists"), count("lists")
-		if err := s.SeedHelpNotes(u); err != nil {
+		if err := s.SeedHelpNotes(u, HelpEdition{Sharing: true}); err != nil {
 			t.Fatal(err)
 		}
 		if count("thoughts") != thoughts || count("task_lists") != taskLists || count("lists") != lists {
@@ -131,5 +131,84 @@ func TestDemoBehaeltAlleBeispieldaten(t *testing.T) {
 			t.Errorf("%s: %d Hilfe-Notizen, %d weitere Notizen, %d Aufgabenlisten, %d Listen, %d Gedanken", lang, help, others, taskLists, lists, thoughts)
 		}
 		checkHelpLinks(t, s, u.ID, lang)
+	}
+}
+
+// Die Hilfe der Desktop-App kommt ohne Teilen und Home Assistant aus: eine Notiz weniger, alle Links führen
+// zu einer Notiz, die API-Notiz nennt die lokale Adresse statt eines Servers, und in jeder Sprache sind es
+// dieselben Notizen mit denselben Blöcken.
+func TestHilfeNotizenDesktop(t *testing.T) {
+	var reference []string
+	for _, lang := range []string{"en", "de", "es", "fr", "it"} {
+		s, u := newSyncTestStore(t)
+		if err := s.SetLanguage(u.ID, lang); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.SeedHelpNotes(u, HelpEdition{Desktop: true}); err != nil {
+			t.Fatal(err)
+		}
+		var inFolder int
+		_ = s.db.QueryRow(`SELECT COUNT(*) FROM documents WHERE user_id = ? AND folder_path = ?`, u.ID, helpFolders[lang]).Scan(&inFolder)
+		if inFolder != 8 {
+			t.Errorf("%s: %d Hilfe-Notizen, erwartet 8 (ohne Teilen)", lang, inFolder)
+		}
+		checkHelpLinks(t, s, u.ID, lang)
+
+		docs, _ := s.GetDocuments(u.ID)
+		var all strings.Builder
+		for _, d := range docs {
+			full, err := s.GetDocumentByID(u.ID, d.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, b := range full.Blocks {
+				all.WriteString(b.Content + "\n")
+			}
+		}
+		text := all.String()
+		if !strings.Contains(text, "127.0.0.1") || strings.Contains(text, "example.com") || strings.Contains(text, "Home Assistant") {
+			t.Errorf("%s: die API-Notiz soll die lokale Adresse nennen, keinen Server und kein Home Assistant", lang)
+		}
+
+		shape := helpShape(t, s, u.ID)
+		if reference == nil {
+			reference = shape
+			continue
+		}
+		if !slices.Equal(shape, reference) {
+			t.Errorf("%s: Notizen und Blöcke weichen von Englisch ab: %q gegen %q", lang, shape, reference)
+		}
+	}
+}
+
+// Ein Server im Freigabemodus „privat“ bekommt die Hilfe ohne Teilen wie die Desktop-App, aber mit der
+// Server-Adresse in der API-Notiz.
+func TestHilfeNotizenOhneTeilen(t *testing.T) {
+	s, u := newSyncTestStore(t)
+	if err := s.SetLanguage(u.ID, "de"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SeedHelpNotes(u, HelpEdition{}); err != nil {
+		t.Fatal(err)
+	}
+	var inFolder int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM documents WHERE user_id = ? AND folder_path = ?`, u.ID, helpFolders["de"]).Scan(&inFolder)
+	if inFolder != 8 {
+		t.Errorf("%d Hilfe-Notizen, erwartet 8 (ohne Teilen)", inFolder)
+	}
+	checkHelpLinks(t, s, u.ID, "de")
+	docs, _ := s.GetDocuments(u.ID)
+	var all strings.Builder
+	for _, d := range docs {
+		full, err := s.GetDocumentByID(u.ID, d.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, b := range full.Blocks {
+			all.WriteString(b.Content + "\n")
+		}
+	}
+	if text := all.String(); !strings.Contains(text, "example.com") || strings.Contains(text, "127.0.0.1") || strings.Contains(text, "Geteilte Listen") {
+		t.Error("ohne Teilen: die API-Notiz nennt den Server, nichts über geteilte Listen")
 	}
 }

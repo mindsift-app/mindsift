@@ -26,6 +26,7 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
+import { InDesktop, NotInDesktop, Only } from './desktop';
 
 // German help: the cards and the shortcut table. Other languages copy this file (content/<code>.tsx)
 // and translate the texts; layout and icons stay the same.
@@ -37,6 +38,7 @@ const de: HelpContent = {
       category: 'workspace',
       title: 'Hierarchischer Outliner & Offline-Sync',
       subtitle: 'Atomare Speicherung mit kollaborativem Echtzeit-Abgleich',
+      without: { cap: 'install', title: 'Hierarchischer Outliner', subtitle: 'Atomare Speicherung, lokal auf deinem Rechner' },
       icon: FileText,
       keywords: [
         'titel',
@@ -62,10 +64,12 @@ const de: HelpContent = {
             und im Browser per <strong className="text-main">IndexedDB</strong> zwischengespeichert.
           </p>
           <ul className="space-y-1 list-disc list-inside">
-            <li>
-              <strong className="text-main">Volle Offline-Fähigkeit:</strong> Du kannst auch ohne Internetverbindung nahtlos weiterarbeiten;
-              Änderungen synchronisieren sich automatisch, sobald du wieder online bist.
-            </li>
+            <Only can="install">
+              <li>
+                <strong className="text-main">Volle Offline-Fähigkeit:</strong> Du kannst auch ohne Internetverbindung nahtlos weiterarbeiten;
+                Änderungen synchronisieren sich automatisch, sobald du wieder online bist.
+              </li>
+            </Only>
             <li>
               <strong className="text-main">Titel:</strong> Ein Notiztitel hat höchstens 60 Zeichen, damit er in eine Zeile passt und beim Export ein brauchbarer Dateiname bleibt. Kurz vor der Grenze zeigt das Feld, wie viele Zeichen es sind.
             </li>
@@ -276,9 +280,11 @@ const de: HelpContent = {
             <li>
               <strong className="text-main">In der Notiz:</strong> Die Zeichnung füllt die Breite der Notiz. Ein Klick hinein, dann verschiebt Ziehen den Ausschnitt, Strg + Mausrad oder zwei Finger zoomen; das Mausrad allein scrollt weiter die Seite. Ein weiterer Klick beendet das, ein nicht gespeicherter Ausschnitt gleitet zurück. Die Unterkante ziehen ändert die Höhe. „Ansicht speichern“ hält Ausschnitt, Zoom und Höhe für alle fest. Der Größen-Knopf schaltet zwischen der empfohlenen Größe und „alles groß“ (hohe Zeichnungen) bzw. der empfohlenen Höhe zum seitlichen Verschieben (breite Zeichnungen) um. Doppelklick oder „Bearbeiten“ öffnet den Editor; er startet mit der Hand (nur die Ansicht bewegt sich), zum Ändern wählst du ein anderes Werkzeug. Der Knopf mit den Pfeilen neben „Fertig“ verlässt ihn ohne zu speichern und fragt bei Änderungen nach.
             </li>
-            <li>
-              <strong className="text-main">Gemeinsam zeichnen:</strong> Wer eine Zeichnung öffnet, zeichnet allein; die anderen sehen den Punkt gesperrt („… bearbeitet“) und können die Zeichnung nur ansehen. In geteilten Notizen startet „Gemeinsam zeichnen“ oben im Editor eine Live-Zeichnung mit dem bisherigen Stand (am Handy das Personen-Symbol); wer sie startet, ist Gastgeber, und die Notiz zeigt „Live-Zeichnung: …“. Wer sie dann öffnet, wählt „Mitzeichnen“ oder „Zusehen“ und sieht die Formen, Mauszeiger und Auswahlen der anderen in ihrer Farbe, oben im Editor alle Beteiligten. Der Gastgeber speichert mit „Fertig“ für alle; die anderen haben „Verlassen“. Schließt jemand ohne zu speichern, während andere mitzeichnen, verlässt er die Zeichnung nur, auch der Gastgeber: Dann übernimmt, wer am längsten dabei ist. Erst wer als Letzter geht, verwirft (bei Änderungen nach Rückfrage) und kann das danach einige Sekunden lang mit „Rückgängig“ zurückholen. Rückgängig nimmt nur deine eigenen Änderungen zurück. Gemeinsam zeichnen braucht eine WebSocket-Verbindung; ohne sie (manche Firmen-Proxys) kannst du live zusehen.
-            </li>
+            <Only can={['sharing', 'liveDrawing']}>
+              <li>
+                <strong className="text-main">Gemeinsam zeichnen:</strong> Wer eine Zeichnung öffnet, zeichnet allein; die anderen sehen den Punkt gesperrt („… bearbeitet“) und können die Zeichnung nur ansehen. In geteilten Notizen startet „Gemeinsam zeichnen“ oben im Editor eine Live-Zeichnung mit dem bisherigen Stand (am Handy das Personen-Symbol); wer sie startet, ist Gastgeber, und die Notiz zeigt „Live-Zeichnung: …“. Wer sie dann öffnet, wählt „Mitzeichnen“ oder „Zusehen“ und sieht die Formen, Mauszeiger und Auswahlen der anderen in ihrer Farbe, oben im Editor alle Beteiligten. Der Gastgeber speichert mit „Fertig“ für alle; die anderen haben „Verlassen“. Schließt jemand ohne zu speichern, während andere mitzeichnen, verlässt er die Zeichnung nur, auch der Gastgeber: Dann übernimmt, wer am längsten dabei ist. Erst wer als Letzter geht, verwirft (bei Änderungen nach Rückfrage) und kann das danach einige Sekunden lang mit „Rückgängig“ zurückholen. Rückgängig nimmt nur deine eigenen Änderungen zurück. Gemeinsam zeichnen braucht eine WebSocket-Verbindung; ohne sie (manche Firmen-Proxys) kannst du live zusehen.
+              </li>
+            </Only>
             <li>
               <strong className="text-main">Offline und Entwürfe:</strong> Offline Gezeichnetes wird gespeichert, sobald die Verbindung zurück ist; einen ungespeicherten Entwurf bietet MindSift beim nächsten Öffnen zum Wiederherstellen an. Verlassen alle eine Live-Zeichnung ohne „Fertig“, hält der Server den Stand noch etwa 10 Minuten; wer in der Zeit wieder „Gemeinsam zeichnen“ wählt, macht dort weiter.
             </li>
@@ -634,6 +640,7 @@ const de: HelpContent = {
       category: 'triage',
       title: 'API: curl, Smart Home & KI-Agenten (MCP)',
       subtitle: 'Aufgaben und Listen per curl oder Home Assistant lesen und ändern, Gedanken einliefern, KI-Agenten wie Claude Code anbinden.',
+      without: { cap: 'publicAddress', title: 'API: curl & KI-Agenten (MCP)', subtitle: 'Aufgaben und Listen per curl lesen und ändern, Gedanken einliefern, KI-Agenten wie Claude Code anbinden.' },
       icon: Bell,
       keywords: [
         'webhooks',
@@ -655,6 +662,11 @@ const de: HelpContent = {
           <p>
             MindSift hat eine API. Unter <em className="text-main">Kontoeinstellungen → API</em> erzeugst du persönliche Schlüssel und legst mit Schaltern fest, was jeder darf: Aufgaben, Listen, Notizen und die Inbox jeweils lesen, anlegen oder ändern. Diese Rechte gelten für beide Zugänge gleich; Notizen sowie Lesen und Sortieren der Inbox gibt es nur über MCP. Einstellungen erreicht ein Schlüssel nie.
           </p>
+          <InDesktop>
+            <p>
+              <strong className="text-main">In der Desktop-App:</strong> Die API ist zunächst nur für die App selbst da. Schalte unter <em className="text-main">Kontoeinstellungen → API</em> „Für lokale Programme erreichbar“ ein, dann erreichen Programme auf diesem Computer MCP und die REST-API unter <code className="font-mono">127.0.0.1</code> (Port und fertige Beispiele stehen dort). Aus dem Netzwerk, etwa von Home Assistant auf einem anderen Gerät, ist sie nicht erreichbar, und eine Verbindung über claude.ai oder ChatGPT gibt es nicht.
+            </p>
+          </InDesktop>
           <p>
             <strong className="text-main">curl und Smart Home:</strong> Mit Leserecht liefert z. B. <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> alles, was heute ansteht, etwa für einen Home-Assistant-Sensor. Weitere Filter: <code className="font-mono">due=overdue</code>, ein Datum, <code className="font-mono">taskListId</code>. Listen kommen über <code className="font-mono">GET /api/v1/lists</code>. Mit Änderungsrecht hakst du per <code className="font-mono">PATCH /api/v1/thoughts/ID</code> ab. Die Einstellungen zeigen fertige Beispiele.
           </p>
@@ -745,33 +757,60 @@ const de: HelpContent = {
             <li>
               <strong className="text-main">Prioritäten & Notizen:</strong> Vergib Prioritäten (<em className="text-accent">Dringend</em>, <em className="text-main">Wichtig</em>, <em>Normal</em>) und hinterlege detaillierte Markdown-Notizen.
             </li>
-            <li>
-              <strong className="text-main">Zuweisen:</strong> In geteilten Aufgabenlisten weist du eine Aufgabe einer oder mehreren Personen mit Zugriff zu (Namen tippen, Enter). Die Zugewiesenen erscheinen als kleine Profilbilder an der Aufgabe; wer den Zugriff auf die Liste verliert, wird automatisch entfernt.
-            </li>
+            <Only can="sharing">
+              <li>
+                <strong className="text-main">Zuweisen:</strong> In geteilten Aufgabenlisten weist du eine Aufgabe einer oder mehreren Personen mit Zugriff zu (Namen tippen, Enter). Die Zugewiesenen erscheinen als kleine Profilbilder an der Aufgabe; wer den Zugriff auf die Liste verliert, wird automatisch entfernt.
+              </li>
+            </Only>
             <li>
               <strong className="text-main">Wiederkehrende Aufgaben:</strong> Im Detail-Fenster eine Wiederholung wählen (täglich, werktags von Montag bis Freitag, wöchentlich, monatlich oder jährlich). Beim Abhaken entsteht automatisch die nächste Aufgabe im Rhythmus des alten Datums; hakst du verspätet ab, werden die verpassten Termine übersprungen (täglich, fällig Samstag, abgehakt Montag: die nächste ist Dienstag fällig). Erkennbar am 🔁-Symbol.
             </li>
             <li>
               <strong className="text-main">Fälligkeit mit Uhrzeit:</strong> Im Detail-Fenster neben dem Datum optional eine Uhrzeit setzen; „✕ Uhrzeit“ macht die Aufgabe wieder ganztägig. Angezeigt wird z.B. „Heute, 14:30“, Überfälliges in Rot.
             </li>
-            <li>
-              <strong className="text-main">Automatische Alarme:</strong> Zur Fälligkeit (ganztägige Aufgaben um 9:00, abzüglich deiner Vorlaufzeit) benachrichtigt MindSift dich per <strong className="text-main">E-Mail</strong>, <strong className="text-main">Discord-Webhook</strong> oder individuellem HTTP-Webhook. Verschiebst du die Fälligkeit oder öffnest die Aufgabe wieder, kommt der Alarm erneut. Konfigurierbar in deinen Benutzereinstellungen. E-Mail-Alarme gehen an deine Anmelde-Adresse. Eine neue Anmelde-Adresse gilt erst, wenn du den Link in der Bestätigungs-E-Mail an sie anklickst; bis dahin bleibt die bisherige. Alle Zeiten gelten in der Zeitzone des Servers, die ein Server-Admin unter <em>Server-Administration → Server</em> einstellt.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Automatische Alarme:</strong> Zur Fälligkeit (ganztägige Aufgaben um 9:00, abzüglich deiner Vorlaufzeit) benachrichtigt MindSift dich per <strong className="text-main">E-Mail</strong>, <strong className="text-main">Discord-Webhook</strong> oder individuellem HTTP-Webhook. Verschiebst du die Fälligkeit oder öffnest die Aufgabe wieder, kommt der Alarm erneut. Konfigurierbar in deinen Benutzereinstellungen. E-Mail-Alarme gehen an deine Anmelde-Adresse. Eine neue Anmelde-Adresse gilt erst, wenn du den Link in der Bestätigungs-E-Mail an sie anklickst; bis dahin bleibt die bisherige. Alle Zeiten gelten in der Zeitzone des Servers, die die Administration unter <em>Administration → Instanz</em> einstellt.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Automatische Alarme:</strong> Zur Fälligkeit (ganztägige Aufgaben um 9:00, abzüglich deiner Vorlaufzeit) benachrichtigt MindSift dich per <strong className="text-main">Discord-Webhook</strong> oder individuellem HTTP-Webhook, solange die Desktop-App läuft. Verschiebst du die Fälligkeit oder öffnest die Aufgabe wieder, kommt der Alarm erneut. Konfigurierbar in deinen Kontoeinstellungen unter „Alarme“. Alle Zeiten gelten in der Zeitzone der Instanz, die du unter <em>Administration → Instanz</em> einstellst (sonst die des Systems).
+              </li>
+            </InDesktop>
             <li>
               <strong className="text-main">Erinnerungen pro Aufgabe:</strong> Im Detail-Fenster unter „Erinnerung“ eine oder mehrere Zeiten anhaken, z. B. 2 Wochen vorher und am Fälligkeitstag. Sie ersetzen für diese Aufgabe deine Vorlaufzeit und gelten für alle, die ihren Fälligkeits-Alarm bekommen; „Standard“ nimmt wieder die Vorlaufzeit aus den Einstellungen. Ohne Uhrzeit erinnert MindSift ganze Tage vorher um 9:00. Aufgaben mit eigenen Erinnerungen tragen eine kleine 🔔.
             </li>
-            <li>
-              <strong className="text-main">Weitere Benachrichtigungen:</strong> Wenn dir jemand eine Aufgabe zuweist, eine neue Aufgabe in einer geteilten Liste landet oder dort eine erledigt wird, kann MindSift dir Bescheid geben; jedes Ereignis schaltest du in den Einstellungen unter „Alarme“ einzeln ein oder aus. Aufgaben, die du <strong className="text-main">beobachtest</strong>, melden jede Änderung (Status, Priorität, Fälligkeit, Text, Beschreibung, Unteraufgaben, Zuweisung …), auch wenn sie in einer Notiz abgehakt werden. Was du selbst tust, meldet MindSift dir nicht. Mehrere Ereignisse kommen gebündelt in einer Nachricht. Die <strong className="text-main">Glocke</strong> (am Desktop unten in der Leiste links, auf dem Smartphone oben neben der Suche) sammelt alles der letzten 14 Tage, auch ohne eingeschaltete Kanäle; ein Klick auf einen Eintrag öffnet die Aufgabe oder Notiz.
-            </li>
-            <li>
-              <strong className="text-main">Kalender-Abo:</strong> Unter <em className="text-main">Kontoeinstellungen → Kalender-Abo</em> bekommst du einen geheimen Link, den du in Google Kalender, Apple Kalender, Thunderbird oder Outlook abonnierst. Dort erscheinen deine offenen Aufgaben mit Fälligkeit und die aus geteilten Aufgabenlisten (fällig ab vor 30 Tagen bis in einem Jahr): ganztägige als ganztägige Termine, mit Uhrzeit als 30-Minuten-Termin, wiederkehrende mit ihrem nächsten Termin. Der Kalender zeigt nur an, geändert wird in MindSift; Kalender-Apps holen das Abo nur alle paar Stunden neu. Wer den Link kennt, sieht deine Aufgaben: „Neuen Link erzeugen“ macht den alten ungültig, Ausschalten löscht ihn.
-            </li>
-            <li>
-              <strong className="text-main">@-Erwähnungen:</strong> In der Beschreibung einer Aufgabe, in Unteraufgaben und in Notizen öffnet <strong className="text-main">@</strong> eine Auswahl von Personen (Pfeiltasten, Enter). Wer keinen Zugriff hat, steht ausgegraut darin. Die erwähnte Person bekommt eine Benachrichtigung (Einstellungen → Alarme, „Ich wurde erwähnt“), auch bei einer stummgeschalteten Liste; erneutes Speichern löst keine zweite aus.
-            </li>
-            <li>
-              <strong className="text-main">Listen-Menü (⋯):</strong> Rechts über der Liste: <strong className="text-main">Stummschalten</strong> (nur geteilte Listen: keine Meldungen aus dieser Liste, Zuweisungen, Erwähnungen und beobachtete Aufgaben kommen weiter), Teilen, Umbenennen und Löschen. Passen nicht alle Listen in die Zeile, stehen die übrigen hinter „⋯ n“. In einer geteilten Liste ist eine neue Aufgabe zuerst dir zugewiesen; den Fälligkeits-Alarm bekommen die zugewiesenen Personen, ist niemand zugewiesen, alle Mitglieder.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Weitere Benachrichtigungen:</strong> Wenn dir jemand eine Aufgabe zuweist, eine neue Aufgabe in einer geteilten Liste landet oder dort eine erledigt wird, kann MindSift dir Bescheid geben; jedes Ereignis schaltest du in den Einstellungen unter „Alarme“ einzeln ein oder aus. Aufgaben, die du <strong className="text-main">beobachtest</strong>, melden jede Änderung (Status, Priorität, Fälligkeit, Text, Beschreibung, Unteraufgaben, Zuweisung …), auch wenn sie in einer Notiz abgehakt werden. Was du selbst tust, meldet MindSift dir nicht. Mehrere Ereignisse kommen gebündelt in einer Nachricht. Die <strong className="text-main">Glocke</strong> (am Desktop unten in der Leiste links, auf dem Smartphone oben neben der Suche) sammelt alles der letzten 14 Tage, auch ohne eingeschaltete Kanäle; ein Klick auf einen Eintrag öffnet die Aufgabe oder Notiz.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Weitere Benachrichtigungen:</strong> Die <strong className="text-main">Glocke</strong> (unten in der Leiste links) sammelt Meldungen der letzten 14 Tage, etwa fällige Aufgaben; ein Klick auf einen Eintrag öffnet die Aufgabe oder Notiz. Aufgaben, die du <strong className="text-main">beobachtest</strong>, melden auch deine eigenen Änderungen, wenn du das in den Einstellungen unter „Alarme“ einschaltest.
+              </li>
+            </InDesktop>
+            <Only can="publicAddress">
+              <li>
+                <strong className="text-main">Kalender-Abo:</strong> Unter <em className="text-main">Kontoeinstellungen → Kalender-Abo</em> bekommst du einen geheimen Link, den du in Google Kalender, Apple Kalender, Thunderbird oder Outlook abonnierst. Dort erscheinen deine offenen Aufgaben mit Fälligkeit und die aus geteilten Aufgabenlisten (fällig ab vor 30 Tagen bis in einem Jahr): ganztägige als ganztägige Termine, mit Uhrzeit als 30-Minuten-Termin, wiederkehrende mit ihrem nächsten Termin. Der Kalender zeigt nur an, geändert wird in MindSift; Kalender-Apps holen das Abo nur alle paar Stunden neu. Wer den Link kennt, sieht deine Aufgaben: „Neuen Link erzeugen“ macht den alten ungültig, Ausschalten löscht ihn.
+              </li>
+            </Only>
+            <Only can="sharing">
+              <li>
+                <strong className="text-main">@-Erwähnungen:</strong> In der Beschreibung einer Aufgabe, in Unteraufgaben und in Notizen öffnet <strong className="text-main">@</strong> eine Auswahl von Personen (Pfeiltasten, Enter). Wer keinen Zugriff hat, steht ausgegraut darin. Die erwähnte Person bekommt eine Benachrichtigung (Einstellungen → Alarme, „Ich wurde erwähnt“), auch bei einer stummgeschalteten Liste; erneutes Speichern löst keine zweite aus.
+              </li>
+            </Only>
+            <Only can="sharing">
+              <li>
+                <strong className="text-main">Listen-Menü (⋯):</strong> Rechts über der Liste: <strong className="text-main">Stummschalten</strong> (nur geteilte Listen: keine Meldungen aus dieser Liste, Zuweisungen, Erwähnungen und beobachtete Aufgaben kommen weiter), Teilen, Umbenennen und Löschen. Passen nicht alle Listen in die Zeile, stehen die übrigen hinter „⋯ n“. In einer geteilten Liste ist eine neue Aufgabe zuerst dir zugewiesen; den Fälligkeits-Alarm bekommen die zugewiesenen Personen, ist niemand zugewiesen, alle Mitglieder.
+              </li>
+            </Only>
+            <Only not="sharing">
+              <li>
+                <strong className="text-main">Listen-Menü (⋯):</strong> Rechts über der Liste: Umbenennen und Löschen. Passen nicht alle Listen in die Zeile, stehen die übrigen hinter „⋯ n“.
+              </li>
+            </Only>
             <li>
               <strong className="text-main">Kalender:</strong> Dritte Ansicht neben Liste und Kanban: am Desktop Monat oder Woche, am Handy die Woche. Aufgaben ohne Datum stehen unter „Ungeplant“; auf einen Tag ziehen setzt das Datum (eine Uhrzeit bleibt), zurück nach „Ungeplant“ entfernt es, <strong className="text-main">Strg + Z</strong> nimmt es zurück. Wiederkehrende Aufgaben zeigen auch ihre kommenden Termine, ausgegraut mit ↻. Links wechselt eine Leiste zwischen dem gewählten Tag (bis zum ersten Klick: heute) mit seinen Aufgaben und den ungeplanten Aufgaben. ← → blättern, T springt zu heute. Am Desktop füllen Montag bis Freitag die Breite; das Wochenende erreichst du durch seitliches Scrollen oder mit „Sa – So ›“. Monat oder Woche wählst du rechts neben den Hashtags; ein Schritt mit dem Mausrad schiebt die Leisten darüber weg.
             </li>
@@ -784,8 +823,8 @@ const de: HelpContent = {
     {
       id: 'lists-shared-shopping',
       category: 'lists',
-      title: 'Geteilte Listen, Mengenangaben & Hashtag-Kategorien',
-      subtitle: 'Echtzeit-Einkaufslisten, Packlisten und Checklisten',
+      title: 'Listen, Mengenangaben & Hashtag-Kategorien',
+      subtitle: 'Einkaufslisten, Packlisten und Checklisten',
       icon: ShoppingCart,
       keywords: [
         'listen',
@@ -800,9 +839,16 @@ const de: HelpContent = {
       ],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
-          <p>
-            Geteilte Listen eignen sich perfekt für Einkäufe, Packlisten und gemeinsame Besorgungen:
-          </p>
+          <Only can="sharing">
+            <p>
+              Geteilte Listen eignen sich perfekt für Einkäufe, Packlisten und gemeinsame Besorgungen:
+            </p>
+          </Only>
+          <Only not="sharing">
+            <p>
+              Listen eignen sich perfekt für Einkäufe, Packlisten und Besorgungen:
+            </p>
+          </Only>
           <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Menge gleich mittippen:</strong> Bei <code className="text-accent font-mono">2x Bio-Milch</code>, <code className="text-accent font-mono">500g Pasta</code>, <code className="text-accent font-mono">3 Äpfel</code> oder <code className="text-accent font-mono">Tomaten 2 Dosen</code> markiert das Feld die Menge und trägt sie gleich ins Mengenfeld ein; eine kleine Sprechblase am Mengenfeld zeigt sie dir. Beim Hinzufügen kommt der Name ohne sie auf die Liste. Tippst du auf das × in der Blase oder leerst das Mengenfeld, bleibt der Text, wie er ist; tippst du selbst eine Menge ins Feld, gilt deine. Erkannt werden eine Zahl mit x, eine Zahl mit Einheit (g, kg, l, ml, Stück, Pck, Dose, Flasche, Bund …) und eine Zahl am Anfang. Eine Zahl am Ende ohne Einheit gehört zum Namen (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">Cola 0,5</code>), ebenso eine am Wort (<code className="text-accent font-mono">7up</code>). Ins Mengenfeld darfst du auch Einheiten schreiben, etwa <code className="text-accent font-mono">500 g</code>. Der Schalter <em>Datum und Menge beim Tippen erkennen</em> unter Kontoeinstellungen → Sprache schaltet auch das aus.
@@ -811,11 +857,18 @@ const de: HelpContent = {
               <strong className="text-main">Kategorisierung per Hashtag:</strong> Ergänze einen Hashtag wie <code className="text-accent font-mono">#Kühlregal</code> oder <code className="text-accent font-mono">#Gemüse</code>. Die Liste gruppiert die Artikel automatisch in entsprechende Abschnitte.
             </li>
             <li>
-              <strong className="text-main">Vorschläge beim Tippen:</strong> Ab zwei Buchstaben zeigt die Liste darunter, was du hier schon einmal eingetragen hast, auch längst Abgehaktes und Aufgeräumtes: zuerst was so anfängt, dann was es enthält, Häufiges und kürzlich Gekauftes vorn. Was schon offen auf der Liste steht, fehlt. Antippen oder mit den Pfeiltasten wählen und Enter übernimmt den Eintrag samt seinem Hashtag; Escape schließt die Vorschläge, einfach weitertippen geht wie bisher. Tippst du gerade einen #Hashtag, kommen die Hashtag-Vorschläge. Geteilte Listen haben einen gemeinsamen Verlauf, er ist auch offline da und verschwindet mit der Liste.
+              <strong className="text-main">Vorschläge beim Tippen:</strong> Ab zwei Buchstaben zeigt die Liste darunter, was du hier schon einmal eingetragen hast, auch längst Abgehaktes und Aufgeräumtes: zuerst was so anfängt, dann was es enthält, Häufiges und kürzlich Gekauftes vorn. Was schon offen auf der Liste steht, fehlt. Antippen oder mit den Pfeiltasten wählen und Enter übernimmt den Eintrag samt seinem Hashtag; Escape schließt die Vorschläge, einfach weitertippen geht wie bisher. Tippst du gerade einen #Hashtag, kommen die Hashtag-Vorschläge. <Only can="sharing">{' '}Geteilte Listen haben einen gemeinsamen Verlauf, er ist auch offline da und verschwindet mit der Liste.</Only>
             </li>
-            <li>
-              <strong className="text-main">Live-Abgleich & Erledigte aufräumen:</strong> Abgehakte Artikel werden in Echtzeit synchronisiert und zeigen an, wer sie erledigt hat. Mit dem Aufräumen-Button entfernst du erledigte Artikel gesammelt.
-            </li>
+            <Only can="sharing">
+              <li>
+                <strong className="text-main">Live-Abgleich & Erledigte aufräumen:</strong> Abgehakte Artikel werden in Echtzeit synchronisiert und zeigen an, wer sie erledigt hat. Mit dem Aufräumen-Button entfernst du erledigte Artikel gesammelt.
+              </li>
+            </Only>
+            <Only not="sharing">
+              <li>
+                <strong className="text-main">Erledigte aufräumen:</strong> Mit dem Aufräumen-Button entfernst du abgehakte Artikel gesammelt.
+              </li>
+            </Only>
           </ul>
         </div>
       ),
@@ -849,32 +902,52 @@ const de: HelpContent = {
       category: 'account',
       title: 'Offline, Backups & Passwort',
       subtitle: 'Ohne Internet weiterarbeiten, Sicherungen einspielen, Passwort zurücksetzen',
+      without: { cap: 'signIn', title: 'Backups', subtitle: 'Sicherungen anlegen und wieder einspielen' },
       icon: CloudOff,
       keywords: ['offline', 'internet', 'backup', 'sicherung', 'wiederherstellen', 'passwort', 'vergessen', 'konto', 'zwei-faktor', '2fa', 'authenticator', 'sicherheit', 'passkey', 'fingerabdruck', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
-            <li>
-              <strong className="text-main">Server-Backups:</strong> Hat die Administration automatische Backups eingeschaltet, findest du unter <em>Kontoeinstellungen → Export &amp; Import</em> die täglichen Sicherungen deiner Daten. Du kannst sie herunterladen oder wieder einspielen, auch nur für einzelne Bereiche wie Listen oder Aufgaben. Jedes Backup enthält im Ordner <em>Obsidian</em> deine Notizen, Aufgaben und Listen zusätzlich als Markdown, lesbar in Obsidian oder jedem Texteditor, auch ohne MindSift.
-            </li>
-            <li>
-              <strong className="text-main">Ohne Internet:</strong> Als App installiert (oder im Browser) startet MindSift auch offline mit dem zuletzt geladenen Stand. Gedanken erfassen sowie Aufgaben und Listeneinträge abhaken geht weiter; ein Hinweis unten zeigt, wie viele Änderungen warten, und sie werden automatisch übertragen, sobald die Verbindung zurück ist.
-            </li>
-            <li>
-              <strong className="text-main">Wo Offline-Änderungen liegen:</strong> Notizen, die du auf diesem Gerät schon einmal geöffnet hast, kannst du offline lesen und bearbeiten. Was noch nicht gesendet ist, liegt nur in diesem Browser: Es übersteht Schließen, Neustart und Herunterfahren und wird beim nächsten Start mit Verbindung automatisch gesendet. Verloren geht es, wenn du dich abmeldest (MindSift fragt vorher), die Browserdaten löschst oder in einem privaten Fenster arbeitest. Komm deshalb nach dem Offline-Arbeiten bald mit demselben Gerät wieder online. Hat in der Zwischenzeit jemand denselben Punkt geändert, geht nichts verloren: Deine Fassung erscheint als Konfliktkopie darunter.
-            </li>
-            <li>
-              <strong className="text-main">Passwort vergessen:</strong> Hat die Administration den Mailversand eingerichtet, steht im Anmeldefenster „Passwort vergessen?“. Du bekommst einen Link, der eine Stunde gilt; mit dem neuen Passwort bist du auf allen Geräten abgemeldet.
-            </li>
-            <li>
-              <strong className="text-main">Zwei-Faktor-Anmeldung:</strong> Unter <em>Kontoeinstellungen → Sicherheit</em> verbindest du eine Authenticator-App (QR-Code scannen, ersten Code eingeben); danach fragt die Anmeldung nach dem Passwort zusätzlich nach dem sechsstelligen Code der App. Die zehn Wiederherstellungscodes, die dabei einmal erscheinen, helfen, wenn das Handy fehlt: Jeder funktioniert einmal. Mit „Diesem Gerät 30 Tage vertrauen“ fragt ein eigenes Gerät einen Monat lang nicht nach dem Code. „Passwort vergessen“ schaltet die Zwei-Faktor-Anmeldung nicht ab.
-            </li>
-            <li>
-              <strong className="text-main">Passkeys:</strong> Unter <em>Kontoeinstellungen → Sicherheit → Passkeys</em> legst du einen Passkey an (Passwort bestätigen, Namen vergeben, Fingerabdruck, Gesicht oder Geräte-PIN). Danach meldest du dich mit „Mit Passkey anmelden“ ganz ohne Passwort an; manche Browser bieten ihn auch direkt im Anmeldefeld an. Wer sich mit Passwort anmeldet, wird danach nach dem Passkey gefragt: Ein Passkey zählt als zweiter Faktor, auch ohne Authenticator-App. Mit dem ersten Passkey erscheinen die Wiederherstellungscodes. Entfernst du den letzten zweiten Faktor, ist die Zwei-Faktor-Anmeldung wieder aus. Passkeys gibt es nur, wenn der Server eine feste https-Adresse hat (BASE_URL).
-            </li>
-            <li>
-              <strong className="text-main">Anmeldung über einen Anbieter (SSO):</strong> Hat die Administration einen Anbieter wie Authentik, Authelia oder Keycloak eingerichtet, steht im Anmeldefenster „Mit … anmelden“. Beim ersten Mal entsteht dein Konto, oder ein vorhandenes mit derselben bestätigten Adresse wird verknüpft; ein Konto mit anderer Adresse verknüpfst du unter <em>Kontoeinstellungen → Sicherheit</em>. Die Zwei-Faktor-Anmeldung übernimmt dann der Anbieter. Heikle Änderungen wie eine neue Adresse, ein Passwort, API-Schlüssel oder das Löschen bestätigst du mit einer erneuten Anmeldung dort; danach hast du fünf Minuten Zeit. Ist die Anmeldung mit Passwort ausgeschaltet, gibt es nur noch diesen Knopf, und die Administration hat unter <em>/?login=password</em> einen Notzugang.
-            </li>
+            <NotInDesktop>
+              <li>
+                <strong className="text-main">Server-Backups:</strong> Hat die Administration automatische Backups eingeschaltet, findest du unter <em>Kontoeinstellungen → Export &amp; Import</em> die täglichen Sicherungen deiner Daten. Du kannst sie herunterladen oder wieder einspielen, auch nur für einzelne Bereiche wie Listen oder Aufgaben. Jedes Backup enthält im Ordner <em>Obsidian</em> deine Notizen, Aufgaben und Listen zusätzlich als Markdown, lesbar in Obsidian oder jedem Texteditor, auch ohne MindSift.
+              </li>
+            </NotInDesktop>
+            <InDesktop>
+              <li>
+                <strong className="text-main">Backups:</strong> Unter <em>Administration → Daten</em> schaltest du tägliche Sicherungen ein und wählst den Ordner dafür. Unter <em>Kontoeinstellungen → Export &amp; Import</em> findest du sie; du kannst sie herunterladen oder wieder einspielen, auch nur für einzelne Bereiche wie Listen oder Aufgaben. Jedes Backup enthält im Ordner <em>Obsidian</em> deine Notizen, Aufgaben und Listen zusätzlich als Markdown, lesbar in Obsidian oder jedem Texteditor, auch ohne MindSift. Ein Backup lässt sich auch auf einem Server einspielen, falls du später dorthin wechselst.
+              </li>
+            </InDesktop>
+            <Only can="install">
+              <li>
+                <strong className="text-main">Ohne Internet:</strong> Als App installiert (oder im Browser) startet MindSift auch offline mit dem zuletzt geladenen Stand. Gedanken erfassen sowie Aufgaben und Listeneinträge abhaken geht weiter; ein Hinweis unten zeigt, wie viele Änderungen warten, und sie werden automatisch übertragen, sobald die Verbindung zurück ist.
+              </li>
+            </Only>
+            <Only can="install">
+              <li>
+                <strong className="text-main">Wo Offline-Änderungen liegen:</strong> Notizen, die du auf diesem Gerät schon einmal geöffnet hast, kannst du offline lesen und bearbeiten. Was noch nicht gesendet ist, liegt nur in diesem Browser: Es übersteht Schließen, Neustart und Herunterfahren und wird beim nächsten Start mit Verbindung automatisch gesendet. Verloren geht es, wenn du dich abmeldest (MindSift fragt vorher), die Browserdaten löschst oder in einem privaten Fenster arbeitest. Komm deshalb nach dem Offline-Arbeiten bald mit demselben Gerät wieder online. Hat in der Zwischenzeit jemand denselben Punkt geändert, geht nichts verloren: Deine Fassung erscheint als Konfliktkopie darunter.
+              </li>
+            </Only>
+            <Only can="signIn">
+              <li>
+                <strong className="text-main">Passwort vergessen:</strong> Hat die Administration den Mailversand eingerichtet, steht im Anmeldefenster „Passwort vergessen?“. Du bekommst einen Link, der eine Stunde gilt; mit dem neuen Passwort bist du auf allen Geräten abgemeldet.
+              </li>
+            </Only>
+            <Only can="signIn">
+              <li>
+                <strong className="text-main">Zwei-Faktor-Anmeldung:</strong> Unter <em>Kontoeinstellungen → Sicherheit</em> verbindest du eine Authenticator-App (QR-Code scannen, ersten Code eingeben); danach fragt die Anmeldung nach dem Passwort zusätzlich nach dem sechsstelligen Code der App. Die zehn Wiederherstellungscodes, die dabei einmal erscheinen, helfen, wenn das Handy fehlt: Jeder funktioniert einmal. Mit „Diesem Gerät 30 Tage vertrauen“ fragt ein eigenes Gerät einen Monat lang nicht nach dem Code. „Passwort vergessen“ schaltet die Zwei-Faktor-Anmeldung nicht ab.
+              </li>
+            </Only>
+            <Only can="signIn">
+              <li>
+                <strong className="text-main">Passkeys:</strong> Unter <em>Kontoeinstellungen → Sicherheit → Passkeys</em> legst du einen Passkey an (Passwort bestätigen, Namen vergeben, Fingerabdruck, Gesicht oder Geräte-PIN). Danach meldest du dich mit „Mit Passkey anmelden“ ganz ohne Passwort an; manche Browser bieten ihn auch direkt im Anmeldefeld an. Wer sich mit Passwort anmeldet, wird danach nach dem Passkey gefragt: Ein Passkey zählt als zweiter Faktor, auch ohne Authenticator-App. Mit dem ersten Passkey erscheinen die Wiederherstellungscodes. Entfernst du den letzten zweiten Faktor, ist die Zwei-Faktor-Anmeldung wieder aus. Passkeys gibt es nur, wenn der Server eine feste https-Adresse hat (BASE_URL).
+              </li>
+            </Only>
+            <Only can="signIn">
+              <li>
+                <strong className="text-main">Anmeldung über einen Anbieter (SSO):</strong> Hat die Administration einen Anbieter wie Authentik, Authelia oder Keycloak eingerichtet, steht im Anmeldefenster „Mit … anmelden“. Beim ersten Mal entsteht dein Konto, oder ein vorhandenes mit derselben bestätigten Adresse wird verknüpft; ein Konto mit anderer Adresse verknüpfst du unter <em>Kontoeinstellungen → Sicherheit</em>. Die Zwei-Faktor-Anmeldung übernimmt dann der Anbieter. Heikle Änderungen wie eine neue Adresse, ein Passwort, API-Schlüssel oder das Löschen bestätigst du mit einer erneuten Anmeldung dort; danach hast du fünf Minuten Zeit. Ist die Anmeldung mit Passwort ausgeschaltet, gibt es nur noch diesen Knopf, und die Administration hat unter <em>/?login=password</em> einen Notzugang.
+              </li>
+            </Only>
           </ul>
         </div>
       ),
@@ -909,10 +982,10 @@ const de: HelpContent = {
               <strong className="text-main">Wer mit wem teilen darf:</strong> Das legt der Server-Admin fest: mit allen, nur mit Personen, mit denen du mindestens eine <em>Organisation</em> gemeinsam hast, oder mit niemandem (Modus „Privat“: kein Teilen, keine Gruppen). Du kannst mehreren Organisationen angehören; sie verwalten Server-Admins und die Benutzerverwaltung. Ist die Personensuche abgeschaltet, gibst du beim Teilen die genaue E-Mail-Adresse oder den Benutzernamen ein. Wer mit dir an etwas arbeitet, siehst du dort immer mit Namen.
             </li>
             <li>
-              <strong className="text-main">Zeitzone des Servers:</strong> Server-Admins stellen sie unter <em>Server-Administration → Server → Zeitzone</em> ein. Sie gilt sofort für alle: Fälligkeiten mit Uhrzeit, Alarme, die Tageszusammenfassung und die Backup-Zeit.
+              <strong className="text-main">Zeitzone des Servers:</strong> Server-Admins stellen sie unter <em>Administration → Instanz → Zeitzone</em> ein. Sie gilt sofort für alle: Fälligkeiten mit Uhrzeit, Alarme, die Tageszusammenfassung und die Backup-Zeit.
             </li>
             <li>
-              <strong className="text-main">Bildqualität:</strong> Bilder verkleinert die App vor dem Hochladen auf höchstens 2048 Pixel. Wie stark sie dabei komprimiert, stellen Server-Admins unter <em>Server-Administration → Daten → Bildqualität</em> ein: Hoch (Standard), Mittel oder Sparsam. Die Größe bleibt bei jeder Stufe gleich, Text in Screenshots bleibt lesbar; die Einstellung gilt für neu eingefügte Bilder.
+              <strong className="text-main">Bildqualität:</strong> Bilder verkleinert die App vor dem Hochladen auf höchstens 2048 Pixel. Wie stark sie dabei komprimiert, stellen Server-Admins unter <em>Administration → Daten → Bildqualität</em> ein: Hoch (Standard), Mittel oder Sparsam. Die Größe bleibt bei jeder Stufe gleich, Text in Screenshots bleibt lesbar; die Einstellung gilt für neu eingefügte Bilder.
             </li>
             <li>
               <strong className="text-main">Gruppen:</strong> Fasse Personen, die du sehen kannst, zu Gruppen zusammen (z. B. Familie, WG, Projekt) und teile mit allen auf einmal. Wer eine Gruppe anlegt, ist ihr Admin; mit einer Gruppe teilen kann nur, wer selbst Mitglied ist.

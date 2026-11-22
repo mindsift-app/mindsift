@@ -9,6 +9,7 @@ const adminGetAudit = vi.fn<(p: { action?: string; user?: string; before?: numbe
 vi.mock('../../../lib/api', () => ({
   api: { adminGetAudit: (p: { action?: string; user?: string; before?: number; limit?: number }) => adminGetAudit(p) },
   triggerHaptic: vi.fn(),
+  isDesktopApp: () => false,
 }));
 
 const users = [

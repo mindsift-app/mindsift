@@ -1,7 +1,7 @@
 {
   "back": "Zurück",
   "title": "Hilfe & Dokumentation",
-  "subtitle": "Tastaturbedienung, Outliner-Notizen, Triage, Kanban-Board und Zusammenarbeit",
+  "subtitle": "Tastaturbedienung, Outliner-Notizen, Triage, Kanban-Board und mehr",
   "search": "In Hilfe & Kürzeln suchen…",
   "clearSearch": "Suche leeren",
   "cat": {
@@ -9,7 +9,7 @@
     "workspace": "Workspace & Notizen",
     "triage": "Schnellerfassung & Triage",
     "tasks": "Aufgaben & Kanban",
-    "lists": "Geteilte Listen",
+    "lists": "Listen",
     "collaboration": "Gruppen & Freigaben",
     "account": "Konto & Einstellungen",
     "shortcuts": "Tastatur-Kürzel & Gesten"

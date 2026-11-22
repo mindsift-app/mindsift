@@ -13,7 +13,8 @@ import {
   LogOut,
 } from 'lucide-react';
 import { Team, User } from '../../lib/types';
-import { api, isSharingDisabled, triggerHaptic } from '../../lib/api';
+import { api, triggerHaptic } from '../../lib/api';
+import { can } from '../../lib/capabilities';
 import { UserAutocomplete } from '../UserAutocomplete';
 import { UserAvatar } from '../../components/UserAvatar';
 import { askConfirm } from '../../components/askConfirm';
@@ -197,7 +198,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       !managedTeams.some((mt) => mt.id === t.id)
   );
 
-  if (isSharingDisabled()) {
+  if (!can('sharing')) {
     return (
       <div className="w-full space-y-3">
         <button onClick={onBack} className="btn-action h-11 sm:h-8 px-2.5 text-xs flex items-center gap-1.5 cursor-pointer">

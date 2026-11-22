@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Archive, Server, Users } from 'lucide-react';
 import i18n, { applyLanguage, isLanguage, LANGUAGES } from '../../i18n';
@@ -34,24 +34,35 @@ export interface SetupChoices {
   backupRetentionDays?: number;
 }
 
-export function useSetupChoices(initialInstanceName?: string) {
+// defaults: what the desktop app's wizard starts with instead (help notes on, the system's time zone)
+export function useSetupChoices(initialInstanceName?: string, defaults?: { createSampleData?: boolean; timeZone?: string }) {
   const [instanceName, setInstanceName] = useState(initialInstanceName || 'MindSift');
   const [sharingMode, setSharingMode] = useState<SharingMode>('organizations');
   const [allowRegistration, setAllowRegistration] = useState(false);
-  const [createSampleData, setCreateSampleData] = useState(false);
+  const [createSampleData, setCreateSampleData] = useState(defaults?.createSampleData ?? false);
   // Daily backups start switched on: a new server should not run without them until someone finds the switch
   const [backupEnabled, setBackupEnabled] = useState(true);
   const [backupTime, setBackupTime] = useState(DEFAULT_BACKUP_TIME);
   // As typed, so the field can be empty for a moment
   const [backupKeepDays, setBackupKeepDays] = useState(String(DEFAULT_BACKUP_RETENTION_DAYS));
-  // Default language of the server; the wizard switches to it right away
+  // Default language of the server (and the admin's own); the wizard switches to it right away. It is the
+  // language the wizard is shown in: when the app switches after the wizard opened (the account's or the
+  // browser's language arriving after the start language, App.tsx), the field follows, so what it shows is
+  // what the setup sends
   const [defaultLanguage, setDefaultLanguage] = useState(i18n.language);
+  useEffect(() => {
+    const follow = (lng: string) => {
+      if (isLanguage(lng)) setDefaultLanguage(lng);
+    };
+    i18n.on('languageChanged', follow);
+    return () => i18n.off('languageChanged', follow);
+  }, []);
   const chooseLanguage = (lang: string) => {
     setDefaultLanguage(lang);
     if (isLanguage(lang)) void applyLanguage(lang);
   };
   // The server's time zone, suggested from this browser: whoever sets up the server usually lives where it runs
-  const [timeZone, setTimeZone] = useState(browserTimeZone);
+  const [timeZone, setTimeZone] = useState(defaults?.timeZone ?? browserTimeZone);
   const keepDays = Number(backupKeepDays);
   const choices: SetupChoices = {
     instanceName: instanceName.trim() || 'MindSift',

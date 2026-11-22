@@ -196,7 +196,8 @@ export interface OutlinerBlockProps {
   // The bullet names itself by its ID (its index changes with every bullet added above it)
   onDragStartBlock?: (blockId: string, e: React.DragEvent) => void;
   onDragOverBlock?: (e: React.DragEvent, blockId: string) => void;
-  onDropBlock?: (blockId: string) => void;
+  /** e: the drop, for text dragged onto a bullet without a text field (OutlinerTree, dropTextOnto) */
+  onDropBlock?: (blockId: string, e?: React.DragEvent) => void;
   /** A dragged bullet would land in front of this row, on this level (counted like the row's own indent) */
   dropIndent?: number | null;
   isTargeted?: boolean;
@@ -1479,7 +1480,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   // stays rendered (data-outline-live), and afterwards until it is a screen away (lib/outlineNear.ts)
   const rowRef = useRef<HTMLDivElement | null>(null);
   const live = activeFocus || slashSearch !== null || mention.open || showLinkModal;
-  useEffect(() => (rowRef.current ? observeOutlineRow(rowRef.current) : undefined), []);
+  // Before the first paint: the rows in view are marked right after the note's rows are laid out
+  useLayoutEffect(() => (rowRef.current ? observeOutlineRow(rowRef.current) : undefined), []);
   useEffect(() => {
     if (live && rowRef.current) keepOutlineRowNear(rowRef.current);
   }, [live]);
@@ -1532,7 +1534,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       }}
       onDragOver={(e) => onDragOverBlock?.(e, block.id)}
       onDrop={(e) => {
-        if (!handleTextDrop(e)) onDropBlock?.(block.id);
+        if (!handleTextDrop(e)) onDropBlock?.(block.id, e);
       }}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('button, a, input, select')) return;

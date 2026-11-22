@@ -4,7 +4,7 @@ Details for administrators that the README only touches: the install script, the
 
 ## Install script
 
-[`install.sh`](../install.sh) creates a folder, downloads `docker-compose.yml` and `.env.example`, generates `JWT_SECRET` and `SECRETS_KEY` and starts the container. It does not take over the host's time zone: the setup wizard asks for it, and Administration → Server (or `TZ` in `.env`) changes it later.
+[`install.sh`](../install.sh) creates a folder, downloads `docker-compose.yml` and `.env.example`, generates `JWT_SECRET` and `SECRETS_KEY` and starts the container. It does not take over the host's time zone: the setup wizard asks for it, and Administration → Instance (or `TZ` in `.env`) changes it later.
 
 - On a new install it asks for the admin account (`ADMIN_USER`, `ADMIN_PASSWORD`; Enter means `admin` with a generated password, shown once); without a terminal it skips that and shows the setup code the wizard asks for. `ADMIN_PASSWORD` is only needed on the first start: once the container answers, the script removes it from `.env` again.
 - Two optional questions (Enter means no): your own speech recognition (adds a Whisper container with large-v3-turbo or small), and a reverse proxy (asks for `BASE_URL` and the proxy's Docker network). These additions go into `docker-compose.override.yml`.
@@ -46,7 +46,7 @@ The setup wizard offers daily backups (preselected: 03:00 server time, kept 3 da
 
 Release images look for a newer release once a day: a few minutes after the start (later if the last answer is less than a day old; it is kept in the database), then every 24 hours with a random delay of up to an hour. The server asks `https://api.github.com/repos/mindsift-app/mindsift/releases/latest` without signing in, with `MindSift/<version>` as User-Agent and nothing about the instance; it sends the ETag of the last answer back, so an unchanged release costs GitHub nothing. After an error it waits six hours, after a rate limit at least until GitHub takes requests again; it never retries at once. Pre-releases and drafts do not count. The request goes through the same guarded client as webhooks and link previews: no internal addresses, and with `HTTPS_PROXY` set through that proxy after the same check ([security.md](security.md#nothing-reaches-into-your-network)).
 
-When the release is newer than the running version, admins get a small card at the bottom right (after the tour offer, never together with it) with a link to the release page; "Später" or × puts it aside for that release, on every device of that admin, and a newer release shows it again. Members see nothing. *Administration → Server* shows the installed and the latest version and the update command, but there is no update button.
+When the release is newer than the running version, admins get a small card at the bottom right (after the tour offer, never together with it) with a link to the release page; "Später" or × puts it aside for that release, on every device of that admin, and a newer release shows it again. Members see nothing. *Administration → Instance* shows the installed and the latest version and the update command, but there is no update button.
 
 `UPDATE_CHECK=false` switches it off completely: no request goes out. The demo (`MINDSIFT_DEMO`) and builds without a release version (local builds, `:dev`, anything with `-dev`) never ask either. The version comes from the image build (`APP_VERSION`, compiled into the binary).
 
@@ -76,7 +76,7 @@ The daily backups hold the whole database as `data/backups/system/mindsift-db-<d
 4. Keep the keys that belong to the data: `SECRETS_KEY` or `data/secrets.key` (without it, hidden values, authenticator codes, the copy of public links and the SMTP password of the administration cannot be read) and `JWT_SECRET` or `data/jwt.secret` (otherwise everyone is signed out). If the key is missing or wrong, MindSift still starts but logs a warning that begins with `THE SECRETS KEY DOES NOT MATCH THE DATA`; stop it, put the old key back and start again. Images and audio are not in the database dump but in `data/media/`; on a new machine copy the whole `data/` folder.
 5. Start the same version that wrote the snapshot, or a newer one. The container hands `data/` to its user (uid 1000) on start; without the container, keep the files owned by the user that runs MindSift and readable for it only.
 
-People restore their own data from their personal backups in the account settings, without stopping the server.
+People restore their own data from their personal backups in the account settings, without stopping the server. A personal backup holds hidden values (`/hidden`) as references only, never their values (they are sealed with the server's key): restored on the same server they come back as long as their notes still exist, otherwise the notes keep a placeholder and the restore summary lists them. A snapshot of the whole database keeps them.
 
 ## Locked out? / Command line
 

@@ -1,0 +1,68 @@
+# Flatpak manifest of the MindSift desktop app (desktop/, Wails v3, GTK 4 + WebKitGTK 6.0).
+# Built by desktop/packaging/flatpak/build.sh, which stages the sources next to this file as src/: the
+# repository with the built frontend in desktop/dist and the Go modules vendored in desktop/vendor, so the
+# build itself needs no network. For Flathub the dir source becomes a git source plus the vendored modules
+# (see desktop/README.md, "Flatpak").
+id: app.mindsift.MindSift
+# GNOME 51 (September 2026) ships GTK 4 and WebKitGTK 6.0, which the binary links against
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+# Go for the cgo build; the 26.08 branch matches the freedesktop base of GNOME 51
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.golang
+command: mindsift-desktop
+
+finish-args:
+  # The window: Wayland, and X11 only where there is no Wayland
+  - --socket=wayland
+  - --socket=fallback-x11
+  # Shared memory for X11 (MIT-SHM); without it X11 rendering is slow or broken
+  - --share=ipc
+  # GPU for WebKit's accelerated compositing
+  - --device=dri
+  # Server mode (the window loads a MindSift server), link previews, sync, AI providers. The local API
+  # listener (127.0.0.1 only, off by default) needs it too.
+  - --share=network
+  # Voice notes: WebKit records through GStreamer's PulseAudio source (PipeWire's pulse server on current
+  # desktops); without the socket getUserMedia finds no microphone. Playback of recordings uses it too.
+  - --socket=pulseaudio
+  # Tray icon: the StatusNotifier watcher of the desktop, and the item's own name, which Wails takes as
+  # org.kde.StatusNotifierItem-<pid>-1 (the app is pid 2 in the sandbox's pid namespace)
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --own-name=org.kde.StatusNotifierItem-2-1
+  # Not needed: the single-instance name (app.mindsift.MindSift.SingleInstance) lies under the app id,
+  # which Flatpak lets the app own anyway; the backup folder dialog and "open folder" go through the
+  # portals; the data lives in the sandbox's own $XDG_DATA_HOME (~/.var/app/app.mindsift.MindSift/data),
+  # so there is no --filesystem permission. No system bus either: Wails' sleep/wake events (logind) are
+  # unused, and the app sends no desktop notifications (alarms go through Discord/webhooks).
+
+modules:
+  - name: mindsift-desktop
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/golang/bin
+      env:
+        CGO_ENABLED: '1'
+        # Only the vendored modules and the SDK's Go: no download of modules or of another toolchain
+        GOFLAGS: -mod=vendor -trimpath
+        GOTOOLCHAIN: local
+        GOPROXY: 'off'
+    build-commands:
+      # The version build.sh staged in desktop/app-version (the release's tag, or v<package.json>-dev),
+      # without it the one from frontend/package.json as for a development build
+      - |
+        version="$(cat desktop/app-version 2>/dev/null || echo "v$(sed -n 's/.*"version": "\(.*\)".*/\1/p' frontend/package.json | head -1)-dev")"
+        cd desktop
+        GOCACHE="$PWD/.gocache" go build -ldflags "-s -w -X main.version=$version" -o /app/bin/mindsift-desktop .
+      - install -Dm644 desktop/packaging/linux/app.mindsift.MindSift.desktop /app/share/applications/app.mindsift.MindSift.desktop
+      - cp -r desktop/packaging/linux/icons /app/share/icons
+      - install -Dm644 desktop/packaging/flatpak/app.mindsift.MindSift.metainfo.xml /app/share/metainfo/app.mindsift.MindSift.metainfo.xml
+      - install -Dm644 LICENSE /app/share/licenses/app.mindsift.MindSift/LICENSE
+      # The licenses of the bundled npm packages and Go modules (build.sh, desktop/build.sh licenses): in
+      # the licenses folder, and next to the binary, where the app reads it for "About MindSift"
+      - install -Dm644 THIRD_PARTY_LICENSES.txt /app/share/licenses/app.mindsift.MindSift/THIRD_PARTY_LICENSES.txt
+      - install -Dm644 THIRD_PARTY_LICENSES.txt /app/bin/THIRD_PARTY_LICENSES.txt
+    sources:
+      - type: dir
+        path: src

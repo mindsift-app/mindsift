@@ -1,4 +1,5 @@
 import i18n from '../i18n';
+import type { Capabilities } from './capabilities';
 
 export type ThoughtStatus = 'inbox' | 'kept' | 'discarded' | 'converted';
 export type PriorityLevel = 'low' | 'normal' | 'high' | 'urgent';
@@ -24,6 +25,13 @@ export interface SetupInfo {
   serverTime?: ServerTime;
 }
 
+// Desktop mode of the server (AuthStatus.desktop): the platform and the realtime transport of the window
+// (Linux streams server-sent events, Windows' webview buffers responses, so long polling there)
+export interface DesktopInfo {
+  platform: 'linux' | 'windows';
+  realtime: 'sse' | 'poll';
+}
+
 export interface AuthStatus {
   needsSetup: boolean;
   // The wizard asks for the one-time setup code the server wrote to its log (not in the demo, not with ADMIN_USER)
@@ -38,6 +46,11 @@ export interface AuthStatus {
   emailVerification?: boolean;
   instanceName: string;
   demoMode?: boolean;
+  // The server runs inside the desktop app: one account, no sign-in (POST /auth/desktop gives the session),
+  // nothing that needs other people or a public address; realtime is the transport the window can use
+  desktop?: DesktopInfo;
+  // What this instance offers (lib/capabilities.ts, internal/api/capabilities.go)
+  capabilities?: Partial<Capabilities>;
   sharingMode?: SharingMode;
   // "Passwort vergessen?" works (SMTP and BASE_URL configured)
   passwordReset?: boolean;
@@ -644,6 +657,54 @@ export interface BackupFile {
   size: number;
   createdAt: string;
 }
+
+/** Desktop app: where the backups go; defaultDir is backups/ in the instance's folder, custom: chosen. */
+export interface BackupLocation {
+  // dir: where the backups go; with a chosen folder MindSift's subfolder in it (MindSift-Backups/<instance>)
+  dir: string;
+  defaultDir: string;
+  custom: boolean;
+  // chosen: the folder picked in the setup or the administration ('' = the default)
+  chosen?: string;
+  // chosenMissing: the chosen folder does not exist now (drive not mounted): backup runs are skipped
+  chosenMissing?: boolean;
+}
+
+/** Desktop app: one account of a server's database snapshot, with what it owns. */
+export interface SnapshotAccount {
+  id: string;
+  displayName: string;
+  username: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  notes: number;
+  tasks: number;
+  lists: number;
+  inbox: number;
+}
+
+export interface SnapshotStaged {
+  token: string;
+  accounts: SnapshotAccount[];
+}
+
+/** Preview or result of taking an account of a snapshot over. */
+export interface SnapshotTakeOver extends ImportSummary {
+  account: SnapshotAccount;
+  settings: boolean;
+  // Settings left out because they would not pass the account settings' checks (e.g. an alarm webhook)
+  settingsSkipped?: SnapshotSkippedSetting[];
+}
+
+export type SnapshotSkippedSetting =
+  | 'discordWebhookUrl'
+  | 'customWebhookUrl'
+  | 'language'
+  | 'voiceInput'
+  | 'voiceLanguage'
+  | 'retention'
+  | 'notifyBeforeMinutes';
 
 /** Parts of the own data a backup can be restored for. */
 export type DataSection = 'notes' | 'tasks' | 'lists' | 'inbox' | 'themes';

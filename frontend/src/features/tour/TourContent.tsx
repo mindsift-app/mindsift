@@ -1,6 +1,7 @@
 import { Trans, useTranslation } from 'react-i18next';
 import { TourStepId } from './tourSteps';
 import { LinkedTaskDemo, SlashDemo, TriageDemo } from './TourDemos';
+import { can } from '../../lib/capabilities';
 
 interface TourContentProps {
   step: TourStepId;
@@ -74,7 +75,8 @@ export function TourContent({ step, phone, target }: TourContentProps) {
       return (
         <>
           {text(phone ? 'end.textPhone' : 'end.text')}
-          {text('end.share')}
+          {/* Sharing off (sharing mode private, the desktop app): nothing to share */}
+          {can('sharing') && text('end.share')}
         </>
       );
   }
