@@ -36,6 +36,10 @@ esac
 
 $ENGINE volume create mindsift-desktop-gomod >/dev/null 2>&1 || true
 
+# The Go modules exactly as go.mod and go.sum name them: downloaded and checked against go.sum, and every
+# go command after it fails instead of changing go.mod (no go mod tidy, which could pull other versions)
+GO_MODULES="go mod download && export GOFLAGS=-mod=readonly"
+
 # run_in IMAGE WORKDIR OUTDIRS COMMAND: runs COMMAND in IMAGE with the repository at /src and WORKDIR
 # (relative to the repository) as working directory; what COMMAND leaves in OUTDIRS (relative to the
 # repository, separated by spaces) ends up in the same folders of $ROOT.
@@ -47,7 +51,10 @@ run_in() {
   fi
   id="$($ENGINE create -v mindsift-desktop-gomod:/go/pkg/mod -w "/src/$workdir" "$image" sh -c "$cmd")"
   status=0
-  $ENGINE cp "$ROOT/." "$id:/src" && $ENGINE start -a "$id" || status=$?
+  # Without .git (the checkout's credentials and history are no business of the build) and without local
+  # dependencies (npm ci installs them fresh); GNU tar, the stream unpacks as /src
+  tar -C "$ROOT" --exclude=./.git --exclude=./frontend/node_modules --transform 's,^\.,src,' -cf - . \
+    | $ENGINE cp - "$id:/" && $ENGINE start -a "$id" || status=$?
   if [ "$status" = 0 ]; then
     for outdir in $outdirs; do
       mkdir -p "$ROOT/$outdir"
@@ -60,9 +67,11 @@ run_in() {
 
 mkdir -p desktop/out
 if [ "${SKIP_FRONTEND:-0}" != "1" ]; then
-  # The npm part of the license file comes from the node_modules the frontend is built from
+  # The npm part of the license file comes from the node_modules the frontend is built from.
+  # --ignore-scripts: no package's install script runs; the only one in package-lock.json is fsevents
+  # (macOS only), esbuild finds its binary in its platform package without one.
   run_in "$NODE_IMAGE" frontend "frontend/dist desktop/out" \
-    "npm ci --no-audit --no-fund >/dev/null && APP_VERSION=$APP_VERSION npm run build >/dev/null && \
+    "npm ci --ignore-scripts --no-audit --no-fund >/dev/null && APP_VERSION=$APP_VERSION npm run build >/dev/null && \
     mkdir -p ../desktop/out && node ../ci/third-party-licenses-npm.mjs . > ../desktop/out/third-party-npm.txt"
 fi
 [ "$TARGET" = frontend ] && exit 0
@@ -70,18 +79,18 @@ rm -rf desktop/dist && cp -r frontend/dist desktop/dist
 
 if [ "$TARGET" = all ] || [ "$TARGET" = linux ]; then
   run_in "$GO_IMAGE" desktop desktop/out "apt-get update -qq >/dev/null && apt-get install -y -qq --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev pkg-config >/dev/null && \
-    go mod tidy && CGO_ENABLED=1 go build -trimpath -ldflags '-s -w -X main.version=$APP_VERSION' -o out/mindsift-desktop-linux-amd64 ."
+    $GO_MODULES && CGO_ENABLED=1 go build -trimpath -ldflags '-s -w -X main.version=$APP_VERSION' -o out/mindsift-desktop-linux-amd64 ."
 fi
 if [ "$TARGET" = all ] || [ "$TARGET" = windows ]; then
   # The .syso (icon, version information, manifest) is linked in by go build and removed again afterwards
-  run_in "$GO_IMAGE" desktop desktop/out "go mod tidy && go run ./tools/mksyso -ico packaging/windows/app.ico -version ${APP_VERSION#v} -out resource_windows_amd64.syso && \
+  run_in "$GO_IMAGE" desktop desktop/out "$GO_MODULES && go run ./tools/mksyso -ico packaging/windows/app.ico -version ${APP_VERSION#v} -out resource_windows_amd64.syso && \
     CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags '-s -w -H windowsgui -X main.version=$APP_VERSION' -o out/mindsift-desktop-windows-amd64.exe . ; status=\$?; rm -f resource_windows_amd64.syso; exit \$status"
 fi
 if [ "$TARGET" = all ] || [ "$TARGET" = licenses ]; then
   # One file for both platforms: the frontend's npm packages, the Go modules either binary imports (Wails
   # and its dependencies, those of MindSift's server packages) and Go's standard library
   [ -s desktop/out/third-party-npm.txt ] || { echo "desktop/out/third-party-npm.txt is missing (run without SKIP_FRONTEND=1)" >&2; exit 1; }
-  run_in "$GO_IMAGE" desktop desktop/out "go mod tidy && \
+  run_in "$GO_IMAGE" desktop desktop/out "$GO_MODULES && \
     SUBJECT='The desktop app' GO_PLATFORMS='linux/amd64 windows/amd64' \
     bash ../ci/third-party-licenses.sh out/third-party-npm.txt . > out/THIRD_PARTY_LICENSES.txt.tmp && \
     mv out/THIRD_PARTY_LICENSES.txt.tmp out/THIRD_PARTY_LICENSES.txt"

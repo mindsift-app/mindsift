@@ -13,7 +13,7 @@
 #    release entry for that version in the metainfo (when CHANGELOG.md has its section), and the Go
 #    modules vendored (golang container, the only step that downloads modules), so flatpak-builder builds
 #    offline, as Flathub requires.
-# 3. flatpak-builder in a privileged Debian container (bubblewrap needs its own namespaces), with the
+# 3. flatpak-builder in a Debian container with SYS_ADMIN (bubblewrap needs its own namespaces), with the
 #    runtimes cached in the podman/docker volume mindsift-flatpak; the binary is built inside the GNOME
 #    SDK with the Go extension, so glibc, GTK and WebKitGTK are the runtime's.
 # Like desktop/build.sh it runs with podman and bind mounts locally; the CI workflow sets ENGINE=docker
@@ -91,9 +91,18 @@ run_in() {
 }
 
 # Vendor the Go modules (desktop/go.mod replaces the main module with ../, which is vendored as well)
-run_in "$GO_IMAGE" mindsift-desktop-gomod:/go/pkg/mod src/desktop "go mod tidy && go mod vendor"
+run_in "$GO_IMAGE" mindsift-desktop-gomod:/go/pkg/mod src/desktop "go mod download && go mod vendor"
 
-# Build the app and the bundle
+# Build the app and the bundle. flatpak-builder runs every step in bubblewrap, which needs namespaces and
+# mounts of its own (proc too): instead of --privileged only what that takes, SYS_ADMIN, NET_ADMIN (the
+# loopback of a sandbox without network, e.g. the icon check of the export), no seccomp and AppArmor
+# profile, and /proc without the engine's masked paths (bwrap cannot mount proc over them; Docker calls
+# this systempaths=unconfined, podman unmask=ALL). No devices, no other capabilities.
+SANDBOX_OPTS="--cap-add SYS_ADMIN --cap-add NET_ADMIN --security-opt seccomp=unconfined --security-opt apparmor=unconfined"
+case "$ENGINE" in
+  *podman*) SANDBOX_OPTS="$SANDBOX_OPTS --security-opt unmask=ALL" ;;
+  *) SANDBOX_OPTS="$SANDBOX_OPTS --security-opt systempaths=unconfined" ;;
+esac
 # (librsvg2-common: flatpak-builder runs appstreamcli compose in this container, which reads the SVG icon)
 run_in "$FLATPAK_IMAGE" mindsift-flatpak:/var/lib/flatpak . "set -e
   apt-get update -qq >/dev/null
@@ -106,7 +115,7 @@ run_in "$FLATPAK_IMAGE" mindsift-flatpak:/var/lib/flatpak . "set -e
   flatpak update -y --noninteractive --commit=$GO_EXT_COMMIT org.freedesktop.Sdk.Extension.golang//$GO_EXT_BRANCH
   flatpak-builder --state-dir=/tmp/state --disable-rofiles-fuse --disable-download --force-clean --repo=/tmp/repo /tmp/build $APP_ID.yml
   flatpak build-bundle /tmp/repo mindsift.flatpak $APP_ID --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
-  rm -rf src" --privileged
+  rm -rf src" "$SANDBOX_OPTS"
 
 mv "$STAGE/mindsift.flatpak" "$OUT"
 rm -rf "$STAGE"

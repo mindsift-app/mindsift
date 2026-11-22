@@ -38,10 +38,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.tag }}
+          # gh uses GH_TOKEN; the token does not stay in .git while npm and Go build the desktop app
+          persist-credentials: false
 
       # From the tag's sources, not from an image: a tag build only retags the tested :latest, the desktop
       # app has no image. desktop/build.sh and the Flatpak build run in containers (node, golang trixie
-      # with GTK 4 / WebKitGTK 6.0, a privileged Debian container for flatpak-builder).
+      # with GTK 4 / WebKitGTK 6.0, a Debian container with SYS_ADMIN for flatpak-builder), without .git,
+      # npm without install scripts and Go only with the modules go.sum names.
       - name: Build Desktop App
         id: desktop
         continue-on-error: true

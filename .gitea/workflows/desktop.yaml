@@ -7,9 +7,10 @@ name: MindSift Desktop (Gitea)
 # Runs for pushes to the desktop-spike branch and by hand ("Run workflow", for any branch, main too); it
 # builds no images and touches no registry. Releases are built by .github/workflows/release.yaml.
 # The scripts run with docker and copy the sources into the build containers, because the job may itself
-# run in a container. flatpak-builder runs in a privileged container on the runner's Docker host
-# (bubblewrap needs namespaces of its own); the runtimes are cached in the Docker volume mindsift-flatpak,
-# so only the first run downloads the GNOME SDK (~1 GB).
+# run in a container. flatpak-builder runs in a container with SYS_ADMIN and NET_ADMIN, no seccomp or
+# AppArmor profile and unmasked /proc (not privileged) on the runner's Docker host (bubblewrap needs
+# namespaces and a proc mount of its own, desktop/packaging/flatpak/build.sh); the runtimes are cached in
+# the Docker volume mindsift-flatpak, so only the first run downloads the GNOME SDK (~1 GB).
 # The actions are the same releases as in build-and-publish.yaml, pinned to commits. They run on Node 24,
 # which the runner's job image (Gitea runner images, ubuntu-latest) ships.
 on:
@@ -29,6 +30,9 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing is pushed; the token does not stay in .git for the build steps
+          persist-credentials: false
 
       - name: Build the desktop app's release files
         run: |
