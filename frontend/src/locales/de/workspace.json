@@ -355,6 +355,7 @@
     "uploadFailed": "Hochladen fehlgeschlagen",
     "emptyRecording": "Die Aufnahme ist leer",
     "noMic": "Kein Zugriff auf das Mikrofon (Berechtigung, oder die Seite läuft nicht über HTTPS)",
+    "recordUnsupported": "Aufnehmen wird in diesem Browser nicht unterstützt.",
     "record": "Sprachnotiz aufnehmen",
     "stopSave": "Aufnahme beenden und speichern",
     "start": "Aufnahme starten",

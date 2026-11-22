@@ -358,6 +358,7 @@
     "uploadFailed": "Échec du téléversement",
     "emptyRecording": "L'enregistrement est vide",
     "noMic": "Pas d'accès au micro (autorisation ou page non servie en HTTPS)",
+    "recordUnsupported": "L'enregistrement n'est pas pris en charge par ce navigateur.",
     "record": "Enregistrer une note vocale",
     "stopSave": "Arrêter et enregistrer l'enregistrement",
     "start": "Démarrer l'enregistrement",

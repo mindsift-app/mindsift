@@ -33,6 +33,9 @@ interface AudioBlockProps {
   locked?: boolean;
   /** Enter in the caption: leave it for a new bullet below, like Enter at the end of a text bullet */
   onExitBelow?: () => void;
+  /** Focus entered or left the block (caption, player, buttons): it counts as the bullet being edited, so
+   * the bar above the phone keyboard (MobileOutlineBar) indents and moves this bullet */
+  onFocusChange?: (focused: boolean) => void;
 }
 
 // Audio block: player plus caption. With the own Whisper server the recording can be turned into text,
@@ -51,6 +54,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
   canOutdent = false,
   locked = false,
   onExitBelow,
+  onFocusChange,
 }) => {
   const { t } = useTranslation('workspace');
   const ref = parseMediaContent(content);
@@ -155,7 +159,13 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
   };
 
   return (
-    <div className="group/audio my-1 space-y-1">
+    <div
+      className="group/audio my-1 space-y-1"
+      onFocus={() => onFocusChange?.(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onFocusChange?.(false);
+      }}
+    >
       {failed ? (
         <div className="flex items-center gap-2 h-12 px-4 rounded-full border border-border bg-panel text-xs text-muted">
           <FileHeadphone className="w-4 h-4" /> {t('media.audioUnavailable')}
@@ -177,10 +187,11 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
           )}
           {editable && (onIndent || onOutdent) && (
             // Right of the player and the transcribe button, so nothing stands between the bullet and the
-            // player; on devices that can hover only while the pointer is over the block (phones always
-            // show them)
+            // player; on devices that can hover only while the pointer is over the block. Phones have none
+            // (they would squeeze the player's time bar): there the bar above the keyboard indents, like
+            // for the code block
             <div
-              className={`flex items-center gap-0.5 shrink-0 transition-opacity ${
+              className={`hidden sm:flex items-center gap-0.5 shrink-0 transition-opacity ${
                 locked ? '' : '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/audio:opacity-100 focus-within:opacity-100'
               }`}
             >
