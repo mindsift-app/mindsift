@@ -702,6 +702,9 @@ export interface SnapshotTakeOver extends ImportSummary {
   settings: boolean;
   // Settings left out because they would not pass the account settings' checks (e.g. an alarm webhook)
   settingsSkipped?: SnapshotSkippedSetting[];
+  // The account's pictures and recordings found in the backup, and those it lacks (a database snapshot alone has none)
+  media?: number;
+  mediaMissing?: number;
 }
 
 export type SnapshotSkippedSetting =

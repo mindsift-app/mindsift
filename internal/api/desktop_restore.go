@@ -24,8 +24,9 @@ import (
 )
 
 // Taking one account of a server over into a local instance of the desktop app (desktop mode only). A
-// server's database snapshot (backups/system/mindsift-db-….db.gz) holds every account of that server; the
-// local instance has one account and nothing to share. So the snapshot does not replace the instance's
+// server's backup holds every account of that server: a copy of its data or backups folder as .zip, .tar or
+// .tar.gz (with the pictures and recordings, desktop_restore_archive.go), or a database snapshot alone
+// (backups/system/mindsift-db-….db.gz, without them); the local instance has one account and nothing to share. So the snapshot does not replace the instance's
 // database: it is unpacked into a folder of its own next to it (restore-staging/<token>), opened as a store
 // of its own (migrated there when it is older), and the person picks the account to take over. That
 // account's data goes through the same export and import as a person's own backup (only what it owns;
@@ -36,8 +37,9 @@ import (
 // closes.
 
 const (
-	// maxSnapshotUploadBytes: the packed snapshot the window sends (in-process, no network)
-	maxSnapshotUploadBytes = 2 << 30
+	// maxSnapshotUploadBytes: the file the window sends (in-process, no network): a snapshot, or an archive
+	// of a server's data folder with every account's media
+	maxSnapshotUploadBytes = 32 << 30
 	// maxSnapshotBytes: the unpacked database
 	maxSnapshotBytes = 8 << 30
 	// snapshotStageTTL: how long a staged snapshot waits for the person to pick an account
@@ -52,8 +54,9 @@ const (
 
 var (
 	errSnapshotNoFile   = errors.New("Keine Datei erhalten")
-	errNotSnapshot      = errors.New("Die Datei ist kein Datenbank-Abzug von MindSift (mindsift-db-….db.gz)")
+	errNotSnapshot      = errors.New("Die Datei ist kein Backup eines MindSift-Servers")
 	errSnapshotTooLarge = i18n.NewError("Der Datenbank-Abzug ist zu groß (max. {gb} GB)", "gb", strconv.Itoa(maxSnapshotBytes>>30))
+	errUploadTooLarge   = i18n.NewError("Die Datei ist zu groß (max. {gb} GB)", "gb", strconv.Itoa(maxSnapshotUploadBytes>>30))
 	errSnapshotNewer    = errors.New("Der Datenbank-Abzug stammt von einer neueren MindSift-Version. Bitte zuerst die App aktualisieren.")
 	errSnapshotNoUsers  = errors.New("Im Datenbank-Abzug ist kein Konto")
 	errSnapshotGone     = errors.New("Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.")
@@ -167,8 +170,8 @@ func openSnapshot(dir string) (*storage.Store, error) {
 	return st, nil
 }
 
-// handleSnapshotUpload: POST /admin/backups/server-snapshot (multipart field file: .db.gz or .db). Stages
-// the snapshot and answers {token, accounts}.
+// handleSnapshotUpload: POST /admin/backups/server-snapshot (multipart field file: an archive of a server's
+// data or backups folder, .db.gz or .db). Stages the database (and the archive) and answers {token, accounts}.
 func (s *Server) handleSnapshotUpload(w http.ResponseWriter, r *http.Request) {
 	allowLongTransfer(w)
 	token, err := randomToken(16)
@@ -200,10 +203,8 @@ func (s *Server) handleSnapshotUpload(w http.ResponseWriter, r *http.Request) {
 	// Only now, with the import gate held: a take-over of the snapshot staged before cannot be running, and
 	// the folder of this upload stays
 	s.clearSnapshots(token)
-	allowLongWork(w)
-	err = unpackSnapshot(raw, filepath.Join(dir, snapshotDBName))
-	logFailed("Removing the uploaded database snapshot", os.Remove(raw))
-	if err != nil {
+	allowLongTransfer(w) // reading through an archive of a whole data folder takes a while
+	if err := stageUpload(raw, dir); err != nil {
 		failed(http.StatusBadRequest, err)
 		return
 	}
@@ -260,7 +261,7 @@ func receiveSnapshot(r *http.Request, dst string) error {
 		var tooLarge *http.MaxBytesError
 		switch {
 		case n > maxSnapshotUploadBytes || errors.As(err, &tooLarge):
-			return errSnapshotTooLarge
+			return errUploadTooLarge
 		case err != nil:
 			return err
 		case n == 0:
@@ -329,13 +330,17 @@ type snapshotSummary struct {
 	Settings bool                    `json:"settings"`
 	// SettingsSkipped: settings of the account left out as invalid (keys of PATCH /auth/settings)
 	SettingsSkipped []string `json:"settingsSkipped,omitempty"`
+	// Media: the account's pictures and recordings found in the backup; MediaMissing: those it lacks (all of
+	// them in a database snapshot alone)
+	Media        int `json:"media"`
+	MediaMissing int `json:"mediaMissing"`
 }
 
 // handleSnapshotTakeOver: POST /admin/backups/server-snapshot/{token}?account=<id> with sections, mode
 // (restore: the chosen sections of the local account are replaced; merge: added), settings=0 (keep the
 // local settings) and preview=1 (only the summary). Without preview the snapshot is removed afterwards.
 func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) {
-	allowLongWork(w)
+	allowLongTransfer(w) // the first call reads the account's media out of the archive
 	token := chi.URLParam(r, "token")
 	dir := s.stagedSnapshotDir(token)
 	if dir == "" {
@@ -385,11 +390,16 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	archive, err := snapshotAccountBackup(st, dir, accountID)
+	if errors.Is(err, errNotSnapshot) {
+		writeErrorFrom(w, http.StatusBadRequest, err)
+		return
+	}
 	if err != nil {
 		slog.Error("Exporting an account of a database snapshot failed", "error", err)
 		writeInternal(w, err)
 		return
 	}
+	mediaFound, mediaMissing := snapshotMediaCounts(st, accountID)
 	defer archive.Close()
 	info, err := archive.Stat()
 	if err != nil {
@@ -407,7 +417,7 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 	settings := q.Get("settings") != "0"
 	if q.Get("preview") == "1" {
 		s.store.CheckImportMedia(userID, plan)
-		writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, plan.Summary(false)), *account, settings, nil})
+		writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, plan.Summary(false)), *account, settings, nil, mediaFound, mediaMissing})
 		return
 	}
 	var replace map[string]bool
@@ -434,15 +444,19 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 	}
 	slog.Info("Account of a database snapshot taken over", "user_id", userID, "notes", sum.Notes, "tasks", sum.Tasks, "lists", sum.Lists, "settings", settings)
 	finished = true // the snapshot goes once released (deferred above), after the store on it is closed
-	writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, sum), *account, settings, settingsSkipped})
+	writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, sum), *account, settings, settingsSkipped, mediaFound, mediaMissing})
 }
 
-// snapshotAccountBackup: the account's backup ZIP, as its daily backup on the server would be (without
-// images and recordings: their files are not in the snapshot), written once per account into dir.
+// snapshotAccountBackup: the account's backup ZIP, as its daily backup on the server would be, written once
+// per account into dir; with the pictures and recordings the uploaded archive has of it (none from a
+// database snapshot alone).
 func snapshotAccountBackup(st *storage.Store, dir, accountID string) (*os.File, error) {
 	path := filepath.Join(dir, "account-"+hex.EncodeToString([]byte(accountID))+".zip")
 	if f, err := os.Open(path); err == nil {
 		return f, nil
+	}
+	if err := extractAccountMedia(st, dir, accountID); err != nil {
+		return nil, err
 	}
 	exp, err := st.ExportUserData(accountID)
 	if err != nil {

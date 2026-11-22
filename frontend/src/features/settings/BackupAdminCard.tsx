@@ -112,7 +112,12 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
             {t('backups.autoTitle')}
           </p>
           <p className="text-[11px] text-muted mt-0.5">
-            <Trans t={t} i18nKey={desktop ? 'backups.autoHintDesktop' : 'backups.autoHint'} components={{ c: <code className="font-mono" /> }} />
+            <Trans
+              t={t}
+              i18nKey={desktop ? 'backups.autoHintDesktop' : 'backups.autoHint'}
+              values={{ time: settings.backupTime || DEFAULT_BACKUP_TIME }}
+              components={{ c: <code className="font-mono" /> }}
+            />
             {lockedBy.length > 0 && ` ${t('settings:server.fixedBy', { env: lockedBy.join(', ') })}`}
           </p>
         </div>

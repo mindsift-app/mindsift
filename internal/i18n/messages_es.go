@@ -648,15 +648,16 @@ var messagesES = map[string]string{
 	"Anfrage zu groß (höchstens {mb} MB; ein Bild für add_note_image höchstens {img} MB)":         "Solicitud demasiado grande (máximo {mb} MB; una imagen para add_note_image como máximo {img} MB)",
 
 	// Desktop app: taking an account of a server's database snapshot over
-	"Keine Datei erhalten": "No se ha recibido ningún archivo",
-	"Die Datei ist kein Datenbank-Abzug von MindSift (mindsift-db-….db.gz)":                                     "El archivo no es una copia de la base de datos de MindSift (mindsift-db-….db.gz)",
-	"Der Datenbank-Abzug ist zu groß (max. {gb} GB)":                                                            "La copia de la base de datos es demasiado grande (máx. {gb} GB)",
+	"Keine Datei erhalten":                             "No se ha recibido ningún archivo",
+	"Die Datei ist kein Backup eines MindSift-Servers": "El archivo no es una copia de seguridad de un servidor MindSift",
+	"Die Datei ist zu groß (max. {gb} GB)":             "El archivo es demasiado grande (máx. {gb} GB)",
+	"Der Datenbank-Abzug ist zu groß (max. {gb} GB)":   "La copia de la base de datos es demasiado grande (máx. {gb} GB)",
 	"Der Datenbank-Abzug stammt von einer neueren MindSift-Version. Bitte zuerst die App aktualisieren.":        "La copia de la base de datos procede de una versión más reciente de MindSift. Actualiza primero la aplicación.",
 	"Der Datenbank-Abzug ist beschädigt oder enthält etwas, das MindSift nicht anlegt, und wird nicht geöffnet": "La copia de la base de datos está dañada o contiene algo que MindSift no crea, y no se abre",
-	"Im Datenbank-Abzug ist kein Konto":                                                                         "La copia de la base de datos no contiene ninguna cuenta",
-	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":                                "La copia de la base de datos ya no está disponible. Vuelve a elegir el archivo.",
-	"Dieses Konto ist nicht im Datenbank-Abzug":                                                                 "Esta cuenta no está en la copia de la base de datos",
-	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit":                    "Los valores ocultos están cifrados con la clave del servidor y no se transfieren",
+	"Im Datenbank-Abzug ist kein Konto":                                                      "La copia de la base de datos no contiene ninguna cuenta",
+	"Der Datenbank-Abzug ist nicht mehr da. Bitte die Datei noch einmal wählen.":             "La copia de la base de datos ya no está disponible. Vuelve a elegir el archivo.",
+	"Dieses Konto ist nicht im Datenbank-Abzug":                                              "Esta cuenta no está en la copia de la base de datos",
+	"Versteckte Werte sind mit dem Schlüssel des Servers verschlüsselt und kommen nicht mit": "Los valores ocultos están cifrados con la clave del servidor y no se transfieren",
 
 	"Versteckter Wert nicht im Backup enthalten und nicht mehr auf diesem Server, nur ein Platzhalter wird übernommen": "Valor oculto no incluido en la copia de seguridad y ya no está en este servidor, solo se conserva un marcador de posición",
 	"Der gewählte Backup-Ordner {dir} existiert nicht (Laufwerk nicht eingebunden?), das Backup wurde übersprungen":    "La carpeta de copias de seguridad elegida {dir} no existe (¿unidad no conectada?), se omitió la copia",

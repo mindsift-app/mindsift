@@ -8,8 +8,9 @@ import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { SectionPicker } from './SectionPicker';
 import { summaryParts } from './importSummary';
 
-// Desktop app, Administration → Data: one account of a server's database snapshot (.db.gz) into this
-// instance's account. The snapshot holds every account of the server; the person picks one, sees what
+// Desktop app, Administration → Data: one account of a server's backup into this instance's account: a
+// packed copy of the server's data or backups folder (.zip, .tar, .tar.gz, with the account's pictures and
+// recordings) or a database snapshot alone (.db.gz). It holds every account of the server; the person picks one, sees what
 // would come over, then takes it over. Only what that account owns comes along (api/desktop_restore.go).
 export const ServerSnapshotCard: React.FC = () => {
   const { t } = useTranslation('settings');
@@ -120,9 +121,7 @@ export const ServerSnapshotCard: React.FC = () => {
           <Server className="w-3.5 h-3.5 text-accent" />
           {t('backups.snapshot.title')}
         </p>
-        <p className="text-[11px] text-muted mt-0.5">
-          <Trans t={t} i18nKey="backups.snapshot.hint" components={{ c: <code className="font-mono" /> }} />
-        </p>
+        <p className="text-[11px] text-muted mt-0.5">{t('backups.snapshot.hint')}</p>
       </div>
 
       {!staged && (
@@ -154,7 +153,7 @@ export const ServerSnapshotCard: React.FC = () => {
           <input
             ref={inputRef}
             type="file"
-            accept=".gz,.db,application/gzip"
+            accept=".gz,.tgz,.tar,.zip,.db,application/gzip,application/zip,application/x-tar"
             className="hidden"
             onChange={(e) => {
               pick(e.target.files?.[0]);
@@ -250,6 +249,10 @@ export const ServerSnapshotCard: React.FC = () => {
               </p>
               <p className="text-muted">{t('import.willCreate', { what: summaryParts(preview).join(', ') || t('import.nothing') })}</p>
               {preview.settings && <p className="text-muted">{t('backups.snapshot.settingsToo')}</p>}
+              {(preview.media ?? 0) > 0 && <p className="text-muted">{t('backups.snapshot.media', { count: preview.media })}</p>}
+              {(preview.mediaMissing ?? 0) > 0 && (
+                <p className="text-muted">{t('backups.snapshot.mediaMissing', { count: preview.mediaMissing })}</p>
+              )}
               {preview.skipped.length > 0 && (
                 <details className="text-[11px] text-muted">
                   <summary className="cursor-pointer">{t('import.skipped', { count: preview.skipped.length })}</summary>
