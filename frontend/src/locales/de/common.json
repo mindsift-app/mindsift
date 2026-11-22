@@ -181,7 +181,7 @@
     "noMic": "Kein Zugriff auf das Mikrofon (Berechtigung, oder die Seite läuft nicht über HTTPS)",
     "denied": "Mikrofon nicht freigegeben",
     "startFailed": "Spracheingabe konnte nicht gestartet werden",
-    "unsupported": "Spracheingabe wird von diesem Browser nicht unterstützt",
+    "unsupported": "Spracheingabe ist hier nicht verfügbar: Es gibt keine eingebaute Spracherkennung. Mit einem Whisper-Server (Administration → Spracheingabe & KI) funktioniert sie.",
     "off": "Spracheingabe ist ausgeschaltet"
   },
   "menu": {

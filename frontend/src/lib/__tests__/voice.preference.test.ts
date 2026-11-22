@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const getAuthStatus = vi.fn();
 vi.mock('../api', () => ({ api: { getAuthStatus: (...a: unknown[]) => getAuthStatus(...a) } }));
 
-import { loadVoiceConfig, resetVoiceConfig, setVoicePreference, voiceChoiceAvailable } from '../voice';
+import { loadVoiceConfig, resetVoiceConfig, setVoicePreference, voiceChoiceAvailable, VoiceRecorder } from '../voice';
 
 // Recording and recognition as far as jsdom needs them to count as available
 Object.assign(window, { MediaRecorder: function () {} });
@@ -33,9 +33,42 @@ describe('voice input: Whisper or browser per account', () => {
     expect(voiceChoiceAvailable()).toBe(false);
   });
 
+  it('keeps Whisper when the account picked the browser but this one has no recognition (WebKitGTK)', async () => {
+    const saved = (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
+    Reflect.deleteProperty(window, 'webkitSpeechRecognition');
+    try {
+      getAuthStatus.mockResolvedValue({ voice: { mode: 'server', maxSeconds: 600, browserAllowed: true } });
+      setVoicePreference('browser');
+      expect((await loadVoiceConfig()).mode).toBe('server');
+    } finally {
+      Object.assign(window, { webkitSpeechRecognition: saved });
+    }
+  });
+
   it('offers no choice without a Whisper server', async () => {
     getAuthStatus.mockResolvedValue({ voice: { mode: 'browser', maxSeconds: 600, browserAllowed: true } });
     await loadVoiceConfig();
     expect(voiceChoiceAvailable()).toBe(false);
+  });
+});
+
+describe('VoiceRecorder', () => {
+  it('releases the microphone when the browser refuses to create the recorder', async () => {
+    const stop = vi.fn();
+    const stream = { getTracks: () => [{ stop }] };
+    Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn().mockResolvedValue(stream) }, configurable: true });
+    const saved = window.MediaRecorder;
+    Object.assign(window, {
+      MediaRecorder: function () {
+        throw new Error('NotSupportedError');
+      },
+    });
+    try {
+      await expect(new VoiceRecorder().start()).rejects.toThrow('NotSupportedError');
+      expect(stop).toHaveBeenCalled();
+    } finally {
+      Object.assign(window, { MediaRecorder: saved });
+      Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+    }
   });
 });

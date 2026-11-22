@@ -183,7 +183,7 @@
     "noMic": "No access to the microphone (permission, or the page is not served over HTTPS)",
     "denied": "Microphone not allowed",
     "startFailed": "Voice input could not be started",
-    "unsupported": "This browser does not support voice input",
+    "unsupported": "Voice input is not available here: there is no built-in speech recognition. It works with a Whisper server (Administration → Voice input & AI).",
     "off": "Voice input is switched off"
   },
   "menu": {

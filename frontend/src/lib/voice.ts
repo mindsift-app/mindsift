@@ -32,8 +32,10 @@ let spokenLanguage = '';
 /** Fired when the effective mode changes (the account setting was loaded or changed). */
 export const VOICE_CONFIG_EVENT = 'mindsift:voice-config';
 
+// The account's pick of the browser only counts where the browser has recognition at all (WebKitGTK, Firefox
+// and others have none): there the Whisper server stays in charge, whatever was picked on another device.
 function applyPreference(mode: VoiceMode | undefined): VoiceMode | undefined {
-  return mode === 'server' && browserAllowed && preference === 'browser' ? 'browser' : mode;
+  return mode === 'server' && browserAllowed && preference === 'browser' && browserRecognition() ? 'browser' : mode;
 }
 
 /** The account's choice ('' = Whisper server, 'browser'); set when the user is loaded or changes it. */
@@ -208,7 +210,12 @@ export class VoiceRecorder {
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
-    this.startSegmentRecorder();
+    try {
+      this.startSegmentRecorder();
+    } catch (err) {
+      this.release(); // e.g. WebKitGTK refuses the recorder: the microphone must not stay open
+      throw err;
+    }
     try {
       const Ctx = window.AudioContext || (window as PrefixedWindow).webkitAudioContext;
       if (!Ctx) throw new Error('no AudioContext');

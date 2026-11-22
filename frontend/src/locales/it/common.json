@@ -183,7 +183,7 @@
     "noMic": "Nessun accesso al microfono (permesso mancante o connessione non HTTPS)",
     "denied": "Accesso al microfono non consentito",
     "startFailed": "Impossibile avviare l'inserimento vocale",
-    "unsupported": "L'inserimento vocale non è supportato da questo browser",
+    "unsupported": "L'inserimento vocale non è disponibile qui: non c'è un riconoscimento vocale integrato. Funziona con un server Whisper (Amministrazione → Inserimento vocale e IA).",
     "off": "L'inserimento vocale è disattivato"
   },
   "menu": {

@@ -430,6 +430,7 @@
     "serverHint": "Die Aufnahme geht nur an den Spracherkennungs-Server dieser MindSift-Installation. Funktioniert in jedem Browser.",
     "browser": "Browser",
     "browserHint": "Die Spracherkennung des Browsers. Der Text erscheint sofort beim Sprechen; Chrome und Edge schicken die Aufnahme dafür an Google bzw. Microsoft. In Firefox gibt es sie nicht.",
+    "browserUnavailable": "Hier nicht verfügbar: Dieses Fenster hat keine eingebaute Spracherkennung. Es wird der Whisper-Server benutzt.",
     "languageTitle": "Sprache beim Sprechen",
     "languageIntro": "In welcher Sprache du ins Mikrofon sprichst. Auch Sprachen, die es in der App nicht gibt.",
     "languageApp": "Wie die App-Sprache ({{name}})",

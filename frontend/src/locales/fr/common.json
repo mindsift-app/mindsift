@@ -183,7 +183,7 @@
     "noMic": "Pas d'accès au micro (autorisation ou page non servie en HTTPS)",
     "denied": "Microphone refusé",
     "startFailed": "Impossible de démarrer la saisie vocale",
-    "unsupported": "Ce navigateur ne prend pas en charge la saisie vocale",
+    "unsupported": "La saisie vocale n'est pas disponible ici : il n'y a pas de reconnaissance vocale intégrée. Elle fonctionne avec un serveur Whisper (Administration → Saisie vocale & IA).",
     "off": "La saisie vocale est désactivée"
   },
   "menu": {
