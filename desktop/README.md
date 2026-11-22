@@ -342,7 +342,8 @@ Start menu entry), `mindsift-desktop-windows-amd64-setup.exe` installs it. Both 
   key's `InstallLocation`, without asking for a folder) and keeping the desktop shortcut. A running app
   locks its exe, so the installer (and the uninstaller) asks to quit it, also from the tray, and retries;
   a silent run gives up with exit code 3 instead.
-- **Uninstall** removes only the files it installed, the shortcuts and the key; the folder only when
+- **Uninstall** removes only the files it installed, the shortcuts, the key and what the app registered for
+  its notifications (the AppUserModelID `MindSift`, its COM activator, `HKCU\Software\MindSift\NotificationCategories`); the folder only when
   nothing else is left in it. `%APPDATA%\MindSift` (instances, `desktop.json`, the webview's storage) is
   never deleted and there is no option for it; the confirmation page says so.
 - **WebView2:** no bootstrapper, the runtime is part of Windows 10 and 11. Wails' own NSIS template
