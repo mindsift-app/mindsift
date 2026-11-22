@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FileHeadphone, LoaderCircle, WandSparkles } from 'lucide-react';
-import { api } from '../../lib/api';
-import { mediaBlob, mediaObjectURL, parseMediaContent } from '../../lib/media';
+import { FileHeadphone, LoaderCircle, WandSparkles, X } from 'lucide-react';
+import { mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { loadVoiceConfig } from '../../lib/voice';
 import { useTranslation } from 'react-i18next';
 import { errorMessage } from '../../lib/errorMessage';
+import { discardTranscription, startBlockTranscription, transcriptionError, useBlockTranscription, waitForTranscription } from '../../lib/transcriptionJobs';
 import { IndentArrows, OVERLAY_ARROW_BUTTON } from './IndentArrows';
 import { MediaCaption } from './MediaCaption';
 
@@ -19,6 +19,9 @@ function onPlay(e: React.SyntheticEvent<HTMLAudioElement>) {
 
 interface AudioBlockProps {
   content: string;
+  /** The note and bullet: a transcription runs on the server and writes the caption itself */
+  docId?: string;
+  blockId?: string;
   canEdit: boolean;
   onCaptionChange: (caption: string) => void;
   /** Moves the bullet (no text field here to press Tab in) */
@@ -33,9 +36,13 @@ interface AudioBlockProps {
 }
 
 // Audio block: player plus caption. With the own Whisper server the recording can be turned into text,
-// which becomes the caption (and so searchable).
+// which becomes the caption (and so searchable). The server does that as a job (lib/transcriptionJobs.ts):
+// leaving the note does not stop it, the caption arrives through the note's sync, and the bullet shows
+// "Wird erkannt…" wherever the note is open, also after a reload.
 export const AudioBlock: React.FC<AudioBlockProps> = ({
   content,
+  docId,
+  blockId,
   canEdit,
   onCaptionChange,
   onIndent,
@@ -54,9 +61,23 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
   const editable = canEdit || locked;
   const [caption, setCaption] = useState(ref?.caption || '');
   const [canTranscribe, setCanTranscribe] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
+  // Asking the server to start (the job itself is `job` once it is there)
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const mountedRef = useRef(true);
+  // A failed job was let go: its end is no "nothing recognised"
+  const discardedRef = useRef(false);
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+    },
+    []
+  );
+  // Only where the bullet can be edited: readers (and public pages, without a login) do not ask for jobs
+  const job = useBlockTranscription(docId, blockId, editable && !!mediaId);
+  const transcribing = starting || job?.status === 'queued' || job?.status === 'running';
+  const jobFailed = job?.status === 'failed';
 
   useEffect(() => {
     // The caption field follows the stored caption (also from other devices)
@@ -108,23 +129,29 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
   };
 
   const transcribe = async () => {
-    if (!src) return;
-    setTranscribing(true);
+    if (!src || !docId || !blockId) return;
+    // A caption typed and not stored yet goes first, so the server sees it (and keeps it)
+    commitCaption(caption);
+    setStarting(true);
     setError(null);
+    discardedRef.current = false;
+    let started;
     try {
-      const blob = await mediaBlob(ref.id);
-      const text = await api.transcribe(blob);
-      if (text) {
-        setCaption(text);
-        commitCaption(text);
-      } else {
-        setError(t('media.nothing'));
-      }
+      started = await startBlockTranscription(docId, blockId);
     } catch (err) {
       setError(errorMessage(err, t('media.sttFailed')));
+      return;
     } finally {
-      setTranscribing(false);
+      setStarting(false);
     }
+    // The text comes with the note's sync; here only "nothing recognised" is worth a word
+    waitForTranscription(started.id)
+      .then((done) => {
+        if (mountedRef.current && !done && !discardedRef.current) setError(t('media.nothing'));
+      })
+      .catch(() => {
+        // a failed job shows its error through `job`
+      });
   };
 
   return (
@@ -136,7 +163,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
       ) : src ? (
         <div className="flex items-center gap-2">
           <audio ref={audioRef} controls preload="metadata" src={src} onPlay={onPlay} className="w-full max-w-md h-11" />
-          {editable && canTranscribe && (
+          {editable && (canTranscribe || transcribing) && (
             <button
               type="button"
               onClick={() => void transcribe()}
@@ -187,7 +214,27 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
       ) : (
         <MediaCaption value={ref.caption} />
       )}
-      {error && <p className="text-xs text-status-err">{error}</p>}
+      {error && !transcribing && !jobFailed && <p className="text-xs text-status-err">{error}</p>}
+      {jobFailed && job && (
+        // Failed on the server (after its own retries): "Transkribieren" tries again, × lets it be
+        <p className="flex items-center gap-1 text-xs text-status-err">
+          {transcriptionError(job)}
+          {!locked && (
+            <button
+              type="button"
+              onClick={() => {
+                discardedRef.current = true;
+                void discardTranscription(job.id).catch(() => {});
+              }}
+              title={t('media.transcribeDismiss')}
+              aria-label={t('media.transcribeDismiss')}
+              className="h-11 w-11 sm:h-5 sm:w-5 -my-3 sm:my-0 flex items-center justify-center rounded-btn text-faint hover:text-main"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </p>
+      )}
     </div>
   );
 };

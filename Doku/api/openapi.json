@@ -5009,6 +5009,170 @@
           }
         }
       }
+    },
+    "/api/v1/voice/captures": {
+      "post": {
+        "summary": "Store a recording for the inbox and transcribe it in the background",
+        "description": "Only in server mode for voice recognition: multipart/form-data with the recording's parts as file (in order) and optionally texts (JSON array, a string or null per part: text the app already recognised, not sent to Whisper again) → 202 with the job {id, kind: inbox, status, error, attempts, pieces, createdAt, updatedAt}. The server makes the inbox entry (source voice) once the text is there. 404 without STT_URL, 413 too large, 429 hourly rate limit",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/voice/jobs": {
+      "get": {
+        "summary": "Own background transcriptions",
+        "description": "Waiting, running and failed transcription jobs of the signed-in person: [{id, kind (note|inbox), docId, blockId, mediaId, status (queued|running|failed), error (failed|timeout), attempts, pieces, createdAt, updatedAt}]. Done jobs are removed",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/voice/jobs/{id}": {
+      "delete": {
+        "summary": "Discard a background transcription",
+        "description": "Removes an own job with its stored recording (an inbox recording is gone then; a note's recording stays in the note) → {deleted: true}. 404 for another person's job",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/voice/jobs/{id}/retry": {
+      "post": {
+        "summary": "Try a failed background transcription again",
+        "description": "Queues an own failed job again (a waiting or running one stays as it is) → the job. 404 for another person's job or without STT_URL",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/voice/jobs/{id}/audio/{n}": {
+      "get": {
+        "summary": "Listen to a part of a stored inbox recording",
+        "description": "Part n (from 0) of an own inbox job's recording, as recorded (WebM/Opus, MP4/AAC …). 404 for another person's job",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/blocks/{blockId}/transcribe": {
+      "post": {
+        "summary": "Transcribe a recording in a note in the background",
+        "description": "Only in server mode for voice recognition; requires write permission. The bullet must be a recording (type audio). → 202 with the job; the server writes the text into the recording's caption through the note's log (a caption written meanwhile is kept, the text added after it; a bullet someone edits waits for them). A job still waiting or running for the bullet is returned instead of a second one. 400 not a recording, 404 without STT_URL, 429 hourly rate limit",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "blockId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/transcriptions": {
+      "get": {
+        "summary": "Background transcriptions of a note's recordings",
+        "description": "Waiting, running and failed jobs for recordings in the note (read permission), as GET /voice/jobs",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
     }
   }
 }

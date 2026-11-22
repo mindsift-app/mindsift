@@ -395,7 +395,8 @@
     "pasteFailed_one": "Immagine non incollata: {{error}}",
     "pasteFailed_other": "{{count}} immagini non incollate: {{error}}",
     "pasteTooMany": "Al massimo {{max}} immagini alla volta, le altre non sono state incollate.",
-    "dropOnlyImages": "Si possono trascinare solo immagini."
+    "dropOnlyImages": "Si possono trascinare solo immagini.",
+    "transcribeDismiss": "Nascondi errore"
   },
   "journal": {
     "opening": "Apertura di {{date}}…",

@@ -60,7 +60,9 @@ type Server struct {
 	// passkeyChallenges: the challenges of passkey ceremonies, registration, confirmation, sign-in (passkeys.go)
 	passkeyChallenges passkeyChallenges
 	voice             *voiceService // self-hosted speech recognition (voice.go)
-	metrics           *apiMetrics   // what /metrics reports (metrics.go)
+	// transcriptionWake: a new or retried transcription job for the worker (transcription_jobs.go)
+	transcriptionWake chan struct{}
+	metrics           *apiMetrics // what /metrics reports (metrics.go)
 	// oidc: sign-in through an OpenID Connect provider (oidc.go); nil while it is off
 	oidc *oidcService
 	// update: the daily look for a new MindSift release (update.go)
@@ -97,14 +99,15 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		wsHub:    wsHub,
 		staticFS: staticFS,
 		// Next to the binary: /app/ in the image, the unpacked folder of a release archive
-		licensesFile: defaultThirdPartyLicenses(),
-		leases:       collab.NewLeaseManager(nil),
-		notifier:     collab.NewNotifier(),
-		stop:         make(chan struct{}),
-		backupNudge:  make(chan struct{}, 1),
-		now:          time.Now,
-		docLists:     make(chan struct{}, maxDocListsBuilding),
-		stats:        newStatsCache(),
+		licensesFile:      defaultThirdPartyLicenses(),
+		leases:            collab.NewLeaseManager(nil),
+		notifier:          collab.NewNotifier(),
+		stop:              make(chan struct{}),
+		backupNudge:       make(chan struct{}, 1),
+		transcriptionWake: make(chan struct{}, 1),
+		now:               time.Now,
+		docLists:          make(chan struct{}, maxDocListsBuilding),
+		stats:             newStatsCache(),
 	}
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
 	srv.prepareSetupCode()
@@ -122,6 +125,8 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	if srv.voiceMode() == "server" {
 		srv.background(srv.startVoiceCheck)
 	}
+	// Transcriptions in the background (transcription_jobs.go); idle while there are none
+	srv.background(srv.runTranscriptionJobs)
 	srv.draw = newDrawHub(cfg.DrawLiveMaxMB << 20)
 	srv.update = newUpdateChecker(cfg.AppVersion, store.UpdateCheckState(), func(st updateState) {
 		if b, err := json.Marshal(st); err == nil {
@@ -328,6 +333,14 @@ func (s *Server) Router() http.Handler {
 		r.Get("/api/v1/events/poll/{id}", s.handlePoll)
 		r.Post("/api/v1/auth/stream-ticket", s.handleStreamTicket)
 		r.Post("/api/v1/voice/transcribe", s.handleVoiceTranscribe)
+		// Transcriptions in the background (transcription_jobs.go)
+		r.Post("/api/v1/voice/captures", s.handleVoiceCapture)
+		r.Get("/api/v1/voice/jobs", s.handleVoiceJobs)
+		r.Post("/api/v1/voice/jobs/{id}/retry", s.handleVoiceJobRetry)
+		r.Delete("/api/v1/voice/jobs/{id}", s.handleVoiceJobDelete)
+		r.Get("/api/v1/voice/jobs/{id}/audio/{n}", s.handleVoiceJobAudio)
+		r.Post("/api/v1/documents/{id}/blocks/{blockId}/transcribe", s.handleTranscribeBlock)
+		r.Get("/api/v1/documents/{id}/transcriptions", s.handleDocTranscriptions)
 		r.Post("/api/v1/documents/{id}/media", s.handleUploadMedia)
 		r.Post("/api/v1/documents/{id}/media/fetch", s.notInDemo(s.handleFetchMedia))
 		r.Post("/api/v1/documents/{id}/secrets", s.handleCreateSecret)

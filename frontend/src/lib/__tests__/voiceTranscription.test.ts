@@ -52,4 +52,23 @@ describe('SegmentedTranscription', () => {
     await expect(tr.result()).resolves.toBe('Nur das');
     expect(transcribe).toHaveBeenCalledTimes(1);
   });
+
+  it('hands the parts over with the text known so far and aborts the requests still on their way', async () => {
+    const signals: AbortSignal[] = [];
+    transcribe.mockResolvedValueOnce('Erster Teil').mockImplementationOnce((_b: Blob, signal: AbortSignal) => {
+      signals.push(signal);
+      return new Promise<string>(() => {});
+    });
+    const progress = vi.fn();
+    const tr = new SegmentedTranscription(progress);
+    tr.add(audio('a'));
+    tr.add(audio('b'));
+    tr.add(Promise.resolve(null)); // nothing recorded in the last piece
+    await flush();
+
+    const parts = await tr.handOver();
+    expect(parts.map((p) => p.text)).toEqual(['Erster Teil', null]);
+    expect(parts[1].blob.size).toBe(1);
+    expect(signals[0].aborted).toBe(true);
+  });
 });

@@ -60,6 +60,7 @@ import { errorMessage } from '../../lib/errorMessage';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { shortNoteTitle } from '../../lib/noteTitle';
 import { templateBlocks } from '../../lib/noteTemplate';
+import { guardLeave } from '../../lib/leaveGuard';
 import { templateChoices } from './NoteTemplates';
 
 interface WorkspaceViewProps {
@@ -376,19 +377,29 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     [handleCreateDocument, hasTemplates]
   );
 
-  const handleJumpToDocBlock = useCallback((docId: string, blockId?: string) => {
-    setSelectedDocId(docId);
-    setTarget(blockId ? { docId, blockId } : null);
-    setNewlyCreatedDocId(null);
-    setSubView('editor');
-    setMobileShowDetail(true);
-  }, []);
+  // Links between notes, the journal and the trash leave the open note: they ask first while a dictation
+  // into a text field would be lost (lib/leaveGuard.ts)
+  const handleJumpToDocBlock = useCallback(
+    (docId: string, blockId?: string) =>
+      guardLeave(() => {
+        setSelectedDocId(docId);
+        setTarget(blockId ? { docId, blockId } : null);
+        setNewlyCreatedDocId(null);
+        setSubView('editor');
+        setMobileShowDetail(true);
+      }),
+    []
+  );
 
-  const openJournal = useCallback(() => {
-    reloadJournal();
-    setSubView('journal');
-    setMobileShowDetail(true);
-  }, [reloadJournal]);
+  const openJournal = useCallback(
+    () =>
+      guardLeave(() => {
+        reloadJournal();
+        setSubView('journal');
+        setMobileShowDetail(true);
+      }),
+    [reloadJournal]
+  );
 
   // A second click closes the journal and shows the regular note again
   const toggleJournal = useCallback(() => {
@@ -402,11 +413,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subView, openJournal]);
 
-  const openTrash = useCallback(() => {
-    reloadTrash();
-    setSubView('trash');
-    setMobileShowDetail(true);
-  }, [reloadTrash]);
+  const openTrash = useCallback(
+    () =>
+      guardLeave(() => {
+        reloadTrash();
+        setSubView('trash');
+        setMobileShowDetail(true);
+      }),
+    [reloadTrash]
+  );
 
   const handleDeleteDocument = useCallback(
     async (docId: string) => {
@@ -1010,19 +1025,24 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             requestDeleteFolder={requestDeleteFolder}
             requestRenameFolder={handleOpenRenameFolder}
             requestDeleteDoc={requestDeleteDoc}
-            onOpenDoc={(id) => {
-              setSelectedDocId(id);
-              setTarget(null);
-              setSubView('editor');
-              setMobileShowDetail(true);
-            }}
-            onSelectDoc={(id) => {
-              setSelectedDocId(id);
-              setTarget(null);
-              setNewlyCreatedDocId(null);
-              setSubView('editor');
-              setMobileShowDetail(true);
-            }}
+            onOpenDoc={(id) =>
+              // Another note: asks first while a dictation into a text field would be lost
+              guardLeave(() => {
+                setSelectedDocId(id);
+                setTarget(null);
+                setSubView('editor');
+                setMobileShowDetail(true);
+              })
+            }
+            onSelectDoc={(id) =>
+              guardLeave(() => {
+                setSelectedDocId(id);
+                setTarget(null);
+                setNewlyCreatedDocId(null);
+                setSubView('editor');
+                setMobileShowDetail(true);
+              })
+            }
           />
 
           {/* Tags Explorer */}

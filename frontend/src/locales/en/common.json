@@ -445,5 +445,14 @@
   "naturalDate": {
     "recognized": "Recognized due date: {{date}}",
     "ignore": "Don't use this date"
+  },
+  "leaveGuard": {
+    "message": "The dictation is not finished yet. Switching now loses it.",
+    "leave": "Switch anyway",
+    "stay": "Stay"
+  },
+  "voiceJobs": {
+    "failed": "Speech recognition failed",
+    "timeout": "Speech recognition took too long"
   }
 }

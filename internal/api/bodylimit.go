@@ -16,7 +16,7 @@ func (s *Server) bodyLimitFor(path string) int64 {
 	switch {
 	case strings.HasPrefix(path, "/api/v1/documents/") && strings.HasSuffix(path, "/media"):
 		return s.mediaUploadLimit()
-	case path == "/api/v1/voice/transcribe":
+	case path == "/api/v1/voice/transcribe", path == "/api/v1/voice/captures":
 		return int64(s.speech().MaxUploadMB)<<20 + 1<<20
 	case strings.HasPrefix(path, "/api/v1/import/"):
 		return storage.MaxImportUploadBytes + 1<<20

@@ -27,6 +27,8 @@ export function useMobileCapture(
   const natural = useNaturalDate(mobileTriageContent, showMobileCapture && !mobileTriageDueDate);
   // Voice input of the mobile capture sheet: own Whisper server or the browser (lib/voice.ts)
   const mobileVoice = useVoiceInput({
+    // The capture sheet belongs to the app shell and stays when the view changes
+    guardsLeave: false,
     chunked: true,
     onText: (text) => {
       if (!text) return;

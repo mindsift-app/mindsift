@@ -77,6 +77,8 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
 
   // Voice input: own Whisper server or the browser's recognition (lib/voice.ts)
   const voice = useVoiceInput({
+    // The Quick Dump window stays when the view changes
+    guardsLeave: false,
     onText: (text, final) => {
       const base = baseVoiceTextRef.current;
       if (text) setContent(base ? `${base} ${text}` : text);

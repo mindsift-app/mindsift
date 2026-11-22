@@ -1134,6 +1134,37 @@ export interface WSMessage<T = unknown> {
   timestamp: string;
 }
 
+// A transcription the server does in the background (lib/transcriptionJobs.ts): a recording in a note
+// ("note", its text becomes the caption) or one dictated into the inbox ("inbox", becomes an entry)
+export interface TranscriptionJob {
+  id: string;
+  userId: string;
+  kind: 'note' | 'inbox';
+  docId?: string;
+  blockId?: string;
+  mediaId?: string;
+  status: 'queued' | 'running' | 'failed';
+  /** Why the last attempt failed: failed | timeout (also while it waits for its next attempt) */
+  error?: string;
+  attempts: number;
+  /** Parts of an inbox recording */
+  pieces?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// The end of a background transcription (TRANSCRIPTION_DONE): text is empty when nothing was heard,
+// the recording is gone or the job was discarded; thoughtId names the inbox entry it became
+export interface TranscriptionDone {
+  id: string;
+  kind: 'note' | 'inbox';
+  userId: string;
+  text: string;
+  docId?: string;
+  blockId?: string;
+  thoughtId?: string;
+}
+
 // A logged-in device (Einstellungen → Sicherheit)
 export interface Session {
   id: string;

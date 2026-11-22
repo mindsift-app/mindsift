@@ -115,5 +115,18 @@
     "label": "Captura rápida – toca para escribir, mantén pulsado para hablar"
   },
   "dictation": "Dictado",
-  "putOnList": "Poner directamente en la lista «{{title}}»"
+  "putOnList": "Poner directamente en la lista «{{title}}»",
+  "voiceJobs": {
+    "title": "Grabaciones de voz en curso",
+    "pending": "Transcribiendo grabación de voz…",
+    "failed": "Grabación de voz no transcrita",
+    "retrying": "Se volverá a intentar enseguida",
+    "retry": "Reintentar",
+    "listen": "Escuchar grabación",
+    "discard": "Descartar grabación",
+    "discardConfirm": "La grabación se eliminará y no se podrá recuperar.",
+    "audioFailed": "No se pudo cargar la grabación",
+    "actionFailed": "No ha funcionado",
+    "keptInInbox": "{{reason}}: la grabación espera en el Quick Dump."
+  }
 }

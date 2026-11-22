@@ -223,6 +223,8 @@ var messagesIT = map[string]string{
 	"Passwort-Zurücksetzen ist auf diesem Server nicht eingerichtet. Bitte wende dich an die Administration.": "Il ripristino della password non è configurato su questo server. Contatta l’amministrazione.",
 	"Pfad erforderlich":                           "È richiesto un percorso",
 	"Punkt nicht gefunden":                        "Punto non trovato",
+	"Dieser Punkt ist keine Sprachaufnahme":       "Questo punto non è una registrazione vocale",
+	"Transkription nicht gefunden":                "Trascrizione non trovata",
 	"Punkt nicht gefunden (Ids liefert get_note)": "Punto non trovato (get_note restituisce gli id)",
 	"Dieser Punkt ist eine Zeichnung und bleibt eine (ersetzen mit text, entfernen mit delete_note_bullet)":                                                      "Questo punto è un disegno e resta tale (sostituiscilo con text, rimuovilo con delete_note_bullet)",
 	"Für eine Zeichnung erwartet text Mermaid (flowchart/graph, mindmap, sequenceDiagram, stateDiagram oder gitGraph) oder ein MindSift-Zeichnungsmodell (JSON)": "Per un disegno, text deve essere Mermaid (flowchart/graph, mindmap, sequenceDiagram, stateDiagram o gitGraph) o un modello di disegno MindSift (JSON)",

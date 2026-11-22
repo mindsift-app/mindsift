@@ -392,7 +392,8 @@
     "pasteFailed_one": "Bild nicht eingefügt: {{error}}",
     "pasteFailed_other": "{{count}} Bilder nicht eingefügt: {{error}}",
     "pasteTooMany": "Höchstens {{max}} Bilder auf einmal, die übrigen wurden nicht eingefügt.",
-    "dropOnlyImages": "Nur Bilder lassen sich hineinziehen."
+    "dropOnlyImages": "Nur Bilder lassen sich hineinziehen.",
+    "transcribeDismiss": "Fehler ausblenden"
   },
   "journal": {
     "opening": "{{date}} wird geöffnet…",

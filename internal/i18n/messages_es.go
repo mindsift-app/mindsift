@@ -223,6 +223,8 @@ var messagesES = map[string]string{
 	"Passwort-Zurücksetzen ist auf diesem Server nicht eingerichtet. Bitte wende dich an die Administration.": "El restablecimiento de contraseña no está configurado en este servidor. Ponte en contacto con la administración.",
 	"Pfad erforderlich":                           "Se requiere una ruta",
 	"Punkt nicht gefunden":                        "Punto no encontrado",
+	"Dieser Punkt ist keine Sprachaufnahme":       "Este punto no es una grabación de voz",
+	"Transkription nicht gefunden":                "Transcripción no encontrada",
 	"Punkt nicht gefunden (Ids liefert get_note)": "Punto no encontrado (get_note devuelve los ids)",
 	"Dieser Punkt ist eine Zeichnung und bleibt eine (ersetzen mit text, entfernen mit delete_note_bullet)":                                                      "Este punto es un dibujo y lo sigue siendo (sustitúyelo con text, elimínalo con delete_note_bullet)",
 	"Für eine Zeichnung erwartet text Mermaid (flowchart/graph, mindmap, sequenceDiagram, stateDiagram oder gitGraph) oder ein MindSift-Zeichnungsmodell (JSON)": "Para un dibujo, text debe ser Mermaid (flowchart/graph, mindmap, sequenceDiagram, stateDiagram o gitGraph) o un modelo de dibujo de MindSift (JSON)",

@@ -445,5 +445,14 @@
   "naturalDate": {
     "recognized": "Fecha de vencimiento reconocida: {{date}}",
     "ignore": "No usar esta fecha"
+  },
+  "leaveGuard": {
+    "message": "El dictado aún no ha terminado. Si cambias ahora, se perderá.",
+    "leave": "Cambiar de todos modos",
+    "stay": "Quedarse"
+  },
+  "voiceJobs": {
+    "failed": "El reconocimiento de voz ha fallado",
+    "timeout": "El reconocimiento de voz tardó demasiado"
   }
 }

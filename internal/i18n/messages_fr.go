@@ -223,6 +223,8 @@ var messagesFR = map[string]string{
 	"Passwort-Zurücksetzen ist auf diesem Server nicht eingerichtet. Bitte wende dich an die Administration.": "La réinitialisation du mot de passe n’est pas configurée sur ce serveur. Contacte l’administration.",
 	"Pfad erforderlich":                           "Chemin requis",
 	"Punkt nicht gefunden":                        "Point introuvable",
+	"Dieser Punkt ist keine Sprachaufnahme":       "Ce point n’est pas un enregistrement vocal",
+	"Transkription nicht gefunden":                "Transcription introuvable",
 	"Punkt nicht gefunden (Ids liefert get_note)": "Point introuvable (get_note renvoie les ids)",
 	"Dieser Punkt ist eine Zeichnung und bleibt eine (ersetzen mit text, entfernen mit delete_note_bullet)":                                                      "Ce point est un dessin et le reste (le remplacer avec text, le supprimer avec delete_note_bullet)",
 	"Für eine Zeichnung erwartet text Mermaid (flowchart/graph, mindmap, sequenceDiagram, stateDiagram oder gitGraph) oder ein MindSift-Zeichnungsmodell (JSON)": "Pour un dessin, text doit être du Mermaid (flowchart/graph, mindmap, sequenceDiagram, stateDiagram ou gitGraph) ou un modèle de dessin MindSift (JSON)",
