@@ -13,6 +13,7 @@ Versions without a git tag were development states and were never published as a
 - The desktop app's first start no longer opens the form for a local instance right away: it shows "Create a local instance" and "Connect to a server" side by side, and nothing is created before you choose. If you only use a MindSift server, you go straight to it. Later starts still open the instance or server used last.
 
 ### Fixed
+- Desktop app on Windows: the window title now follows the page shown on a server too. Going back or forward to a server's page, or a server's page leading to another server or site, left the title of the page before (e.g. "MindSift" from the start view) instead of the server's name.
 - An image dropped onto a note (or anything typed or pasted) right after opening the note's page is kept: it showed up and vanished again a moment later when the note's sync had not loaded yet, which happened most often in Safari and other WebKit browsers, also in the desktop app on Linux.
 
 ## [0.98.0] - 2026-11-22

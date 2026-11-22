@@ -144,6 +144,16 @@ page on another origin set the window's title through a form posted to
   view's address and `mindsift:desktop-shell` fires; `lib/useDesktopShellStart.ts` takes only the two
   start view addresses. Loading the start view from a server's page is a normal top-level navigation
   (checked under WebKitGTK; not yet checked on Windows).
+- **Window title** (`shell.TitleFor`): worked out from the address of the page shown, the window's own or
+  a server's, on every load and history step: "MindSift" on the start view, "<name> – MindSift" in a local
+  instance or on a server's pages (the entry whose address the page lies under). It names the instance or
+  server, not the page, so a server's own route changes (no load) need nothing. Linux: the
+  `WindowLoadFinished` hook above reads the address from WebKit. Windows: every page posts
+  `mindsift:page` through `chrome.webview.postMessage` after its load (the hook's script), and the
+  `RawMessageHandler` takes the address from WebView2 (`ICoreWebView2.Source`, Wails' `TopOrigin`), not
+  from the page; a page posting the message itself only has the title worked out again. Before, only the
+  window's own pages told their address on Windows, so on a server's pages the title stayed as the page
+  before.
 - **Keys and scripts:** Wails' `ExecJS` waits for `wails:runtime:ready`, which only its full runtime
   (`runtime.js`) sends and no page here loads, so `ExecJS("history.back()")` never ran; its Linux
   `Reload` loads `wails://` instead of the page. On Linux the keys call WebKit directly
