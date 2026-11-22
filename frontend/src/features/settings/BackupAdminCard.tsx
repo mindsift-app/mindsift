@@ -148,7 +148,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           <p className="text-[11px] text-muted mt-0.5">
             <Trans
               t={t}
-              i18nKey={desktop ? 'backups.autoHintDesktop' : 'backups.full.autoHint'}
+              i18nKey={desktop ? 'backups.full.autoHintDesktop' : 'backups.full.autoHint'}
               values={{ time: settings.backupTime || DEFAULT_BACKUP_TIME }}
               components={{ c: <code className="font-mono" /> }}
             />

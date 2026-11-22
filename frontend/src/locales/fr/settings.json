@@ -928,7 +928,8 @@
       "checking": "Vérification… {{percent}} %",
       "uploadFailed": "Le téléversement a échoué",
       "uploaded": "{{name}} est téléversé.",
-      "discard": "Abandonner"
+      "discard": "Abandonner",
+      "autoHintDesktop": "Chaque jour à {{time}} ; une sauvegarde manquée est faite au prochain démarrage."
     },
     "restoreFailed": "Échec de la restauration",
     "serverTitle": "Sauvegardes automatiques",
@@ -967,7 +968,6 @@
     "folderPickUnavailable": "Le choix de dossier n’est pas disponible ici. Saisissez le chemin à la main.",
     "folderPickFailed": "Le choix de dossier n’a pas pu s’ouvrir. Saisissez le chemin à la main.",
     "folderFailed": "Le dossier n’a pas pu être utilisé",
-    "autoHintDesktop": "Chaque jour à {{time}} ; une sauvegarde manquée est faite au prochain démarrage.",
     "snapshot": {
       "title": "Reprendre un compte d’une sauvegarde de serveur",
       "hint": "Reprend un compte avec ses images et enregistrements depuis une sauvegarde d’un serveur MindSift.",

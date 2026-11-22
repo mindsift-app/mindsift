@@ -928,7 +928,8 @@
       "checking": "Comprobando… {{percent}} %",
       "uploadFailed": "La subida ha fallado",
       "uploaded": "{{name}} se ha subido.",
-      "discard": "Descartar"
+      "discard": "Descartar",
+      "autoHintDesktop": "Cada día a las {{time}}; las copias perdidas se hacen en el siguiente inicio."
     },
     "restoreFailed": "Error al restaurar",
     "serverTitle": "Copias de seguridad automáticas",
@@ -967,7 +968,6 @@
     "folderPickUnavailable": "La selección de carpetas no está disponible aquí. Escribe la ruta a mano.",
     "folderPickFailed": "No se pudo abrir la selección de carpetas. Escribe la ruta a mano.",
     "folderFailed": "No se pudo usar la carpeta",
-    "autoHintDesktop": "Cada día a las {{time}}; las copias perdidas se hacen en el siguiente inicio.",
     "snapshot": {
       "title": "Tomar una cuenta de una copia de un servidor",
       "hint": "Toma una cuenta con sus imágenes y grabaciones de una copia de seguridad de un servidor MindSift.",

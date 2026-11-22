@@ -928,7 +928,8 @@
       "checking": "Verifica… {{percent}} %",
       "uploadFailed": "Caricamento non riuscito",
       "uploaded": "{{name}} è caricato.",
-      "discard": "Scarta"
+      "discard": "Scarta",
+      "autoHintDesktop": "Ogni giorno alle {{time}}; i backup mancati vengono fatti al successivo avvio."
     },
     "restoreFailed": "Ripristino non riuscito",
     "serverTitle": "Backup automatici",
@@ -967,7 +968,6 @@
     "folderPickUnavailable": "La scelta della cartella non è disponibile qui. Inserisci il percorso a mano.",
     "folderPickFailed": "Impossibile aprire la scelta della cartella. Inserisci il percorso a mano.",
     "folderFailed": "Impossibile usare la cartella",
-    "autoHintDesktop": "Ogni giorno alle {{time}}; i backup mancati vengono fatti al successivo avvio.",
     "snapshot": {
       "title": "Riprendere un account da un backup del server",
       "hint": "Riprende un account con le sue immagini e registrazioni da un backup di un server MindSift.",

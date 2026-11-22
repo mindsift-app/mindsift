@@ -928,7 +928,8 @@
       "checking": "Checking… {{percent}} %",
       "uploadFailed": "Upload failed",
       "uploaded": "{{name}} is uploaded.",
-      "discard": "Discard"
+      "discard": "Discard",
+      "autoHintDesktop": "Daily at {{time}}; missed backups are made at the next start."
     },
     "restoreFailed": "Restoring failed",
     "serverTitle": "Automatic backups",
@@ -967,7 +968,6 @@
     "folderPickUnavailable": "The folder dialog is not available here. Type the path instead.",
     "folderPickFailed": "The folder dialog could not be opened. Type the path instead.",
     "folderFailed": "The folder could not be used",
-    "autoHintDesktop": "Daily at {{time}}; missed backups are made at the next start.",
     "snapshot": {
       "title": "Take over an account from a server backup",
       "hint": "Takes over one account with its pictures and recordings from a backup of a MindSift server.",

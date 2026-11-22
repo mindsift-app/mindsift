@@ -927,7 +927,8 @@
       "checking": "Prüfe… {{percent}} %",
       "uploadFailed": "Hochladen fehlgeschlagen",
       "uploaded": "{{name}} ist hochgeladen.",
-      "discard": "Verwerfen"
+      "discard": "Verwerfen",
+      "autoHintDesktop": "Täglich um {{time}}; verpasste Backups werden beim nächsten Start nachgeholt."
     },
     "restoreFailed": "Wiederherstellen fehlgeschlagen",
     "serverTitle": "Automatische Backups",
@@ -966,7 +967,6 @@
     "folderPickUnavailable": "Die Ordnerauswahl ist hier nicht verfügbar. Gib den Pfad von Hand ein.",
     "folderPickFailed": "Die Ordnerauswahl ließ sich nicht öffnen. Gib den Pfad von Hand ein.",
     "folderFailed": "Der Ordner ließ sich nicht übernehmen",
-    "autoHintDesktop": "Täglich um {{time}}; verpasste Backups werden beim nächsten Start nachgeholt.",
     "snapshot": {
       "title": "Konto aus einem Server-Backup übernehmen",
       "hint": "Übernimmt ein Konto samt Bildern und Aufnahmen aus dem Backup eines MindSift-Servers.",
