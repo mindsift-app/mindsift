@@ -134,6 +134,40 @@ func TestDesktopSetupWizard(t *testing.T) {
 	}
 }
 
+// The wizard's language is the instance's and the account's, also where the desktop shell took the system's
+// language as DEFAULT_LANGUAGE (German here): the administration, the sign-in status and the account all
+// say English afterwards, and a restart with the same system language keeps it.
+func TestDesktopSetupLanguageWinsOverTheSystemLanguage(t *testing.T) {
+	store, dbPath := freshStore(t)
+	german := func(c *config.Config) { c.DefaultLanguage = "de" }
+	router := startDesktop(t, store, dbPath, config.DesktopLinux, german).Router()
+	token := desktopToken(t, router)
+	adminLang := func() string {
+		var s struct{ DefaultLanguage string }
+		_ = json.Unmarshal(getWith(t, router, "/api/v1/admin/settings", token).Body.Bytes(), &s)
+		return s.DefaultLanguage
+	}
+	if got := adminLang(); got != "de" {
+		t.Fatalf("before the wizard: default language %q, want the system's de", got)
+	}
+	body := `{"instanceName":"Privat","defaultLanguage":"en","timeZone":"","backupEnabled":false}`
+	if rec := postJSON(t, router, "/api/v1/admin/setup", token, body); rec.Code != http.StatusOK {
+		t.Fatalf("finish setup: %d %s", rec.Code, rec.Body.String())
+	}
+	var status struct{ DefaultLanguage string }
+	_ = json.Unmarshal(getWith(t, router, "/api/v1/auth/status", "").Body.Bytes(), &status)
+	var me struct{ User struct{ Language string } }
+	_ = json.Unmarshal(getWith(t, router, "/api/v1/auth/me", token).Body.Bytes(), &me)
+	if got := adminLang(); got != "en" || status.DefaultLanguage != "en" || me.User.Language != "en" {
+		t.Errorf("after the wizard: admin %q, status %q, account %q, want en", got, status.DefaultLanguage, me.User.Language)
+	}
+
+	router = startDesktop(t, store, dbPath, config.DesktopLinux, german).Router()
+	if got := adminLang(); got != "en" {
+		t.Errorf("after a restart: default language %q, want en", got)
+	}
+}
+
 // The folder in the administration: shown with the default, checked when changed, "" goes back to the
 // default; refused are relative paths, the instance's own folder and a folder that cannot be written to.
 func TestDesktopBackupLocation(t *testing.T) {

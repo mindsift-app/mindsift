@@ -2,7 +2,8 @@
 // Firefox and WebKit): in the middle of a short bullet, behind rendered markdown, on the second line of a
 // wrapped bullet and in a bullet far down a long note (rows out of view are skipped by the browser,
 // content-visibility in index.css; WebKit's hit test then stops at the row instead of the text); the same for
-// table cells (right after opening, between cells and bullets, far down). Real mouse
+// table cells (right after opening, also right after a page load of the note's address, between cells and
+// bullets, far down). Real mouse
 // clicks; the cursor is read from the bullet's text field. Needs a server in demo mode (account admin/admin);
 // see e2e/README.md.
 import { chromium, firefox, webkit } from 'playwright';
@@ -233,6 +234,23 @@ const main = async () => {
       c = await clickAt(page, `ckend_${stamp}`, 4);
       await page.waitForTimeout(500);
       await cellAt(`cktend_${stamp}`, 2, 9, false, 9, 'Klick in eine Zelle weit unten nach dem Verlassen eines Punkts');
+
+      // A fresh page load of the note's address and a click at once: the rows on screen are laid out before the
+      // first IntersectionObserver report (WebKit took most of a second for it; until then a table row measured
+      // one line and a click landed on the wrong bullet)
+      // (back at the top first: the note opens where it was left)
+      await clickAt(page, `ck0_${stamp}`, 2);
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(800);
+      await page.goto(`${BASE}/?note=${doc.id}`);
+      await page.waitForFunction((n) => document.querySelectorAll('[data-outline-block]').length === n, blocks.length, { timeout: 10000 });
+      const early = await page.evaluate((id) => {
+        const row = document.querySelector(`[data-outline-block="${id}"]`);
+        return { near: row.hasAttribute('data-outline-near'), visibility: getComputedStyle(row).contentVisibility, height: row.getBoundingClientRect().height };
+      }, `ckt_${stamp}`);
+      check(early.near && early.height > 40, `${tag}: Tabelle gleich nach dem Laden der Seite voll ausgemessen`, early);
+      await cellAt(`ckt_${stamp}`, 2, 4, false, 4, 'Klick in eine Tabellenzelle gleich nach dem Laden der Seite');
+      await page.keyboard.press('Escape');
 
       // A selection dragged from one bullet into the next ends where the mouse is let go
       await page.keyboard.press('Escape');

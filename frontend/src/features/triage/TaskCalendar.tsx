@@ -64,7 +64,7 @@ const MIN_DAY_COLUMN = 112;
 const EDGE_ZONE = 64;
 const EDGE_DELAY = 450;
 const EDGE_REPEAT = 650;
-// Drag data of a full task row (useTaskDrag), so day cells take those as well
+// Drag data of a task (useTaskDrag, and the calendar's own entries), so day cells take full task rows as well
 const TASK_DRAG_TYPE = 'application/mindsift-task-id';
 
 const PRIORITY_DOT: Record<string, string> = {
@@ -320,6 +320,8 @@ export function TaskCalendar({
       'data-kanban-task': entry.upcoming ? undefined : entry.task.id,
       draggable: movable && !phone,
       onDragStart: (e: React.DragEvent) => {
+        // The app's own type as well: a note or text field then knows it is no text to insert (lib/dropText.ts)
+        e.dataTransfer.setData(TASK_DRAG_TYPE, entry.task.id);
         e.dataTransfer.setData('text/plain', entry.task.id);
         e.dataTransfer.effectAllowed = 'move';
         startElementDragGhost(e, e.currentTarget as HTMLElement);

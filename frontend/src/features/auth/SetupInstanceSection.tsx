@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Archive, Server, Users } from 'lucide-react';
 import i18n, { applyLanguage, isLanguage, LANGUAGES } from '../../i18n';
@@ -45,8 +45,18 @@ export function useSetupChoices(initialInstanceName?: string, defaults?: { creat
   const [backupTime, setBackupTime] = useState(DEFAULT_BACKUP_TIME);
   // As typed, so the field can be empty for a moment
   const [backupKeepDays, setBackupKeepDays] = useState(String(DEFAULT_BACKUP_RETENTION_DAYS));
-  // Default language of the server; the wizard switches to it right away
+  // Default language of the server (and the admin's own); the wizard switches to it right away. It is the
+  // language the wizard is shown in: when the app switches after the wizard opened (the account's or the
+  // browser's language arriving after the start language, App.tsx), the field follows, so what it shows is
+  // what the setup sends
   const [defaultLanguage, setDefaultLanguage] = useState(i18n.language);
+  useEffect(() => {
+    const follow = (lng: string) => {
+      if (isLanguage(lng)) setDefaultLanguage(lng);
+    };
+    i18n.on('languageChanged', follow);
+    return () => i18n.off('languageChanged', follow);
+  }, []);
   const chooseLanguage = (lang: string) => {
     setDefaultLanguage(lang);
     if (isLanguage(lang)) void applyLanguage(lang);

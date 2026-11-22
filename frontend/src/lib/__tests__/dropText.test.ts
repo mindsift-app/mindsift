@@ -95,6 +95,19 @@ describe('refuseUnhandledDrop', () => {
     field.remove();
   });
 
+  it('keeps the app’s own items out of text fields, where their id would land as text', () => {
+    const task = () => clipboard({ text: 'task_1', extra: { 'application/mindsift-task-id': 'task_1' } });
+    const field = document.createElement('input');
+    document.body.appendChild(field);
+    const data = task();
+    expect(fire('dragover', data, field).defaultPrevented).toBe(true);
+    expect(data.dropEffect).toBe('none');
+    expect(fire('drop', task(), field).defaultPrevented).toBe(true);
+    // Outside a field the browser does nothing with them anyway
+    expect(fire('drop', task()).defaultPrevented).toBe(false);
+    field.remove();
+  });
+
   it('leaves plain text and drops a drop zone took alone', () => {
     expect(fire('drop', clipboard({ text: 'Hallo' })).defaultPrevented).toBe(false);
     const data = clipboard({ files: [png()] });
