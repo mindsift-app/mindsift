@@ -135,6 +135,10 @@ The owner types with a normal connection, the editor sits behind a simulated pro
 
 `collab.e2e.mjs`, `lock.e2e.mjs` and `channels.e2e.mjs` take about a minute each. The tests do not run in CI because they need browser images.
 
+## share-target.e2e.mjs
+
+The share target (`/share-target`, handled by the service worker in `frontend/public/sw.js`): a form on another site (`127.0.0.1` instead of `localhost`) posting there, with and without referrer and from a sandboxed frame navigating the tab, is redirected to `/` and puts nothing into the inbox; a share posted by the app's own page arrives (`?shared=pending`, then in the inbox). The system's share sheet itself cannot be started from Playwright: it is a navigation the browser starts, with no page as its client, which the worker accepts the same way.
+
 ## Screenshots
 
 `e2e/screenshots.sh` builds the image, starts it in demo mode (English) with a fresh database and recreates the pictures in `screenshots/` (`screenshots.mjs`). They are then scaled down (desktop 1280 px, phone 480 px wide) and saved as WebP at quality 90 (`cwebp` in an Alpine container). For the version in the header: `APP_VERSION=v0.2 e2e/screenshots.sh`. In the workspace picture the demo user `user` edits a bullet at the same time, so lock and presence show.

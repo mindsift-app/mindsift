@@ -10,7 +10,7 @@
 //   would hand it the old values), the cache only offline.
 // - API requests are never touched; offline data comes from the app's own cache (lib/offline.ts).
 // Raise VERSION when this file changes in a way that needs fresh caches.
-const VERSION = 'v9';
+const VERSION = 'v10';
 const SHELL_CACHE = `mindsift-shell-${VERSION}`;
 const ASSET_CACHE = `mindsift-assets-${VERSION}`;
 // The files of this build under /assets/; the build fills the list in (vite.config.ts), so every release
@@ -166,7 +166,30 @@ async function savePendingShare(item) {
   });
 }
 
+// A share from the system's share sheet is a navigation the browser starts itself: no page started it (the
+// event's clientId is empty) and it has no foreign Origin. A form on another site posting here (which would
+// put its text into the inbox of whoever is signed in) is started by that site's page: its clientId names a
+// client of another origin, which clients.get does not return, and its Origin is that site (or "null" with
+// no-referrer). Sec-Fetch-Site would say the same, but browsers do not show it to the service worker; it
+// is checked in case one does.
+async function genuineShare(event) {
+  if (event.request.destination && event.request.destination !== 'document') return false; // a frame
+  const headers = event.request.headers;
+  const site = headers.get('Sec-Fetch-Site');
+  if (site && site !== 'none' && site !== 'same-origin') return false;
+  const origin = headers.get('Origin');
+  if (origin && origin !== 'null' && origin !== self.location.origin) return false;
+  if (event.clientId) {
+    const client = await self.clients.get(event.clientId);
+    if (!client) return false;
+  }
+  return true;
+}
+
 async function handleShareTarget(event) {
+  if (!(await genuineShare(event))) {
+    return Response.redirect('/', 303);
+  }
   try {
     const formData = await event.request.formData();
     const title = formData.get('title');
