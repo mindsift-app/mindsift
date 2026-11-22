@@ -130,3 +130,7 @@ jobs:
     uses: ./.github/workflows/release.yaml
     with:
       tag: ${{ github.ref_name }}
+    # Only the two of the Flatpak repository (flatpak-repo.yaml), passed on by release.yaml
+    secrets:
+      FLATPAK_REPO_DEPLOY_KEY: ${{ secrets.FLATPAK_REPO_DEPLOY_KEY }}
+      FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
