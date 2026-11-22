@@ -85,8 +85,9 @@ describe('DesktopStartView', () => {
     answers.state = { base: '/b', entries: [], found: [] };
     answers.create = { url: '/', id: 'n', local: true };
     render(<DesktopStartView />);
-    // Nothing listed: the form is open right away
-    const input = await screen.findByLabelText('Name');
+    // Nothing listed: the first start's choice, no form yet
+    fireEvent.click(await screen.findByText('Lokale Instanz anlegen'));
+    const input = screen.getByLabelText('Name');
     fireEvent.change(input, { target: { value: 'Arbeit' } });
     fireEvent.click(screen.getByText('Anlegen'));
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/'));
@@ -101,6 +102,25 @@ describe('DesktopStartView', () => {
     fireEvent.click(screen.getByText('Verbinden'));
     await waitFor(() => expect(replace).toHaveBeenCalledWith('https://demo.mindsift.app/'));
     expect(calls.find((c) => c.op === 'add-server')?.body).toEqual({ name: '', url: 'demo.mindsift.app' });
+  });
+
+  it('offers a local instance and a server as equals on the first start', async () => {
+    answers.state = { base: '/b', entries: [], found: [] };
+    answers['add-server'] = { url: 'https://demo.mindsift.app/', id: 's2' };
+    render(<DesktopStartView />);
+    expect(await screen.findByText('Lokale Instanz anlegen')).toBeTruthy();
+    // No form is open and nothing is created before the person chose
+    expect(screen.queryByLabelText('Name')).toBeNull();
+    expect(screen.queryByLabelText('Adresse')).toBeNull();
+    expect(calls.map((c) => c.op)).toEqual(['state']);
+    // Cancelling a form goes back to the choice
+    fireEvent.click(screen.getByText('Lokale Instanz anlegen'));
+    fireEvent.click(screen.getByText('Abbrechen'));
+    fireEvent.click(screen.getByText('Mit Server verbinden'));
+    fireEvent.change(screen.getByLabelText('Adresse'), { target: { value: 'demo.mindsift.app' } });
+    fireEvent.click(screen.getByText('Verbinden'));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('https://demo.mindsift.app/'));
+    expect(calls.some((c) => c.op === 'create')).toBe(false);
   });
 
   it('warns when the base folder is synced', async () => {

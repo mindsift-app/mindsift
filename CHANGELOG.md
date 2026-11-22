@@ -10,6 +10,7 @@ Versions without a git tag were development states and were never published as a
 
 ### Changed
 - New accounts on an instance without sharing (the desktop app's local instances, servers with sharing set to private) now get the help note about sharing again, as a short version: it says that sharing with other people needs a MindSift server with several accounts and sharing turned on, and that this instance does not offer it (in the desktop app: connect it to a server; on a server: the administration has turned sharing off), instead of describing share buttons that do not exist. Available in all five languages.
+- The desktop app's first start no longer opens the form for a local instance right away: it shows "Create a local instance" and "Connect to a server" side by side, and nothing is created before you choose. If you only use a MindSift server, you go straight to it. Later starts still open the instance or server used last.
 
 ### Fixed
 - An image dropped onto a note (or anything typed or pasted) right after opening the note's page is kept: it showed up and vanished again a moment later when the note's sync had not loaded yet, which happened most often in Safari and other WebKit browsers, also in the desktop app on Linux.
