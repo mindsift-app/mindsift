@@ -3,6 +3,8 @@
 #   desktop/packaging/flatpak/build.sh                  frontend, vendored Go modules, flatpak-builder
 #   SKIP_FRONTEND=1 desktop/packaging/flatpak/build.sh  reuse frontend/dist
 #   APP_VERSION=v1.2.0 …                                the app's version, as for desktop/build.sh
+#   FLATPAK_GPG_PRIVATE_KEY="$(cat key.asc)" …          the bundle gets the own Flatpak repository as its
+#                                                       origin (bundle.sh), so installs of it get updates
 # Install it with: flatpak install --user mindsift-desktop-linux-amd64.flatpak (the GNOME runtime comes
 # from Flathub).
 #
@@ -15,7 +17,9 @@
 #    offline, as Flathub requires.
 # 3. flatpak-builder in a Debian container with SYS_ADMIN (bubblewrap needs its own namespaces), with the
 #    runtimes cached in the podman/docker volume mindsift-flatpak; the binary is built inside the GNOME
-#    SDK with the Go extension, so glibc, GTK and WebKitGTK are the runtime's.
+#    SDK with the Go extension, so glibc, GTK and WebKitGTK are the runtime's. The ref is on the branch
+#    stable, the one of the own Flatpak repository; bundle.sh makes the bundle (with the repository as its
+#    origin when FLATPAK_GPG_PRIVATE_KEY holds its signing key).
 # Like desktop/build.sh it runs with podman and bind mounts locally; the CI workflow sets ENGINE=docker
 # COPY_MODE=1 and the sources are copied into the containers instead.
 set -eu
@@ -50,7 +54,7 @@ git ls-files -z --cached --others --exclude-standard -- . ':!screenshots' \
 rm -rf "$STAGE/src/desktop/dist" && cp -r frontend/dist "$STAGE/src/desktop/dist"
 cp desktop/out/THIRD_PARTY_LICENSES.txt "$STAGE/src/THIRD_PARTY_LICENSES.txt"
 printf '%s\n' "$APP_VERSION" > "$STAGE/src/desktop/app-version"
-cp desktop/packaging/flatpak/$APP_ID.yml "$STAGE/"
+cp desktop/packaging/flatpak/$APP_ID.yml desktop/packaging/flatpak/bundle.sh "$STAGE/"
 
 # A release of the CHANGELOG ("## [1.2.0] - 2026-12-01") gets its entry at the top of the metainfo's
 # <releases>, unless it is there already; other builds (…-dev) add none
@@ -103,19 +107,34 @@ case "$ENGINE" in
   *podman*) SANDBOX_OPTS="$SANDBOX_OPTS --security-opt unmask=ALL" ;;
   *) SANDBOX_OPTS="$SANDBOX_OPTS --security-opt systempaths=unconfined" ;;
 esac
-# (librsvg2-common: flatpak-builder runs appstreamcli compose in this container, which reads the SVG icon)
+# The signing key of the own Flatpak repository goes into this container only, as an environment variable
+# passed by name (its value is not on the command line); the script moves it into a file only root can
+# read and drops the variable before anything else runs, so the build steps do not inherit it.
+if [ -n "${FLATPAK_GPG_PRIVATE_KEY:-}" ]; then
+  export FLATPAK_GPG_PRIVATE_KEY
+  SANDBOX_OPTS="$SANDBOX_OPTS -e FLATPAK_GPG_PRIVATE_KEY"
+fi
+# (librsvg2-common: flatpak-builder runs appstreamcli compose in this container, which reads the SVG icon;
+# gpg and gpg-agent: bundle.sh signs with the repository's key)
 run_in "$FLATPAK_IMAGE" mindsift-flatpak:/var/lib/flatpak . "set -e
+  key=
+  if [ -n \"\${FLATPAK_GPG_PRIVATE_KEY:-}\" ]; then
+    key=\$(mktemp)
+    printf '%s\\n' \"\$FLATPAK_GPG_PRIVATE_KEY\" > \"\$key\"
+  fi
+  unset FLATPAK_GPG_PRIVATE_KEY
   apt-get update -qq >/dev/null
-  DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends flatpak flatpak-builder librsvg2-common ca-certificates >/dev/null
+  DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends flatpak flatpak-builder librsvg2-common ca-certificates gpg gpg-agent >/dev/null
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
   for ref in org.gnome.Platform//$GNOME_BRANCH org.gnome.Sdk//$GNOME_BRANCH org.freedesktop.Sdk.Extension.golang//$GO_EXT_BRANCH; do
     flatpak info \$ref >/dev/null 2>&1 || flatpak install -y --noninteractive flathub \$ref
   done
   flatpak update -y --noninteractive org.gnome.Platform//$GNOME_BRANCH org.gnome.Sdk//$GNOME_BRANCH
   flatpak update -y --noninteractive --commit=$GO_EXT_COMMIT org.freedesktop.Sdk.Extension.golang//$GO_EXT_BRANCH
-  flatpak-builder --state-dir=/tmp/state --disable-rofiles-fuse --disable-download --force-clean --repo=/tmp/repo /tmp/build $APP_ID.yml
-  flatpak build-bundle /tmp/repo mindsift.flatpak $APP_ID --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
-  rm -rf src" "$SANDBOX_OPTS"
+  flatpak-builder --state-dir=/tmp/state --disable-rofiles-fuse --disable-download --force-clean --default-branch=stable --repo=/tmp/repo /tmp/build $APP_ID.yml
+  sh bundle.sh /tmp/repo mindsift.flatpak \$key
+  rm -f \$key
+  rm -rf src bundle.sh" "$SANDBOX_OPTS"
 
 mv "$STAGE/mindsift.flatpak" "$OUT"
 rm -rf "$STAGE"

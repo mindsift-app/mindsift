@@ -5,7 +5,10 @@
 # (releases/latest/download/<name>):
 #   mindsift-desktop-linux-amd64.tar.gz       the Linux binary with LICENSE, THIRD_PARTY_LICENSES.txt and
 #                                             README.txt (GTK 4 / WebKitGTK 6.0)
-#   mindsift-desktop-linux-amd64.flatpak      the Flatpak bundle (runtime from Flathub)
+#   mindsift-desktop-linux-amd64.flatpak      the Flatpak bundle (runtime from Flathub; with
+#                                             FLATPAK_GPG_PRIVATE_KEY its origin is the own Flatpak
+#                                             repository, so installs of it get updates from there;
+#                                             not for pre-releases, see below)
 #   mindsift-desktop-windows-amd64.exe        the Windows app, portable (one file, runs where it lies)
 #   mindsift-desktop-windows-amd64-setup.exe  the Windows installer (NSIS, per user, no admin rights;
 #                                             desktop/packaging/windows/mindsift.nsi) with the same exe
@@ -13,7 +16,8 @@
 # Checks that each file is for its platform and carries <version>. The files land in <dir> only when all
 # were built. SHA256SUMS is written by ci/release-binaries.sh over every file in the folder.
 # Usage: ci/release-desktop.sh <version, e.g. v1.2.0> <dir>
-# Optional: ENGINE (default docker), COPY_MODE (default 1, see desktop/build.sh). Needs GNU tar.
+# Optional: ENGINE (default docker), COPY_MODE (default 1, see desktop/build.sh), FLATPAK_GPG_PRIVATE_KEY
+# (the signing key of the own Flatpak repository, see desktop/packaging/flatpak/bundle.sh). Needs GNU tar.
 set -euo pipefail
 
 VERSION="${1:?usage: ci/release-desktop.sh <version> <dir>}"
@@ -23,6 +27,17 @@ case "${VERSION}" in
   *) echo "release-desktop: the version must look like v1.2.3, not '${VERSION}'" >&2; exit 1 ;;
 esac
 export ENGINE="${ENGINE:-docker}" COPY_MODE="${COPY_MODE:-1}" APP_VERSION="${VERSION}"
+# A pre-release never goes into the repository, whose stable branch only carries releases: an install of
+# its bundle would be newer than the repository's commit, and flatpak update would fail with "Update is
+# older than current version" until the next release. Its bundle gets no origin.
+case "${VERSION}" in
+  *-*)
+    if [ -n "${FLATPAK_GPG_PRIVATE_KEY:-}" ]; then
+      echo "release-desktop: ${VERSION} is a pre-release, its Flatpak bundle gets no origin repository"
+    fi
+    unset FLATPAK_GPG_PRIVATE_KEY
+    ;;
+esac
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 D="${ROOT}/desktop/out"
 WORK="$(mktemp -d)"
@@ -43,7 +58,14 @@ grep -qaF "${VERSION}" "${D}/mindsift-desktop-windows-amd64.exe" || fail "the Wi
 pe="$(od -An -tu4 -j60 -N4 "${D}/mindsift-desktop-windows-amd64.exe" | tr -d ' ')"
 [ "$(od -An -tx1 -j"${pe}" -N6 "${D}/mindsift-desktop-windows-amd64.exe" | tr -d ' \n')" = "504500006486" ] || fail "the Windows exe is not for x86-64"
 # The bundle's version is in its metainfo (flatpak/build.sh); the build fails when build-bundle does
-[ -s "${D}/mindsift-desktop-linux-amd64.flatpak" ] || fail "the Flatpak bundle is missing"
+bundle="${D}/mindsift-desktop-linux-amd64.flatpak"
+[ -s "${bundle}" ] || fail "the Flatpak bundle is missing"
+# The bundle's header names its ref and, when it has one, its origin repository in plain text; the ref must
+# be the one of the own Flatpak repository, so its updates apply to installs of the bundle
+grep -aqF "app/app.mindsift.MindSift/x86_64/stable" "${bundle}" || fail "the Flatpak bundle is not on app/app.mindsift.MindSift/x86_64/stable"
+if [ -n "${FLATPAK_GPG_PRIVATE_KEY:-}" ]; then
+  grep -aqF "https://flatpak.mindsift.app/repo/" "${bundle}" || fail "the Flatpak bundle does not carry the own Flatpak repository as its origin"
+fi
 # The installer is a 32-bit NSIS stub (PE machine 0x14c), whatever it installs; its version resource is
 # UTF-16 (the NULs dropped, key and value meet)
 setup="${D}/mindsift-desktop-windows-amd64-setup.exe"
