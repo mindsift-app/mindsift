@@ -278,7 +278,7 @@ APP_VERSION=v1.2.0 desktop/build.sh        # the app's version; default v<packag
 `mindsift-desktop-windows-amd64-setup.exe` (installer, see "Windows") and
 `mindsift-desktop-THIRD_PARTY_LICENSES.txt`. `.github/workflows/release.yaml` runs it from the tag's
 checkout and lists the files in the release's `SHA256SUMS` together with the server archives.
-`.gitea/workflows/desktop.yaml` runs the same script for pushes to the `desktop-spike` branch and by hand
+`.gitea/workflows/desktop.yaml` runs the same script for pushes to `main` and by hand
 (any branch), with the version `v<package.json>-dev`; the files are one artifact of the run in the Gitea
 UI.
 
