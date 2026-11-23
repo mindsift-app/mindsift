@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AtSign, Bell, CalendarClock, CheckCheck, CircleCheck, Eye, CirclePlus, Share2, Trash, UserPlus } from 'lucide-react';
 import { api, triggerHaptic } from '../lib/api';
@@ -7,6 +7,7 @@ import { formatRelative } from '../lib/format';
 import { CountBadge } from './CountBadge';
 import { loadCenter, setCenter, useNotificationCenter } from './notificationCenter';
 import { RailItemContent } from './RailItemContent';
+import { useDismiss } from '../lib/useDismiss';
 
 const KIND_ICON: Record<string, React.ReactNode> = {
   assigned: <UserPlus className="w-3.5 h-3.5" />,
@@ -39,23 +40,8 @@ export function NotificationBell({
   const boxRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent | TouchEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('touchstart', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('touchstart', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
+  // A press outside (mouse or finger) or Escape closes the list
+  useDismiss(boxRef, () => setOpen(false), { active: open });
 
   const toggle = () => {
     triggerHaptic(10);

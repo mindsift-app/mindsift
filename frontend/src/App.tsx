@@ -76,6 +76,7 @@ import { NotificationBell } from './components/NotificationBell';
 import i18n, { applyLanguage, messageLanguage, resolveLanguage, setMessageLanguage } from './i18n';
 import { useTranslation } from 'react-i18next';
 import { useLatestRef } from './lib/useLatestRef';
+import { useDismiss } from './lib/useDismiss';
 
 // Server admins and user managers reach the administration
 const canAdminister = (u: User) => u.role === 'admin' || u.role === 'manager';
@@ -464,15 +465,7 @@ export const App: React.FC = () => {
   }, [user, refreshAll, setDemoNotice]);
 
   // Close profile dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowProfileMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useDismiss(dropdownRef, () => setShowProfileMenu(false), { active: showProfileMenu, escape: false, event: 'mousedown' });
 
   const handleAuthenticated = async (loggedInUser: User) => {
     setUser(loggedInUser);

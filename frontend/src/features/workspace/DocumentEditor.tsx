@@ -124,6 +124,7 @@ import { useBranchActions } from './useBranchActions';
 import { useBlockEditing } from './useBlockEditing';
 import { useTagPage } from './useTagPage';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { useDismiss } from '../../lib/useDismiss';
 import { saveBlob } from '../../lib/download';
 import { NOTE_TITLE_MAX, noteTitleLength } from '../../lib/noteTitle';
 
@@ -248,25 +249,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   const { lockedBlocks } = useDocPresence(engineState, currentUser?.id, onHeaderStatusChange);
 
-  useEffect(() => {
-    if (!showActionsMenu) return;
-    const handleMouseDown = (e: MouseEvent) => {
-      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
-        setShowActionsMenu(false);
-      }
-    };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowActionsMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [showActionsMenu]);
+  useDismiss(actionsMenuRef, () => setShowActionsMenu(false), { active: showActionsMenu, event: 'mousedown' });
 
   // Short hint at the bottom of the editor (blocked actions, skipped undo), optionally with one action
   const [notice, setNotice] = useState<string | null>(null);

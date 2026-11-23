@@ -41,4 +41,30 @@ describe('ManageColumnsModal', () => {
     expect(screen.getByDisplayValue('Zu erledigen')).toBeTruthy();
     expect(screen.queryByDisplayValue('Verworfen')).toBeNull();
   });
+
+  it('the colour menu: its dot toggles it, a press outside and Escape close it', () => {
+    render(<ManageColumnsModal isOpen onClose={() => {}} initialColumns={columns} onSave={async () => {}} listTitle="Haushalt" />);
+    const dot = screen.getByRole('button', { name: 'Farbe der Spalte Zu erledigen' });
+    const press = (el: Element) => {
+      fireEvent.pointerDown(el);
+      fireEvent.click(el);
+    };
+    press(dot);
+    expect(dot.getAttribute('aria-expanded')).toBe('true');
+    press(dot);
+    expect(dot.getAttribute('aria-expanded')).toBe('false');
+
+    press(dot);
+    // The other column's dot moves the menu there
+    const other = screen.getByRole('button', { name: 'Farbe der Spalte Erledigt' });
+    press(other);
+    expect(dot.getAttribute('aria-expanded')).toBe('false');
+    expect(other.getAttribute('aria-expanded')).toBe('true');
+
+    fireEvent.pointerDown(document.body);
+    expect(other.getAttribute('aria-expanded')).toBe('false');
+    press(other);
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(other.getAttribute('aria-expanded')).toBe('false');
+  });
 });

@@ -106,7 +106,7 @@ describe('NavRail', () => {
     expect(localStorage.getItem(NAV_RAIL_KEY)).toBe('0');
 
     fireEvent.click(screen.getByRole('button', { name: 'Navigation ausklappen' }));
-    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(rail().dataset.navRail).toBe('collapsed');
 
     fireEvent.click(screen.getByRole('button', { name: 'Navigation ausklappen' }));

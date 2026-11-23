@@ -6,6 +6,7 @@ import type { Categories, EmojiClickData, EmojiStyle, SuggestionMode, Theme } fr
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { placeInViewport } from '../../lib/placeInViewport';
+import { useDismiss } from '../../lib/useDismiss';
 
 // Size of the desktop popover (its classes use the same values through --pick-w / --pick-h)
 const PICKER_WIDTH = 300;
@@ -73,31 +74,19 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // Close on Escape or click outside (desktop popover)
+  // A click outside closes it (the phone's backdrop is outside too)
+  useDismiss(containerRef, onClose, { escape: false, event: 'mousedown' });
+  // Escape on its own, in the capture phase: only the picker closes, not the dialog it was opened from
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        e.stopPropagation(); // only the picker closes, not the dialog it was opened from
+        e.stopPropagation();
         onClose();
       }
     };
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        onClose();
-      }
-    };
-
     window.addEventListener('keydown', handleKeyDown, true);
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown, true);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [onClose]);
 
   const handlePick = (emoji: string) => {
