@@ -57,7 +57,7 @@ describe('BackupAdminCard: full backups, restore and upload', () => {
     askConfirm.mockResolvedValueOnce(true);
     fireEvent.click(screen.getByLabelText('Backup mindsift-full-2026-11-22-030000 wiederherstellen'));
     await waitFor(() => expect(api.adminRestoreBackup).toHaveBeenCalledWith('mindsift-full-2026-11-22-030000', false));
-    expect(await screen.findByText('Stelle wieder her… MindSift lädt danach neu.')).toBeTruthy();
+    expect(await screen.findByText('Wird wiederhergestellt … MindSift lädt danach neu.')).toBeTruthy();
     expect(reopen.waitForReopen).toHaveBeenCalledWith('boot1');
   });
 
@@ -71,7 +71,7 @@ describe('BackupAdminCard: full backups, restore and upload', () => {
     await waitFor(() => expect(api.adminRestoreBackup).toHaveBeenCalledWith('mindsift-full-2026-11-22-030000', true));
     expect(askConfirm).toHaveBeenCalledTimes(2);
     expect(askConfirm.mock.calls[1][0]).toMatchObject({ message: question, danger: true });
-    expect(await screen.findByText('Stelle wieder her… MindSift lädt danach neu.')).toBeTruthy();
+    expect(await screen.findByText('Wird wiederhergestellt … MindSift lädt danach neu.')).toBeTruthy();
   });
 
   it('stops when the question about the key is cancelled', async () => {
@@ -115,14 +115,14 @@ describe('BackupAdminCard: full backups, restore and upload', () => {
     const file = new File(['tar'], 'umzug.tar');
     fireEvent.change(screen.getByTestId('backup-upload-input'), { target: { files: [file] } });
     act(() => report({ phase: 'upload', done: 25, total: 100 }));
-    expect(screen.getByText('Lade hoch… 25 %')).toBeTruthy();
+    expect(screen.getByText('Wird hochgeladen … 25 %')).toBeTruthy();
     expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('25');
     act(() => report({ phase: 'check', done: 80, total: 100 }));
-    expect(screen.getByText('Prüfe… 80 %')).toBeTruthy();
+    expect(screen.getByText('Wird geprüft … 80 %')).toBeTruthy();
     await act(async () => finish({ id: 'up1', name: 'umzug.tar', size: 100, sha256: 'abc' }));
     await waitFor(() => expect(api.adminRestoreUpload).toHaveBeenCalledWith('up1', 'umzug.tar', 'abc', false));
     expect(askConfirm.mock.calls[0][0].message).toContain('umzug.tar');
-    expect(await screen.findByText('Stelle wieder her… MindSift lädt danach neu.')).toBeTruthy();
+    expect(await screen.findByText('Wird wiederhergestellt … MindSift lädt danach neu.')).toBeTruthy();
   });
 
   it('downloads through a link with a one-time ticket', async () => {

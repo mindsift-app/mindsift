@@ -23,6 +23,7 @@ Versions without a git tag were development states and were never published as a
 - Settings and administration: every page uses the same cards and rows, with the same spacing, titles and short hints; the profile picture, the alarm channels and the downloads under Data now sit in cards like the rest.
 - Shorter hints in the settings: deleting your data or account, the sharing mode "within organizations" and removing someone's e-mail address now say it in one short sentence; the details are in the help (Offline, backups & password; Organizations, groups & sharing).
 - The trashes of notes, tasks and the Quick Dump look and work the same: one list with "Wiederherstellen" and a bin per entry. Deleting an entry for good and emptying the trash now ask at the click instead of a second tap on the same button; in the task trash, deleting an entry for good no longer happens without a question. The buttons are large enough to tap on phones.
+- Texts of running actions follow one pattern, like "Wird geladen …": "Wird gespeichert …", "Wird hochgeladen … 25 %", "Testmail wird gesendet …" instead of "Speichere…", "Lade hoch…" or "Sende…"; the other languages use their usual short form throughout.
 - Settings → Data: replacing your data with one of your server backups now asks with the same red warning and tick box as an import, instead of a second click on the button, and afterwards shows what came back and the entries left out, like an import. The desktop app's take-over of a server account lists the entries left out too.
 
 ### Fixed

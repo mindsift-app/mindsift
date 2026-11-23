@@ -122,7 +122,7 @@
     "edit": "Modifier",
     "readOnly": "Lecture seule",
     "searchUser": "Rechercher des utilisateurs (nom ou @nom d'utilisateur)…",
-    "saving": "Enregistrement en cours…",
+    "saving": "Enregistrement…",
     "shareGroup": "Partager avec le groupe",
     "addUser": "Ajouter l'utilisateur",
     "ownerOnly": "Seul le propriétaire peut ajouter de nouveaux partages.",
@@ -168,7 +168,7 @@
     "countdown": "Rechargement dans {{seconds}} s.",
     "waitTyping": "Se recharge dès que tu fais une pause dans la saisie.",
     "held": "Se recharge dès que tu as fini : des saisies ou dictées ne sont pas encore enregistrées.",
-    "saving": "Enregistrement des modifications, puis rechargement …",
+    "saving": "Enregistrement des modifications, puis rechargement…",
     "offline": "Se recharge dès que le serveur est de nouveau joignable.",
     "stuckTitle": "La nouvelle version ne se charge pas",
     "stuck": "Le navigateur continue de servir l'ancienne version. Recharge la page ; si cela ne suffit pas, vide le cache du navigateur."
@@ -184,7 +184,7 @@
   "voice": {
     "stop": "Arrêter l'enregistrement",
     "cancelRecording": "Supprimer l’enregistrement",
-    "transcribing": "Transcription en cours…",
+    "transcribing": "Transcription…",
     "input": "Saisie vocale",
     "failed": "Échec de la reconnaissance vocale",
     "noMic": "Pas d'accès au micro (autorisation ou page non servie en HTTPS)",

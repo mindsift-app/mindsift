@@ -638,7 +638,7 @@
       "endedDiscard": "{{name}} discarded the live drawing.",
       "endedExpired": "The live drawing has ended.",
       "unsentKept": "Your last changes did not reach the session; they stay in this browser as a draft and are offered the next time you open the drawing.",
-      "saving": "Saving …",
+      "saving": "Saving…",
       "offline": "Connection lost – your changes go out as soon as it is back.",
       "offlineWatch": "Connection lost.",
       "offlineSave": "No connection – saving works once it is back.",

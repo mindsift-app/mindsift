@@ -1453,7 +1453,7 @@
     "downloadFailed": "The download could not be started",
     "unreachable": "Whisper server not reachable",
     "size": "about {{size}} GB",
-    "downloading": "Downloading … {{time}}",
+    "downloading": "Downloading… {{time}}",
     "downloadError": "Download failed: {{error}}",
     "inUse": "In use",
     "missing": "Still missing",

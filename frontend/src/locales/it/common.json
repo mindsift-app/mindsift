@@ -122,7 +122,7 @@
     "edit": "Modifica",
     "readOnly": "Sola lettura",
     "searchUser": "Cerca utenti (nome o @username)…",
-    "saving": "Salvataggio in corso…",
+    "saving": "Salvataggio…",
     "shareGroup": "Condividi con il gruppo",
     "addUser": "Aggiungi utente",
     "ownerOnly": "Solo il proprietario può aggiungere nuove condivisioni.",
@@ -168,7 +168,7 @@
     "countdown": "Si ricarica tra {{seconds}} s.",
     "waitTyping": "Si ricarica appena fai una pausa nella digitazione.",
     "held": "Si ricarica quando hai finito: alcuni testi o dettature non sono ancora salvati.",
-    "saving": "Salvataggio delle modifiche, poi si ricarica …",
+    "saving": "Salvataggio delle modifiche, poi si ricarica…",
     "offline": "Si ricarica appena il server è di nuovo raggiungibile.",
     "stuckTitle": "La nuova versione non si carica",
     "stuck": "Il browser continua a fornire la versione vecchia. Ricarica la pagina; se non basta, svuota la cache del browser."
@@ -184,7 +184,7 @@
   "voice": {
     "stop": "Interrompi registrazione",
     "cancelRecording": "Scarta registrazione",
-    "transcribing": "Trascrizione in corso…",
+    "transcribing": "Trascrizione…",
     "input": "Inserimento vocale",
     "failed": "Riconoscimento vocale non riuscito",
     "noMic": "Nessun accesso al microfono (permesso mancante o connessione non HTTPS)",
@@ -212,7 +212,7 @@
   "offline": {
     "waiting_one": "{{count}} modifica in attesa",
     "waiting_other": "{{count}} modifiche in attesa",
-    "syncing": "Sincronizzazione in corso – {{waiting}}…",
+    "syncing": "Sincronizzazione – {{waiting}}…",
     "pending": "Offline · {{waiting}} in attesa di connessione",
     "idle": "Offline – le modifiche verranno sincronizzate appena connesso",
     "notesPending_one": "Offline · testo in {{count}} nota in attesa di connessione",

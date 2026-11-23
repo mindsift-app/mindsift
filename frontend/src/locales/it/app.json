@@ -49,7 +49,7 @@
   "capture": {
     "title": "Registra Quick Dump",
     "listening": "Ti ascolto…",
-    "transcribing": "Trascrizione in corso…",
+    "transcribing": "Trascrizione…",
     "placeholder": "A cosa stai pensando?…",
     "stopRecording": "Interrompi registrazione",
     "voiceInput": "Inserimento vocale",
@@ -80,14 +80,14 @@
   "demo": {
     "resetEvery": "Questa istanza di test viene ripristinata automaticamente allo stato iniziale ogni {{count}} minuti.",
     "resetIn": "Ripristino tra {{time}}",
-    "resetting": "ripristino in corso…",
+    "resetting": "ripristino…",
     "label": "✨ Demo ·",
     "publicHint_one": "Demo pubblica: tutti accedono con gli stessi account e vedono ciò che scrivono gli altri. Viene ripristinata ogni minuto: non inserire nulla di privato.",
     "publicHint_other": "Demo pubblica: tutti accedono con gli stessi account e vedono ciò che scrivono gli altri. Viene ripristinata ogni {{count}} minuti: non inserire nulla di privato.",
     "publicHintNoReset": "Demo pubblica: tutti accedono con gli stessi account e vedono ciò che scrivono gli altri: non inserire nulla di privato.",
     "closeHint": "Chiudi avviso"
   },
-  "connecting": "Connessione a MindSift in corso…",
+  "connecting": "Connessione a MindSift…",
   "appLoad": {
     "failed": "MindSift non è stato caricato completamente. Controlla la connessione e riprova.",
     "retry": "Riprova"

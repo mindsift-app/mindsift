@@ -48,8 +48,8 @@
   },
   "capture": {
     "title": "Quick Dump erfassen",
-    "listening": "Ich höre zu…",
-    "transcribing": "Wird erkannt…",
+    "listening": "Ich höre zu …",
+    "transcribing": "Wird erkannt …",
     "placeholder": "Was geht dir durch den Kopf?…",
     "stopRecording": "Aufnahme beenden",
     "voiceInput": "Spracheingabe",
@@ -80,14 +80,14 @@
   "demo": {
     "resetEvery": "Diese Test-Instanz wird alle {{count}} Minuten automatisch auf den Ausgangszustand zurückgesetzt.",
     "resetIn": "Reset in {{time}}",
-    "resetting": "wird zurückgesetzt…",
+    "resetting": "wird zurückgesetzt …",
     "label": "✨ Demo ·",
     "publicHint_one": "Öffentliche Demo: Alle melden sich mit denselben Konten an und sehen, was andere eintragen. Sie wird jede Minute zurückgesetzt – bitte nichts Privates eintragen.",
     "publicHint_other": "Öffentliche Demo: Alle melden sich mit denselben Konten an und sehen, was andere eintragen. Sie wird alle {{count}} Minuten zurückgesetzt – bitte nichts Privates eintragen.",
     "publicHintNoReset": "Öffentliche Demo: Alle melden sich mit denselben Konten an und sehen, was andere eintragen – bitte nichts Privates eintragen.",
     "closeHint": "Hinweis schließen"
   },
-  "connecting": "Verbinde mit MindSift…",
+  "connecting": "Verbindung zu MindSift wird aufgebaut …",
   "appLoad": {
     "failed": "MindSift konnte nicht vollständig geladen werden. Prüfe die Verbindung und versuche es noch einmal.",
     "retry": "Erneut versuchen"
@@ -100,8 +100,8 @@
     "quickDumpTip": "Quick Dump – Gedanken festhalten (C) · Gedrückt halten zum Diktieren",
     "dictateListening": "Diktat {{time}} – loslassen speichert, wegziehen hält fest",
     "dictateLocked": "Diktat {{time}} – Klick beendet, Esc bricht ab",
-    "dictateSaving_one": "Wird gespeichert…",
-    "dictateSaving_other": "{{count}} Diktate werden gespeichert…",
+    "dictateSaving_one": "Wird gespeichert …",
+    "dictateSaving_other": "{{count}} Diktate werden gespeichert …",
     "dictateSaved": "Im Quick Dump gespeichert",
     "dictateSavedDue": "Im Quick Dump gespeichert · Fällig: {{due}}",
     "dictateUndoTitle": "Text wie diktiert behalten, ohne Fälligkeit",

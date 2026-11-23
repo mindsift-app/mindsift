@@ -103,7 +103,7 @@
   },
   "fab": {
     "saveFailed": "Fehler beim Speichern",
-    "listening": "Ich höre zu… (loslassen speichert)",
+    "listening": "Ich höre zu … (loslassen speichert)",
     "slideLock": "Nach oben ziehen zum Feststellen",
     "locked": "Aufnahme läuft – tippen beendet",
     "title": "Schnell erfassen (+)",
@@ -113,7 +113,7 @@
   "putOnList": "Direkt auf Liste „{{title}}“ setzen",
   "voiceJobs": {
     "title": "Sprachaufnahmen in Arbeit",
-    "pending": "Sprachaufnahme wird transkribiert…",
+    "pending": "Sprachaufnahme wird transkribiert …",
     "failed": "Sprachaufnahme nicht transkribiert",
     "retrying": "Neuer Versuch folgt gleich",
     "retry": "Erneut versuchen",

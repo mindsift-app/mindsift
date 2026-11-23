@@ -1453,7 +1453,7 @@
     "downloadFailed": "No se pudo iniciar la descarga",
     "unreachable": "Servidor Whisper no accesible",
     "size": "aprox. {{size}} GB",
-    "downloading": "Descargando … {{time}}",
+    "downloading": "Descargando… {{time}}",
     "downloadError": "Descarga fallida: {{error}}",
     "inUse": "En uso",
     "missing": "Falta",

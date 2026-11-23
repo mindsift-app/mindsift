@@ -638,7 +638,7 @@
       "endedDiscard": "{{name}} ha descartado el dibujo en vivo.",
       "endedExpired": "El dibujo en vivo ha terminado.",
       "unsentKept": "Tus últimos cambios no llegaron a la sesión; se quedan en este navegador como borrador y se ofrecerán la próxima vez que abras el dibujo.",
-      "saving": "Guardando …",
+      "saving": "Guardando…",
       "offline": "Conexión perdida – tus cambios se envían en cuanto vuelva.",
       "offlineWatch": "Conexión perdida.",
       "offlineSave": "Sin conexión – se podrá guardar cuando vuelva.",
