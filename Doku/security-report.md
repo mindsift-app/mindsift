@@ -364,7 +364,7 @@ production or public host. Together the Go fuzzers ran about 83 million executio
   passwords after 50 wrong ones).
 - **Not run:** the penetration-test OIDC script against a local provider (no scripted set-up for it in this round),
   Go fuzzing. The OIDC sign-in itself is covered by the Go tests and by a browser test against a local Dex provider
-  (`e2e/oidc.e2e.mjs`), which run before every push.
+  (`e2e/oidc.e2e.mjs`), which run before every release.
 - **Result:** no regression in any security fix; every earlier finding stays fixed. New: 0 high, 0 medium, 3 low (an
   import on a new server, two imports at once, the MCP answer for someone else's task), all fixed (above), and one
   observation that is not security-relevant (fixed in `bd74bc7`). All of them were found and fixed the same day.
@@ -480,7 +480,7 @@ These were kept on purpose; the first three are documented in [flaws.md](flaws.m
   own tests; on 15 November the fixes were checked again in the code and the re-test scripts ran against it, and on
   16 November the new features were attacked in a fourth penetration test.
 - OIDC was attacked in the second run only, against a local provider, not a live one; the re-test did not run that
-  script again. The sign-in flow is checked before every push by Go tests and a browser test against a local Dex
+  script again. The sign-in flow is checked before every release by Go tests and a browser test against a local Dex
   provider. Passkeys were tested with a virtual authenticator (second run and re-test), not with a physical key.
 - Not tested: the expiry of reset and confirmation links (not waited out), a speech-recognition backend (not
   configured), DNS rebinding with an attacker-controlled resolver (assessed from the code, which pins the connection
