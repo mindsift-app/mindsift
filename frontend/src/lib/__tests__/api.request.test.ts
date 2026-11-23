@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { api, getToken, setToken, clearToken, buildWebSocketURL, buildSSEURL, requestRaw } from '../api';
 import { OfflineError } from '../offline';
+import { httpTransport, TransportError } from '../docSync/transport';
 
 // Safety net for splitting lib/api.ts: the behaviour of request()
 // as seen through public calls.
@@ -177,5 +178,50 @@ describe('requestRaw()', () => {
     expect(res.status).toBe(401);
     expect(getToken()).toBeNull();
     expect(seen).toHaveBeenCalled();
+  });
+});
+
+describe('note sync transport', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    localStorage.clear();
+    clearToken();
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends the login and takes a renewed session token', async () => {
+    setToken('old');
+    fetchMock.mockResolvedValue(jsonResponse(200, { headSeq: 3, changed: false }, { 'X-Session-Token': 'fresh' }));
+    expect(await httpTransport.changes('doc_1', 2, 25)).toEqual({ headSeq: 3, changed: false });
+    const [path, init] = fetchMock.mock.calls[0];
+    expect(path).toBe('/api/v1/docs/doc_1/changes?since=2&wait=25');
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer old', 'Content-Type': 'application/json' });
+    expect(getToken()).toBe('fresh');
+  });
+
+  it('on 401 forgets the token, tells the app and fails with the status', async () => {
+    setToken('stale');
+    const seen = vi.fn();
+    window.addEventListener('mindsift:unauthorized', seen);
+    fetchMock.mockResolvedValue(jsonResponse(401, { error: 'Nicht autorisiert' }));
+    const err = await httpTransport.snapshot('doc_1').catch((e: unknown) => e);
+    window.removeEventListener('mindsift:unauthorized', seen);
+    expect(err).toBeInstanceOf(TransportError);
+    expect((err as TransportError).status).toBe(401);
+    expect(getToken()).toBeNull();
+    expect(seen).toHaveBeenCalledTimes(1);
+  });
+
+  it('a network error is status 0', async () => {
+    setToken('t');
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    const err = await httpTransport.snapshot('doc_1').catch((e: unknown) => e);
+    expect((err as TransportError).status).toBe(0);
+    expect(getToken()).toBe('t');
   });
 });

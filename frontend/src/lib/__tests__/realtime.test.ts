@@ -197,7 +197,12 @@ describe('realtime fallback', () => {
         if (url === '/api/v1/events/poll') return new Response('{"pollId":"poll_1"}', { status: 200 });
         if (url.startsWith('/api/v1/events/poll/poll_1')) {
           polls++;
-          if (polls === 1) return new Response('{"events":[{"event":"TASK_UPDATED","payload":{"id":"t1"}}]}', { status: 200 });
+          // The answer renews the session like any other signed-in request
+          if (polls === 1)
+            return new Response('{"events":[{"event":"TASK_UPDATED","payload":{"id":"t1"}}]}', {
+              status: 200,
+              headers: { 'X-Session-Token': 'fresh-token' },
+            });
           // Later polls wait like the server does, until the client gives up on them
           return new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('aborted'))));
         }
@@ -215,6 +220,7 @@ describe('realtime fallback', () => {
     expect(api.getRealtimeTransport()).toBe('poll');
     expect(seen).toEqual(['TASK_UPDATED']);
     expect(polls).toBe(2); // the next poll is waiting
+    expect(api.getToken()).toBe('fresh-token');
     api.disconnectWebSocket();
     expect(api.isRealtimeConnected()).toBe(false);
   });
