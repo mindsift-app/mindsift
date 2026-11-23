@@ -76,7 +76,7 @@ export function SmtpSection({
           <button
             type="button"
             onClick={() => handleSaveSystemSettings()}
-            className="btn-primary h-9 px-5 text-xs font-semibold"
+            className="btn-primary h-11 sm:h-9 px-5 text-xs font-semibold"
           >
             {t('settings:smtp.save')}
           </button>
@@ -96,13 +96,13 @@ export function SmtpSection({
               value={testSmtpEmail}
               onChange={(e) => setTestSmtpEmail(e.target.value)}
               placeholder={t('smtp.testPlaceholder')}
-              className="flex-1 h-8 px-3 input-field"
+              className="flex-1 h-11 sm:h-8 px-3 input-field text-base sm:text-xs"
             />
             <button
               type="button"
               onClick={handleTestSmtp}
               disabled={testingSmtp || !testSmtpEmail.trim()}
-              className="btn-action h-8 px-4 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
+              className="btn-action h-11 sm:h-8 px-4 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
             >
               <Send className="w-3.5 h-3.5 text-accent" />
               <span>{testingSmtp ? t('smtp.testSending') : t('smtp.testSend')}</span>

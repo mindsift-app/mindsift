@@ -162,7 +162,7 @@ Components: `RestoreResult` and `RestoreConfirm` in [RestoreResult.tsx](../front
 Component: [TrashList.tsx](../frontend/src/components/TrashList.tsx) (`TrashList`, `EmptyTrashButton`)
 
 - The trashes of notes (`TrashView`), tasks (`TaskTrashList`) and the Quick Dump (`TriageTrash`) are one framed list with dividers; the caller only draws the entry (title, where it came from, when it was deleted). Empty: `EmptyState` with a frame.
-- Each row: "Wiederherstellen" (runs at once) and a red bin, 44 px on phones, 32 px from `sm`. The bin deletes for good after `askConfirm` at the click ("„…“ endgültig löschen?"). No second tap on the same button, no deleting without a question.
+- Each row: "Wiederherstellen" (runs at once; on phones only its icon, so the title keeps its room) and a red bin, 44 px on phones, 32 px from `sm`. The bin deletes for good after `askConfirm` at the click ("„…“ endgültig löschen?"). No second tap on the same button, no deleting without a question.
 - "Papierkorb leeren" (`EmptyTrashButton`, the tasks' toolbar button too) asks the same way and names how many entries go. Entries one may not change (a shared task list read only) show no buttons.
 - Errors go to the red notice at the bottom (`showError`).
 

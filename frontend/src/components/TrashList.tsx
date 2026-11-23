@@ -65,10 +65,13 @@ export function TrashList<T>({ items, itemKey, renderItem, itemTitle, onRestore,
                     type="button"
                     disabled={busy !== null}
                     onClick={() => run(key, () => onRestore(item))}
-                    className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    // Phones: the bin's size with the icon only, so the entry's title keeps its room
+                    className="btn-action w-11 h-11 sm:w-auto sm:h-8 sm:px-3 text-xs inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    title={t('restore')}
+                    aria-label={t('restore')}
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-accent" />
-                    {t('restore')}
+                    <span className="hidden sm:inline">{t('restore')}</span>
                   </button>
                   <button
                     type="button"

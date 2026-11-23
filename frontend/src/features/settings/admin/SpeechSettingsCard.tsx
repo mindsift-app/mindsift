@@ -123,7 +123,7 @@ export function SpeechSettingsCard({
             placeholder="http://whisper:8000"
             aria-label={t('speech.url')}
             onChange={(e) => setUrl(e.target.value)}
-            className="flex-1 h-11 sm:h-8 px-2 input-field text-base sm:text-xs font-mono"
+            className="sm:flex-1 min-w-0 h-11 sm:h-8 px-2 input-field text-base sm:text-xs font-mono"
           />
           <input
             {...NO_AUTOFILL}
