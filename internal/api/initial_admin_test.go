@@ -60,7 +60,7 @@ func captureLog(t *testing.T) *logBuffer {
 func freshStore(t *testing.T) (*storage.Store, string) {
 	t.Helper()
 	dbPath := filepath.Join(t.TempDir(), "first_start.db")
-	store, err := storage.NewStore(dbPath)
+	store, err := newMigratedStore(t, dbPath)
 	if err != nil {
 		t.Fatalf("store: %v", err)
 	}

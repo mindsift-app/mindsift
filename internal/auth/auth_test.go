@@ -40,6 +40,10 @@ func TestHashPasswordUsesThePrehashForm(t *testing.T) {
 	if !CheckPassword("geheim1234", h) || CheckPassword("geheim12345", h) || CheckPassword("", h) {
 		t.Fatal("check of the new form is wrong")
 	}
+	// The server hashes at bcrypt's default cost; only tests lower PasswordCost
+	if cost, err := bcrypt.Cost([]byte(strings.TrimPrefix(h, passwordPrehashPrefix))); err != nil || cost != bcrypt.DefaultCost {
+		t.Fatalf("cost %d (%v), want %d", cost, err, bcrypt.DefaultCost)
+	}
 }
 
 // Passwords of earlier versions (plain bcrypt) keep working and are flagged for the new form.

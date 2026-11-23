@@ -399,7 +399,15 @@ func reservedClientID(w http.ResponseWriter, id string) bool {
 // compactionInterval is how often the operation log and tombstones are compacted (also once at start).
 const compactionInterval = 6 * time.Hour
 
+// compactAtStart: the first pass of startCompaction right at the start. Only tests switch it off
+// (TestMain): every test starts a server on a new database, where the pass finds nothing to do but
+// still analyzes every table.
+var compactAtStart = true
+
 func (s *Server) startCompaction() {
+	if !compactAtStart && !s.wait(compactionInterval) {
+		return
+	}
 	for {
 		done := s.demoPass()
 		s.compactOnce()

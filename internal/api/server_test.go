@@ -26,20 +26,8 @@ var testSecretsKey = []byte("test-secrets-key-32-bytes-long!!")
 func setupTestServer(t *testing.T) (*Server, *storage.Store, string) {
 	t.Helper()
 	dbPath := filepath.Join(t.TempDir(), "test_mindsift.db")
-	store, err := storage.NewStore(dbPath, storage.WithSecretsKey(testSecretsKey))
-	openSharing(t, store)
-	if err != nil {
-		t.Fatalf("failed to create test store: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = store.Close()
-	})
-
-	user, err := store.EnsureDefaultUser()
-	if err != nil {
-		t.Fatalf("failed to ensure test user: %v", err)
-	}
-	_ = store.SeedStarterContent(user)
+	// Sharing open, the default user and the sample data (testmain_test.go)
+	store, user := newSeededStore(t, dbPath)
 
 	cfg := &config.Config{
 		Port:              "8080",

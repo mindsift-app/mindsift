@@ -69,8 +69,13 @@ func prehashPassword(password string) []byte {
 	return []byte(base64.StdEncoding.EncodeToString(sum[:]))
 }
 
+// PasswordCost is the bcrypt cost of new hashes. Only tests change it (TestMain of internal/api lowers it
+// to bcrypt.MinCost, so the many sign-ups and password changes there do not take 50 ms each); the server
+// never does.
+var PasswordCost = bcrypt.DefaultCost
+
 func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword(prehashPassword(password), bcrypt.DefaultCost)
+	bytes, err := bcrypt.GenerateFromPassword(prehashPassword(password), PasswordCost)
 	if err != nil {
 		return "", err
 	}
