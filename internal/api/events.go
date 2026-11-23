@@ -40,6 +40,9 @@ const (
 	eventItemDeleted   = "ITEM_DELETED"
 	eventItemReordered = "ITEM_REORDERED"
 
+	// Groups: {id} to the members before and after a change (broadcastTeamUpdated); the app reloads its groups
+	eventTeamUpdated = "TEAM_UPDATED"
+
 	// Notification center, transcriptions in the background, the demo's reset
 	eventNotification         = "NOTIFICATION"
 	eventNotificationsRead    = "NOTIFICATIONS_READ"
