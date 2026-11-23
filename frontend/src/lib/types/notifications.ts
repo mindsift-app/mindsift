@@ -50,7 +50,7 @@ export interface CenterEntry {
   kind: 'due' | 'shared' | 'assigned' | 'mentioned' | 'taskCreated' | 'taskDone' | 'watched' | string;
   title: string;
   text: string;
-  targetType?: 'task' | 'note' | 'list' | 'tasklist' | 'folder';
+  targetType?: 'task' | 'note' | 'list' | 'tasklist' | 'folder' | 'team';
   targetId?: string;
   blockId?: string;
   createdAt: string;

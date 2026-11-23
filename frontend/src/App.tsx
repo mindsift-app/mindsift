@@ -543,6 +543,7 @@ export const App: React.FC = () => {
     else if (entry.targetType === 'list') handleOpenList(entry.targetId);
     else if (entry.targetType === 'tasklist') navigateTab('tasks');
     else if (entry.targetType === 'folder') navigateTab('workspace');
+    else if (entry.targetType === 'team') navigateTab('groups');
   };
 
   // Links from the MCP server (?note=…, ?task=…, ?list=…): open the item once signed in, then drop the

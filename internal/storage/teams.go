@@ -203,3 +203,36 @@ func (s *Store) GetTeamMembers(teamID string) ([]domain.TeamMember, error) {
 	}
 	return members, nil
 }
+
+// TeamShares is what is shared with a group: task lists, lists, notes and shared folders (ids). Lists
+// maps each list to the id of its share with the group.
+type TeamShares struct {
+	TaskLists []string
+	Lists     map[string]string
+	Docs      []string
+	Folders   []string
+}
+
+// GetTeamShares lists what is shared with a group, so a change of its members can tell the people who
+// gain or lose it (queryUserIDs collects any one column of distinct ids).
+func (s *Store) GetTeamShares(teamID string) TeamShares {
+	out := TeamShares{
+		TaskLists: s.queryUserIDs(`SELECT task_list_id FROM task_list_shares WHERE target_type = 'team' AND target_id = ?`, teamID),
+		Lists:     map[string]string{},
+		Docs:      s.queryUserIDs(`SELECT doc_id FROM doc_team_shares WHERE team_id = ?`, teamID),
+		Folders:   s.queryUserIDs(`SELECT folder_id FROM workspace_folder_shares WHERE target_type = 'team' AND target_id = ?`, teamID),
+	}
+	rows, err := s.db.Query(`SELECT list_id, id FROM list_shares WHERE target_type = 'team' AND target_id = ?`, teamID)
+	if dbFailed(err) {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var listID, shareID string
+		if err := rows.Scan(&listID, &shareID); !dbFailed(err) {
+			out.Lists[listID] = shareID
+		}
+	}
+	logDBErr(rows.Err())
+	return out
+}

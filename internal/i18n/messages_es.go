@@ -443,6 +443,7 @@ var messagesES = map[string]string{
 	"{name} hat den Ordner „{title}“ mit dir geteilt":                "{name} ha compartido contigo la carpeta «{title}»",
 	"{name} hat die Liste „{title}“ mit dir geteilt":                 "{name} ha compartido contigo la lista «{title}»",
 	"{name} hat die Aufgabenliste „{title}“ mit dir geteilt":         "{name} ha compartido contigo la lista de tareas «{title}»",
+	"{name} hat dich zur Gruppe „{title}“ hinzugefügt":               "{name} te ha añadido al grupo «{title}»",
 	"{name} hat „{title}“ gelöscht":                                  "{name} ha eliminado «{title}»",
 	"{name} hat „{title}“ erledigt":                                  "{name} ha completado «{title}»",
 	"{name} hat „{title}“ wieder geöffnet":                           "{name} ha reabierto «{title}»",

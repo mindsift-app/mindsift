@@ -108,10 +108,12 @@ func (s *Server) handleDeleteTeam(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "Nur Gruppen-Administratoren können die Gruppe löschen")
 		return
 	}
+	before := s.teamAccessBefore(teamID)
 	if err := s.store.DeleteTeam(teamID); err != nil {
 		writeInternal(w, err)
 		return
 	}
+	s.afterTeamChange(teamID, before, false)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
@@ -160,9 +162,16 @@ func (s *Server) handleAddTeamMember(w http.ResponseWriter, r *http.Request) {
 	if !domain.ValidTeamRole(role) {
 		role = domain.TeamRoleMember
 	}
+	// Adding a member again only changes the role: no events, no notification
+	wasMember, _ := s.store.GetTeamMemberRole(teamID, targetUserID)
+	before := s.teamAccessBefore(teamID)
 	if err := s.store.AddTeamMember(teamID, targetUserID, role); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
+	}
+	if wasMember == "" {
+		s.afterTeamChange(teamID, before, true)
+		s.notifyTeamAdded(userID, targetUserID, teamID)
 	}
 	members, _ := s.store.GetTeamMembers(teamID)
 	writeJSON(w, http.StatusOK, members)
@@ -208,9 +217,119 @@ func (s *Server) handleRemoveTeamMember(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	wasMember, _ := s.store.GetTeamMemberRole(teamID, memberUserID)
+	before := s.teamAccessBefore(teamID)
 	if err := s.store.RemoveTeamMember(teamID, memberUserID); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
+	if wasMember != "" {
+		s.afterTeamChange(teamID, before, false)
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"removed": true})
+}
+
+// teamAccess is what a group gives its members, read before a change of its members: the members, what
+// is shared with the group, and who saw each of those before.
+type teamAccess struct {
+	members                         []string
+	shares                          storage.TeamShares
+	taskLists, lists, docs, folders map[string][]string
+}
+
+func (s *Server) teamAccessBefore(teamID string) teamAccess {
+	a := teamAccess{shares: s.store.GetTeamShares(teamID), taskLists: map[string][]string{}, lists: map[string][]string{},
+		docs: map[string][]string{}, folders: map[string][]string{}}
+	members, _ := s.store.GetTeamMembers(teamID)
+	for _, m := range members {
+		a.members = append(a.members, m.UserID)
+	}
+	for _, id := range a.shares.TaskLists {
+		a.taskLists[id] = s.store.GetTaskListUserIDs(id)
+	}
+	for id := range a.shares.Lists {
+		a.lists[id] = s.store.GetListUserIDs(id)
+	}
+	for _, id := range a.shares.Docs {
+		a.docs[id], _ = s.store.GetAuthorizedDocUsers(id)
+	}
+	for _, id := range a.shares.Folders {
+		a.folders[id] = s.store.GetSharedFolderUserIDs(id)
+	}
+	return a
+}
+
+// afterTeamChange tells everyone who saw something through the group before or sees it now (someone
+// added or removed, the group deleted), as sharing or unsharing each of them would: their task lists,
+// lists, notes and shared folders appear or go without a reload. What was shared with the group before
+// or is now counts (removing someone also removes the shares they had made with the group). Whoever may
+// have lost something leaves its realtime rooms (dropLostRooms).
+func (s *Server) afterTeamChange(teamID string, before teamAccess, added bool) {
+	now := s.store.GetTeamShares(teamID)
+
+	taskLists := unionIDs(before.shares.TaskLists, now.TaskLists)
+	for _, id := range taskLists {
+		s.broadcastTaskListChange(id, before.taskLists[id], eventTaskListUpdated)
+	}
+
+	listShares := map[string]string{}
+	for id, share := range before.shares.Lists {
+		listShares[id] = share
+	}
+	for id, share := range now.Lists {
+		listShares[id] = share
+	}
+	for listID, shareID := range listShares {
+		audience := before.lists[listID]
+		if audience == nil {
+			audience = []string{}
+		}
+		if added {
+			var payload any = map[string]string{"listId": listID, "id": shareID}
+			if shares, err := s.store.GetListShares(listID); err == nil {
+				for _, sh := range shares {
+					if sh.ID == shareID {
+						payload = sh
+					}
+				}
+			}
+			s.broadcastListAudience(listID, audience, eventListShared, payload)
+		} else {
+			s.broadcastListAudience(listID, audience, eventListUnshared, map[string]string{"listId": listID, "shareId": shareID})
+		}
+	}
+
+	for _, docID := range unionIDs(before.shares.Docs, now.Docs) {
+		after, _ := s.store.GetAuthorizedDocUsers(docID)
+		for _, uid := range lostUsers(before.docs[docID], after) {
+			s.wsHub.BroadcastToUser(uid, eventDocDeleted, map[string]string{"id": docID})
+		}
+		for _, uid := range lostUsers(after, before.docs[docID]) {
+			if doc, err := s.store.GetDocumentListItem(uid, docID); err == nil && doc != nil {
+				s.wsHub.BroadcastToUser(uid, eventDocCreated, doc)
+			}
+		}
+	}
+
+	for _, folderID := range unionIDs(before.shares.Folders, now.Folders) {
+		users := append(before.folders[folderID], s.store.GetSharedFolderUserIDs(folderID)...)
+		s.wsHub.BroadcastToUsers(users, eventFoldersUpdated, map[string]string{"type": folderEventShared, "folderId": folderID})
+	}
+
+	if !added {
+		s.dropLostRooms(before.members)
+	}
+}
+
+// unionIDs: the ids of a and b, each once, in order.
+func unionIDs(a, b []string) []string {
+	seen := make(map[string]bool, len(a)+len(b))
+	out := make([]string, 0, len(a)+len(b))
+	for _, id := range append(append([]string{}, a...), b...) {
+		if !seen[id] {
+			seen[id] = true
+			out = append(out, id)
+		}
+	}
+	return out
 }

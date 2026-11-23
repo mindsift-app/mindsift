@@ -443,6 +443,7 @@ var messagesFR = map[string]string{
 	"{name} hat den Ordner „{title}“ mit dir geteilt":                "{name} a partagé le dossier « {title} » avec toi",
 	"{name} hat die Liste „{title}“ mit dir geteilt":                 "{name} a partagé la liste « {title} » avec toi",
 	"{name} hat die Aufgabenliste „{title}“ mit dir geteilt":         "{name} a partagé la liste de tâches « {title} » avec toi",
+	"{name} hat dich zur Gruppe „{title}“ hinzugefügt":               "{name} t’a ajouté au groupe « {title} »",
 	"{name} hat „{title}“ gelöscht":                                  "{name} a supprimé « {title} »",
 	"{name} hat „{title}“ erledigt":                                  "{name} a terminé « {title} »",
 	"{name} hat „{title}“ wieder geöffnet":                           "{name} a rouvert « {title} »",
