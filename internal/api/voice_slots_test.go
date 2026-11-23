@@ -337,9 +337,13 @@ func TestJobsLeaveAPlaceForDictation(t *testing.T) {
 		t.Fatal("the second job did not wait for the first")
 	}
 	// From here on every call may finish (which one first does not matter)
-	stop := make(chan struct{})
-	defer close(stop)
+	stop, stopped := make(chan struct{}), make(chan struct{})
+	defer func() {
+		close(stop)
+		<-stopped // the cleanup closes the gate: no send may be under way then
+	}()
 	go func() {
+		defer close(stopped)
 		for {
 			select {
 			case gw.gate <- struct{}{}:
