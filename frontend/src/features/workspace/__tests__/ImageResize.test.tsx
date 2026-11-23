@@ -135,4 +135,31 @@ describe('Bildgröße ändern', () => {
     expect(handle.parentElement!.className).not.toContain('pointer-events-none');
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+  it('am Handy: ein Tippen neben das Bild hebt die Auswahl auf und erreicht trotzdem sein Ziel', async () => {
+    setHover(false);
+    const daneben = vi.fn();
+    render(
+      <>
+        <ImageBlock content="![Hafen|320](media:med_a1)" canEdit onCaptionChange={() => {}} onWidthChange={() => {}} />
+        <button type="button" onClick={daneben}>
+          Daneben
+        </button>
+      </>
+    );
+    await screen.findByTitle('Vergrößern');
+    const handle = screen.getByTitle(HANDLE);
+    fireEvent.click(screen.getByTitle('Vergrößern'));
+    expect(handle.parentElement!.className).not.toContain('pointer-events-none');
+
+    // Escape bleibt der Notiz überlassen
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(handle.parentElement!.className).not.toContain('pointer-events-none');
+
+    const button = screen.getByRole('button', { name: 'Daneben' });
+    fireEvent.pointerDown(button);
+    fireEvent.pointerUp(button);
+    fireEvent.click(button);
+    expect(handle.parentElement!.className).toContain('pointer-events-none');
+    expect(daneben).toHaveBeenCalledTimes(1);
+  });
 });

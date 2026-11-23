@@ -5,7 +5,7 @@ import { MIN_IMAGE_WIDTH, mediaObjectURL, parseMediaContent } from '../../lib/me
 import { useTranslation } from 'react-i18next';
 import { IndentArrows, OVERLAY_ARROW_BUTTON, overlayArrowsClass } from './IndentArrows';
 import { MediaCaption } from './MediaCaption';
-import { useCloseOnEscape } from '../../lib/useDismiss';
+import { useCloseOnEscape, useDismiss } from '../../lib/useDismiss';
 
 interface ImageBlockProps {
   content: string;
@@ -77,14 +77,8 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
 
   useCloseOnEscape(() => setZoomed(false), { active: zoomed });
 
-  useEffect(() => {
-    if (!active) return;
-    const onDown = (e: PointerEvent) => {
-      if (!figureRef.current?.contains(e.target as Node)) setActive(false);
-    };
-    document.addEventListener('pointerdown', onDown, true);
-    return () => document.removeEventListener('pointerdown', onDown, true);
-  }, [active]);
+  // A press beside the image ends its selection (and still reaches its target); Escape is left to the note
+  useDismiss(figureRef, () => setActive(false), { active, escape: false, passThrough: true });
 
   if (!ref) {
     return <div className="text-xs text-status-err py-1">{t('media.imageBroken', { content })}</div>;
