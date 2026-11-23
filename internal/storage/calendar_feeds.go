@@ -106,13 +106,13 @@ func (s *Store) CalendarTasks(userID string, now time.Time) ([]CalendarTask, err
 	rows, err := s.db.Query(
 		`SELECT t.id, t.content, substr(t.notes, 1, ?), t.due_date, COALESCE(tl.title, ''), t.reminders, t.created_at, t.changed_at, `+sqlTaskUpdatedAt+`, t.revision
 		 FROM thoughts t LEFT JOIN task_lists tl ON tl.id = t.task_list_id
-		 WHERE (t.user_id = ? OR t.task_list_id IN (`+accessibleTaskListsSQL+`))
+		 WHERE t.rowid IN (`+visibleTaskRowidsSQL+`)
 		   AND (t.status = 'kept' OR (t.status = 'converted' AND t.converted_type = 'task'))
 		   AND t.is_completed = 0
 		   AND t.due_date >= ? AND t.due_date < ?
-		 ORDER BY t.due_date, t.created_at
+		 ORDER BY t.due_date, t.created_at, t.rowid
 		 LIMIT ?`,
-		calendarFeedNotesPrefix, userID, userID, userID, userID, from, to, CalendarFeedMaxEntries,
+		append(append([]any{calendarFeedNotesPrefix}, visibleTaskArgs(userID)...), from, to, CalendarFeedMaxEntries)...,
 	)
 	if err != nil {
 		return nil, err
