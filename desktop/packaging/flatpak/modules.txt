@@ -91,6 +91,7 @@ github.com/mattn/go-isatty
 ## explicit; go 1.27
 github.com/mindsift-app/mindsift/internal/api
 github.com/mindsift-app/mindsift/internal/auth
+github.com/mindsift-app/mindsift/internal/blockfmt
 github.com/mindsift-app/mindsift/internal/clock
 github.com/mindsift-app/mindsift/internal/collab
 github.com/mindsift-app/mindsift/internal/config
@@ -99,6 +100,7 @@ github.com/mindsift-app/mindsift/internal/drawing
 github.com/mindsift-app/mindsift/internal/drawlive
 github.com/mindsift-app/mindsift/internal/i18n
 github.com/mindsift-app/mindsift/internal/ical
+github.com/mindsift-app/mindsift/internal/importer
 github.com/mindsift-app/mindsift/internal/metrics
 github.com/mindsift-app/mindsift/internal/storage
 github.com/mindsift-app/mindsift/internal/ws
