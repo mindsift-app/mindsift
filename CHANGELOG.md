@@ -15,6 +15,9 @@ Versions without a git tag were development states and were never published as a
 - A failed background transcription is cleared 30 days after its last attempt, counted from the last automatic retry if one is still planned. A recording in a note stays in the note and can be transcribed again; a failed recording dictated into the inbox is deleted together with its audio, so try it again, listen to it or discard it before then.
 - Notes written by AI agents through MCP now put commands, code, config files, JSON/YAML, SQL and log excerpts into code blocks with a language (one block per command sequence, not one bullet per line), and show paths, flags, file names and single commands in text as `inline code`.
 - The Flatpak of a release (the download on the release page and flatpak.mindsift.app) is now built from the release tag the way Flathub builds it: offline, with the frontend, the Go modules and the license file built from source inside the Flatpak SDK.
+- The page behind dialogs, sheets, the command palette and Quick Dump is now dimmed in the theme's own overlay colour instead of a fixed black, so light themes stay lighter.
+- All sheets from below on phones look and behave the same: a grip on top, a close button large enough to tap, the page behind does not scroll, and Escape closes them (Quick Dump, new task, task filter, profile, app install, calendar day, triage actions, a person in the administration).
+- Small forms opened next to a click (new folder, rename) flip above the click when there is no room below instead of running off the window.
 
 ### Fixed
 - Sending an invite by e-mail now checks the address like everywhere else in the app: an incomplete one such as `anna@` is refused instead of binding a single-use invite to it.
