@@ -95,6 +95,7 @@ var migrations = []migration{
 	{70, "The daily summary remembers the channels that failed, to try them again", (*Store).migrateDailySummaryRetry},
 	{71, "Folders that only existed through their notes are kept as folders", (*Store).migrateKeepNoteFolders},
 	{72, "Transcriptions done by the server in the background", (*Store).migrateTranscriptions},
+	{73, "Duplicate index on the task list of tasks removed", (*Store).migrateDropTaskListIndex},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
@@ -400,6 +401,16 @@ func (s *Store) columnExists(table, column string) (bool, error) {
 // an entry; the query names the same conditions, so SQLite can use it.
 func (s *Store) migrateOpenTodoIndex() error {
 	_, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_blocks_open_todo ON blocks(document_id) WHERE type = 'todo' AND checked = 0 AND deleted = 0`)
+	return err
+}
+
+// migrateDropTaskListIndex is migration 73: idx_thoughts_task_list (task_list_id) is the first column of
+// idx_thoughts_list_sort (task_list_id, sort_order, created_at), which answers every lookup by list the
+// same way (EXPLAIN QUERY PLAN: emptying a deleted list's tasks uses it as a covering index, the other
+// queries plan alike). The second index only cost a write per changed task. The baseline (step 3) still
+// creates it, so this step also removes it from new databases.
+func (s *Store) migrateDropTaskListIndex() error {
+	_, err := s.db.Exec(`DROP INDEX IF EXISTS idx_thoughts_task_list`)
 	return err
 }
 
