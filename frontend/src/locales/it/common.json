@@ -273,6 +273,7 @@
     "monthly": "mensile",
     "yearly": "annuale"
   },
+  "dataSectionsLabel": "Sezioni",
   "dataSections": {
     "notes": "Note",
     "tasks": "Attività",

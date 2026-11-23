@@ -273,6 +273,7 @@
     "monthly": "mensuel",
     "yearly": "annuel"
   },
+  "dataSectionsLabel": "Sections",
   "dataSections": {
     "notes": "Notes",
     "tasks": "Tâches",

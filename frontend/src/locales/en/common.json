@@ -273,6 +273,7 @@
     "monthly": "monthly",
     "yearly": "yearly"
   },
+  "dataSectionsLabel": "Sections",
   "dataSections": {
     "notes": "Notes",
     "tasks": "Tasks",

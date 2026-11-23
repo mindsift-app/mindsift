@@ -271,6 +271,7 @@
     "monthly": "monatlich",
     "yearly": "jährlich"
   },
+  "dataSectionsLabel": "Bereiche",
   "dataSections": {
     "notes": "Notizen",
     "tasks": "Aufgaben",
