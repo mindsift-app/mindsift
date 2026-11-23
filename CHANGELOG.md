@@ -40,6 +40,7 @@ Versions without a git tag were development states and were never published as a
 - A repeating task ticked off while the phone was offline gets its next date from the day it was ticked, not from the day the phone came back online.
 - Notes made, renamed, moved or deleted on another device while the connection was down (phone asleep, network switch, server restart) now show in the note list as soon as the connection is back; before, the list stayed as it was until the page was reloaded.
 - The journal's calendar starts the week like the date fields and the task calendar: on Sunday in English (US), on Monday in German. Before, it always started on Monday.
+- Settings → Profile: the ring around the profile picture follows the theme's accent colour; before, it had no colour at all.
 - Importing or restoring a backup: the heading above the section switches ("Bereiche") is now shown in the chosen language.
 
 ## [0.99.2] - 2026-11-23

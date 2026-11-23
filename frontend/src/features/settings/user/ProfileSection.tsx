@@ -70,7 +70,7 @@ export function ProfileSection({
               <UserAvatar
                 user={{ displayName, email, avatarUrl }}
                 size="xl"
-                className="border-2 shadow-md ring-2 ring-primary/20"
+                className="border-2 border-border shadow-panel ring-2 ring-accent/20"
               />
               {isProcessingAvatar && (
                 <div className="absolute inset-0 bg-panel/70 rounded-full flex items-center justify-center">
