@@ -620,7 +620,7 @@ const it: HelpContent = {
             </NotInDesktop>
             <InDesktop>
               <li>
-                <strong className="text-main">Altre notifiche:</strong> La <strong className="text-main">campanella</strong> (in basso nella barra a sinistra) raccoglie le notifiche degli ultimi 14 giorni, ad es. le attività in scadenza; un clic su una voce apre l'attività o la nota. Le attività che <strong className="text-main">segui</strong> segnalano anche le tue modifiche se lo attivi nelle impostazioni, sotto «Notifiche».
+                <strong className="text-main">Altre notifiche:</strong> La <strong className="text-main">campanella</strong> (in basso nella barra a sinistra) raccoglie le notifiche degli ultimi 14 giorni, ad es. le attività in scadenza; un clic su una voce apre l'attività o la nota. <Only can="watch">Le attività che <strong className="text-main">segui</strong> segnalano anche le tue modifiche se lo attivi nelle impostazioni, sotto «Notifiche».</Only>
               </li>
             </InDesktop>
             <Only can="publicAddress">

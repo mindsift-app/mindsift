@@ -616,7 +616,7 @@ const fr: HelpContent = {
             </NotInDesktop>
             <InDesktop>
               <li>
-                <strong className="text-main">Autres notifications :</strong> La <strong className="text-main">cloche</strong> (en bas de la barre de gauche) rassemble les notifications des 14 derniers jours, par ex. les tâches échues ; un clic sur une entrée ouvre la tâche ou la note. Les tâches que tu <strong className="text-main">suis</strong> signalent aussi tes propres modifications si tu l'actives dans les paramètres, sous « Alarmes ».
+                <strong className="text-main">Autres notifications :</strong> La <strong className="text-main">cloche</strong> (en bas de la barre de gauche) rassemble les notifications des 14 derniers jours, par ex. les tâches échues ; un clic sur une entrée ouvre la tâche ou la note. <Only can="watch">Les tâches que tu <strong className="text-main">suis</strong> signalent aussi tes propres modifications si tu l'actives dans les paramètres, sous « Alarmes ».</Only>
               </li>
             </InDesktop>
             <Only can="publicAddress">
@@ -642,9 +642,11 @@ const fr: HelpContent = {
             <li>
               <strong className="text-main">Calendrier :</strong> Une troisième vue à côté de la liste et du Kanban : mois ou semaine sur ordinateur, la semaine sur téléphone. Les tâches sans date sont dans « Non planifiées » ; glisse-en une sur un jour pour lui donner une date (l’heure reste), de retour dans « Non planifiées » pour l’enlever, <strong className="text-main">Ctrl + Z</strong> annule. Les tâches répétées montrent aussi leurs prochaines dates, grisées avec ↻. À gauche, une colonne bascule entre le jour choisi (aujourd’hui tant que tu n’en as pas choisi un) avec ses tâches et les tâches non planifiées. ← → pour feuilleter, T revient à aujourd’hui. Sur ordinateur, du lundi au vendredi occupent la largeur ; le week-end s’atteint en faisant défiler sur le côté ou avec « sam. – dim. › ». Mois ou semaine se choisit à droite des hashtags ; un cran de molette fait défiler les barres du dessus.
             </li>
-            <li>
-              <strong className="text-main">Suivre des tâches :</strong> avec l'icône en forme d'œil dans le détail de la tâche, abonne-toi aux notifications lors de modifications apportées par d'autres personnes.
-            </li>
+            <Only can="watch">
+              <li>
+                <strong className="text-main">Suivre des tâches :</strong> avec l'icône en forme d'œil dans le détail de la tâche, abonne-toi aux notifications lors de modifications apportées par d'autres personnes.
+              </li>
+            </Only>
           </ul>
         </div>
       ),

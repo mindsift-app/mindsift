@@ -788,7 +788,7 @@ const de: HelpContent = {
             </NotInDesktop>
             <InDesktop>
               <li>
-                <strong className="text-main">Weitere Benachrichtigungen:</strong> Die <strong className="text-main">Glocke</strong> (unten in der Leiste links) sammelt Meldungen der letzten 14 Tage, etwa fällige Aufgaben; ein Klick auf einen Eintrag öffnet die Aufgabe oder Notiz. Aufgaben, die du <strong className="text-main">beobachtest</strong>, melden auch deine eigenen Änderungen, wenn du das in den Einstellungen unter „Alarme“ einschaltest.
+                <strong className="text-main">Weitere Benachrichtigungen:</strong> Die <strong className="text-main">Glocke</strong> (unten in der Leiste links) sammelt Meldungen der letzten 14 Tage, etwa fällige Aufgaben; ein Klick auf einen Eintrag öffnet die Aufgabe oder Notiz. <Only can="watch">Aufgaben, die du <strong className="text-main">beobachtest</strong>, melden auch deine eigenen Änderungen, wenn du das in den Einstellungen unter „Alarme“ einschaltest.</Only>
               </li>
             </InDesktop>
             <Only can="publicAddress">

@@ -216,20 +216,21 @@ describe('UserSettingsView notification matrix', () => {
 
     expect(screen.queryByText('Ziel: Push-Benachrichtigungen')).toBeNull();
     expect(screen.getByText('Ziel: Systembenachrichtigung')).toBeTruthy();
+    // Nobody else changes a task here: no watched tasks, no switch for the own changes
+    expect(screen.queryByTitle('Beobachtete Aufgaben – Systembenachrichtigung')).toBeNull();
+    expect(screen.queryByTitle('Auch eigene Änderungen an beobachteten Aufgaben melden')).toBeNull();
     const due = screen.getByTitle('Fällige Aufgaben (sofort) – Systembenachrichtigung');
     expect(due.getAttribute('aria-checked')).toBe('true');
-    expect(screen.getByTitle('Beobachtete Aufgaben – Systembenachrichtigung').getAttribute('aria-checked')).toBe('false');
     expect(screen.getByTitle('Tageszusammenfassung – Systembenachrichtigung').getAttribute('aria-checked')).toBe('true');
 
     fireEvent.click(screen.getByRole('button', { name: 'Test anzeigen' }));
     await waitFor(() => expect(testChannel).toHaveBeenCalledWith('desktop', ''));
 
-    fireEvent.click(screen.getByTitle('Beobachtete Aufgaben – Systembenachrichtigung'));
+    fireEvent.click(screen.getByTitle('Fällige Aufgaben (sofort) – Systembenachrichtigung'));
     fireEvent.click(screen.getByRole('button', { name: 'Alarm-Einstellungen speichern' }));
     await waitFor(() => expect(api.updateSettings).toHaveBeenCalledTimes(1));
     const patch = vi.mocked(api.updateSettings).mock.calls[0][0];
-    expect(patch.notificationSettings?.events.due.desktop).toBe(true);
-    expect(patch.notificationSettings?.events.watched.desktop).toBe(true);
+    expect(patch.notificationSettings?.events.due.desktop).toBe(false);
     expect(patch.notificationSettings?.dailySummary.desktop).toBe(true);
   });
 });

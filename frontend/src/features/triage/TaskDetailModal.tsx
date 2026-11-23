@@ -42,6 +42,7 @@ import { pushModal } from '../../lib/navHistory';
 import { useScrollLock } from '../../lib/useScrollLock';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { useHoldReload } from '../../lib/reloadHold';
+import { can } from '../../lib/capabilities';
 
 interface TaskDetailModalProps {
   task: Thought | null;
@@ -412,27 +413,29 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleToggleWatch}
-              disabled={watchBusy}
-              title={isWatching ? t('detail.unwatch') : t('detail.watch')}
-              className={`btn-action min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5 ${
-                isWatching ? 'border-accent text-accent' : ''
-              }`}
-            >
-              {isWatching ? (
-                <>
-                  <EyeOff className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-accent" />
-                  <span>{t('detail.unwatch')}</span>
-                </>
-              ) : (
-                <>
-                  <Eye className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                  <span>{t('detail.watch')}</span>
-                </>
-              )}
-            </button>
+            {can('watch') && (
+              <button
+                type="button"
+                onClick={handleToggleWatch}
+                disabled={watchBusy}
+                title={isWatching ? t('detail.unwatch') : t('detail.watch')}
+                className={`btn-action min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5 ${
+                  isWatching ? 'border-accent text-accent' : ''
+                }`}
+              >
+                {isWatching ? (
+                  <>
+                    <EyeOff className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-accent" />
+                    <span>{t('detail.unwatch')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                    <span>{t('detail.watch')}</span>
+                  </>
+                )}
+              </button>
+            )}
             {(task.convertedType === 'document_block' || task.docId) ? (
               <button
                 type="button"

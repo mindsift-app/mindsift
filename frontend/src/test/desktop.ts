@@ -7,6 +7,7 @@ export const DESKTOP_CAPABILITIES: Capabilities = {
   accounts: false,
   signIn: false,
   sharing: false,
+  watch: false,
   email: false,
   push: false,
   passkeys: false,

@@ -620,7 +620,7 @@ const en: HelpContent = {
             </NotInDesktop>
             <InDesktop>
               <li>
-                <strong className="text-main">More notifications:</strong> The <strong className="text-main">bell</strong> (at the bottom of the bar on the left) collects the last 14 days of notices, such as due tasks; a click on an entry opens the task or note. Tasks you <strong className="text-main">watch</strong> also report your own changes if you switch that on in the settings under “Alarms”.
+                <strong className="text-main">More notifications:</strong> The <strong className="text-main">bell</strong> (at the bottom of the bar on the left) collects the last 14 days of notices, such as due tasks; a click on an entry opens the task or note. <Only can="watch">Tasks you <strong className="text-main">watch</strong> also report your own changes if you switch that on in the settings under “Alarms”.</Only>
               </li>
             </InDesktop>
             <Only can="publicAddress">

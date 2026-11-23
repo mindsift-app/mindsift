@@ -446,7 +446,12 @@ func (s *Server) planTaskChange(b *notifyBatch, actorID string, before, after *d
 		}
 		s.planNotify(b, "assigned", actorID, added, single(taskAssignedText))
 	}
-	watchers := s.store.TaskWatchers(t.ID)
+	// Without the capability (a local instance of the desktop app) nobody watches: the eye is hidden there, so
+	// a task watched earlier stays quiet instead of reporting the user's own changes
+	var watchers []string
+	if s.can(capWatch) {
+		watchers = s.store.TaskWatchers(t.ID)
+	}
 	watching := map[string]bool{}
 	var tellWatchers []string
 	for _, w := range watchers {

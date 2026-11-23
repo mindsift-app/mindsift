@@ -9,7 +9,7 @@ import { useAlarmSettings } from './useAlarmSettings';
 import { formatDate } from '../../../lib/format';
 import { TimeField } from '../../../components/TimeField';
 import { SelectMenu } from '../../../components/SelectMenu';
-import { can } from '../../../lib/capabilities';
+import { can, type Capability } from '../../../lib/capabilities';
 
 // The routing matrix: the event, Discord and the own webhook, plus e-mail, push and system notifications
 // where available
@@ -30,17 +30,18 @@ export function AlarmsSection({
   demoMode: boolean;
 }) {
   const { t } = useTranslation('settings');
-  const eventRows: { key: keyof NotificationEvents; label: string; sharing?: boolean }[] = [
+  const eventRows: { key: keyof NotificationEvents; label: string; needs?: Capability }[] = [
     { key: 'due', label: t('alarms.event.due') },
-    { key: 'shared', label: t('alarms.event.shared'), sharing: true },
-    { key: 'assigned', label: t('alarms.event.assigned'), sharing: true },
-    { key: 'mentioned', label: t('alarms.event.mentioned'), sharing: true },
-    { key: 'taskCreated', label: t('alarms.event.taskCreated'), sharing: true },
-    { key: 'taskDone', label: t('alarms.event.taskDone'), sharing: true },
-    { key: 'watched', label: t('alarms.event.watched') },
+    { key: 'shared', label: t('alarms.event.shared'), needs: 'sharing' },
+    { key: 'assigned', label: t('alarms.event.assigned'), needs: 'sharing' },
+    { key: 'mentioned', label: t('alarms.event.mentioned'), needs: 'sharing' },
+    { key: 'taskCreated', label: t('alarms.event.taskCreated'), needs: 'sharing' },
+    { key: 'taskDone', label: t('alarms.event.taskDone'), needs: 'sharing' },
+    { key: 'watched', label: t('alarms.event.watched'), needs: 'watch' },
   ];
-  // Sharing off (sharing mode private, the desktop app): nothing is shared, assigned or mentioned
-  const NOTIFICATION_EVENT_ROWS = eventRows.filter((row) => !row.sharing || can('sharing'));
+  // Sharing off (sharing mode private, the desktop app): nothing is shared, assigned or mentioned; without
+  // watching (the desktop app) no task is watched
+  const NOTIFICATION_EVENT_ROWS = eventRows.filter((row) => !row.needs || can(row.needs));
   const {
     notificationSettings,
     setNotificationSettings,
@@ -95,16 +96,18 @@ export function AlarmsSection({
               title={t('alarms.pauseAll')}
             />
           </div>
-          <div className="flex items-center justify-between gap-4 pt-3 border-t border-border">
-            <p className="font-semibold text-main">
-              {t('alarms.ownChanges')}
-            </p>
-            <ToggleSwitch
-              checked={notificationSettings.includeOwnWatched}
-              onChange={(v) => setNotificationSettings((prev) => ({ ...prev, includeOwnWatched: v }))}
-              title={t('alarms.ownChanges')}
-            />
-          </div>
+          {can('watch') && (
+            <div className="flex items-center justify-between gap-4 pt-3 border-t border-border">
+              <p className="font-semibold text-main">
+                {t('alarms.ownChanges')}
+              </p>
+              <ToggleSwitch
+                checked={notificationSettings.includeOwnWatched}
+                onChange={(v) => setNotificationSettings((prev) => ({ ...prev, includeOwnWatched: v }))}
+                title={t('alarms.ownChanges')}
+              />
+            </div>
+          )}
         </div>
 
         {/* Routing Matrix: Events x (E-Mail / Discord / own webhook) */}

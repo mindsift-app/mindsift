@@ -701,7 +701,7 @@ const es: HelpContent = {
             </NotInDesktop>
             <InDesktop>
               <li>
-                <strong className="text-main">Más notificaciones:</strong> La <strong className="text-main">campana</strong> (abajo en la barra de la izquierda) reúne los avisos de los últimos 14 días, por ejemplo tareas vencidas; un clic en una entrada abre la tarea o la nota. Las tareas que <strong className="text-main">sigues</strong> también avisan de tus propios cambios si lo activas en los ajustes, en «Avisos».
+                <strong className="text-main">Más notificaciones:</strong> La <strong className="text-main">campana</strong> (abajo en la barra de la izquierda) reúne los avisos de los últimos 14 días, por ejemplo tareas vencidas; un clic en una entrada abre la tarea o la nota. <Only can="watch">Las tareas que <strong className="text-main">sigues</strong> también avisan de tus propios cambios si lo activas en los ajustes, en «Avisos».</Only>
               </li>
             </InDesktop>
             <Only can="publicAddress">

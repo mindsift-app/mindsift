@@ -16,6 +16,9 @@ export type Capability =
   | 'email'
   // Web push to browsers and installed apps
   | 'push'
+  // Watching tasks (the eye in a task's details, the alarm event "watched" and its own-changes switch): only
+  // where others change tasks, so not in a local instance of the desktop app
+  | 'watch'
   // Signing in with a passkey
   | 'passkeys'
   // Notes shareable by a public link
@@ -39,6 +42,7 @@ const SERVER_DEFAULTS: Capabilities = {
   accounts: true,
   signIn: true,
   sharing: true,
+  watch: true,
   email: true,
   push: true,
   passkeys: true,
