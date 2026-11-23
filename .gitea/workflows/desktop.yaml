@@ -37,7 +37,7 @@ jobs:
 
       - name: Build the desktop app's release files
         run: |
-          VERSION="v$(sed -n 's/.*"version": "\(.*\)".*/\1/p' frontend/package.json | head -1)-dev"
+          VERSION="$(sh ci/version.sh dev)"
           ENGINE=docker COPY_MODE=1 ci/release-desktop.sh "${VERSION}" desktop-release
 
       - name: Upload files
