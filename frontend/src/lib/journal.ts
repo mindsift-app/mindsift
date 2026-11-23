@@ -1,5 +1,6 @@
 import i18n from '../i18n';
 import { formatDate } from './format';
+import { localDay } from './due';
 
 // Journal helpers: dates are local calendar days as YYYY-MM-DD (the server stores them as given).
 
@@ -21,14 +22,8 @@ export function setJournalEnabled(on: boolean) {
   }
 }
 
-export function toISODate(d: Date): string {
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-
 export function todayISO(): string {
-  return toISODate(new Date());
+  return localDay();
 }
 
 export function parseISODate(date: string): Date {
@@ -55,7 +50,7 @@ export function monthGrid(year: number, month: number): (string | null)[][] {
   const offset = (first.getDay() + 6) % 7; // Monday = 0
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells: (string | null)[] = Array(offset).fill(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(toISODate(new Date(year, month, d)));
+  for (let d = 1; d <= daysInMonth; d++) cells.push(localDay(new Date(year, month, d)));
   while (cells.length % 7 !== 0) cells.push(null);
   const weeks: (string | null)[][] = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));

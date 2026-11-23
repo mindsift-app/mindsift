@@ -6,7 +6,7 @@ import { isTouchPointer, useAnchoredPopover } from '../lib/useAnchoredPopover';
 import { formatDayField, parseDayInput } from '../lib/dateInput';
 import { firstWeekday, monthGrid, shiftDay, weekOf } from '../lib/calendar';
 import { localDay } from '../lib/due';
-import { currentLocale } from '../i18n';
+import { formatDate } from '../lib/format';
 
 interface DateFieldProps {
   // YYYY-MM-DD or ''
@@ -136,12 +136,11 @@ export function DateField({ value, onChange, ariaLabel, disabled, className = ''
     }
   };
 
-  const locale = currentLocale();
   const first = firstWeekday();
   const weeks = monthGrid(cursor, first);
   const month = cursor.slice(0, 7);
   const [year] = cursor.split('-').map(Number);
-  const weekdayNames = weekOf(today, first).map((d) => new Date(d + 'T12:00').toLocaleDateString(locale, { weekday: 'short' }).replace(/\.$/, ''));
+  const weekdayNames = weekOf(today, first).map((d) => formatDate(d + 'T12:00', { weekday: 'short' }).replace(/\.$/, ''));
   const navButton = 'w-8 h-8 flex items-center justify-center rounded-btn text-muted hover:text-main hover:bg-panel-elevated';
 
   return (
@@ -226,7 +225,7 @@ export function DateField({ value, onChange, ariaLabel, disabled, className = ''
                 className="h-8 px-2 rounded-btn font-semibold text-main hover:bg-panel-elevated capitalize"
               >
                 {picking === 'days'
-                  ? new Date(cursor + 'T12:00').toLocaleDateString(locale, { month: 'long', year: 'numeric' })
+                  ? formatDate(cursor + 'T12:00', { month: 'long', year: 'numeric' })
                   : year}
               </button>
               <button
@@ -256,7 +255,7 @@ export function DateField({ value, onChange, ariaLabel, disabled, className = ''
                         isCurrent ? 'bg-accent text-on-accent font-semibold' : 'text-main hover:bg-panel-elevated'
                       }`}
                     >
-                      {new Date(day + 'T12:00').toLocaleDateString(locale, { month: 'short' }).replace(/\.$/, '')}
+                      {formatDate(day + 'T12:00', { month: 'short' }).replace(/\.$/, '')}
                     </button>
                   );
                 })}
@@ -284,7 +283,7 @@ export function DateField({ value, onChange, ariaLabel, disabled, className = ''
                           type="button"
                           role="gridcell"
                           aria-selected={chosen}
-                          aria-label={new Date(day + 'T12:00').toLocaleDateString(locale, { dateStyle: 'full' })}
+                          aria-label={formatDate(day + 'T12:00', { dateStyle: 'full' })}
                           data-cursor={isCursor}
                           tabIndex={isCursor ? 0 : -1}
                           onClick={() => pick(day)}

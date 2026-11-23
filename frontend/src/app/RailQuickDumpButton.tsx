@@ -6,6 +6,7 @@ import { CountBadge } from '../components/CountBadge';
 import { useHoldToDictate } from '../features/capture/useHoldToDictate';
 import { useLatestRef } from '../lib/useLatestRef';
 import { formatDue } from '../lib/due';
+import { formatClock } from '../lib/format';
 import type { DictationOutcome } from '../features/capture/captureDictation';
 
 interface RailQuickDumpButtonProps {
@@ -16,8 +17,6 @@ interface RailQuickDumpButtonProps {
   // Saves dictated text into the inbox (the same as the phone's hold on the +); names a recognised date
   onDictated: (text: string) => Promise<DictationOutcome | void> | DictationOutcome | void;
 }
-
-const pad = (n: number) => String(n).padStart(2, '0');
 
 // The Quick Dump's + in the desktop rail (app/NavRail.tsx): a click opens the window, holding it with the
 // mouse dictates straight into the inbox (features/capture/useHoldToDictate.ts). Moving the mouse away while
@@ -67,7 +66,7 @@ export function RailQuickDumpButton({ expanded, shortcut, onQuickDump, onDictate
 
   let status: string | null = notice;
   const showFailed = !recording && failed > 0;
-  const time = `${Math.floor(seconds / 60)}:${pad(seconds % 60)}`;
+  const time = formatClock(seconds);
   if (recording) status = locked ? t('rail.dictateLocked', { time }) : t('rail.dictateListening', { time });
   else if (showFailed) status = t('rail.dictateFailed', { count: failed, error: failedError ?? '' });
   else if (phase === 'saving') status = t('rail.dictateSaving', { count: Math.max(pending, 1) });

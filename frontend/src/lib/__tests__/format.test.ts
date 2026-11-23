@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import i18n from '../../i18n';
-import { formatDate, formatDateRange } from '../format';
+import { formatClock, formatDate, formatDateRange } from '../format';
 
 const day = new Date(2026, 9, 30, 14, 5);
 
@@ -37,5 +37,16 @@ describe('formatDate', () => {
     expect(formatDateRange(day, new Date(2026, 10, 2), options)).toMatch(/^October 30\s–\sNovember 2$/);
     await i18n.changeLanguage('de');
     expect(formatDate(day, options)).toBe('30. Oktober');
+  });
+});
+
+describe('formatClock', () => {
+  it('shows m:ss, or mm:ss with padMinutes', () => {
+    expect(formatClock(0)).toBe('0:00');
+    expect(formatClock(75.9)).toBe('1:15');
+    expect(formatClock(600)).toBe('10:00');
+    expect(formatClock(75, { padMinutes: true })).toBe('01:15');
+    expect(formatClock(3725, { padMinutes: true })).toBe('62:05');
+    expect(formatClock(-3)).toBe('0:00');
   });
 });

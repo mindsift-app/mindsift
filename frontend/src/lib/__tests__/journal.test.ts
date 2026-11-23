@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { monthGrid, toISODate, parseISODate } from '../journal';
+import { monthGrid, parseISODate } from '../journal';
+import { localDay } from '../due';
 
 describe('journal dates', () => {
   it('builds a Monday-first month grid', () => {
@@ -11,6 +12,6 @@ describe('journal dates', () => {
   });
 
   it('round-trips local dates', () => {
-    expect(toISODate(parseISODate('2026-03-01'))).toBe('2026-03-01');
+    expect(localDay(parseISODate('2026-03-01'))).toBe('2026-03-01');
   });
 });
