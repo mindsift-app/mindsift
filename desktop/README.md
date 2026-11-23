@@ -208,7 +208,8 @@ asks the page first:
    `stay`.
 3. **Never stuck:** without an answer within a second (page not loaded, busy or crashed, a server whose
    older frontend has no listener) the action runs anyway. One question at a time: another guarded action
-   while a question is open is dropped within 3 seconds (a double press) and runs at once after that,
+   while a question is open is dropped within 3 seconds (a double press; under Xvfb Wails also calls a key
+   binding twice per press) and runs at once after that,
    dropping the question, so a page that answers `wait` and never more (a broken or hostile server's page)
    cannot hold the window. A question goes with its page (`PageChanged`, from `Navigated`); an action the
    page has not answered yet still runs after the second.

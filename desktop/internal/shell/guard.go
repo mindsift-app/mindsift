@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -71,13 +72,14 @@ func (g *Guard) Request(action string, run func()) {
 			g.dropLocked()
 		}
 		g.mu.Unlock()
+		slog.Debug("Desktop: guarded action while a question is open", "action", action, "runs", insist)
 		if insist {
 			run()
 		}
 		return
 	}
 	r := &guarded{id: newGuardID(), action: action, run: run, asked: time.Now()}
-	r.timer = time.AfterFunc(durationOr(g.Wait, DefaultGuardWait), func() { g.answer(r.id, "go") })
+	r.timer = time.AfterFunc(durationOr(g.Wait, DefaultGuardWait), func() { g.answer(r.id, "timeout") })
 	g.open = r
 	g.mu.Unlock()
 	g.Ask(guardScript(r.id, action))
@@ -114,6 +116,7 @@ func (g *Guard) answer(id, answer string) {
 		g.mu.Unlock()
 		return
 	}
+	slog.Debug("Desktop: guarded action", "action", r.action, "answer", answer)
 	switch answer {
 	case "wait":
 		if r.waiting {
@@ -126,7 +129,7 @@ func (g *Guard) answer(id, answer string) {
 		if g.Asking != nil {
 			g.Asking()
 		}
-	case "go":
+	case "go", "timeout": // timeout: the page did not answer within Wait
 		g.dropLocked()
 		g.mu.Unlock()
 		r.run()
