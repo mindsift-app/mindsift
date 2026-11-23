@@ -1143,6 +1143,8 @@ export interface TranscriptionJob {
   /** Why the last attempt failed: failed | timeout (also while it waits for its next attempt) */
   error?: string;
   attempts: number;
+  /** When the server tries it again by itself (RFC 3339); for a failed job its next later attempt */
+  nextAt?: string;
   /** Parts of an inbox recording */
   pieces?: number;
   createdAt: string;

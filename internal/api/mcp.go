@@ -549,41 +549,22 @@ var mcpTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			tasks, err := s.store.GetTasks(userID, a.TaskListID)
-			if err != nil {
-				return nil, err
-			}
 			if a.Limit <= 0 {
 				a.Limit = 100
 			}
-			out := make([]taskView, 0)
-			for i := range tasks {
-				t := &tasks[i]
-				switch a.Status {
-				case "done":
-					if !t.IsCompleted {
-						continue
-					}
-				case "all":
-				default:
-					if t.IsCompleted {
-						continue
-					}
-				}
-				if a.DueBefore != "" && (t.DueDate == "" || t.DueDate[:min(10, len(t.DueDate))] > a.DueBefore) {
-					continue
-				}
-				out = append(out, s.toTaskView(t))
+			if a.Status != "done" && a.Status != "all" {
+				a.Status = "open"
 			}
 			// Due dates first (earliest on top), then the rest in list order
-			sort.SliceStable(out, func(i, j int) bool {
-				if (out[i].DueDate == "") != (out[j].DueDate == "") {
-					return out[i].DueDate != ""
-				}
-				return out[i].DueDate != "" && out[i].DueDate < out[j].DueDate
+			tasks, err := s.store.QueryTasks(userID, storage.TaskQuery{
+				TaskListID: a.TaskListID, Status: a.Status, DueUntil: a.DueBefore, DueFirst: true, Limit: a.Limit,
 			})
-			if len(out) > a.Limit {
-				out = out[:a.Limit]
+			if err != nil {
+				return nil, err
+			}
+			out := make([]taskView, 0, len(tasks))
+			for i := range tasks {
+				out = append(out, s.toTaskView(&tasks[i]))
 			}
 			return out, nil
 		},

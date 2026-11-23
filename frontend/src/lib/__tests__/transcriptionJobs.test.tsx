@@ -15,6 +15,7 @@ import {
   retryTranscription,
   startBlockTranscription,
   startInboxTranscription,
+  transcriptionNextTry,
   useBlockTranscription,
   useInboxTranscriptions,
   waitForTranscription,
@@ -164,5 +165,22 @@ describe('transcriptionJobs', () => {
       });
       expect(screen.getByTestId('blk_30').textContent).toBe('running');
     });
+  });
+});
+
+describe('transcriptionNextTry', () => {
+  // Local times, so the test reads the same in every time zone
+  const now = new Date(2026, 10, 23, 13, 0);
+  const at = (d: Date) => d.toISOString();
+
+  it('names the time of a later attempt today, and the day as well for another day', () => {
+    expect(transcriptionNextTry(job({ status: 'failed', nextAt: at(new Date(2026, 10, 23, 14, 35)) }), now)).toBe('Neuer Versuch um 14:35');
+    expect(transcriptionNextTry(job({ status: 'failed', nextAt: at(new Date(2026, 10, 24, 9, 5)) }), now)).toMatch(/^Neuer Versuch am Di\.? um 09:05$/); // ICU versions differ on the dot
+  });
+
+  it('says nothing without a planned attempt, once its time passed or while the job waits anyway', () => {
+    expect(transcriptionNextTry(job({ status: 'failed' }), now)).toBeNull();
+    expect(transcriptionNextTry(job({ status: 'failed', nextAt: at(new Date(2026, 10, 23, 12, 59)) }), now)).toBeNull();
+    expect(transcriptionNextTry(job({ status: 'queued', nextAt: at(new Date(2026, 10, 23, 14, 0)) }), now)).toBeNull();
   });
 });

@@ -72,7 +72,7 @@ export function ensureArray<T>(val: T[] | null | undefined): T[] {
 //   all it holds) or waits for somebody else (a test mail through a mail server that does not answer).
 //   The server keeps the connection open as long (allowLongWork in internal/api/bodylimit.go).
 // Uploads and downloads of whole files do not go through request() and have no timeout.
-export const REQUEST_TIMEOUT = { normal: 12_000, slow: 5 * 60_000 } as const;
+const REQUEST_TIMEOUT = { normal: 12_000, slow: 5 * 60_000 } as const;
 
 type RequestOptions = RequestInit & { timeout?: keyof typeof REQUEST_TIMEOUT };
 

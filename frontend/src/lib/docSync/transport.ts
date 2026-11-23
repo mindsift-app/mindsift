@@ -1,6 +1,6 @@
 // HTTP transport of the note sync protocol (see Doku/api/rest.md). Every data exchange is a plain request,
 // so it works behind proxies that block WebSockets.
-import { authHeaders } from '../api';
+import { requestRaw } from '../api';
 import i18n from '../../i18n';
 import type { Block, Effect, Op, Result } from './model';
 import { errorMessage } from '../errorMessage';
@@ -89,21 +89,22 @@ export interface Transport {
 
 const TIMEOUT_MS = 15000;
 
+// Through requestRaw: the session is handled like every other request (401 signs out, a fresh token is kept)
 async function call<T>(path: string, init: RequestInit & { keepalive?: boolean } = {}, timeoutMs = TIMEOUT_MS): Promise<T> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders() };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   init.signal?.addEventListener('abort', () => controller.abort());
   let res: Response;
   try {
-    res = await fetch(path, { ...init, headers, cache: 'no-store', signal: init.keepalive ? undefined : controller.signal });
+    res = await requestRaw(path, {
+      ...init,
+      headers: { 'Content-Type': 'application/json' },
+      signal: init.keepalive ? undefined : controller.signal,
+    });
   } catch (err) {
     throw new TransportError(errorMessage(err, i18n.t('common:errors.network')), 0);
   } finally {
     clearTimeout(timer);
-  }
-  if (res.status === 401) {
-    window.dispatchEvent(new CustomEvent('mindsift:unauthorized'));
   }
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;

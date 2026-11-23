@@ -2,7 +2,7 @@
 // window has no WebSocket at all (the webview hands requests to the server in-process): there the server
 // names the transport (AuthStatus.desktop.realtime) and nothing else is tried.
 import { WSMessage } from '../types';
-import { ApiError, authHeaders, getDesktop, getToken, request } from './client';
+import { ApiError, getDesktop, getToken, request, requestRaw } from './client';
 import { api } from './rest';
 
 // poll: long polling, when a proxy lets neither WebSocket nor event streams through
@@ -376,9 +376,8 @@ async function connectPoll(): Promise<void> {
           notifyRealtimeStatusChange(true, 'poll');
         }
         const started = Date.now();
-        const res = await fetch(`/api/v1/events/poll/${encodeURIComponent(pollId)}?wait=${POLL_WAIT_S}`, {
-          headers: authHeaders(),
-          cache: 'no-store',
+        // requestRaw: a 401 signs out and a fresh session token is kept, as on every other request
+        const res = await requestRaw(`/api/v1/events/poll/${encodeURIComponent(pollId)}?wait=${POLL_WAIT_S}`, {
           signal: ctrl.signal,
         });
         if (res.status === 404 && !fresh) {

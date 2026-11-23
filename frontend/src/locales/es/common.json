@@ -455,6 +455,8 @@
   },
   "voiceJobs": {
     "failed": "El reconocimiento de voz ha fallado",
-    "timeout": "El reconocimiento de voz tardó demasiado"
+    "timeout": "El reconocimiento de voz tardó demasiado",
+    "nextTry": "Nuevo intento a las {{time}}",
+    "nextTryDay": "Nuevo intento el {{day}} a las {{time}}"
   }
 }

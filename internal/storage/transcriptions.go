@@ -19,7 +19,9 @@ import (
 //
 // A failed job goes FailedTranscriptionKeep after its last attempt (PurgeFailedTranscriptions, hourly; one
 // with a later attempt planned only once that one failed too): a note's recording stays in the note and
-// can be transcribed again any time, a failed inbox job goes together with its audio.
+// can be transcribed again any time, a failed inbox job goes together with its audio. While speech
+// recognition is not in server mode, nothing works on the jobs: then waiting ones and failed ones with a
+// later attempt planned go as well, FailedTranscriptionKeep after they were queued or last tried.
 
 const (
 	TranscriptionNote  = "note"
@@ -30,7 +32,8 @@ const (
 	TranscriptionFailed  = "failed"
 )
 
-// FailedTranscriptionKeep: how long a failed job stays after its last attempt.
+// FailedTranscriptionKeep: how long a failed job stays after its last attempt (and, while no worker runs,
+// a waiting one after it was queued or last tried).
 const FailedTranscriptionKeep = 30 * 24 * time.Hour
 
 // ErrTranscriptionNotFound: no such job of this person.
@@ -46,11 +49,13 @@ type Transcription struct {
 	MediaID string `json:"mediaId,omitempty"`
 	// Caption: the recording's caption when the job was started; a different one at the end means someone
 	// wrote one meanwhile, and the text is added after it instead of replacing it
-	Caption   string `json:"-"`
-	Status    string `json:"status"`
-	Error     string `json:"error,omitempty"`
-	Attempts  int    `json:"attempts"`
-	NextAt    string `json:"-"`
+	Caption  string `json:"-"`
+	Status   string `json:"status"`
+	Error    string `json:"error,omitempty"`
+	Attempts int    `json:"attempts"`
+	// NextAt: when the job is tried again by itself (RFC 3339, UTC): a failed job's later attempt, or the
+	// retry a waiting job waits for; empty when none is planned
+	NextAt    string `json:"nextAt,omitempty"`
 	CreatedAt string `json:"createdAt"`
 	UpdatedAt string `json:"updatedAt"`
 	// Pieces: how many parts the recording of an inbox job has
@@ -298,16 +303,19 @@ func (s *Store) RequeueDueTranscriptions(now time.Time) ([]string, error) {
 // PurgeFailedTranscriptions removes the failed jobs whose last attempt is longer ago than
 // FailedTranscriptionKeep, an inbox job together with its audio, and returns them (a note's recording
 // stays in its note). A job still waiting for a later attempt (next_at) is left alone until that attempt
-// failed too. Audio rows whose job is gone are removed as well.
-func (s *Store) PurgeFailedTranscriptions(now time.Time) ([]Transcription, error) {
-	jobs, err := s.queryTranscriptions(`WHERE t.status = ? AND t.next_at = '' AND t.updated_at < ? ORDER BY t.created_at, t.id`,
-		TranscriptionFailed, now.Add(-FailedTranscriptionKeep).UTC().Format(time.RFC3339))
+// failed too. idle: no worker takes jobs (speech recognition not in server mode), so waiting jobs and
+// failed ones with a later attempt planned would never be tried; those go as well once nothing has
+// happened to them for FailedTranscriptionKeep (updated_at: queued, or the last attempt). A running job is
+// never touched. Audio rows whose job is gone are removed as well.
+func (s *Store) PurgeFailedTranscriptions(now time.Time, idle bool) ([]Transcription, error) {
+	cutoff := now.Add(-FailedTranscriptionKeep).UTC().Format(time.RFC3339)
+	jobs, err := s.queryTranscriptions(`WHERE `+purgeableTranscription("t.", idle)+` ORDER BY t.created_at, t.id`, purgeableArgs(cutoff, idle)...)
 	if err != nil {
 		return nil, err
 	}
 	var out []Transcription
 	for _, j := range jobs {
-		gone, err := s.purgeFailedTranscription(j.ID)
+		gone, err := s.purgeTranscription(j.ID, cutoff, idle)
 		if err != nil {
 			return out, err
 		}
@@ -322,15 +330,31 @@ func (s *Store) PurgeFailedTranscriptions(now time.Time) ([]Transcription, error
 	return out, nil
 }
 
-// purgeFailedTranscription removes a failed job with its audio in one step; the checks skip a job tried
-// again meanwhile (false).
-func (s *Store) purgeFailedTranscription(id string) (bool, error) {
+// purgeableTranscription: the condition of PurgeFailedTranscriptions on a job (columns with prefix p),
+// with the arguments of purgeableArgs
+func purgeableTranscription(p string, idle bool) string {
+	if idle {
+		return `(` + p + `status = ? OR ` + p + `status = ?) AND ` + p + `updated_at < ?`
+	}
+	return p + `status = ? AND ` + p + `next_at = '' AND ` + p + `updated_at < ?`
+}
+
+func purgeableArgs(cutoff string, idle bool) []any {
+	if idle {
+		return []any{TranscriptionFailed, TranscriptionQueued, cutoff}
+	}
+	return []any{TranscriptionFailed, cutoff}
+}
+
+// purgeTranscription removes a job with its audio in one step; the condition is checked again, so a job
+// that was claimed, tried or queued again meanwhile stays (false).
+func (s *Store) purgeTranscription(id, cutoff string, idle bool) (bool, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return false, err
 	}
 	defer tx.Rollback()
-	res, err := tx.Exec(`DELETE FROM transcriptions WHERE id = ? AND status = ? AND next_at = ''`, id, TranscriptionFailed)
+	res, err := tx.Exec(`DELETE FROM transcriptions WHERE id = ? AND `+purgeableTranscription("", idle), append([]any{id}, purgeableArgs(cutoff, idle)...)...)
 	if err != nil {
 		return false, err
 	}

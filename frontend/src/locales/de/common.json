@@ -453,6 +453,8 @@
   },
   "voiceJobs": {
     "failed": "Spracherkennung fehlgeschlagen",
-    "timeout": "Spracherkennung hat zu lange gedauert"
+    "timeout": "Spracherkennung hat zu lange gedauert",
+    "nextTry": "Neuer Versuch um {{time}}",
+    "nextTryDay": "Neuer Versuch am {{day}} um {{time}}"
   }
 }
