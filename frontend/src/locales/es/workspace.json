@@ -179,8 +179,6 @@
     "intro": "Las notas y carpetas eliminadas permanecen aquí hasta que las restaures o las elimines definitivamente. Una carpeta se recupera con todas sus subcarpetas y notas. Hasta entonces queda oculta para todos con quienes estuviera compartida.",
     "empty": "La papelera está vacía.",
     "viewReadOnly": "Ver solo lectura",
-    "reallyDelete": "¿Eliminar de verdad?",
-    "deleteForever": "Eliminar definitivamente",
     "folderNotes_one": "Carpeta · {{count}} nota",
     "folderNotes_other": "Carpeta · {{count}} notas",
     "inFolder": "en {{path}}"

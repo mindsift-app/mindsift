@@ -238,7 +238,6 @@
     "personal": "Personnel",
     "deletedAt": "supprimée le {{date}}",
     "empty": "La corbeille est vide.",
-    "delete": "Supprimer définitivement",
     "deletedAtBy": "supprimée le {{date}} par {{name}}",
     "deletedAtAuto": "supprimée le {{date}} (automatiquement)",
     "limited": "Affichage des {{count}} entrées les plus récentes."

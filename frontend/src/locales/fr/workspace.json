@@ -179,8 +179,6 @@
     "intro": "Les notes et dossiers supprimés restent ici jusqu'à leur restauration ou suppression définitive. Un dossier revient avec tous ses sous-dossiers et notes. Entre-temps, il est masqué pour toutes les personnes avec qui il était partagé.",
     "empty": "La corbeille est vide.",
     "viewReadOnly": "Afficher en lecture seule",
-    "reallyDelete": "Supprimer vraiment ?",
-    "deleteForever": "Supprimer définitivement",
     "folderNotes_one": "Dossier · {{count}} note",
     "folderNotes_other": "Dossier · {{count}} notes",
     "inFolder": "dans {{path}}"

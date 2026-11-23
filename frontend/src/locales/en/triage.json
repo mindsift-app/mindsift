@@ -72,11 +72,6 @@
   "setOnList": "Put on a list",
   "trash": {
     "none": "No discarded thoughts.",
-    "confirmDelete": "Really delete for good?",
-    "delete": "Delete for good",
-    "really": "Really?",
-    "confirmEmpty": "Really delete {{count}} for good?",
-    "empty": "Empty trash",
     "discardedAt": "discarded {{date}}"
   },
   "capture": {

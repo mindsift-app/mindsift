@@ -8,6 +8,13 @@
   },
   "cancel": "Abbrechen",
   "trash": "Papierkorb",
+  "trashList": {
+    "purge": "Endgültig löschen",
+    "purgeConfirm": "„{{title}}“ endgültig löschen?",
+    "empty": "Papierkorb leeren",
+    "emptyConfirm_one": "{{count}} Eintrag endgültig löschen?",
+    "emptyConfirm_other": "Alle {{count}} Einträge endgültig löschen?"
+  },
   "aboutMindSift": "Über MindSift",
   "role": {
     "admin": "Server-Admin",

@@ -72,11 +72,6 @@
   "setOnList": "Auf Liste setzen",
   "trash": {
     "none": "Keine verworfenen Gedanken.",
-    "confirmDelete": "Wirklich endgültig löschen?",
-    "delete": "Endgültig löschen",
-    "really": "Wirklich?",
-    "confirmEmpty": "Wirklich {{count}} endgültig löschen?",
-    "empty": "Papierkorb leeren",
     "discardedAt": "verworfen {{date}}"
   },
   "capture": {

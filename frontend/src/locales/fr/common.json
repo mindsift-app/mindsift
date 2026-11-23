@@ -8,6 +8,13 @@
   },
   "cancel": "Annuler",
   "trash": "Corbeille",
+  "trashList": {
+    "purge": "Supprimer définitivement",
+    "purgeConfirm": "Supprimer « {{title}} » définitivement ?",
+    "empty": "Vider la corbeille",
+    "emptyConfirm_one": "Supprimer {{count}} entrée définitivement ?",
+    "emptyConfirm_other": "Supprimer les {{count}} entrées définitivement ?"
+  },
   "aboutMindSift": "À propos de MindSift",
   "role": {
     "admin": "Admin du serveur",

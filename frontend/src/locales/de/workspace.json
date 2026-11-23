@@ -179,8 +179,6 @@
     "intro": "Gelöschte Notizen und Ordner bleiben hier, bis du sie wiederherstellst oder endgültig löschst. Ein Ordner kommt mit allen Unterordnern und Notizen zurück. Für alle, mit denen etwas geteilt war, ist es bis dahin ausgeblendet.",
     "empty": "Der Papierkorb ist leer.",
     "viewReadOnly": "Schreibgeschützt ansehen",
-    "reallyDelete": "Wirklich löschen?",
-    "deleteForever": "Endgültig löschen",
     "folderNotes_one": "Ordner · {{count}} Notiz",
     "folderNotes_other": "Ordner · {{count}} Notizen",
     "inFolder": "in {{path}}"

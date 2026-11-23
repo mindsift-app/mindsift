@@ -8,6 +8,13 @@
   },
   "cancel": "Cancelar",
   "trash": "Papelera",
+  "trashList": {
+    "purge": "Eliminar definitivamente",
+    "purgeConfirm": "¿Eliminar «{{title}}» definitivamente?",
+    "empty": "Vaciar la papelera",
+    "emptyConfirm_one": "¿Eliminar {{count}} entrada definitivamente?",
+    "emptyConfirm_other": "¿Eliminar las {{count}} entradas definitivamente?"
+  },
   "aboutMindSift": "Acerca de MindSift",
   "role": {
     "admin": "Administrador del servidor",

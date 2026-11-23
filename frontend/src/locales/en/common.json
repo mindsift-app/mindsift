@@ -8,6 +8,13 @@
   },
   "cancel": "Cancel",
   "trash": "Trash",
+  "trashList": {
+    "purge": "Delete for good",
+    "purgeConfirm": "Delete “{{title}}” for good?",
+    "empty": "Empty trash",
+    "emptyConfirm_one": "Delete {{count}} entry for good?",
+    "emptyConfirm_other": "Delete all {{count}} entries for good?"
+  },
   "aboutMindSift": "About MindSift",
   "role": {
     "admin": "Server admin",

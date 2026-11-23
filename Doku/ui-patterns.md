@@ -157,6 +157,15 @@ Components: `RestoreResult` and `RestoreConfirm` in [RestoreResult.tsx](../front
 - The box after reading or restoring (import, own server backups, the desktop app's take-over of a server account): what it would create or created, the entries left out folded below, then the caller's own lines and buttons. Neutral while it is a preview, green (`status-ok`) when done.
 - Replacing data cannot be undone, so it is never one click: a red box with the warning naming the chosen sections and a tick box; the button stays disabled until it is ticked. No second click on the same button ("Wirklich …?").
 
+## Trash
+
+Component: [TrashList.tsx](../frontend/src/components/TrashList.tsx) (`TrashList`, `EmptyTrashButton`)
+
+- The trashes of notes (`TrashView`), tasks (`TaskTrashList`) and the Quick Dump (`TriageTrash`) are one framed list with dividers; the caller only draws the entry (title, where it came from, when it was deleted). Empty: `EmptyState` with a frame.
+- Each row: "Wiederherstellen" (runs at once) and a red bin, 44 px on phones, 32 px from `sm`. The bin deletes for good after `askConfirm` at the click ("„…“ endgültig löschen?"). No second tap on the same button, no deleting without a question.
+- "Papierkorb leeren" (`EmptyTrashButton`, the tasks' toolbar button too) asks the same way and names how many entries go. Entries one may not change (a shared task list read only) show no buttons.
+- Errors go to the red notice at the bottom (`showError`).
+
 ## Error Notice
 
 Component: [ErrorNotice.tsx](../frontend/src/components/ErrorNotice.tsx), `showError(message)` from anywhere.

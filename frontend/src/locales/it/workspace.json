@@ -179,8 +179,6 @@
     "intro": "Le note e le cartelle eliminate rimangono qui fino al ripristino o all'eliminazione definitiva. Una cartella viene ripristinata insieme a tutte le sottocartelle e note. Fino ad allora resta nascosta per tutti coloro con cui era condivisa.",
     "empty": "Il cestino è vuoto.",
     "viewReadOnly": "Visualizza in sola lettura",
-    "reallyDelete": "Eliminare davvero?",
-    "deleteForever": "Elimina definitivamente",
     "folderNotes_one": "Cartella · {{count}} nota",
     "folderNotes_other": "Cartella · {{count}} note",
     "inFolder": "in {{path}}"
