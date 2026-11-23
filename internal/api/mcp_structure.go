@@ -377,7 +377,7 @@ func (s *Server) mcpExtractBullet(ctx context.Context, userID string, actor *api
 	if full, err := s.store.GetDocumentByID(userID, created.ID); err == nil {
 		created = full
 	}
-	s.broadcastDocToAuthorizedUsers(created.ID, eventDocCreated)
+	s.afterDocCreated(userID, created, true)
 	res, err := noteResult(s, userID, noteID)
 	if m, ok := res.(map[string]any); ok {
 		m["newNote"] = s.toNoteView(created)

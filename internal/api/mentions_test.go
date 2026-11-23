@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -148,5 +149,72 @@ func TestMentionCandidatesAndReadableText(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("searching %q should find the task mentioning them", bob.DisplayName)
+	}
+}
+
+// Someone mentioned in a new note (from a template, by an agent) in a shared folder is told, as after an
+// edit, and only once: writing in the bullet later keeps the mention without telling again.
+func TestMentionInNewNote(t *testing.T) {
+	srv, store, ownerToken := setupTestServer(t)
+	router := srv.Router()
+	claims, err := auth.ValidateToken(testJWTSecret, ownerToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ownerID := claims.UserID
+	bob, _ := newTestUser(t, store, "bob@example.com")
+	if _, err := store.CreateFolder(ownerID, "Team"); err != nil {
+		t.Fatal(err)
+	}
+	sf, err := store.CreateSharedFolder(ownerID, "Team", "Team")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateFolderShare(ownerID, sf.ID, "user", bob.ID, "write"); err != nil {
+		t.Fatal(err)
+	}
+	body, _ := json.Marshal(map[string]any{
+		"title": "Planung", "folderPath": "Team",
+		"blocks": []domain.DocumentBlock{{ID: "b1", Type: "bullet", Content: "Frag " + mention(bob.ID)}},
+	})
+	rec := sessionCall(router, http.MethodPost, "/api/v1/documents", ownerToken, string(body), "")
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create note: %d %s", rec.Code, rec.Body.String())
+	}
+	var doc domain.Document
+	_ = json.Unmarshal(rec.Body.Bytes(), &doc)
+	mentioned := func() int {
+		entries, _, err := store.CenterEntries(bob.ID, 50)
+		if err != nil {
+			t.Fatal(err)
+		}
+		n := 0
+		for _, e := range entries {
+			if e.Kind == "mentioned" && e.TargetID == doc.ID {
+				n++
+			}
+		}
+		return n
+	}
+	if n := mentioned(); n != 1 {
+		t.Fatalf("bob should be told once about the new note, got %d", n)
+	}
+	text := "Frag " + mention(bob.ID) + " morgen"
+	var blockID string
+	for _, b := range doc.Blocks {
+		blockID = b.ID
+	}
+	snap, _ := store.GetDocSnapshot(doc.ID)
+	version := 0
+	for _, b := range snap.Blocks {
+		if b.ID == blockID {
+			version = b.Version
+		}
+	}
+	if err := srv.applyNoteOps(ownerID, nil, doc.ID, []collab.Op{{OpID: domain.NewID("op"), Kind: collab.OpSetContent, BlockID: blockID, BaseVersion: version, Content: &text}}); err != nil {
+		t.Fatal(err)
+	}
+	if n := mentioned(); n != 1 {
+		t.Fatalf("a kept mention must not tell again, got %d", n)
 	}
 }

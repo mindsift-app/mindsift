@@ -1094,7 +1094,7 @@ var mcpTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			s.broadcastDocToAuthorizedUsers(d.ID, eventDocCreated)
+			s.afterDocCreated(userID, d, false)
 			v := s.toNoteView(d)
 			v.Content = s.noteMarkdown(d.Blocks, s.store.DocTitles(userID))
 			v.Warnings = warnings

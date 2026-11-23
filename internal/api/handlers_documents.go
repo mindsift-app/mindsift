@@ -117,7 +117,7 @@ func (s *Server) handleCreateDocument(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.broadcastDocToAuthorizedUsers(doc.ID, eventDocCreated)
+	s.afterDocCreated(userID, doc, false)
 	writeJSON(w, http.StatusCreated, doc)
 }
 
@@ -286,7 +286,9 @@ func (s *Server) handleCreateEnhancedTask(w http.ResponseWriter, r *http.Request
 	_, head, _ := s.store.GetDocOpsSince(docID, 0, 0)
 	s.notifyDocChanged(docID, head)
 
-	s.wsHub.BroadcastToUser(userID, eventTaskCreated, thought)
+	// Always a personal task of its creator (storage.CreateTaskFromDocBlock, no task list), so nobody else
+	// sees it and no list's members are told (notifyTaskAdded); taskAudience like every other TASK_CREATED
+	s.wsHub.BroadcastToUsers(s.taskAudience(thought), eventTaskCreated, thought)
 	writeJSON(w, http.StatusCreated, thought)
 }
 

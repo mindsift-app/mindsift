@@ -66,7 +66,7 @@ func (s *Server) handleExtractBranch(w http.ResponseWriter, r *http.Request) {
 	if full, err := s.store.GetDocumentByID(userID, created.ID); err == nil {
 		created = full
 	}
-	s.broadcastDocToAuthorizedUsers(created.ID, eventDocCreated)
+	s.afterDocCreated(userID, created, true)
 	writeJSON(w, http.StatusCreated, map[string]any{"document": created, "link": link})
 }
 
