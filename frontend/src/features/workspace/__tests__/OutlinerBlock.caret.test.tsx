@@ -1,7 +1,8 @@
 import React from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
-import { OutlinerBlock, mapRenderedOffsetToRaw } from '../OutlinerBlock';
+import { mapRenderedOffsetToRaw } from '../OutlinerBlock';
+import { TestOutlinerBlock } from './TestOutlinerBlock';
 import { DocumentBlock } from '../../../lib/types';
 
 describe('mapRenderedOffsetToRaw', () => {
@@ -59,7 +60,7 @@ describe('clicking into an unfocused bullet', () => {
   it('places the caret at the click position instead of the end', () => {
     const block = { id: 'b1', type: 'bullet', content: 'Hallo **Welt** du', level: 0, position: 1 } as DocumentBlock;
     const { container } = render(
-      <OutlinerBlock
+      <TestOutlinerBlock
         docId="d"
         block={block}
         isLast
@@ -93,7 +94,7 @@ describe('clicking into an unfocused bullet', () => {
 
 function renderBlock(block: DocumentBlock, extra: Record<string, unknown> = {}) {
   return render(
-    <OutlinerBlock
+    <TestOutlinerBlock
       docId="d"
       block={block}
       isLast
@@ -134,7 +135,7 @@ describe('undo shortcut', () => {
 describe('a bullet someone else is editing', () => {
   const lock = { name: 'Ben', userId: 'u2' };
   const element = (content: string, props: Record<string, unknown>) => (
-    <OutlinerBlock
+    <TestOutlinerBlock
       docId="d"
       block={{ id: 'b1', type: 'bullet', content, level: 0 } as DocumentBlock}
       isLast
@@ -255,7 +256,7 @@ describe('slash command menu and outliner fixes', () => {
     const onCreateBelow = vi.fn();
     const indented = { id: 'b1', type: 'bullet', content: '', level: 1 } as DocumentBlock;
     const { container, rerender } = render(
-      <OutlinerBlock
+      <TestOutlinerBlock
         docId="d"
         block={indented}
         isLast
@@ -277,7 +278,7 @@ describe('slash command menu and outliner fixes', () => {
     expect(onCreateBelow).not.toHaveBeenCalled();
 
     rerender(
-      <OutlinerBlock
+      <TestOutlinerBlock
         docId="d"
         block={{ ...indented, level: 0 }}
         isLast
@@ -311,7 +312,7 @@ describe('slash command menu and outliner fixes', () => {
     const onIndent = vi.fn();
     const onCreateBelow = vi.fn();
     const { container } = render(
-      <OutlinerBlock
+      <TestOutlinerBlock
         docId="d"
         block={{ id: 'b1', type: 'bullet', content: '', level: 1 } as DocumentBlock}
         isLast={false}
@@ -370,7 +371,7 @@ describe('slash command menu and outliner fixes', () => {
 
     // Non-empty bullet keeps [Text](url)
     rerender(
-      <OutlinerBlock
+      <TestOutlinerBlock
         docId="d"
         block={{ ...block, content: 'Siehe' }}
         isLast

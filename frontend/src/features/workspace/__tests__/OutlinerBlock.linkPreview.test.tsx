@@ -1,14 +1,14 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, render, waitFor } from '@testing-library/react';
-import { OutlinerBlock } from '../OutlinerBlock';
+import { TestOutlinerBlock } from './TestOutlinerBlock';
 import { DocumentBlock } from '../../../lib/types';
 import { setServerLinkPreviews } from '../../../lib/linkPreview';
 
 function renderBlock(content: string) {
   const block = { id: 'b1', type: 'bullet', content, level: 0, position: 1 } as DocumentBlock;
   return render(
-    <OutlinerBlock
+    <TestOutlinerBlock
       docId="d"
       block={block}
       isLast

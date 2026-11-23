@@ -3,6 +3,7 @@ import { guideCounts } from './outlineGuides';
 import type { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { OutlinerBlock, BlockLock, PastingImagesNotice } from './OutlinerBlock';
+import { OutlinerActionsContext, type OutlinerActions } from './OutlinerActionsContext';
 import { mapRenderedOffsetToRaw, rawOffsetAtPoint } from '../../lib/caret';
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToClipboard, putOnClipboard, rememberCopied, type OutlineClipboard } from '../../lib/outlineMarkdown';
@@ -139,7 +140,7 @@ function focusTarget(el: HTMLTextAreaElement, cursor: 'start' | 'end' | 'select'
 }
 
 // The bullets' elements with the values each was made from (rowElements in OutlinerTree)
-type RowCache = { treeValues: unknown[]; rows: Map<string, { values: unknown[]; element: React.ReactElement }> };
+type RowCache = Map<string, { values: unknown[]; element: React.ReactElement }>;
 const sameValues = (a: unknown[], b: unknown[]) => a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
 
 
@@ -373,7 +374,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   }, [blocks, levelOffset]);
   const visibleEntries = useMemo(() => rows.map((row) => ({ ...row, block: blocks[row.index] })), [rows, blocks]);
   // The bullets' elements of the last render (see rowElements below)
-  const rowCacheRef = useRef<RowCache>({ treeValues: [], rows: new Map() });
+  const rowCacheRef = useRef<RowCache>(new Map());
 
   const handleCreateBlockBelow = useCallback(
     (afterBlockId: string, newContent: string = '', type?: BlockType) => {
@@ -1441,9 +1442,9 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     return new Set(order.slice(Math.min(a, f), Math.max(a, f) + 1));
   }, [rangeSel, visibleEntries, highlightSupported]);
 
-  // The bullets are memoized (OutlinerBlock): every function they get keeps its identity, so typing or
-  // Enter renders the bullets that changed and not every bullet of the note. Optional handlers stay
-  // undefined when missing (a bullet shows its buttons only for the ones it has).
+  // The bullets are memoized (OutlinerBlock) and take their handlers from OutlinerActionsContext: every
+  // function there keeps its identity, so typing or Enter renders the bullets that changed and not every
+  // bullet of the note.
   const noop = () => {};
   const stableResolveConflict = useLatestCallback(onResolveConflict ?? noop);
   const stableUndo = useLatestCallback(onUndo ?? noop);
@@ -1478,6 +1479,68 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     if (draggedIndex === null && e && dropTextOnto(e, blockId)) return;
     handleDropBlock(indexOf(blockId));
   });
+  // What every bullet shares (OutlinerActionsContext). It keeps its identity while only the bullets change: it
+  // changes when a handler comes or goes or a value of the whole tree changes, and then every bullet renders.
+  // Optional handlers stay undefined when missing (a bullet shows its buttons only for the ones it has).
+  const hasZoomBlock = Boolean(onZoomBlock);
+  const hasExtractBlock = Boolean(onExtractBlock);
+  const hasInlineBlock = Boolean(onInlineBlock);
+  const hasSlashCommand = Boolean(onSlashCommand);
+  const hasBlockActivity = Boolean(onBlockActivity);
+  const hasFieldShows = Boolean(onFieldShows);
+  const hasOpenTask = Boolean(onOpenTask);
+  const hasTagClick = Boolean(onTagClick);
+  const hasWikiLinkClick = Boolean(onWikiLinkClick);
+  const hasCopyBlockLink = Boolean(onCopyBlockLink);
+  const hasLockedDrawing = Boolean(onLockedDrawing);
+  const hasResolveConflict = Boolean(canEdit && onResolveConflict);
+  const hasUndo = Boolean(onUndo);
+  const hasRedo = Boolean(onRedo);
+  const actions = useMemo<OutlinerActions>(
+    () => ({
+      docId,
+      levelOffset,
+      canAppendBelow: canEdit,
+      onZoomBlock: hasZoomBlock ? stableZoomBlock : undefined,
+      onExtractBlock: hasExtractBlock ? stableExtractBlock : undefined,
+      onInlineBlock: hasInlineBlock ? stableInlineBlock : undefined,
+      onTemplateCommand: offersTemplates ? handleTemplateCommand : undefined,
+      onUpdateBlock: stableUpdateBlock,
+      onSlashCommand: hasSlashCommand ? stableSlashCommand : undefined,
+      onCreateBlockBelow: stableCreateBlockBelow,
+      onCreateBlockAbove: stableCreateBlockAbove,
+      onDeleteBlock: stableDeleteBlock,
+      onMergeWithPrevious: stableMergeWithPrevious,
+      onIndentBlock: stableIndentBlock,
+      onToggleBranch: stableToggleBranch,
+      onNavigateFocus: stableNavigateFocus,
+      onFocusBlock: setFocusedBlockId,
+      onBlurBlock: handleBlurBlock,
+      onBlockActivity: hasBlockActivity ? stableBlockActivity : undefined,
+      onFieldShows: hasFieldShows ? stableFieldShows : undefined,
+      onOpenTask: hasOpenTask ? stableOpenTask : undefined,
+      onTagClick: hasTagClick ? stableTagClick : undefined,
+      onWikiLinkClick: hasWikiLinkClick ? stableWikiLinkClick : undefined,
+      onCopyBlockLink: hasCopyBlockLink ? stableCopyBlockLink : undefined,
+      onDragStartBlock: stableDragStartBlock,
+      onDragOverBlock: stableDragOverBlock,
+      onDropBlock: stableDropBlock,
+      registerTextareaRef,
+      onPasteMultiLines: stablePasteMultiLines,
+      onPasteImages: stablePasteImages,
+      onLockedDrawing: hasLockedDrawing ? stableLockedDrawing : undefined,
+      onResolveConflict: hasResolveConflict ? stableResolveConflict : undefined,
+      onUndo: hasUndo ? stableUndo : undefined,
+      onRedo: hasRedo ? stableRedo : undefined,
+    }),
+    // Only what decides the value: the stable… functions and the others here keep their identity
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      docId, levelOffset, canEdit, offersTemplates, hasZoomBlock, hasExtractBlock, hasInlineBlock, hasSlashCommand,
+      hasBlockActivity, hasFieldShows, hasOpenTask, hasTagClick, hasWikiLinkClick, hasCopyBlockLink, hasLockedDrawing,
+      hasResolveConflict, hasUndo, hasRedo,
+    ]
+  );
 
   // --- Image files dragged onto the note (desktop, file manager, an image out of a browser tab) ---
   // They become image bullets like pasted images (lib/pasteImages.ts, handlePasteImages): dropped onto a
@@ -1575,31 +1638,11 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   // Each bullet's element is kept with the values it was made from: a bullet whose values are unchanged gets
   // the same element again, and React passes over it without comparing its props one by one. With thousands
   // of bullets, making and comparing them all was most of the time after Enter or a pause in typing. Every
-  // value a bullet's props come from is in treeValues (the same for all) or in its row values; the functions
-  // keep their identity (useLatestCallback).
-  const treeValues = [
-    docId,
-    canEdit,
-    levelOffset,
-    Boolean(canEdit && onResolveConflict),
-    Boolean(onUndo),
-    Boolean(onRedo),
-    Boolean(onZoomBlock),
-    Boolean(onExtractBlock),
-    Boolean(onInlineBlock),
-    Boolean(onBlockActivity),
-    Boolean(onFieldShows),
-    Boolean(onLockedDrawing),
-    Boolean(onOpenTask),
-    Boolean(onTagClick),
-    Boolean(onWikiLinkClick),
-    Boolean(onCopyBlockLink),
-    offersTemplates,
-  ];
+  // value a bullet's props come from is in its row values; the handlers and the values of the whole tree come
+  // from OutlinerActionsContext (when that changes, the context renders every bullet).
   const guides = guideCounts(visibleEntries, levelOffset || 0, focusedBlockId);
-  const rowCache = rowCacheRef.current;
-  const prevRows = sameValues(rowCache.treeValues, treeValues) ? rowCache.rows : null;
-  const nextRows: RowCache['rows'] = new Map();
+  const prevRows = rowCacheRef.current;
+  const nextRows: RowCache = new Map();
   const rowElements = visibleEntries.map(({ block, index, hasChildren, maxAllowedLevel, siblingFollows, listMarker }, entryIdx) => {
     const isLast = entryIdx === visibleEntries.length - 1;
     const isFocused = focusedBlockId === block.id;
@@ -1614,12 +1657,11 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     const isTargeted = highlightedBlockId === block.id;
     const inRangeSelection = rangeRowIds?.has(block.id) || wholeRowIds?.has(block.id);
     const values = [block, isLast, siblingFollows, maxAllowedLevel, hasChildren, isFocused, rowCanEdit, lockedBy, originalLockedBy, listMarker, dropIndent, isTargeted, inRangeSelection, guides[entryIdx]];
-    const cached = prevRows?.get(block.id);
+    const cached = prevRows.get(block.id);
     const element =
       cached && sameValues(cached.values, values) ? cached.element : (
         <OutlinerBlock
           key={block.id}
-          docId={docId}
           block={block}
           isLast={isLast}
           siblingFollows={siblingFollows}
@@ -1629,43 +1671,10 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           isFocused={isFocused}
           canEdit={rowCanEdit}
           lockedBy={lockedBy}
-          onLockedDrawing={onLockedDrawing ? stableLockedDrawing : undefined}
           originalLockedBy={originalLockedBy}
-          canAppendBelow={canEdit}
-          onResolveConflict={canEdit && onResolveConflict ? stableResolveConflict : undefined}
-          onUndo={onUndo ? stableUndo : undefined}
-          onRedo={onRedo ? stableRedo : undefined}
-          levelOffset={levelOffset}
-          onZoomBlock={onZoomBlock ? stableZoomBlock : undefined}
-          onExtractBlock={onExtractBlock ? stableExtractBlock : undefined}
-          onInlineBlock={onInlineBlock ? stableInlineBlock : undefined}
-          onTemplateCommand={offersTemplates ? handleTemplateCommand : undefined}
-          onUpdateBlock={stableUpdateBlock}
-          onSlashCommand={onSlashCommand ? stableSlashCommand : undefined}
-          onCreateBlockBelow={stableCreateBlockBelow}
-          onCreateBlockAbove={stableCreateBlockAbove}
-          onPasteMultiLines={stablePasteMultiLines}
-          onPasteImages={stablePasteImages}
           listMarker={listMarker}
-          onDeleteBlock={stableDeleteBlock}
-          onMergeWithPrevious={stableMergeWithPrevious}
-          onIndentBlock={stableIndentBlock}
-          onToggleBranch={stableToggleBranch}
-          onNavigateFocus={stableNavigateFocus}
-          onFocusBlock={setFocusedBlockId}
-          onBlurBlock={handleBlurBlock}
-          onBlockActivity={onBlockActivity ? stableBlockActivity : undefined}
-          onFieldShows={onFieldShows ? stableFieldShows : undefined}
-          onOpenTask={onOpenTask ? stableOpenTask : undefined}
-          onTagClick={onTagClick ? stableTagClick : undefined}
-          onWikiLinkClick={onWikiLinkClick ? stableWikiLinkClick : undefined}
-          onCopyBlockLink={onCopyBlockLink ? stableCopyBlockLink : undefined}
-          onDragStartBlock={stableDragStartBlock}
-          onDragOverBlock={stableDragOverBlock}
-          onDropBlock={stableDropBlock}
           dropIndent={dropIndent}
           isTargeted={isTargeted}
-          registerTextareaRef={registerTextareaRef}
           inRangeSelection={inRangeSelection}
         />
       );
@@ -1683,7 +1692,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     }
     return element;
   });
-  rowCacheRef.current = { treeValues, rows: nextRows };
+  rowCacheRef.current = nextRows;
 
   return (
     // The rows space themselves (mt-0.5 first:mt-0): space-y's sibling rule (`> * ~ *`) made Chrome restyle
@@ -1697,7 +1706,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       onDragLeave={handleFileDrag}
       onDrop={handleFileDrag}
     >
-      {rowElements}
+      <OutlinerActionsContext.Provider value={actions}>{rowElements}</OutlinerActionsContext.Provider>
 
       {canEdit && trailingArea && (
         <div
