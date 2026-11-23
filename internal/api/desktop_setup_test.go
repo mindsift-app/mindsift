@@ -122,7 +122,8 @@ func TestDesktopSetupWizard(t *testing.T) {
 	}
 	var mine []struct{ Name string }
 	_ = json.Unmarshal(getWith(t, router, "/api/v1/backups", token).Body.Bytes(), &mine)
-	if len(mine) != 1 {
+	// as above: the one by hand, and the first one of the setup when it is done already
+	if len(mine) < 1 || len(mine) > 2 {
 		t.Fatalf("own backups listed: %v", mine)
 	}
 	if rec := postJSON(t, router, "/api/v1/backups/"+mine[0].Name+"/restore?preview=1&sections=notes", token, `{}`); rec.Code != http.StatusOK {
