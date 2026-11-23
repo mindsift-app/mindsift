@@ -4,6 +4,7 @@ import { ListItem, SharedList, WSMessage } from '../../../lib/types';
 import { createRealtimeConnection } from '../../../lib/api';
 import { LIST_RELOAD_EVENTS, listsAfterEvent, listsAfterMessage, useListRealtime } from '../useListRealtime';
 import { RELOAD_SHARED_DELAY_MS, RELOAD_SOON_MS } from '../../../lib/realtimeReload';
+import { emitRealtimeMessage, emitRealtimeStatus } from '../../../lib/realtimeBus';
 
 vi.mock('../../../lib/api', async (original) => ({
   ...(await original<typeof import('../../../lib/api')>()),
@@ -131,7 +132,7 @@ describe('reloading the lists on a list event', () => {
   const setLists = vi.fn();
   const hook = (first: () => Promise<void>) =>
     renderHook(({ load }) => useListRealtime('l1', shown, setLists, load), { initialProps: { load: first } });
-  const ws = (detail: unknown) => window.dispatchEvent(new CustomEvent('mindsift:ws', { detail }));
+  const ws = (detail: unknown) => emitRealtimeMessage(detail as WSMessage);
   let hidden = false;
   beforeEach(() => {
     vi.useFakeTimers();
@@ -184,15 +185,15 @@ describe('reloading the lists on a list event', () => {
     vi.advanceTimersByTime(RELOAD_SOON_MS);
     expect(load).toHaveBeenCalledTimes(1);
     act(() => {
-      window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected: false, transport: 'websocket' } }));
-      window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected: true, transport: 'websocket' } }));
+      emitRealtimeStatus(false, 'ws');
+      emitRealtimeStatus(true, 'ws');
     });
     vi.advanceTimersByTime(RELOAD_SOON_MS);
     expect(load).toHaveBeenCalledTimes(2);
     unmount();
   });
 
-  it('the open list\'s connection only joins its room (its messages arrive as mindsift:ws too)', () => {
+  it('the open list\'s connection only joins its room (its messages reach every listener too)', () => {
     const { unmount } = hook(vi.fn(async () => {}));
     expect(vi.mocked(createRealtimeConnection).mock.lastCall![0]).toEqual({ listId: 'l1' });
     unmount();

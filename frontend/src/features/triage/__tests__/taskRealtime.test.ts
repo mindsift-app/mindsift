@@ -5,6 +5,8 @@ import { isTaskThought, tasksAfterCreate, tasksAfterDelete, tasksAfterReorder, t
 import { createMoveTracker } from '../taskMoves';
 import { RELOAD_SHARED_DELAY_MS } from '../../../lib/realtimeReload';
 import { makeTask } from '../../../test/fixtures';
+import { emitRealtimeMessage } from '../../../lib/realtimeBus';
+import type { WSMessage } from '../../../lib/types';
 
 const mocks = vi.hoisted(() => ({ getTaskLists: vi.fn() }));
 vi.mock('../../../lib/api', async (original) => ({
@@ -89,7 +91,7 @@ describe('task realtime events in the view', () => {
     vi.useRealTimers();
     vi.clearAllMocks();
   });
-  const ws = (detail: unknown) => window.dispatchEvent(new CustomEvent('mindsift:ws', { detail }));
+  const ws = (detail: unknown) => emitRealtimeMessage(detail as WSMessage);
   const setup = () => {
     const setTasks = vi.fn();
     const loadData = vi.fn(async () => {});

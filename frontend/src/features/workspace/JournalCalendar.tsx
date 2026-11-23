@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { monthGrid, monthNames, parseISODate, todayISO } from '../../lib/journal';
+import { monthNames, parseISODate, todayISO } from '../../lib/journal';
+import { firstWeekday, monthGrid } from '../../lib/calendar';
+import { localDay } from '../../lib/due';
 import { formatDate } from '../../lib/format';
 import { useTranslation } from 'react-i18next';
 import { SelectMenu } from '../../components/SelectMenu';
@@ -13,8 +15,9 @@ interface JournalCalendarProps {
   onSelect: (date: string) => void;
 }
 
-// Monday first, as the grid (common:date.weekdayMin.1–6, then 0)
-const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+// The weekdays from the first day of the week (1 = Monday … 7 = Sunday) as Date.getDay() numbers
+// (common:date.weekdayMin.0 = Sunday)
+const weekdayOrder = (firstDay: number) => Array.from({ length: 7 }, (_, i) => (firstDay - 1 + i) % 7 + 1).map((n) => n % 7);
 
 export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, entryDates, onSelect }) => {
   const { t } = useTranslation('workspace');
@@ -28,7 +31,13 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
   }, [activeDate]);
 
   const today = todayISO();
-  const weeks = useMemo(() => monthGrid(view.year, view.month), [view]);
+  // The week starts as in the language (Sunday in US English, Monday in German), like the date field
+  const firstDay = firstWeekday();
+  // Days of the neighbouring months stay empty
+  const weeks = useMemo(() => {
+    const month = localDay(new Date(view.year, view.month, 1)).slice(0, 7);
+    return monthGrid(`${month}-01`, firstDay).map((week) => week.map((day) => (day.startsWith(month) ? day : null)));
+  }, [view, firstDay]);
   const years = useMemo(() => {
     const now = new Date().getFullYear();
     let first = now - 5;
@@ -88,7 +97,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
       </div>
 
       <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] text-faint font-semibold mb-0.5">
-        {WEEKDAY_ORDER.map((n) => t(`common:date.weekdayMin.${n}`)).map((w) => (
+        {weekdayOrder(firstDay).map((n) => t(`common:date.weekdayMin.${n}`)).map((w) => (
           <span key={w}>{w}</span>
         ))}
       </div>

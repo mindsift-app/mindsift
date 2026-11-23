@@ -19,8 +19,8 @@ const getListSuggestions = vi.fn(async () => [
   { content: 'Brot', category: 'Backwaren', count: 5, lastUsed: recent },
 ]);
 
-vi.mock('../../../lib/api', () => ({
-  api: {
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi({
     getAllLists: vi.fn(async () => [
       {
         id: 'lst_1',
@@ -41,11 +41,8 @@ vi.mock('../../../lib/api', () => ({
     createListItem: (...args: unknown[]) => createListItem(...(args as [string, string, string?, string?])),
     setListOrder: vi.fn(async () => {}),
     getAuthStatus: vi.fn(async () => ({})),
-  },
-  triggerHaptic: vi.fn(),
-  isDesktopApp: () => false,
-  onRealtimeStatus: () => () => {},
-}));
+  })
+);
 vi.mock('../useListRealtime', () => ({ useListRealtime: () => {} }));
 
 import { SharedListsView } from '../SharedListsView';

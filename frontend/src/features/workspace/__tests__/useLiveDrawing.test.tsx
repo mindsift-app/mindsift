@@ -1,14 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import type { WSMessage } from '../../../lib/types';
+import { emitRealtimeMessage, emitRealtimeStatus } from '../../../lib/realtimeBus';
 
 type SentMessage = { event: string; payload: { els?: { id: string }[] } & Record<string, unknown> };
 
-// The realtime connection: messages from the server are fed in by hand, sent ones collected
+// The realtime connection: messages from the server are fed in by hand (lib/realtimeBus.ts), sent ones collected
 const realtime = vi.hoisted(() => ({
-  listeners: [] as ((msg: WSMessage) => void)[],
   sent: [] as SentMessage[],
-  status: null as ((connected: boolean, transport: string) => void) | null,
 }));
 vi.mock('../../../lib/api', async (importOriginal) => {
   const orig = await importOriginal<typeof import('../../../lib/api')>();
@@ -17,17 +15,6 @@ vi.mock('../../../lib/api', async (importOriginal) => {
     isWebSocketConnected: () => true,
     getSSEId: () => null,
     sendWebSocketMessage: (msg: SentMessage) => realtime.sent.push(msg),
-    onWebSocketMessage: (cb: (msg: WSMessage) => void) => {
-      realtime.listeners.push(cb);
-      return () => {
-        realtime.listeners = realtime.listeners.filter((f) => f !== cb);
-      };
-    },
-    onRealtimeStatus: (cb: (connected: boolean, transport: string) => void) => {
-      realtime.status = cb;
-      cb(true, 'ws');
-      return () => {};
-    },
   };
 });
 
@@ -37,7 +24,7 @@ import { Drawing, DrawElement } from '../../../lib/drawing/model';
 const rect = (id: string, x = 0): DrawElement => ({ id, ver: 1, t: 'rect', x, y: 0, w: 10, h: 10, s: 'main', f: 'none', sw: 2 }) as DrawElement;
 const emit = (event: string, payload: Record<string, unknown>) =>
   act(() => {
-    realtime.listeners.forEach((f) => f({ event, payload: { docId: 'd1', blockId: 'b1', ...payload }, timestamp: '' }));
+    emitRealtimeMessage({ event, payload: { docId: 'd1', blockId: 'b1', ...payload }, timestamp: '' });
   });
 const people = {
   active: true,
@@ -83,7 +70,8 @@ function setup() {
 const sentOps = () => realtime.sent.filter((m) => m.event === 'DRAW_OPS');
 
 beforeEach(() => {
-  realtime.listeners = [];
+  // Connected (a drawing joins at once)
+  emitRealtimeStatus(true, 'ws');
   realtime.sent = [];
   vi.useFakeTimers();
 });
@@ -156,10 +144,10 @@ describe('useLiveDrawing', () => {
   it('joining again after a lost connection refused as busy: drawing goes on, joining is tried again', () => {
     const { hook, draw } = setup();
     const joins = () => realtime.sent.filter((m) => m.event === 'DRAW_JOIN').length;
-    act(() => realtime.status!(false, 'ws'));
+    act(() => emitRealtimeStatus(false, 'none'));
     expect(hook.result.current!.status).toBe('offline');
     draw(rect('n1', 50));
-    act(() => realtime.status!(true, 'ws'));
+    act(() => emitRealtimeStatus(true, 'ws'));
     const afterReconnect = joins();
     // The server is full: the browser keeps drawing (no "busy" that would make it read-only)
     emit('DRAW_ERROR', { code: 'busy' });

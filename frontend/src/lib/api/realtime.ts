@@ -4,9 +4,9 @@
 import { WSMessage } from '../types';
 import { ApiError, getDesktop, getToken, request, requestRaw } from './client';
 import { api } from './rest';
+import { RealtimeTransport, emitRealtimeMessage, emitRealtimeStatus, onRealtimeMessage, onRealtimeStatus } from '../realtimeBus';
 
-// poll: long polling, when a proxy lets neither WebSocket nor event streams through
-export type RealtimeTransport = 'ws' | 'sse' | 'poll' | 'none';
+export type { RealtimeTransport };
 
 let activeTransport: RealtimeTransport = 'none';
 let activeGlobalWS: WebSocket | null = null;
@@ -14,8 +14,6 @@ let activeGlobalSSE: EventSource | null = null;
 let activeSSEId: string | null = null;
 let wsReconnectTimer: ReturnType<typeof setTimeout> | undefined;
 let wsConnectionWatchdog: ReturnType<typeof setTimeout> | undefined;
-let wsListeners: ((msg: WSMessage) => void)[] = [];
-let realtimeStatusListeners: ((connected: boolean, transport: RealtimeTransport) => void)[] = [];
 let isRealtimeConnectedState = false;
 let manualDisconnect = false;
 let wsReconnectDelay = 2000;
@@ -80,14 +78,6 @@ export function getSSEId(): string | null {
   return activeSSEId;
 }
 
-export function onRealtimeStatus(callback: (connected: boolean, transport: RealtimeTransport) => void): () => void {
-  realtimeStatusListeners.push(callback);
-  callback(isRealtimeConnected(), activeTransport);
-  return () => {
-    realtimeStatusListeners = realtimeStatusListeners.filter((fn) => fn !== callback);
-  };
-}
-
 // A WebSocket that never opened (or opened but never passed a message) means a proxy in the way: SSE takes over
 // for this tab. Only for a while, though: a network change or a stricter hotspot should not cost the WebSocket for
 // good, so it is tried again after WS_BLOCK_RETRY_MS (and on demand, tryWebSocket). A WebSocket that worked and then
@@ -125,14 +115,7 @@ const globalSubscribedRooms = new Set<string>();
 function notifyRealtimeStatusChange(connected: boolean, transport: RealtimeTransport) {
   isRealtimeConnectedState = connected;
   activeTransport = transport;
-  realtimeStatusListeners.forEach((fn) => {
-    try {
-      fn(connected, transport);
-    } catch (e) {
-      console.error('Realtime status listener error', e);
-    }
-  });
-  window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected, transport } }));
+  emitRealtimeStatus(connected, transport);
 }
 
 function switchToSSE(reason: string) {
@@ -294,14 +277,7 @@ async function connectSSE(rooms?: string[]): Promise<void> {
             });
           }
         }
-        wsListeners.forEach((fn) => {
-          try {
-            fn(msg);
-          } catch (e) {
-            console.error('SSE listener error', e);
-          }
-        });
-        window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: msg }));
+        emitRealtimeMessage(msg);
       } catch (err) {
         console.error('Failed to parse SSE message', err);
       }
@@ -344,14 +320,7 @@ let pollRunning = false;
 let pollAbort: AbortController | null = null;
 
 function dispatchRealtimeMessage(msg: WSMessage) {
-  wsListeners.forEach((fn) => {
-    try {
-      fn(msg);
-    } catch (e) {
-      console.error('Realtime listener error', e);
-    }
-  });
-  window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: msg }));
+  emitRealtimeMessage(msg);
 }
 
 async function connectPoll(): Promise<void> {
@@ -509,14 +478,7 @@ export async function connectWebSocket(): Promise<void> {
       try {
         const msg = JSON.parse(event.data) as WSMessage;
         if (msg.event === 'PONG') return;
-        wsListeners.forEach((fn) => {
-          try {
-            fn(msg);
-          } catch (e) {
-            console.error('WS listener error', e);
-          }
-        });
-        window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: msg }));
+        emitRealtimeMessage(msg);
       } catch (err) {
         console.error('Failed to parse WS message', err);
       }
@@ -627,19 +589,12 @@ export function sendWebSocketMessage(msg: OutgoingWSMessage): void {
   }
 }
 
-export function onWebSocketMessage(callback: (msg: WSMessage) => void): () => void {
-  wsListeners.push(callback);
-  return () => {
-    wsListeners = wsListeners.filter((fn) => fn !== callback);
-  };
-}
-
 export function createRealtimeConnection(options: {
   listId?: string;
   docId?: string;
   rooms?: string[];
   onMessage?: (msg: WSMessage) => void;
-  onStatusChange?: (status: { connected: boolean; transport: RealtimeTransport; reason?: string }) => void;
+  onStatusChange?: (status: { connected: boolean; transport: RealtimeTransport }) => void;
 }) {
   let isClosed = false;
 
@@ -657,17 +612,13 @@ export function createRealtimeConnection(options: {
   // Subscribe to status changes
   const unsubStatus = onRealtimeStatus((connected, transport) => {
     if (isClosed) return;
-    options.onStatusChange?.({
-      connected,
-      transport,
-      reason: connected ? undefined : 'Verbindung getrennt',
-    });
-  });
+    options.onStatusChange?.({ connected, transport });
+  }, { current: true });
 
   // Subscribe to messages
   let unsubMsg: (() => void) | null = null;
   if (options.onMessage) {
-    unsubMsg = onWebSocketMessage((msg) => {
+    unsubMsg = onRealtimeMessage((msg) => {
       if (isClosed) return;
       options.onMessage?.(msg);
     });

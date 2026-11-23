@@ -3,12 +3,13 @@ import { useRef, useState } from 'react';
 import { render, fireEvent } from '@testing-library/react';
 import { placeInViewport } from '../placeInViewport';
 import { useCloseOnEscape, useDismiss } from '../useDismiss';
+import { setViewportWidth } from '../../test/viewport';
 
 const size = { width: 200, height: 100 };
 
 describe('placeInViewport', () => {
   beforeEach(() => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1000 });
+    setViewportWidth(1000);
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
   });
 

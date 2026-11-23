@@ -5,6 +5,7 @@ import { addTexts } from '../i18n';
 import de from '../locales/de';
 import { actAsServer } from './desktop';
 import { resetLayersForTests } from '../lib/useDismiss';
+import { resetViewportWidth } from './viewport';
 
 addTexts('de', de);
 
@@ -45,4 +46,6 @@ afterEach(() => {
   resetLayersForTests();
   // Every test starts on a server with everything on (lib/capabilities.ts)
   actAsServer();
+  // ...in a desktop-wide window (test/viewport.ts)
+  resetViewportWidth();
 });

@@ -25,7 +25,6 @@ vi.mock('../../../lib/api', async (importOriginal) => {
       getWorkspaceTags: vi.fn(),
       getTrash: vi.fn(),
     },
-    onWebSocketMessage: vi.fn(() => () => {}),
     triggerHaptic: vi.fn(),
   };
 });

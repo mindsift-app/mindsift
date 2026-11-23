@@ -21,6 +21,7 @@ import {
   waitForTranscription,
 } from '../transcriptionJobs';
 import type { TranscriptionJob } from '../types';
+import { emitRealtimeMessage } from '../realtimeBus';
 
 const job = (over: Partial<TranscriptionJob>): TranscriptionJob => ({
   id: 'trs_1',
@@ -37,7 +38,7 @@ const job = (over: Partial<TranscriptionJob>): TranscriptionJob => ({
 
 const ws = (event: string, payload: unknown) =>
   act(() => {
-    window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: { event, payload, timestamp: '' } }));
+    emitRealtimeMessage({ event, payload, timestamp: '' });
   });
 
 const Bullet = ({ blockId }: { blockId: string }) => {

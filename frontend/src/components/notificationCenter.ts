@@ -7,6 +7,7 @@ import { useSyncExternalStore } from 'react';
 import { api } from '../lib/api';
 import { CenterEntry, WSMessage } from '../lib/types';
 import { createRealtimeReloader } from '../lib/realtimeReload';
+import { onRealtimeMessage, onRealtimeStatus } from '../lib/realtimeBus';
 
 export interface CenterState {
   items: CenterEntry[];
@@ -88,24 +89,20 @@ export function loadCenter(): void {
 
 const reloader = createRealtimeReloader(loadCenter);
 
-const onWs = (e: Event) => {
-  const msg = (e as CustomEvent<WSMessage | undefined>).detail;
-  if (!msg || !msg.event?.startsWith('NOTIFICATION')) return;
+const onMessage = (msg: WSMessage) => {
+  if (!msg.event?.startsWith('NOTIFICATION')) return;
   const res = centerAfterEvent(state, msg);
   setCenter(res.state);
   // Only the bell's own person gets these events: no shared rhythm needed
   if (res.reload) reloader.request(true);
 };
 const onVisible = () => reloader.visible();
-const onStatus = (e: WindowEventMap['mindsift:ws:status']) => {
-  if (e.detail) reloader.status(e.detail.connected);
-};
+let unsubscribeRealtime: (() => void)[] = [];
 
 function subscribe(fn: () => void): () => void {
   listeners.add(fn);
   if (listeners.size === 1) {
-    window.addEventListener('mindsift:ws', onWs);
-    window.addEventListener('mindsift:ws:status', onStatus);
+    unsubscribeRealtime = [onRealtimeMessage(onMessage), onRealtimeStatus((connected) => reloader.status(connected))];
     document.addEventListener('visibilitychange', onVisible);
     loadCenter();
   }
@@ -113,8 +110,8 @@ function subscribe(fn: () => void): () => void {
     listeners.delete(fn);
     if (listeners.size > 0) return;
     // The last bell is gone (signed out, demo reset): the next one starts fresh
-    window.removeEventListener('mindsift:ws', onWs);
-    window.removeEventListener('mindsift:ws:status', onStatus);
+    unsubscribeRealtime.forEach((off) => off());
+    unsubscribeRealtime = [];
     document.removeEventListener('visibilitychange', onVisible);
     reloader.cancel();
     loadSeq++;

@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { lastLocalWriteAt } from './api';
 import { useLatestRef } from './useLatestRef';
+import { onRealtimeStatus } from './realtimeBus';
 
 // Own change (a view asks for it, or the echo of a change this tab just sent): short debounce
 export const RELOAD_SOON_MS = 300;
@@ -122,15 +123,12 @@ export function useRealtimeReload(load: () => void, options: { reconnect?: boole
   const [reloader] = useState(() => createRealtimeReloader(() => loadRef.current(), options));
   useEffect(() => {
     const onVisible = () => reloader.visible();
-    const onStatus = (e: WindowEventMap['mindsift:ws:status']) => {
-      if (e.detail) reloader.status(e.detail.connected);
-    };
     document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('mindsift:ws:status', onStatus);
+    const offStatus = onRealtimeStatus((connected) => reloader.status(connected));
     return () => {
       reloader.cancel();
       document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('mindsift:ws:status', onStatus);
+      offStatus();
     };
   }, [reloader]);
   return reloader;

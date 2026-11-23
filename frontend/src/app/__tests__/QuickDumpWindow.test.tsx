@@ -1,14 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
-vi.mock('../../lib/api', () => ({
-  api: {
+vi.mock('../../lib/api', async () =>
+  (await import('../../test/apiMock')).stubApi({
     getTaskLists: vi.fn(async () => []),
     captureThought: vi.fn(),
     getAuthStatus: vi.fn(async () => ({ voice: { mode: 'off' } })),
-  },
-  triggerHaptic: vi.fn(),
-}));
+  })
+);
 
 import { QuickDumpWindow } from '../QuickDumpWindow';
 

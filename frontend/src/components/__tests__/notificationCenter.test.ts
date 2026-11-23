@@ -10,6 +10,7 @@ vi.mock('../../lib/api', async (original) => ({
 
 import { CENTER_LIMIT, CenterState, centerAfterEvent, useNotificationCenter } from '../notificationCenter';
 import { RELOAD_SOON_MS } from '../../lib/realtimeReload';
+import { emitRealtimeMessage, emitRealtimeStatus } from '../../lib/realtimeBus';
 
 const entry = (id: number, e: Partial<CenterEntry> = {}): CenterEntry => ({
   id,
@@ -103,9 +104,9 @@ describe('the bells share one list', () => {
     vi.clearAllMocks();
   });
 
-  const ws = (m: WSMessage) => window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: m }));
+  const ws = (m: WSMessage) => emitRealtimeMessage(m);
   const status = (connected: boolean) =>
-    window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected, transport: 'websocket' } }));
+    emitRealtimeStatus(connected, 'ws');
 
   it('loads once for both bells, applies events without a request and loads once after a reconnect', async () => {
     const phone = renderHook(() => useNotificationCenter());

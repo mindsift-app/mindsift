@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { onRealtimeStatus } from './api';
+import { onRealtimeStatus } from './realtimeBus';
 import { fetchHealth } from './api/client';
 
 // Grace period before a missing realtime connection counts as offline (app start, short reconnects)
@@ -52,7 +52,7 @@ export function useConnectionState(): ConnectionState {
       connected = isConnected;
       viaPoll = transport === 'poll';
       update();
-    });
+    }, { current: true });
     window.addEventListener('online', update);
     window.addEventListener('offline', update);
     return () => {

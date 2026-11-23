@@ -1,10 +1,11 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { DocumentEditor } from '../DocumentEditor';
 import { Document, DocumentBlock } from '../../../lib/types';
 import { EngineState } from '../../../lib/docSync/engine';
 import { writeNotePlace } from '../../../lib/notePlace';
+import { setViewportWidth } from '../../../test/viewport';
 
 // A note four levels deep, zoomed into the third level
 const blocks: DocumentBlock[] = [
@@ -104,17 +105,13 @@ const renderEditor = () =>
 const zoomHeading = () => screen.queryByPlaceholderText('Ast-Titel…');
 
 describe('DocumentEditor zoom path on phones', () => {
-  const width = window.innerWidth;
   beforeEach(() => {
     localStorage.clear();
     writeNotePlace('doc_1', { zoom: 'b3', scroll: 0 });
   });
-  afterEach(() => {
-    window.innerWidth = width;
-  });
 
   it('shows a home button instead of the path; it leaves the zoom', async () => {
-    window.innerWidth = 400;
+    setViewportWidth(400);
     renderEditor();
 
     await waitFor(() => expect(zoomHeading()).toBeTruthy());
@@ -130,7 +127,7 @@ describe('DocumentEditor zoom path on phones', () => {
   });
 
   it('keeps the path from sm upwards', async () => {
-    window.innerWidth = 800;
+    setViewportWidth(800);
     renderEditor();
 
     await waitFor(() => expect(zoomHeading()).toBeTruthy());

@@ -1,15 +1,14 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, within } from '@testing-library/react';
-import type { WSMessage } from '../../../lib/types';
+import { emitRealtimeMessage, emitRealtimeStatus } from '../../../lib/realtimeBus';
 
 // What the editor sends (always an event with its payload)
 type SentMessage = { event: string; payload: { els?: unknown[] } & Record<string, unknown> };
 
-// The realtime connection: messages from the server are fed in by hand, sent ones collected
+// The realtime connection: messages from the server are fed in by hand (lib/realtimeBus.ts), sent ones collected
 const realtime = vi.hoisted(() => ({
   ws: true,
-  listeners: [] as ((msg: WSMessage) => void)[],
   sent: [] as SentMessage[],
 }));
 vi.mock('../../../lib/api', async (importOriginal) => {
@@ -21,16 +20,6 @@ vi.mock('../../../lib/api', async (importOriginal) => {
     tryWebSocket: async () => realtime.ws,
     getSSEId: () => null,
     sendWebSocketMessage: (msg: SentMessage) => realtime.sent.push(msg),
-    onWebSocketMessage: (cb: (msg: WSMessage) => void) => {
-      realtime.listeners.push(cb);
-      return () => {
-        realtime.listeners = realtime.listeners.filter((f) => f !== cb);
-      };
-    },
-    onRealtimeStatus: (cb: (connected: boolean, transport: string) => void) => {
-      cb(true, realtime.ws ? 'ws' : 'sse');
-      return () => {};
-    },
   };
 });
 
@@ -48,12 +37,13 @@ const live = [
 ];
 const emit = (event: string, payload: Record<string, unknown>) =>
   act(() => {
-    realtime.listeners.forEach((f) => f({ event, payload: { docId: 'd1', blockId: 'b1', ...payload }, timestamp: '' }));
+    emitRealtimeMessage({ event, payload: { docId: 'd1', blockId: 'b1', ...payload }, timestamp: '' });
   });
 
 beforeEach(() => {
   realtime.ws = true;
-  realtime.listeners = [];
+  // Connected (a drawing joins at once)
+  emitRealtimeStatus(true, 'ws');
   realtime.sent = [];
 });
 

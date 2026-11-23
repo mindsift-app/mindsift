@@ -42,6 +42,7 @@ vi.mock('../../lib/docSync/flushClosed', () => ({ flushClosedNotes: vi.fn() }));
 
 import { prefetchAuthStatus, useSessionBootstrap } from '../useSessionBootstrap';
 import { loadVoiceConfig, resetVoiceConfig } from '../../lib/voice';
+import { emitRealtimeMessage, emitRealtimeStatus } from '../../lib/realtimeBus';
 
 const me = { user: { id: 'usr_1', displayName: 'Anna' }, stats: { inboxCount: 3 } };
 
@@ -148,11 +149,11 @@ describe('app start', () => {
 describe('realtime events', () => {
   const send = (event: string, payload: unknown = {}) =>
     act(() => {
-      window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: { event, payload, timestamp: '' } }));
+      emitRealtimeMessage({ event, payload, timestamp: '' });
     });
   const status = (connected: boolean) =>
     act(() => {
-      window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected, transport: 'ws' } }));
+      emitRealtimeStatus(connected, 'ws');
     });
 
   async function bootWithFakeTimers() {
@@ -277,7 +278,7 @@ describe('demo reset countdown', () => {
     // The event comes before the server announces the next deadline: asked again 5 s later
     mocks.getAuthStatus.mockResolvedValueOnce(demoStatus(0)).mockResolvedValue(demoStatus(1199));
     await act(async () => {
-      window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: { event: 'DEMO_RESET', payload: {}, timestamp: '' } }));
+      emitRealtimeMessage({ event: 'DEMO_RESET', payload: {}, timestamp: '' });
       await vi.advanceTimersByTimeAsync(0);
     });
     act(() => result.current.handleDemoCountdownElapsed());
@@ -304,8 +305,8 @@ describe('demo reset countdown', () => {
     const { result } = await bootDemo(600);
     mocks.getAuthStatus.mockResolvedValue(demoStatus(590));
     await act(async () => {
-      window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected: false, transport: 'ws' } }));
-      window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected: true, transport: 'ws' } }));
+      emitRealtimeStatus(false, 'ws');
+      emitRealtimeStatus(true, 'ws');
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(mocks.getAuthStatus).toHaveBeenCalledTimes(1);

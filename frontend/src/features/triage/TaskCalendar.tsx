@@ -4,9 +4,9 @@ import { ChevronLeft, ChevronRight, ChevronDown, Plus, Repeat } from 'lucide-rea
 import { TaskList, Thought } from '../../lib/types';
 import { localDay } from '../../lib/due';
 import { formatDate, formatDateRange } from '../../lib/format';
-import { isPhoneWidth } from '../../lib/breakpoints';
+import { usePhoneWidth } from '../../lib/breakpoints';
 import { startElementDragGhost } from '../../lib/dragGhost';
-import { CalendarEntry, entriesByDay, isoWeek, monthGrid, moveDue, sameMonth, shiftDay, weekOf } from '../../lib/calendar';
+import { CalendarEntry, entriesByDay, isWeekend, isoWeek, monthGrid, moveDue, sameMonth, shiftDay, weekOf } from '../../lib/calendar';
 import { useKanbanTouchDrag } from './useKanbanTouchDrag';
 import { renderMentions } from '../../lib/markdown';
 import { BottomSheet } from '../../components/BottomSheet';
@@ -97,16 +97,6 @@ interface TaskCalendarProps {
   fillsScreen: boolean;
 }
 
-const usePhone = () => {
-  const [phone, setPhone] = useState(isPhoneWidth);
-  useEffect(() => {
-    const onResize = () => setPhone(isPhoneWidth());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  return phone;
-};
-
 // Calendar view of the tasks: month or week on the desktop (7 columns, no hours), the week on phones.
 // Tasks without a date wait in "Ungeplant"; dragging a task onto a day sets its date (the time stays),
 // onto "Ungeplant" removes it. Repeating tasks also show their coming dates, greyed with ↻, which open the
@@ -125,7 +115,7 @@ export function TaskCalendar({
   fillsScreen,
 }: TaskCalendarProps) {
   const { t } = useTranslation('tasks');
-  const phone = usePhone();
+  const phone = usePhoneWidth();
   const today = localDay();
   const [anchor, setAnchor] = useState(today);
   const mode: Mode = phone ? 'week' : desktopMode;
@@ -346,7 +336,6 @@ export function TaskCalendar({
       ? dayLabel(anchor, { month: 'long', year: 'numeric' })
       : `${t('calendar.weekNumber', { n: isoWeek(weeks[0][0]) })} · ${formatDateRange(`${weeks[0][0]}T12:00:00`, `${weeks[0][6]}T12:00:00`, { day: 'numeric', month: 'short' })}`;
   const weekdayNames = weeks[0].map((d) => dayLabel(d, { weekday: 'short' }));
-  const isWeekend = (day: string) => [0, 6].includes(new Date(`${day}T12:00:00`).getDay());
 
   // A compact entry: priority dot, time, title (greyed with ↻ for a coming date of a repeating task)
   // big: a row of its own (day panel, phones); wrap: the title may take up to three lines (week columns)

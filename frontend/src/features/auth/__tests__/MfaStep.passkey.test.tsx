@@ -6,15 +6,13 @@ const { mfaPasskeyOptions, loginMfaPasskey, getPasskey } = vi.hoisted(() => ({
   loginMfaPasskey: vi.fn(),
   getPasskey: vi.fn(),
 }));
-vi.mock('../../../lib/api', () => ({
-  api: {
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi({
     mfaPasskeyOptions: (...a: unknown[]) => mfaPasskeyOptions(...a),
     loginMfaPasskey: (...a: unknown[]) => loginMfaPasskey(...a),
     loginMfa: vi.fn(),
-  },
-  ApiError: class extends Error {},
-  triggerHaptic: vi.fn(),
-}));
+  })
+);
 vi.mock('../../../lib/webauthn', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../lib/webauthn')>()),
   passkeysSupported: () => true,

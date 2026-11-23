@@ -24,7 +24,6 @@ vi.mock('../../../lib/api', async (importOriginal) => {
       getTrash: vi.fn(),
       deleteDocument: vi.fn(),
     },
-    onWebSocketMessage: vi.fn(() => () => {}),
     triggerHaptic: vi.fn(),
   };
 });

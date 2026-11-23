@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AuthStatus, DashboardStats, SharedList, Thought, User, WSMessage } from '../lib/types';
+import { AuthStatus, DashboardStats, SharedList, Thought, User } from '../lib/types';
 import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken, isDesktopApp, lastLocalWriteAt } from '../lib/api';
 import { clearOfflineData, outboxCount } from '../lib/offline';
 import { flushClosedNotes } from '../lib/docSync/flushClosed';
@@ -12,6 +12,7 @@ import { useToast } from '../components/Toast';
 import { setServerAudioSettings, setServerImageQuality, setServerImageSettings } from '../lib/media';
 import { OWN_ECHO_WINDOW_MS, createStatsScheduler, eventChangesDeck, eventChangesStats } from './realtimeCounters';
 import { createDemoResetWatch } from './demoResetWatch';
+import { onRealtimeMessage, onRealtimeReconnect } from '../lib/realtimeBus';
 
 type AccountLoad = [
   PromiseSettledResult<Awaited<ReturnType<typeof api.getMe>>>,
@@ -320,9 +321,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
       // Timers sleep in a hidden tab and DEMO_RESET may have been missed: ask for the next reset anew
       if (demoModeRef.current) demoWatchRef.current?.refresh();
     };
-    const handleWs = (e: CustomEvent<WSMessage | undefined>) => {
-      const msg = e.detail;
-      if (!msg) return;
+    const offMessage = onRealtimeMessage((msg) => {
       if (msg.event === 'DEMO_RESET') {
         handleDemoResetRef.current();
         return;
@@ -333,30 +332,21 @@ export function useSessionBootstrap(onSignedOut: () => void) {
         else scheduler.shared();
       }
       if (eventChangesDeck(msg, deckIdsRef.current)) reloadDeck();
-    };
+    });
     // Back after the connection dropped: events of the gap are lost, load counters and deck once
-    let connectionLost = false;
-    const onStatus = (e: WindowEventMap['mindsift:ws:status']) => {
-      if (!e.detail) return;
-      if (!e.detail.connected) {
-        connectionLost = true;
-      } else if (connectionLost) {
-        connectionLost = false;
-        if (getToken()) {
-          scheduler.soon();
-          reloadDeck();
-        }
-        if (demoModeRef.current) demoWatchRef.current?.refresh();
+    const offReconnect = onRealtimeReconnect(() => {
+      if (getToken()) {
+        scheduler.soon();
+        reloadDeck();
       }
-    };
-    window.addEventListener('mindsift:ws', handleWs);
-    window.addEventListener('mindsift:ws:status', onStatus);
+      if (demoModeRef.current) demoWatchRef.current?.refresh();
+    });
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       scheduler.cancel();
       window.clearTimeout(deckTimer);
-      window.removeEventListener('mindsift:ws', handleWs);
-      window.removeEventListener('mindsift:ws:status', onStatus);
+      offMessage();
+      offReconnect();
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [refreshAll, statsScheduler, handleDemoResetRef, demoModeRef]);

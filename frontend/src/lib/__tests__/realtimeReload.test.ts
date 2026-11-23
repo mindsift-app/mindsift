@@ -8,6 +8,7 @@ import {
   createRealtimeReloader,
   useRealtimeReload,
 } from '../realtimeReload';
+import { emitRealtimeStatus } from '../realtimeBus';
 
 let hidden = false;
 beforeEach(() => {
@@ -22,7 +23,7 @@ afterEach(() => {
 });
 
 const status = (connected: boolean) =>
-  window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected, transport: 'websocket' } }));
+  emitRealtimeStatus(connected, 'ws');
 
 describe('reloading because of realtime events', () => {
   it('loads shortly for the echo of an own change, once for a burst', () => {

@@ -4,13 +4,12 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 const finishSetup = vi.fn(async (_payload: unknown) => {});
 const location = { dir: '/home/anna/.local/share/MindSift/instances/Privat/backups', defaultDir: '/home/anna/.local/share/MindSift/instances/Privat/backups', custom: false };
 const adminGetBackupLocation = vi.fn(async () => location);
-vi.mock('../../../lib/api', () => ({
-  api: {
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi({
     finishSetup: (payload: unknown) => finishSetup(payload),
     adminGetBackupLocation: () => adminGetBackupLocation(),
-  },
-  triggerHaptic: vi.fn(),
-}));
+  })
+);
 const pickFolder = vi.fn(async (_path: string) => ({ path: '/media/usb/MindSift' }));
 const shellState = vi.fn(async () => ({ base: '/b', entries: [{ id: 'e1', kind: 'local', name: 'Privat' }], found: [], current: 'e1' }));
 vi.mock('../../../lib/desktopShell', () => ({

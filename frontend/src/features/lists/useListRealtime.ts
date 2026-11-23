@@ -5,6 +5,7 @@ import { OFFLINE_ITEM_PREFIX, PendingListChange, getOutbox, isListEntry, isOffli
 import { deduplicateItems, withPendingChanges } from './listItems';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { useRealtimeReload } from '../../lib/realtimeReload';
+import { useRealtimeEvents } from '../../lib/useRealtimeEvents';
 
 // List events that cannot be applied from their payload: shares changed (the members shown need the
 // people's details). They reload the lists, one request per burst.
@@ -156,7 +157,7 @@ export function useListRealtime(
   const loadListsRef = useLatestRef(loadLists);
   const reloader = useRealtimeReload(() => void loadListsRef.current());
 
-  // Only joins the room: every message of the connection also arrives as mindsift:ws (handled below),
+  // Only joins the room: every message of the connection also arrives through lib/realtimeBus.ts (handled below),
   // reacting here as well made each list event load the lists twice
   useEffect(() => {
     if (!activeListId) return;
@@ -200,18 +201,12 @@ export function useListRealtime(
     return () => window.removeEventListener('mindsift:outbox-changed', onOutbox);
   }, [listsRef, loadListsRef, reloader]);
 
-  useEffect(() => {
-    const handleGlobalWs = (e: CustomEvent<WSMessage | undefined>) => {
-      const msg = e.detail;
-      if (!msg || !msg.event) return;
-      if (!msg.event.startsWith('LIST_') && !msg.event.startsWith('ITEM_')) return;
-      // Applied to the latest state (an event right after another must not undo it); whether it needs a
-      // reload is decided from the lists shown
-      const changes = pendingListChanges();
-      setLists((prev) => listsAfterEvent(prev, msg, changes).lists);
-      if (listsAfterEvent(listsRef.current, msg).reload) reloader.request();
-    };
-    window.addEventListener('mindsift:ws', handleGlobalWs);
-    return () => window.removeEventListener('mindsift:ws', handleGlobalWs);
-  }, [listsRef, setLists, reloader]);
+  useRealtimeEvents((msg) => {
+    if (!msg.event?.startsWith('LIST_') && !msg.event?.startsWith('ITEM_')) return;
+    // Applied to the latest state (an event right after another must not undo it); whether it needs a
+    // reload is decided from the lists shown
+    const changes = pendingListChanges();
+    setLists((prev) => listsAfterEvent(prev, msg, changes).lists);
+    if (listsAfterEvent(listsRef.current, msg).reload) reloader.request();
+  });
 }

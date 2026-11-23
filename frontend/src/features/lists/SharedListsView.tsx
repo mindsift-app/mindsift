@@ -10,7 +10,7 @@ import { readViewMemory, writeViewMemory } from '../../lib/viewSession';
 import { pendingListChanges, pendingListItems } from '../../lib/offline';
 import { UnifiedShareModal } from '../../components/UnifiedShareModal';
 import { AvatarStack, AvatarPerson } from '../../components/AvatarStack';
-import { isPhoneWidth } from '../../lib/breakpoints';
+import { isPhoneWidth, usePhoneWidth } from '../../lib/breakpoints';
 import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { FormSheet } from '../../components/FormSheet';
@@ -108,13 +108,8 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Phones: the add form lives in a sheet opened by "+" instead of taking room above the list
-  const [isPhone, setIsPhone] = useState(isPhoneWidth);
+  const isPhone = usePhoneWidth();
   const [showAddSheet, setShowAddSheet] = useState(false);
-  useEffect(() => {
-    const onResize = () => setIsPhone(isPhoneWidth());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
 
 
   const loadLists = async () => {

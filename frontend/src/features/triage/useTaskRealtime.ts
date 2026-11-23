@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { api, getCurrentUserId } from '../../lib/api';
-import { TaskList, TaskOrder, TaskReorderResult, Thought, WSMessage } from '../../lib/types';
+import { TaskList, TaskOrder, TaskReorderResult, Thought } from '../../lib/types';
 import { useRealtimeReload } from '../../lib/realtimeReload';
+import { useRealtimeEvents } from '../../lib/useRealtimeEvents';
 import { MoveTracker } from './taskMoves';
 
 // Same rule as the server's task query: a fresh Quick Dump note (status inbox) is no task yet
@@ -117,45 +118,39 @@ export function useTaskRealtime({ setTasks, setTaskLists, listIdRef, loadDataRef
 
   // Live-Sync WebSocket listener for tasks (registered once on mount; all dependencies are stable). The
   // counters in the navigation follow these events in app/useSessionBootstrap.ts already.
-  useEffect(() => {
-    const handleWs = (e: CustomEvent<WSMessage | undefined>) => {
-      const msg = e.detail;
-      if (!msg || !msg.event) return;
+  useRealtimeEvents((msg) => {
+    if (!msg.event) return;
 
-      if (msg.event === 'TASK_CREATED') {
-        const created = msg.payload as Thought;
-        if (created && isTaskThought(created)) {
-          setTasks((prev) => tasksAfterCreate(prev, created, listIdRef.current));
-        }
-      } else if (msg.event === 'TASK_UPDATED') {
-        const updated = msg.payload as Thought;
-        if (updated && updated.id) {
-          setTasks((prev) => tasksAfterUpdate(prev, updated, listIdRef.current));
-        }
-      } else if (msg.event === 'TASK_DELETED') {
-        const deletedId = typeof msg.payload === 'string' ? msg.payload : (msg.payload as { id?: string } | undefined)?.id;
-        if (deletedId) {
-          setTasks((prev) => tasksAfterDelete(prev, deletedId));
-        }
-      } else if (msg.event === 'TASK_REORDERED') {
-        // The places come with the event; only a completed repeating task (its successor is new) or an
-        // older server without them needs the tasks loaded again. The echo of this board's own move is
-        // left to the move's answer, and while own moves are on their way an event waits for them.
-        const moved = msg.payload as (TaskReorderResult & { userId?: string }) | undefined;
-        if (moveTracker.classify(moved, getCurrentUserId()) !== 'apply') return;
-        if (!moved || moved.reload || !Array.isArray(moved.items)) {
-          tasksReloader.request();
-        } else {
-          const items = moved.items;
-          setTasks((prev) => tasksAfterReorder(prev, items));
-        }
-      } else if (msg.event === 'TASK_LIST_CREATED' || msg.event === 'TASK_LIST_UPDATED' || msg.event === 'TASK_LIST_DELETED') {
-        // Payload only carries the list ID; reload so permissions reflect this user's view
-        listsReloader.request();
+    if (msg.event === 'TASK_CREATED') {
+      const created = msg.payload as Thought;
+      if (created && isTaskThought(created)) {
+        setTasks((prev) => tasksAfterCreate(prev, created, listIdRef.current));
       }
-    };
-
-    window.addEventListener('mindsift:ws', handleWs);
-    return () => window.removeEventListener('mindsift:ws', handleWs);
-  }, [setTasks, listIdRef, moveTracker, tasksReloader, listsReloader]);
+    } else if (msg.event === 'TASK_UPDATED') {
+      const updated = msg.payload as Thought;
+      if (updated && updated.id) {
+        setTasks((prev) => tasksAfterUpdate(prev, updated, listIdRef.current));
+      }
+    } else if (msg.event === 'TASK_DELETED') {
+      const deletedId = typeof msg.payload === 'string' ? msg.payload : (msg.payload as { id?: string } | undefined)?.id;
+      if (deletedId) {
+        setTasks((prev) => tasksAfterDelete(prev, deletedId));
+      }
+    } else if (msg.event === 'TASK_REORDERED') {
+      // The places come with the event; only a completed repeating task (its successor is new) or an
+      // older server without them needs the tasks loaded again. The echo of this board's own move is
+      // left to the move's answer, and while own moves are on their way an event waits for them.
+      const moved = msg.payload as (TaskReorderResult & { userId?: string }) | undefined;
+      if (moveTracker.classify(moved, getCurrentUserId()) !== 'apply') return;
+      if (!moved || moved.reload || !Array.isArray(moved.items)) {
+        tasksReloader.request();
+      } else {
+        const items = moved.items;
+        setTasks((prev) => tasksAfterReorder(prev, items));
+      }
+    } else if (msg.event === 'TASK_LIST_CREATED' || msg.event === 'TASK_LIST_UPDATED' || msg.event === 'TASK_LIST_DELETED') {
+      // Payload only carries the list ID; reload so permissions reflect this user's view
+      listsReloader.request();
+    }
+  });
 }
