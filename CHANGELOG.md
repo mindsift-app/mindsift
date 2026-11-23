@@ -10,6 +10,7 @@ Versions without a git tag were development states and were never published as a
 
 ### Changed
 - Desktop app (local instance): watching tasks is gone, since nobody else changes your tasks there: no "Watch" button in a task's details, no "Watched tasks" row in Settings → Alarms, no switch for your own changes, and no help text about it. Tasks watched earlier stay quiet. Servers and browsers are unchanged.
+- Settings → Account settings: the intro line under the title is gone; the sidebar names the sections anyway.
 - Notes written by AI agents through MCP now put commands, code, config files, JSON/YAML, SQL and log excerpts into code blocks with a language (one block per command sequence, not one bullet per line), and show paths, flags, file names and single commands in text as `inline code`.
 
 ### Fixed

@@ -50,6 +50,10 @@ describe('UserSettingsView notification matrix', () => {
       />
     );
 
+    // The page's title has no intro line below it
+    expect(screen.getByText('Kontoeinstellungen')).toBeTruthy();
+    expect(screen.queryByText(/Persönliches Profil/)).toBeNull();
+
     // Open "Alarme" section
     fireEvent.click(screen.getByText('Alarme'));
 
