@@ -27,11 +27,18 @@ import (
 //
 // Jobs share the places of the Whisper server with direct transcriptions (voiceService.slots), behind them:
 // a job takes a place only while no direct request waits (voice_slots.go). A failed
-// attempt is tried again after a while (transcriptionRetryDelays); after the last one the job stays
-// failed, with its recording, until the person tries again or discards it.
+// attempt is tried again after a while (transcriptionRetryDelays); after the last one the job is failed,
+// with its recording, until the person tries again or discards it. When the Whisper server could not be
+// reached or had a problem of its own (not a time limit, not a recording it refused), the failed job is
+// also tried again by itself a few more times, hours apart (transcriptionLaterDelays), in case the server
+// is back by then. A failed job of a note goes after 30 days (storage.PurgeFailedTranscriptions, with the
+// hourly retention work); a failed inbox recording stays until the person decides.
 
 // transcriptionRetryDelays: the waits before the second and third attempt
 var transcriptionRetryDelays = []time.Duration{30 * time.Second, 2 * time.Minute}
+
+// transcriptionLaterDelays: the waits of a failed job before each of its later attempts by itself
+var transcriptionLaterDelays = []time.Duration{time.Hour, 6 * time.Hour, 24 * time.Hour}
 
 // transcriptionPoll: how often the worker looks for due jobs without being woken (retries)
 const transcriptionPoll = 15 * time.Second
@@ -93,6 +100,7 @@ func (s *Server) runTranscriptionJobs() {
 		if s.voiceMode() != "server" {
 			continue // jobs wait until speech recognition on the server is back
 		}
+		s.requeueLaterTranscriptions(time.Now())
 		// A place of the Whisper server first, behind direct requests (voice_slots.go)
 		slot, err := s.voice.slotsFor(s.speech().MaxParallel).acquire(stopCtx, true)
 		if err != nil {
@@ -138,17 +146,71 @@ func (s *Server) runTranscription(ctx context.Context, slot *sttSlot, job *stora
 	if errors.Is(err, context.DeadlineExceeded) {
 		code = transcriptionErrTimeout
 	}
-	var retryAt time.Time
-	if job.Attempts <= len(transcriptionRetryDelays) {
-		retryAt = time.Now().Add(transcriptionRetryDelays[job.Attempts-1])
-	}
+	retryAt, laterAt := transcriptionRetryTimes(job.Attempts, err, time.Now())
 	slog.Warn("Transcription failed", "job", job.ID, "kind", job.Kind, "attempt", job.Attempts, "retry", !retryAt.IsZero(),
-		"url", s.sttEndpoint("/v1/audio/transcriptions"), "duration_ms", time.Since(started).Milliseconds(), "error", err)
-	if ferr := s.store.FailTranscription(job.ID, code, retryAt); ferr != nil {
+		"retry_later", !laterAt.IsZero(), "url", s.sttEndpoint("/v1/audio/transcriptions"),
+		"duration_ms", time.Since(started).Milliseconds(), "error", err)
+	if ferr := s.store.FailTranscription(job.ID, code, retryAt, laterAt); ferr != nil {
 		slog.Warn("Recording the failed transcription failed", "job", job.ID, "error", ferr)
 	}
 	if t, gerr := s.store.GetTranscription(job.ID); gerr == nil {
 		s.transcriptionChanged(t)
+	}
+}
+
+// transcriptionRetryTimes: when a job that failed on its attempt-th try (counted from 1) is tried again,
+// as of now. retryAt: soon, the job keeps waiting; laterAt: the job is failed, and queued again then
+// (only when the Whisper server was down or had a problem of its own). Both zero: not by itself.
+func transcriptionRetryTimes(attempt int, err error, now time.Time) (retryAt, laterAt time.Time) {
+	if attempt >= 1 && attempt <= len(transcriptionRetryDelays) {
+		return now.Add(transcriptionRetryDelays[attempt-1]), time.Time{}
+	}
+	if late := attempt - len(transcriptionRetryDelays) - 1; late >= 0 && late < len(transcriptionLaterDelays) && transcriptionErrPasses(err) {
+		return time.Time{}, now.Add(transcriptionLaterDelays[late])
+	}
+	return time.Time{}, time.Time{}
+}
+
+// transcriptionErrPasses: whether a failure may go away by itself: the Whisper server could not be
+// reached, answered 5xx, 408 or 429. A time limit (the recording is too long for it) or another refusal
+// (4xx: the recording or the settings) would fail again the same way.
+func transcriptionErrPasses(err error) bool {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+	var status *sttStatusError
+	if errors.As(err, &status) {
+		return status.Status >= 500 || status.Status == http.StatusRequestTimeout || status.Status == http.StatusTooManyRequests
+	}
+	return true
+}
+
+// requeueLaterTranscriptions queues the failed jobs again whose later attempt is due (the worker, before
+// it looks for jobs).
+func (s *Server) requeueLaterTranscriptions(now time.Time) {
+	ids, err := s.store.RequeueDueTranscriptions(now)
+	if err != nil {
+		slog.Warn("Queueing failed transcriptions again failed", "error", err)
+	}
+	for _, id := range ids {
+		if t, err := s.store.GetTranscription(id); err == nil {
+			s.transcriptionChanged(t)
+		}
+	}
+}
+
+// runFailedTranscriptionCleanup removes failed jobs of notes past storage.FailedTranscriptionKeep (hourly,
+// with the other retention work); their recordings stay in the notes.
+func (s *Server) runFailedTranscriptionCleanup(now time.Time) {
+	jobs, err := s.store.PurgeFailedTranscriptions(now)
+	if err != nil {
+		slog.Warn("Removing old failed transcriptions failed", "error", err)
+	}
+	for i := range jobs {
+		s.transcriptionDone(&jobs[i], "", "")
+	}
+	if len(jobs) > 0 {
+		slog.Info("Old failed transcriptions removed", "count", len(jobs))
 	}
 }
 

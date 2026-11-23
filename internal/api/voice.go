@@ -170,6 +170,14 @@ func (s *Server) sttLanguage(userID string) string {
 	}
 }
 
+// sttStatusError: the Whisper server answered with another status than 200.
+type sttStatusError struct {
+	Status int
+	Body   string
+}
+
+func (e *sttStatusError) Error() string { return fmt.Sprintf("HTTP %d: %s", e.Status, e.Body) }
+
 // transcribe sends the audio to the Whisper server (OpenAI API: POST /v1/audio/transcriptions); an empty
 // language lets Whisper detect it.
 func (s *Server) transcribe(ctx context.Context, audio []byte, filename, contentType, language string) (string, error) {
@@ -211,7 +219,7 @@ func (s *Server) transcribe(ctx context.Context, audio []byte, filename, content
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+		return "", &sttStatusError{Status: resp.StatusCode, Body: strings.TrimSpace(string(raw))}
 	}
 	var out struct {
 		Text string `json:"text"`
