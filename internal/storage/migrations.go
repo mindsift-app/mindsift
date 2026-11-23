@@ -19,7 +19,9 @@ import (
 // schema_migrations; a failing step stops the start with its error instead of being ignored.
 // New schema changes are appended as new steps (next free id), never edited into old ones.
 // PRAGMA user_version mirrors the highest applied id. Ids 1 and 2 were used by earlier releases
-// (database wipes on start), so the first step here is 3.
+// (database wipes on start), so the first step here is 3. Ids 57, 58 and 64 were never used: no step
+// with them was ever committed; they were skipped while changes worked on in parallel took the next ids
+// (2026-11-15). Ids are never renumbered or reused, since databases record the ids they ran.
 
 type migration struct {
 	id   int
