@@ -226,12 +226,8 @@ const main = async () => {
     if (entry) await api(token, 'DELETE', `/api/v1/thoughts/${entry.id}`).catch(() => {});
 
     // 3. A failing Whisper server: the recording stays above the Quick Dump, the server tries again later
-    // The failure is held back until the app has the server's answer to the upload: an event that comes
-    // before that answer is overwritten by it (frontend/src/lib/transcriptionJobs.ts, put after await)
     whisper.failing = true;
-    whisper.hold();
     const job = await dictate();
-    whisper.release();
     const retrying = page.getByText('Neuer Versuch folgt gleich').first();
     await retrying.waitFor({ timeout: 15000 });
     check(true, 'Fehler: die Aufnahme bleibt über dem Quick Dump, „Neuer Versuch folgt gleich“');
