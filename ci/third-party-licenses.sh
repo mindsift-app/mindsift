@@ -14,6 +14,7 @@
 # the license files are taken from vendor/<module path>/ next to the main module's go.mod instead. That
 # folder must hold the license files of each module (as flatpak-go-mod's module archives do; plain
 # `go mod vendor` copies only some).
+# shellcheck disable=SC3040 # run by BusyBox ash (Dockerfile) and bash (desktop), which both know pipefail
 set -euo pipefail
 
 NPM_PART="${1:?usage: ci/third-party-licenses.sh <npm part> <go package>}"

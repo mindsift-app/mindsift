@@ -10,7 +10,6 @@
 # COPY_MODE=1 and the files are copied into the container instead.
 set -eu
 cd "$(dirname "$0")/../../.."
-ROOT="$PWD"
 ENGINE="${ENGINE:-podman}"
 COPY_MODE="${COPY_MODE:-0}"
 # The image of the Flatpak build (DEBIAN_IMAGE); NSIS is Debian trixie's (3.11)

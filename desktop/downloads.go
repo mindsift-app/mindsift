@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -73,9 +72,6 @@ func moveDownload(src, dst string) error {
 	}
 	return os.Remove(src)
 }
-
-// errNoDownloadDialog: downloads before the save dialog is set up
-var errNoDownloadDialog = errors.New("no save dialog")
 
 // downloadStartDir: where the save dialog opens; the folder of the last download, else the Downloads
 // folder (given), when the app can see it. Under Flatpak the dialog is the portal's on the host, which the

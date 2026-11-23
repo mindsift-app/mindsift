@@ -4,7 +4,6 @@
 # Usage: desktop/packaging/flatpak/test-check-sources.sh
 set -eu
 cd "$(dirname "$0")/../../.."
-SRC="$PWD"
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 DIR=desktop/packaging/flatpak

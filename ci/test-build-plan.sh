@@ -5,7 +5,7 @@ cd "$(git rev-parse --show-toplevel)"
 PLAN=ci/build-plan.sh
 IMAGE=registry.example/mindsift
 SHA="$(git rev-parse HEAD)"
-TREE="$(git rev-parse HEAD^{tree})"
+TREE="$(git rev-parse "HEAD^{tree}")"
 DEPS="$(git rev-parse HEAD:Dockerfile HEAD:go.mod HEAD:go.sum | sha256sum | cut -c1-16)"
 MOCK="$(mktemp)"
 trap 'rm -f "$MOCK"' EXIT

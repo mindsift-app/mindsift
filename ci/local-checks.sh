@@ -6,7 +6,8 @@
 # connection for the backend, plus the cases of the build plan. Only here, not in the image build: gofmt and
 # golangci-lint (settings in .golangci.yml, staticcheck among its linters) and the desktop app's Go module.
 #   ci/local-checks.sh            frontend (with the size of the bundle), backend, golangci-lint, desktop
-#                                 Go module, build plan with the image pins (ci/check-images.sh), Flatpak
+#                                 Go module (with golangci-lint), build plan with the image pins
+#                                 (ci/check-images.sh) and shellcheck over the scripts, Flatpak
 #                                 sources (desktop/packaging/flatpak/check-sources.sh) (in parallel)
 #   E2E=1 ci/local-checks.sh      additionally the browser tests (e2e/run.sh, a few minutes)
 #   RELEASE=1 ci/local-checks.sh  additionally the release files (ci/release-check.sh: versions, CHANGELOG,
@@ -18,7 +19,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LOGS="$(mktemp -d)"
 # Kept when something failed, so the full output can be read afterwards (the path is printed at the end)
 trap '[ "${KEEP_LOGS:-}" = 1 ] || rm -rf "$LOGS"' EXIT
-cd "$ROOT"
+cd "$ROOT" || exit 1
 
 # The images (NODE_IMAGE and GO_IMAGE as in the Dockerfile, GOLANGCI_LINT_IMAGE), pinned in one place
 . ci/images.env
@@ -81,12 +82,23 @@ lint() {
   "$ENGINE" run --rm -v "$ROOT":/src:ro,z -v mindsift-go-cache:/go/pkg/mod -v mindsift-golangci-cache:/root/.cache -w /src \
     -e CGO_ENABLED=0 "$GOLANGCI_LINT_IMAGE" golangci-lint run ./cmd/... ./internal/...
 }
-# The desktop app's own Go module (desktop/go.mod): gofmt, go vet and go test, see ci/desktop-go-checks.sh
+# The desktop app's own Go module (desktop/go.mod): gofmt, go vet and go test, see ci/desktop-go-checks.sh;
+# then golangci-lint over it as go vet sees it there (purego instead of cgo, and once for Windows)
 desktop() {
   "$ENGINE" run --rm -v "$ROOT":/src:ro,z -v mindsift-desktop-gomod:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \
-    "$GO_IMAGE" sh ci/desktop-go-checks.sh
+    "$GO_IMAGE" sh ci/desktop-go-checks.sh &&
+    "$ENGINE" run --rm -v "$ROOT":/src:ro,z -v mindsift-desktop-gomod:/go/pkg/mod -v mindsift-golangci-cache:/root/.cache -w /src/desktop \
+      -e CGO_ENABLED=0 -e GOFLAGS=-mod=readonly "$GOLANGCI_LINT_IMAGE" \
+      sh -c 'golangci-lint run --build-tags purego ./... && GOOS=windows golangci-lint run ./... && echo "desktop golangci-lint: ok"'
 }
-plan() { bash ci/test-build-plan.sh && sh ci/check-images.sh && bash ci/test-release-check.sh; }
+# The build plan's cases, the image pins, the release check's cases, and shellcheck (warnings and errors)
+# over the repository's shell scripts (a few seconds)
+# shellcheck disable=SC2046 # the scripts' names have no spaces
+plan() {
+  bash ci/test-build-plan.sh && sh ci/check-images.sh && bash ci/test-release-check.sh &&
+    "$ENGINE" run --rm -v "$ROOT":/mnt:ro,z -w /mnt "$SHELLCHECK_IMAGE" shellcheck -S warning $(git ls-files '*.sh') &&
+    echo "shellcheck: ok"
+}
 # The release files of the version in frontend/package.json (RELEASE=1; no containers)
 release() { bash ci/release-check.sh "v$(sh ci/version.sh package)"; }
 # The Flatpak manifest's generated Go and npm sources, tag and metainfo fit the tree (no containers)
@@ -115,7 +127,7 @@ summary() {
   if [ "$1" = backend ]; then
     awk '/^time zone run:/ { tz = "TZ " } /^ok .*\/internal\/(api|storage)[[:space:]]/ { print tz $0 }' "$2"
   else
-    grep -E 'Tests +[0-9]+ passed|^bundle: |^ok |ALL CASES PASSED|test-check-sources: all passed|test-release-check: all passed|check-images: ok|release-check: ok|desktop-go-checks: ok|All checks passed|^0 issues' "$2" | tail -n 3
+    grep -E 'Tests +[0-9]+ passed|^bundle: |^ok |ALL CASES PASSED|test-check-sources: all passed|test-release-check: all passed|check-images: ok|release-check: ok|desktop-go-checks: ok|desktop golangci-lint: ok|shellcheck: ok|All checks passed|^0 issues' "$2" | tail -n 3
   fi
 }
 for log in "$LOGS"/*.log; do
