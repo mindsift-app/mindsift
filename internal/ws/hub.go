@@ -811,6 +811,10 @@ type userRoom struct{ user, room string }
 
 // recheckRooms checks the rooms pick chooses (by the connection's user and the room).
 func (h *Hub) recheckRooms(pick func(userID, room string) bool) []RoomLeft {
+	// Without a hub (the command line's account tools) nobody is connected
+	if h == nil {
+		return nil
+	}
 	// What the connections are in now
 	pairs := map[userRoom]bool{}
 	add := func(userID string, rooms []string) {
