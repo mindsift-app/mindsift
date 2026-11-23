@@ -70,7 +70,7 @@ Component: [ToggleSwitch.tsx](../frontend/src/components/ToggleSwitch.tsx)
 Component: [BottomSheet.tsx](../frontend/src/components/BottomSheet.tsx)
 
 - Every sheet from below uses it: Quick Dump (`MobileCaptureSheet`), new task (`MobileTaskCreateSheet`), the tasks' filter (`TasksFilterSheet`), the profile (`MobileProfileSheet`), the app install offer (`PwaInstallSheet`), a calendar day (`TaskCalendar`), the triage's actions (`TriageDeck`, a centred dialog from `sm` on), a person in the administration (`UserList`) and the emoji picker on phones (`EmojiPickerModal`, title with the current icon, "Remove icon" as its last row); `FormSheet` sits on it too.
-- **Look:** the page is dimmed with the theme's `--bg-overlay` (class `modal-overlay`) and does not scroll (`useScrollLock`); the panel slides in, full width, rounded only at the top with a top border, a grip on top, at most 85 % of the height (scrolls inside). `title` and `icon` give the standard header (icon in an accent box, title, an X of 44 px); sheets with their own header leave them out.
+- **Look:** the page is dimmed with the theme's `--bg-overlay` (class `modal-overlay`) and does not scroll (`useScrollLock`); the panel slides in, full width, rounded only at the top with a top border, a grip on top, at most 85 % of the height (scrolls inside). `title` and `icon` give the standard header (`DialogHeader`, see below); sheets with their own header leave them out.
 - **Closing:** the backdrop and Escape close it, as a layer of the stack in `useDismiss.ts` (an open menu inside, or a dialog opened from it, takes Escape first). `guard` asks first while a dictation or recording would be lost (`lib/leaveGuard.ts`, "Trotzdem schließen" / "Bleiben"); its own "Abbrechen" gets the guarded close as the argument of `children`.
 - `phoneOnly` hides it from `sm` on (it then neither locks the page nor takes Escape there), `desktopClassName` makes it a dialog from `sm` on, `dockToKeyboard` puts it right above the on-screen keyboard (`useKeyboardInset`).
 - Dimming elsewhere (dialogs, the command palette, Quick Dump on desktops) also uses `modal-overlay` or `bg-overlay`, never a fixed black.
@@ -81,7 +81,7 @@ Component: [FormSheet.tsx](../frontend/src/components/FormSheet.tsx) on `BottomS
 
 - **Mobile:** Full-width bottom sheet positioned directly above the virtual keyboard (inset calculated via `visualViewport`), grab handle on top, inputs and buttons at least 44 px high, text inputs at 16 px (to prevent iOS auto-zoom), Cancel/Create buttons side-by-side spanning full width.
 - **Desktop:** Centered window, or anchored next to click position via `anchor` (e.g., "New Folder" in explorer).
-- Escape key and clicking the backdrop close the dialog. Used for new task lists, new shopping lists, new notes, and new folders.
+- Escape key and clicking the backdrop close the dialog. Used for new task lists, new shopping lists, new notes, new folders and new groups.
 - **Icon field:** [EmojiIconButton.tsx](../frontend/src/components/EmojiIconButton.tsx) instead of a text field: displays the emoji (or a subtle "Select icon" when empty) and opens the same emoji picker as the note header, including "Remove". In the dialog, the picker renders above the page via a portal; Escape or a click beside it closes only the picker.
 
 ## Popovers and Menus: Place and Closing
@@ -97,6 +97,28 @@ Helpers: [placeInViewport.ts](../frontend/src/lib/placeInViewport.ts), [useDismi
 - **Not a sheet:** the phone's menu of the header (`MobileHeaderMenu`) drops from right below the header, not from the bottom: it belongs to the button with the view's name there, and the header with the view's name stays visible, as with the notification list. It closes like a popover (a tap on the dimmed page only closes it, Escape) and locks the page's scrolling.
 - **Not a popover, but a layer too:** the focus of a drawing in a note (`DrawingBlock`: a press beside it or Escape hands scrolling back to the page, the press still reaches its target), the selection of an image on a phone (`ImageBlock`: a press beside it ends it; Escape is left to the note, `escape: false`) the slash menu of a bullet and a selection over several bullets in a note (a press beside them ends them and still reaches its target, Escape ends only them), and a recording on the + (`useHoldToDictate`: Escape throws it away, as the top layer, so an open sheet below stays open; `pushLayer` while it records).
 - Separate on purpose: the guided tour and the drawing editor take every key themselves while they are open (capture phase).
+
+## Dialog Header
+
+Component: `DialogHeader` in [BottomSheet.tsx](../frontend/src/components/BottomSheet.tsx)
+
+- Icon in an accent box, the title, an X of 44 px on phones (32 px from `sm`), a line below. `BottomSheet` draws it for `title`; windows of their own put it on top: sharing (`UnifiedShareModal`, what is shared as `overline` above the name), links (`LinkModal`, the intro as `subtitle`), the Kanban columns (`ManageColumnsModal`). No dialog builds its own header with a small X.
+- `className` replaces the spacing (default: as on top of a sheet); the box is a little larger when there is a second line.
+
+## New Password
+
+Component: [NewPasswordFields.tsx](../frontend/src/components/NewPasswordFields.tsx), check: `passwordPairProblem` in [password.ts](../frontend/src/lib/password.ts)
+
+- A new password and its repetition, everywhere one is set: the setup wizard, the reset link, the password the administration asks for, the security settings. As soon as the repetition differs it is framed red with "Die eingegebenen Passwörter stimmen nicht überein." below it; the same sentence is the error when sending.
+- `passwordPairProblem(password, repeat)` before sending: too short first (same rule as the server), then the two differ. The form decides the fields' height and the layout (one column or two from `sm`).
+
+## Editing in Place
+
+Hook: [useInlineEdit.ts](../frontend/src/lib/useInlineEdit.ts), field: [InlineEditInput.tsx](../frontend/src/components/InlineEditInput.tsx)
+
+- **Enter saves, Escape cancels, leaving the field saves.** In a text area Shift+Enter makes a new line. Escape is taken (`preventDefault`), so a dialog or sheet around the field stays open; the blur after Enter or Escape does not save a second time.
+- `InlineEditInput` keeps the typed text itself and shows the saved one until something is typed; nothing typed counts as cancelled. Used for the quantity of a list entry and the name of an own theme.
+- `useInlineEdit` alone where the caller keeps the text: a subtask being renamed (its @ menu takes keys first), the task's title (`saveOnBlur: false`, it has its own buttons).
 
 ## Confirmation at Mouse Position
 
