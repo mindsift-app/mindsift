@@ -267,7 +267,7 @@ const main = async () => {
     await page.getByRole('button', { name: /^Workspace/ }).locator('visible=true').first().click();
     const dialog = page.getByRole('alertdialog');
     await dialog.waitFor({ timeout: 5000 });
-    check((await dialog.textContent()).includes('Diktat'), 'Diktat: der Wechsel fragt nach');
+    check((await dialog.textContent()).includes('Aufnahme'), 'Diktat: der Wechsel fragt nach');
     await shot(page, 'transcription-leave');
     await dialog.getByRole('button', { name: 'Bleiben' }).click();
     check(await page.getByRole('button', { name: 'Aufnahme beenden' }).first().isVisible(), '„Bleiben“: die Aufnahme läuft weiter, die Ansicht bleibt');

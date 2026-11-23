@@ -43,6 +43,7 @@ import { useScrollLock } from '../../lib/useScrollLock';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { useHoldReload } from '../../lib/reloadHold';
 import { can } from '../../lib/capabilities';
+import { guardLeave } from '../../lib/leaveGuard';
 
 interface TaskDetailModalProps {
   task: Thought | null;
@@ -213,11 +214,17 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   useHoldReload(notesDirty || titleDirty || newSubtaskTitle.trim() !== '');
   // "Fertig", the X, Escape and a click beside the dialog: with unsaved changes it shakes and asks first
   const [shaking, setShaking] = useState(false);
+  // A dictation still running in a field of the dialog asks before anything else (lib/leaveGuard.ts)
   const requestClose = useCallback(() => {
-    if (notesDirty || titleDirty) {
-      setConfirmUnsaved(true);
-      setShaking(true);
-    } else onClose();
+    guardLeave(
+      () => {
+        if (notesDirty || titleDirty) {
+          setConfirmUnsaved(true);
+          setShaking(true);
+        } else onClose();
+      },
+      { close: true }
+    );
   }, [notesDirty, titleDirty, onClose]);
   // Only a click that also started beside the dialog closes it (not a text selection dragged out of it)
   const pressedOutsideRef = useRef(false);
@@ -257,7 +264,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
         } else if (isEditingTitle) {
           setIsEditingTitle(false);
         } else {
-          onClose();
+          guardLeave(onClose, { close: true });
         }
       }
     };

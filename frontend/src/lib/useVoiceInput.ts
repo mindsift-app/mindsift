@@ -6,7 +6,7 @@ import { errorMessage } from './errorMessage';
 import { useLatestRef } from './useLatestRef';
 import { SegmentedTranscription } from './voiceTranscription';
 import { useHoldReload } from './reloadHold';
-import { useLeaveGuard } from './leaveGuard';
+import { useLeaveGuard, useUnloadGuard } from './leaveGuard';
 
 export type VoiceState = 'idle' | 'listening' | 'transcribing';
 
@@ -57,6 +57,8 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   useHoldReload(state !== 'idle' || pendingChunks > 0);
   // Leaving the view would lose it too, unless this input lives on (global capture) or hands it on
   useLeaveGuard(guardsLeave && !onRecorded && (state !== 'idle' || pendingChunks > 0));
+  // Reloading or closing the page would lose it wherever it lives: the browser asks first
+  useUnloadGuard(state !== 'idle' || pendingChunks > 0);
   const maxSecondsRef = useRef(600);
   const recorderRef = useRef<VoiceRecorder | null>(null);
   const recognitionRef = useRef<BrowserRecognition | null>(null);

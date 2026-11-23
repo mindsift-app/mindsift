@@ -7,6 +7,7 @@ import { VoiceWave } from '../components/VoiceWave';
 import { useMobileCapture } from './useMobileCapture';
 import { DateField } from '../components/DateField';
 import { NaturalDateChip, PhraseHighlight } from '../components/NaturalDateHint';
+import { guardLeave } from '../lib/leaveGuard';
 
 // Phones: the Quick Dump sheet (thought with voice input, priority, optional due date)
 export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof useMobileCapture> }) {
@@ -29,10 +30,13 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
   } = capture;
   const inputRef = useRef<HTMLInputElement | null>(null);
   if (!showMobileCapture) return null;
+  // The backdrop, the X and "Abbrechen": a dictation still running asks first, opening the sheet again would
+  // throw it away (lib/leaveGuard.ts)
+  const close = () => guardLeave(() => setShowMobileCapture(false), { close: true, held: mobileVoice.state !== 'idle' });
   return (
     <div
       className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={() => setShowMobileCapture(false)}
+      onClick={close}
     >
       <div
         className="w-full max-h-[85vh] overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] animate-in slide-in-from-bottom duration-200"
@@ -48,7 +52,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
           </div>
           <button
             type="button"
-            onClick={() => setShowMobileCapture(false)}
+            onClick={close}
             className="p-1.5 text-faint hover:text-main rounded-btn transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -191,7 +195,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
           <div className="pt-2 flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setShowMobileCapture(false)}
+              onClick={close}
               className="btn-ghost h-10 px-4 text-xs cursor-pointer"
             >
               {t('common:cancel')}

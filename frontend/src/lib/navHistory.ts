@@ -2,7 +2,10 @@
 // list or note, open task list and list) goes into the browser history, so the browser's back button (mouse button, Android back)
 // steps back inside the app instead of leaving it. Each part reports its own piece; changes from one
 // action (e.g. opening a note from a task switches page and note) become one entry. While the app follows
-// a back/forward step, reports change nothing: the step itself already is the entry.
+// a back/forward step, reports change nothing: the step itself already is the entry. While a dictation
+// would be lost (lib/leaveGuard.ts), a step is taken back at once and only taken again once the person
+// chose to leave anyway.
+import { confirmLeave, leaveHeld } from './leaveGuard';
 
 export interface NavPlace {
   tab: string;
@@ -20,6 +23,13 @@ let current: NavPlace | null = null;
 let pending: Partial<NavPlace> | null = null;
 let pendingReplace = false;
 let restoringUntil = 0;
+// Position of the current entry in the session history, kept in each entry the app makes (mindsiftIdx), so
+// a step back or forward can be measured and taken back with history.go
+const entryIndex = (state: unknown): number | null => {
+  const idx = (state as { mindsiftIdx?: unknown } | null)?.mindsiftIdx;
+  return typeof idx === 'number' ? idx : null;
+};
+let index = typeof window !== 'undefined' ? (entryIndex(window.history.state) ?? 0) : 0;
 const listeners = new Set<(place: NavPlace) => void>();
 
 const same = (a: NavPlace, b: NavPlace) =>
@@ -43,8 +53,11 @@ function flush() {
   const first = !current;
   current = next;
   try {
-    if (first || replace) window.history.replaceState({ ...(window.history.state || {}), mindsiftNav: next }, '');
-    else window.history.pushState({ mindsiftNav: next }, '');
+    if (first || replace) window.history.replaceState({ ...(window.history.state || {}), mindsiftNav: next, mindsiftIdx: index }, '');
+    else {
+      window.history.pushState({ mindsiftNav: next, mindsiftIdx: index + 1 }, '');
+      index++;
+    }
   } catch {
     // history unavailable (tests, sandboxed frames): back simply leaves the app as before
   }
@@ -86,7 +99,8 @@ export function pushModal(onBack: () => boolean): () => void {
   const layer: ModalLayer = { id: nextModalId++, onBack };
   modals.push(layer);
   try {
-    window.history.pushState({ ...(window.history.state || {}), mindsiftModal: layer.id }, '');
+    window.history.pushState({ ...(window.history.state || {}), mindsiftModal: layer.id, mindsiftIdx: index + 1 }, '');
+    index++;
   } catch {
     // history unavailable: back keeps its old behaviour
   }
@@ -101,29 +115,67 @@ export function pushModal(onBack: () => boolean): () => void {
   };
 }
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('popstate', (e) => {
-    if (ignorePops > 0) {
-      ignorePops--;
-      return;
-    }
-    const top = modals[modals.length - 1];
-    if (top) {
-      // Back while a dialog is open: it handles the step, the page stays where it is
-      if (top.onBack()) {
-        modals.pop();
-      } else {
-        try {
-          window.history.pushState({ ...(window.history.state || {}), mindsiftModal: top.id }, '');
-        } catch {}
+// The next step is the one the person confirmed after it was taken back: it goes through unasked
+let passGuard = false;
+
+function handlePop(e: PopStateEvent) {
+  const from = index;
+  const to = entryIndex(e.state);
+  if (to !== null) index = to;
+  if (ignorePops > 0) {
+    ignorePops--;
+    return;
+  }
+  const top = modals[modals.length - 1];
+  const place = (e.state as { mindsiftNav?: NavPlace } | null)?.mindsiftNav;
+  if ((top || place) && leaveHeld() && !passGuard) {
+    // A dictation would be lost: back to where the person was, then ask
+    const delta = to === null ? null : to - from;
+    try {
+      if (top) window.history.pushState({ ...(window.history.state || {}), mindsiftModal: top.id, mindsiftIdx: index + 1 }, '');
+      else if (delta) {
+        ignorePops++;
+        window.history.go(-delta);
       }
-      return;
+    } catch {}
+    if (top) index++;
+    else if (delta) index = from;
+    void confirmLeave({ close: Boolean(top) }).then((ok) => {
+      if (!ok) return;
+      passGuard = true;
+      // Released again if the step does not come (e.g. history unavailable)
+      window.setTimeout(() => (passGuard = false), 1000);
+      if (top) window.history.back();
+      else if (delta) window.history.go(delta);
+      else {
+        passGuard = false;
+        follow(place);
+      }
+    });
+    return;
+  }
+  passGuard = false;
+  if (top) {
+    // Back while a dialog is open: it handles the step, the page stays where it is
+    if (top.onBack()) {
+      modals.pop();
+    } else {
+      try {
+        window.history.pushState({ ...(window.history.state || {}), mindsiftModal: top.id, mindsiftIdx: index + 1 }, '');
+        index++;
+      } catch {}
     }
-    const place = (e.state as { mindsiftNav?: NavPlace } | null)?.mindsiftNav;
-    if (!place) return;
-    current = place;
-    pending = null;
-    restoringUntil = Date.now() + RESTORE_MS;
-    listeners.forEach((fn) => fn(place));
-  });
+    return;
+  }
+  follow(place);
 }
+
+function follow(place: NavPlace | undefined) {
+  if (!place) return;
+  current = place;
+  pending = null;
+  restoringUntil = Date.now() + RESTORE_MS;
+  listeners.forEach((fn) => fn(place));
+}
+
+if (typeof window !== 'undefined') window.addEventListener('popstate', handlePop);

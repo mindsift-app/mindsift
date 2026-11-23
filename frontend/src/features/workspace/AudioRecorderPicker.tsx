@@ -7,6 +7,7 @@ import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
 import { useTranslation } from 'react-i18next';
 import { errorMessage } from '../../lib/errorMessage';
+import { useLeaveGuard, useUnloadGuard } from '../../lib/leaveGuard';
 
 interface AudioRecorderPickerProps {
   docId: string;
@@ -33,6 +34,9 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
   const tickRef = useRef<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
+  // A recording not saved yet: switching the note asks first, reloading the page lets the browser ask
+  useLeaveGuard(state !== 'ready');
+  useUnloadGuard(state !== 'ready');
 
   const stopTicking = () => {
     if (tickRef.current !== null) window.clearInterval(tickRef.current);

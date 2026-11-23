@@ -447,8 +447,10 @@
     "ignore": "Non usare questa data"
   },
   "leaveGuard": {
-    "message": "La dettatura non è ancora finita. Cambiando ora andrà persa.",
+    "message": "La registrazione non è ancora finita. Cambiando ora andrà persa.",
     "leave": "Cambia comunque",
+    "closeMessage": "La registrazione non è ancora finita. Chiudendo ora andrà persa.",
+    "close": "Chiudi comunque",
     "stay": "Resta"
   },
   "voiceJobs": {

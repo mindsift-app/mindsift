@@ -447,8 +447,10 @@
     "ignore": "No usar esta fecha"
   },
   "leaveGuard": {
-    "message": "El dictado aún no ha terminado. Si cambias ahora, se perderá.",
+    "message": "La grabación aún no ha terminado. Si cambias ahora, se perderá.",
     "leave": "Cambiar de todos modos",
+    "closeMessage": "La grabación aún no ha terminado. Si cierras ahora, se perderá.",
+    "close": "Cerrar de todos modos",
     "stay": "Quedarse"
   },
   "voiceJobs": {

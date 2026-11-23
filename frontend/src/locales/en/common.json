@@ -447,8 +447,10 @@
     "ignore": "Don't use this date"
   },
   "leaveGuard": {
-    "message": "The dictation is not finished yet. Switching now loses it.",
+    "message": "The recording is not finished yet. Switching now loses it.",
     "leave": "Switch anyway",
+    "closeMessage": "The recording is not finished yet. Closing now loses it.",
+    "close": "Close anyway",
     "stay": "Stay"
   },
   "voiceJobs": {
