@@ -218,6 +218,20 @@ func (s *Store) accessibleTaskListIDsQuery() string {
 	return accessibleTaskListsSQL
 }
 
+// visibleTaskRowidsSQL selects the rowids of every task a user can see: own tasks and the tasks of
+// accessible task lists (the rule of GetTasks), as two index searches (idx_thoughts_user_status and
+// idx_thoughts_list_sort). Written as "user_id = ? OR task_list_id IN (…)", the planner went by the
+// average number of thoughts per person in sqlite_stat1 and read the whole table for everyone once one
+// person had many tasks. Callers still name the task condition (status, converted_type); the status
+// below only narrows the own tasks to candidates. It takes the user ID four times (visibleTaskArgs).
+const visibleTaskRowidsSQL = `SELECT rowid FROM thoughts WHERE user_id = ? AND status IN ('kept', 'converted')
+		 UNION ALL
+		 SELECT rowid FROM thoughts WHERE task_list_id IN (` + accessibleTaskListsSQL + `)`
+
+func visibleTaskArgs(userID string) []any {
+	return append([]any{userID}, accessibleTaskListArgs(userID)...)
+}
+
 func (s *Store) GetThoughtByID(userID, thoughtID string) (*domain.Thought, error) {
 	row := s.db.QueryRow(
 		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
@@ -273,6 +287,9 @@ func (s *Store) GetThoughts(userID, statusFilter string, limit int) ([]domain.Th
 	return result, nil
 }
 
+// GetTasks returns the tasks of one task list or, without one, every task the user can see (own tasks and
+// those of accessible lists, through visibleTaskRowidsSQL). rowid as the last key keeps equal tasks in one
+// order whichever plan SQLite picks (the order of a table scan, mostly the order they were added in).
 func (s *Store) GetTasks(userID string, taskListID string) ([]domain.Thought, error) {
 	var rows *sql.Rows
 	var err error
@@ -283,17 +300,17 @@ func (s *Store) GetTasks(userID string, taskListID string) ([]domain.Thought, er
 			 WHERE (user_id = ? OR task_list_id IN (`+s.accessibleTaskListIDsQuery()+`))
 			   AND task_list_id = ?
 			   AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))
-			 ORDER BY is_completed ASC, sort_order ASC, created_at DESC`,
+			 ORDER BY is_completed ASC, sort_order ASC, created_at DESC, rowid`,
 			userID, userID, userID, userID, taskListID,
 		)
 	} else {
 		rows, err = s.db.Query(
 			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
 			 FROM thoughts
-			 WHERE (user_id = ? OR task_list_id IN (`+s.accessibleTaskListIDsQuery()+`))
+			 WHERE rowid IN (`+visibleTaskRowidsSQL+`)
 			   AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))
-			 ORDER BY is_completed ASC, sort_order ASC, created_at DESC`,
-			userID, userID, userID, userID,
+			 ORDER BY is_completed ASC, sort_order ASC, created_at DESC, rowid`,
+			visibleTaskArgs(userID)...,
 		)
 	}
 	if err != nil {

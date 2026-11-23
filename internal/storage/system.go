@@ -16,9 +16,9 @@ func (s *Store) GetDashboardStats(userID string) (*domain.DashboardStats, error)
 	st := &domain.DashboardStats{}
 	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE user_id = ? AND status = 'inbox'`, userID).Scan(&st.InboxCount))
 	// Same tasks as GetTasks without a list ("Alle Aufgaben"): own ones plus those in shared task lists
-	taskScope := `(user_id = ? OR task_list_id IN (` + s.accessibleTaskListIDsQuery() + `)) AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))`
-	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE `+taskScope+` AND is_completed = 0`, userID, userID, userID, userID).Scan(&st.TasksOpenCount))
-	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE `+taskScope+` AND is_completed = 1`, userID, userID, userID, userID).Scan(&st.TasksDoneCount))
+	logDBErr(s.db.QueryRow(`SELECT COALESCE(SUM(is_completed = 0), 0), COALESCE(SUM(is_completed = 1), 0) FROM thoughts
+		WHERE rowid IN (`+visibleTaskRowidsSQL+`) AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))`,
+		visibleTaskArgs(userID)...).Scan(&st.TasksOpenCount, &st.TasksDoneCount))
 	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM documents WHERE user_id = ? AND is_archived = 0`, userID).Scan(&st.DocsCount))
 	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE user_id = ? AND status = 'discarded'`, userID).Scan(&st.DiscardedCount))
 	// Own lists and lists shared with the user directly or through a group
