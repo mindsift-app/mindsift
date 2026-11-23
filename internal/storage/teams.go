@@ -121,8 +121,8 @@ func (s *Store) CountTeamAdmins(teamID string) (int, error) {
 
 func (s *Store) AddTeamMember(teamID, userID, role string) error {
 	role = strings.ToLower(strings.TrimSpace(role))
-	if role != "admin" && role != "member" {
-		role = "member"
+	if !domain.ValidTeamRole(role) {
+		role = domain.TeamRoleMember
 	}
 	_, err := s.db.Exec(
 		`INSERT INTO team_members (team_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)
@@ -134,7 +134,7 @@ func (s *Store) AddTeamMember(teamID, userID, role string) error {
 
 func (s *Store) UpdateTeamMemberRole(teamID, userID, role string) error {
 	role = strings.ToLower(strings.TrimSpace(role))
-	if role != "admin" && role != "member" {
+	if !domain.ValidTeamRole(role) {
 		return errors.New("Ungültige Rolle (erlaubt sind: admin, member)")
 	}
 	currentRole, err := s.GetTeamMemberRole(teamID, userID)
@@ -144,7 +144,7 @@ func (s *Store) UpdateTeamMemberRole(teamID, userID, role string) error {
 	if currentRole == "" {
 		return errors.New("Benutzer ist kein Mitglied dieser Gruppe")
 	}
-	if currentRole == "admin" && role != "admin" {
+	if currentRole == domain.TeamRoleAdmin && role != domain.TeamRoleAdmin {
 		adminCount, err := s.CountTeamAdmins(teamID)
 		if err != nil {
 			return err
@@ -162,7 +162,7 @@ func (s *Store) RemoveTeamMember(teamID, userID string) error {
 	if err != nil {
 		return err
 	}
-	if currentRole == "admin" {
+	if currentRole == domain.TeamRoleAdmin {
 		adminCount, err := s.CountTeamAdmins(teamID)
 		if err != nil {
 			return err

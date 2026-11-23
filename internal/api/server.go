@@ -1060,7 +1060,7 @@ func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		user, err := s.store.GetUserByID(userID)
-		if err != nil || user == nil || user.Role != "admin" {
+		if err != nil || user == nil || user.Role != domain.RoleAdmin {
 			writeError(w, http.StatusForbidden, "Server-Administrator-Rechte erforderlich")
 			return
 		}

@@ -52,7 +52,7 @@ func scanUser(row interface{ Scan(dest ...any) error }) (*domain.User, error) {
 		u.TokenVersion = 1
 	}
 	if u.Role == "" {
-		u.Role = "member"
+		u.Role = domain.RoleMember
 	}
 	u.AlarmChannels = parseAlarmChannels(channelsRaw)
 	return u, nil
@@ -251,7 +251,7 @@ func (s *Store) EnsureDemoAccounts() error {
 	adminCreated := false
 	adminUser, err := s.GetUserByLogin("admin")
 	if err != nil || adminUser == nil {
-		adminUser, err = s.createUserWithID(DemoAdminID, "admin@mindsift.local", "admin", adminHash, "Admin", "admin")
+		adminUser, err = s.createUserWithID(DemoAdminID, "admin@mindsift.local", "admin", adminHash, "Admin", domain.RoleAdmin)
 		if err != nil {
 			return fmt.Errorf("failed to create demo admin: %w", err)
 		}
@@ -264,7 +264,7 @@ func (s *Store) EnsureDemoAccounts() error {
 	// 2. Regular user (user / user)
 	normalUser, err := s.GetUserByLogin("user")
 	if err != nil || normalUser == nil {
-		normalUser, err = s.createUserWithID(DemoUserID, "user@mindsift.local", "user", userHash, "User", "member")
+		normalUser, err = s.createUserWithID(DemoUserID, "user@mindsift.local", "user", userHash, "User", domain.RoleMember)
 		if err != nil {
 			return fmt.Errorf("failed to create demo user: %w", err)
 		}
@@ -491,7 +491,7 @@ func (s *Store) CreateUserInvite(createdBy, email string, orgIDs []string, valid
 		ID:              domain.NewID("inv"),
 		Code:            code,
 		Email:           domain.NormalizeEmail(email),
-		Role:            "member",
+		Role:            domain.RoleMember,
 		OrganizationIDs: s.ValidOrganizationIDs(orgIDs),
 		CreatedBy:       createdBy,
 		ExpiresAt:       now.AddDate(0, 0, validDays).Format(time.RFC3339),

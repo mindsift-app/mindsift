@@ -845,7 +845,7 @@ func (s *Store) EnsureDefaultUser() (*domain.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	user, err := s.CreateUser("test@mindsift.local", hash, "Admin", "admin")
+	user, err := s.CreateUser("test@mindsift.local", hash, "Admin", domain.RoleAdmin)
 	if err != nil {
 		return s.GetFirstUser()
 	}

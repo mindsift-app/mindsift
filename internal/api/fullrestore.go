@@ -20,6 +20,7 @@ import (
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/config"
+	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -281,7 +282,7 @@ func (s *Server) checkRestoreDatabase(ctx context.Context, file string) ([]stora
 	_ = os.Remove(file + "-wal")
 	_ = os.Remove(file + "-shm")
 	for _, u := range users {
-		if u.Role == "admin" && u.IsActive {
+		if u.Role == domain.RoleAdmin && u.IsActive {
 			return samples, nil
 		}
 	}
@@ -355,7 +356,7 @@ func (s *Server) handleTicketBackupDownload(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusUnauthorized, "Nicht autorisiert – bitte anmelden")
 		return
 	}
-	if user.Role != "admin" {
+	if user.Role != domain.RoleAdmin {
 		writeError(w, http.StatusForbidden, "Server-Administrator-Rechte erforderlich")
 		return
 	}

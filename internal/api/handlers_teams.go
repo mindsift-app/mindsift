@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -18,7 +19,7 @@ func (s *Server) isTeamAdmin(userID, teamID string) bool {
 	if err != nil {
 		return false
 	}
-	return role == "admin"
+	return role == domain.TeamRoleAdmin
 }
 
 func (s *Server) handleCreateTeamDirect(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +67,7 @@ func (s *Server) handleCreateTeamDirect(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	// Automatically add creator to team as group admin
-	if err := s.store.AddTeamMember(team.ID, userID, "admin"); err != nil {
+	if err := s.store.AddTeamMember(team.ID, userID, domain.TeamRoleAdmin); err != nil {
 		writeInternal(w, err)
 		return
 	}
@@ -160,8 +161,8 @@ func (s *Server) handleAddTeamMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	role := strings.ToLower(strings.TrimSpace(req.Role))
-	if role != "admin" && role != "member" {
-		role = "member"
+	if !domain.ValidTeamRole(role) {
+		role = domain.TeamRoleMember
 	}
 	if err := s.store.AddTeamMember(teamID, targetUserID, role); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
@@ -187,7 +188,7 @@ func (s *Server) handleUpdateTeamMemberRole(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	role := strings.ToLower(strings.TrimSpace(req.Role))
-	if role != "admin" && role != "member" {
+	if !domain.ValidTeamRole(role) {
 		writeError(w, http.StatusBadRequest, "Ungültige Rolle (erlaubt sind: admin, member)")
 		return
 	}
