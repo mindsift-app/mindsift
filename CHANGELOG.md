@@ -8,10 +8,17 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Changed
+- "New group" opens like the other small dialogs: a sheet above the keyboard on phones, a centred window on desktops.
+- Every form that sets a new password (first setup, reset link, the password the administration asks for, security settings) frames the repetition red and says so as soon as it differs from the new password.
+- The sharing, link and "Manage columns" dialogs have the same header as the sheets, with a close button large enough to tap on phones.
+- Tasks: Escape while editing the title only cancels the edit; after a change it no longer also asks about unsaved changes.
+
 ### Fixed
 - A task list created for a group now shows up right away for the group's members and on your other devices; before, they saw it only after reloading (lists created by an AI agent already did).
 - Deleting a shared list, or taking someone off it, now removes it from the list overview of the others at once, even when they had another list open; before, it stayed there until they reloaded.
 - Someone @-mentioned in a new note (made from a template or by an AI agent, in a shared folder) is now told, as when a mention is added to an existing note. Before, they heard nothing, and a later edit of that bullet told them instead.
+- Phones: the fields and buttons of the sign-in, invite and sign-up forms and of the groups page are 44 px high, and the fields use a font size that keeps iOS from zooming in.
 
 ## [0.99.2] - 2026-11-23
 
