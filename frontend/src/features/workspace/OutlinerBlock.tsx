@@ -33,6 +33,7 @@ import { droppedText, transferText } from '../../lib/dropText';
 import { useTranslation } from 'react-i18next';
 import { userColorStyles } from '../../lib/userColor';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { useDismiss } from '../../lib/useDismiss';
 import { useOutlinerActions } from './OutlinerActionsContext';
 import { matchSlashQuery, removeSlashQuery } from '../../lib/slashCommand';
 import { bulletKeyAction } from './bulletKeys';
@@ -398,26 +399,10 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     };
   }, []);
 
-  // Close slash command menu on click outside
-  useEffect(() => {
-    if (!slashMatchInfo) return;
-    const handleOutsideClick = (e: MouseEvent) => {
-      const target = e.target as Node | null;
-      if (
-        slashMenuRef.current &&
-        !slashMenuRef.current.contains(target) &&
-        textareaRef.current &&
-        !textareaRef.current.contains(target)
-      ) {
-        setSlashMatchInfo(null);
-      }
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-    };
-  }, [slashMatchInfo]);
-
+  // The slash menu is a layer of the dismiss stack (Doku/ui-patterns.md): a press beside the menu and the
+  // bullet's field closes it and still reaches its target (the caret goes into another bullet), and Escape in
+  // the field closes only the menu (bulletKeys: closeSlash prevents the default, so no layer below closes)
+  useDismiss([slashMenuRef, textareaRef], () => setSlashMatchInfo(null), { active: slashMatchInfo !== null, passThrough: true });
 
   const renderedTextRef = useRef<HTMLSpanElement | null>(null);
   const viewLayerRef = useRef<HTMLDivElement | null>(null);
