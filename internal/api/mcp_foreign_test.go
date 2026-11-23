@@ -12,6 +12,7 @@ import (
 // and change nothing; before, update_task and complete_task answered "Internal error" (sql: no rows in
 // result set) for a foreign task (re-test 2026-11-14, side finding 1).
 func TestMCPForeignIDsAnswerNotFound(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	call := mcpCaller(t, srv)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

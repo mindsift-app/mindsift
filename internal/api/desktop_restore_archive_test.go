@@ -240,6 +240,7 @@ func TestDesktopTakesOverAccountWithMediaFromServerDataFolder(t *testing.T) {
 // A copy of the backups folder alone: the database from the newest daily snapshot, the account's pictures
 // from its own daily backup (the server's media/ is not in it).
 func TestDesktopTakesOverAccountWithMediaFromBackupsFolder(t *testing.T) {
+	t.Parallel()
 	dataDir, anna, annaImg, _ := serverWithMedia(t)
 	file := packDir(t, filepath.Join(dataDir, "backups"), "", uploadZip)
 	store, _, me, prev, _ := takeOverAnna(t, file, anna)
@@ -253,6 +254,7 @@ func TestDesktopTakesOverAccountWithMediaFromBackupsFolder(t *testing.T) {
 
 // The database snapshot alone still works; its pictures are counted as missing.
 func TestDesktopSnapshotAloneReportsMissingMedia(t *testing.T) {
+	t.Parallel()
 	dataDir, anna, _, _ := serverWithMedia(t)
 	snaps, _ := filepath.Glob(filepath.Join(dataDir, "backups", "system", "mindsift-db-*.db.gz"))
 	if len(snaps) != 1 {
@@ -271,6 +273,7 @@ func TestDesktopSnapshotAloneReportsMissingMedia(t *testing.T) {
 // Entries that leave the archive, links and a media entry larger than any picture are passed over; nothing
 // is written outside the staging folder.
 func TestDesktopServerBackupArchiveIgnoresTricks(t *testing.T) {
+	t.Parallel()
 	dataDir, anna, annaImg, _ := serverWithMedia(t)
 	db, _ := os.ReadFile(filepath.Join(dataDir, "mindsift.db"))
 	out := filepath.Join(t.TempDir(), "tricky.tar")
@@ -323,6 +326,7 @@ func TestDesktopServerBackupArchiveIgnoresTricks(t *testing.T) {
 
 // What is neither a database nor an archive with one is refused with the same message.
 func TestDesktopServerBackupRefusesArchiveWithoutDatabase(t *testing.T) {
+	t.Parallel()
 	src := t.TempDir()
 	_ = os.WriteFile(filepath.Join(src, "notiz.md"), []byte("# Hallo"), 0o600)
 	file := packDir(t, src, "", uploadZip)
@@ -345,6 +349,7 @@ func TestDesktopServerBackupRefusesArchiveWithoutDatabase(t *testing.T) {
 // A local instance has no switch for keeping things for good: the one person decides, even when an older
 // version stored the switch as off.
 func TestDesktopAlwaysAllowsRetentionNever(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
 	sys, err := store.GetSystemSettings()
@@ -391,6 +396,7 @@ func fullBackupOf(t *testing.T, dataDir string) (string, string) {
 // The full backup as downloaded from the administration (tar with mindsift.db.gz and media/) brings the
 // account's pictures along, and so does a backups folder holding full backups (the newest one counts).
 func TestDesktopTakesOverAccountFromFullBackup(t *testing.T) {
+	t.Parallel()
 	dataDir, anna, annaImg, _ := serverWithMedia(t)
 	_, file := fullBackupOf(t, dataDir)
 	store, _, me, prev, _ := takeOverAnna(t, file, anna)

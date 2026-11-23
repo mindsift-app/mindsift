@@ -11,6 +11,7 @@ import (
 // The image quality: default high, chosen by the admin (recorded in the audit log), passed to the app
 // with the status, refused when unknown, and fixed by MEDIA_IMAGE_QUALITY.
 func TestImageQualitySetting(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	status := func() string { return sessionCall(router, "GET", "/api/v1/auth/status", "", "", "").Body.String() }

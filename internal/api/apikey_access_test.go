@@ -26,6 +26,7 @@ func keyRequest(t *testing.T, router http.Handler, key, method, path, body strin
 
 // API keys reach tasks and lists over plain REST with the right scope, and nothing else.
 func TestAPIKeyRESTAccess(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -98,6 +99,7 @@ func TestAPIKeyRESTAccess(t *testing.T) {
 // The MCP endpoint has no server stream: every method but POST answers 405 with Allow: POST, for an API
 // key as for a session (not 403, which says the key lacks a right). POST keeps its checks.
 func TestMCPOtherMethodsAnswer405(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -134,6 +136,7 @@ func TestMCPOtherMethodsAnswer405(t *testing.T) {
 // The filters of GET /tasks: the day filters count in the server's time zone, whatever the time of day,
 // overdue takes open tasks only, and tasks without a due date drop out of every day filter.
 func TestFilterTasks(t *testing.T) {
+	t.Parallel()
 	_, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	now := time.Date(2026, 11, 1, 23, 30, 0, 0, clock.Location())
@@ -191,6 +194,7 @@ func TestFilterTasks(t *testing.T) {
 
 // A key can be renamed and get other rights; the secret stays, other users' keys are out of reach.
 func TestUpdateAPIKey(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

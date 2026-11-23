@@ -11,6 +11,7 @@ import (
 // The calendar's name and description (what calendar apps show instead of the secret address) follow the
 // person's language and the instance name, are escaped as TEXT and folded like every other line.
 func TestRenderCalendarFeedName(t *testing.T) {
+	t.Parallel()
 	loc, _ := time.LoadLocation("Europe/Berlin")
 	now := time.Date(2026, 3, 15, 12, 0, 0, 0, time.UTC)
 	for _, c := range []struct{ lang, instance, name, desc string }{

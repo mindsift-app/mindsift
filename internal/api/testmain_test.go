@@ -15,6 +15,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Tests that touch nothing of the whole process call t.Parallel(); Go runs them after all the others. Not
+// parallel: tests that set the environment, slog's default logger, the clock's zone or a package
+// variable, that wait for timers (time.Sleep, time.After, deadlines), start their own HTTP servers, run
+// the demo, or run backups and restores by hand (manualBackupMu and restoreMu hold for the whole process).
 func TestMain(m *testing.M) {
 	// bcrypt at its lowest cost: the tests sign up, sign in and change passwords hundreds of times, at the
 	// default cost each hash takes about 50 ms. What is tested (right password in, wrong one out, the

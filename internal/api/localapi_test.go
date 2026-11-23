@@ -14,6 +14,7 @@ import (
 // The desktop app's listener for local programs (LocalAPIOnly in front of the server's router): what an API
 // key may call is reachable with a key, everything else is not there at all, and no session gets in.
 func TestLocalAPIOnlyReachesWhatAPIKeysMay(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
 	router := srv.Router()
@@ -119,6 +120,7 @@ func TestLocalAPIOnlyReachesWhatAPIKeysMay(t *testing.T) {
 }
 
 func TestLoopbackHost(t *testing.T) {
+	t.Parallel()
 	for host, want := range map[string]bool{
 		"127.0.0.1": true, "127.0.0.1:18890": true, "localhost": true, "LocalHost:1": true,
 		"": false, "[::1]:18890": false, "0.0.0.0:18890": false, "evil.example": false, "localhost.evil.example:18890": false,

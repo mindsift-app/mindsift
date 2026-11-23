@@ -19,6 +19,7 @@ import (
 
 // The language of a person and the server's default language, as the app reads and changes them.
 func TestLanguageSettings(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -73,6 +74,7 @@ func TestLanguageSettings(t *testing.T) {
 // Error answers follow Accept-Language, else the configured default language, else English (not German,
 // which stays the default language of the interface).
 func TestErrorLanguage(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	login := func(lang string) (string, string) {
@@ -135,6 +137,7 @@ func TestErrorLanguage(t *testing.T) {
 
 // Message texts chosen through variables, which the catalog test cannot find in the code.
 func TestMessageTextsTranslated(t *testing.T) {
+	t.Parallel()
 	keys := []string{headingNews, headingSummary, changeDeleted, changeDone, changeReopened, changeDue, changeText,
 		changePriority, changeList, changeOther, "Jemand", "Dringend", "Wichtig", "Niedrig", "Normal",
 		"Heute: {task}", "Heute, {time}: {task}", "Morgen: {task}", "Morgen, {time}: {task}"}
@@ -171,6 +174,7 @@ func TestMessageTextsTranslated(t *testing.T) {
 // The setup wizard's language becomes the server's default and the first admin's language; the
 // help notes follow it.
 func TestSetupLanguage(t *testing.T) {
+	t.Parallel()
 	dbPath := filepath.Join(t.TempDir(), "setup_lang.db")
 	store, err := storage.NewStore(dbPath)
 	if err != nil {
@@ -209,6 +213,7 @@ func TestSetupLanguage(t *testing.T) {
 
 // index.html and manifest.json come in the browser's language.
 func TestStaticFilesLocalized(t *testing.T) {
+	t.Parallel()
 	html := `<html lang="de" class="dark"><meta name="description" content="MindSift — Notizen, Aufgaben und ein freier Kopf, selbst gehostet. Verschachtelte Notizen, Aufgaben mit Kanban und Kalender, gemeinsame Listen und eine Triage für alles Unsortierte." />`
 	got := string(localizeStatic([]byte(html), "it"))
 	if !strings.Contains(got, `<html lang="it"`) || !strings.Contains(got, "Note, attività e la mente libera, sul tuo server") {
@@ -222,6 +227,7 @@ func TestStaticFilesLocalized(t *testing.T) {
 
 // The page preloads the texts of the language it is served in, not always the German ones.
 func TestStaticPreloadsPageLanguage(t *testing.T) {
+	t.Parallel()
 	html := `<html lang="de"><link rel="modulepreload" crossorigin href="/assets/react-1.js">` +
 		`<meta name="mindsift-texts" content="de=/assets/de-A.js en=/assets/en-B.js fr=/assets/fr-C.js">` +
 		`<link rel="modulepreload" crossorigin href="/assets/de-A.js">`

@@ -349,6 +349,7 @@ func TestTranscriptionDiscardAndRequeue(t *testing.T) {
 // only when the Whisper server was down or had a problem of its own; a time limit or a refused recording
 // would fail again.
 func TestTranscriptionRetryTimes(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 3, 29, 1, 30, 0, 0, time.FixedZone("CET", 3600)) // the night the clocks change
 	down := errors.New("dial tcp: connection refused")
 	if want := []time.Duration{5 * time.Minute, time.Hour, 6 * time.Hour, 24 * time.Hour}; !slices.Equal(transcriptionLaterDelays, want) {

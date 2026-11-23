@@ -12,6 +12,7 @@ import (
 // POST /documents with copied bullets (ids of another note), a bullet without id and a repeated id
 // answers with the ids the note was stored with, the same as GET /documents/{id}.
 func TestCreateDocumentAnswersStoredIDs(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

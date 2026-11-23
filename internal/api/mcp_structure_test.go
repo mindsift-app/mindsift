@@ -27,6 +27,7 @@ func snapBullet(t *testing.T, srv *Server, docID, id string) (typ, content, lang
 
 // Code bullets with a language and dividers, as /code and /divider make them; code keeps no hidden value.
 func TestMCPCodeAndDivider(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)
@@ -187,6 +188,7 @@ func nilIfEmpty(s string) any {
 
 // move_note_bullet places a bullet with its children like drag and drop, Alt+Shift+arrows, Tab and Shift+Tab.
 func TestMCPMoveNoteBullet(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)
@@ -277,6 +279,7 @@ func TestMCPMoveNoteBullet(t *testing.T) {
 
 // A conflict copy stays right below its bullet when that one moves (the editor moves them together).
 func TestMCPMoveKeepsConflictCopies(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)
@@ -307,6 +310,7 @@ func TestMCPMoveKeepsConflictCopies(t *testing.T) {
 
 // extract_note_bullet does what /extract does: a new note with the branch, a link in its place.
 func TestMCPExtractNoteBullet(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)

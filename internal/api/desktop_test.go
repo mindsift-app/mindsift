@@ -49,6 +49,7 @@ func desktopSession(t *testing.T, router http.Handler, origin string) *httptest.
 // with the short setup wizard still to come; the window gets a session for it without any sign-in, and a
 // restart adds no account.
 func TestDesktopFirstStartCreatesAccountAndSignsIn(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
 	router := srv.Router()
@@ -112,6 +113,7 @@ func TestDesktopFirstStartCreatesAccountAndSignsIn(t *testing.T) {
 
 // Windows' webview buffers whole responses: the app polls instead of streaming.
 func TestDesktopRealtimeOnWindowsIsPolling(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopWindows, nil)
 	d, _ := authStatusOf(t, srv.Router())["desktop"].(map[string]any)
@@ -123,6 +125,7 @@ func TestDesktopRealtimeOnWindowsIsPolling(t *testing.T) {
 // Only the app's own window gets a session: another origin or a cross-site request is refused, and a
 // normal server has no such route at all.
 func TestDesktopSessionOnlyForTheAppWindow(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	router := startDesktop(t, store, dbPath, config.DesktopLinux, nil).Router()
 	if rec := desktopSession(t, router, "https://evil.example"); rec.Code != http.StatusForbidden {
@@ -209,6 +212,7 @@ func TestDesktopSwitchesOffWhatItCannotUse(t *testing.T) {
 }
 
 func TestDesktopUsername(t *testing.T) {
+	t.Parallel()
 	for in, want := range map[string]string{"sandra": "sandra", "Sandra": "sandra", `WORK\Sandra`: "sandra", "": "me", "Jürgen Öz": "me"} {
 		if got := desktopUsername(in); got != want {
 			t.Errorf("desktopUsername(%q) = %q, want %q", in, got, want)

@@ -46,6 +46,7 @@ func plainServerDatabase(t *testing.T, change func(db *sql.DB)) string {
 // or view MindSift's schema does not have, or a damaged one, is refused and its folder removed; an
 // untouched server database passes.
 func TestDesktopSnapshotRefusesForeignSchemaAndDamage(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
 	router := srv.Router()
@@ -89,6 +90,7 @@ func TestDesktopSnapshotRefusesForeignSchemaAndDamage(t *testing.T) {
 // A take-over that is running keeps its folder: cancelling, the expiry and a new upload (which used to
 // remove every staged folder before it waited for the import gate) leave it alone until it is done.
 func TestDesktopSnapshotFolderStaysDuringTakeOver(t *testing.T) {
+	t.Parallel()
 	snapshot, _, _ := serverSnapshot(t)
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)

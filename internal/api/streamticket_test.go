@@ -10,6 +10,7 @@ import (
 )
 
 func TestStreamTicketsReplaceTokensInURLs(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	ticket := func(tok string) string {
@@ -53,6 +54,7 @@ func TestStreamTicketsReplaceTokensInURLs(t *testing.T) {
 }
 
 func TestStreamOriginCheck(t *testing.T) {
+	t.Parallel()
 	srv := &Server{cfg: &config.Config{BaseURL: "https://notes.example.com", BaseURLSet: true}}
 	check := func(host, origin string) bool {
 		r := httptest.NewRequest(http.MethodGet, "/api/v1/ws", nil)

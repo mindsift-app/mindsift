@@ -53,6 +53,7 @@ func callResult(t *testing.T, res map[string]any) (map[string]any, bool) {
 
 // Agent scopes decide which tools a key sees and may call; webhook-only keys get nothing to read.
 func TestMCPToolsFollowScopes(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -104,6 +105,7 @@ func TestMCPToolsFollowScopes(t *testing.T) {
 
 // Full round trip with a tasks:write / lists:write key: create, list, complete; add and tick list items.
 func TestMCPTasksAndLists(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -200,6 +202,7 @@ func TestMCPTasksAndLists(t *testing.T) {
 // Agents can create task lists and lists and delete tasks; what a key creates or changes keeps its
 // origin for good, also after the user's own edits.
 func TestMCPCreateDeleteAndOrigin(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -291,6 +294,7 @@ func TestMCPCreateDeleteAndOrigin(t *testing.T) {
 
 // Agents manage a task's subtasks one at a time; the rest of the checklist stays as it is.
 func TestMCPSubtasks(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -348,6 +352,7 @@ func TestMCPSubtasks(t *testing.T) {
 
 // Operators can switch MCP off: in the admin settings, or fixed by MCP_ENABLED. OAuth goes with it.
 func TestMCPSwitchOff(t *testing.T) {
+	t.Parallel()
 	srv, _, session := setupTestServer(t)
 	srv.cfg.BaseURL = "https://ms.example/"
 	srv.cfg.BaseURLSet = true
@@ -415,6 +420,7 @@ func TestMCPSwitchOff(t *testing.T) {
 
 // Notes over MCP: notes:create only creates, notes:read lists, reads and finds them; REST stays closed.
 func TestMCPNotes(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

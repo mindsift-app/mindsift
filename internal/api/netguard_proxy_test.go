@@ -128,6 +128,7 @@ func TestGuardedProxyChecks(t *testing.T) {
 }
 
 func TestProxyAddr(t *testing.T) {
+	t.Parallel()
 	for raw, want := range map[string]string{
 		"":                           "",
 		"http://proxy:3128":          "proxy:3128",

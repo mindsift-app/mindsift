@@ -8,6 +8,7 @@ import (
 )
 
 func TestJournalDayIsCreatedOnceAndListed(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	me, token := newTestUser(t, store, "journal@example.com")
@@ -71,6 +72,7 @@ func TestJournalDayIsCreatedOnceAndListed(t *testing.T) {
 }
 
 func TestJournalTitle(t *testing.T) {
+	t.Parallel()
 	day := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
 	if got := journalTitle("en", day); got != "Sunday, March 1, 2026" {
 		t.Fatalf("English title: %q", got)

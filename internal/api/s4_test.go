@@ -70,6 +70,7 @@ func TestDemoSendsNothingAndKeepsAccounts(t *testing.T) {
 }
 
 func TestSMTPPasswordNeverReturned(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	rec := sessionCall(router, "PUT", "/api/v1/admin/settings", token,
@@ -95,6 +96,7 @@ func TestSMTPPasswordNeverReturned(t *testing.T) {
 // SECRETS_KEY changed: the stored SMTP password no longer decrypts. Mail fails with a clear reason, the
 // administration says so (still without any password), and the admin can enter it again.
 func TestSMTPPasswordUndecryptable(t *testing.T) {
+	t.Parallel()
 	srv, _, token := setupTestServer(t)
 	if rec := sessionCall(srv.Router(), "PUT", "/api/v1/admin/settings", token,
 		`{"sharingMode":"organizations","smtpHost":"mail.example.com","smtpUser":"bot","smtpPass":"geheim123"}`, ""); rec.Code != http.StatusOK {
@@ -138,6 +140,7 @@ func TestSMTPPasswordUndecryptable(t *testing.T) {
 // shows the environment's server (and that a password is set, not which) and cannot change it; a
 // server saved there does not count while SMTP_HOST is set. SMTP_DISABLED sends no mail at all.
 func TestSMTPFromEnvLocksTheMailServer(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	srv.cfg.SMTPHost, srv.cfg.SMTPPort, srv.cfg.SMTPUser, srv.cfg.SMTPPass = "mail.example.com", "587", "bot", "aus-der-umgebung"
 	store.SeedSMTPDefaultsFromEnv(srv.cfg.SMTPHost, "587", srv.cfg.SMTPUser, srv.cfg.SMTPPass, "bot@example.com", "", true, false)
@@ -186,6 +189,7 @@ func TestSMTPFromEnvLocksTheMailServer(t *testing.T) {
 }
 
 func TestDeletedAccountLosesServerBackups(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	root := srv.backupRoot()
 	gone, _ := newTestUser(t, store, "gone@example.com")
@@ -212,6 +216,7 @@ func TestDeletedAccountLosesServerBackups(t *testing.T) {
 // An account deleted by an admin keeps its backups for the backup retention period (a mistake can be
 // undone); one its owner deleted loses them at once.
 func TestDeletedAccountBackupsAreKept(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	root := srv.backupRoot()
 	gone, _ := newTestUser(t, store, "gone@example.com")

@@ -40,6 +40,7 @@ func routerRoutes(t *testing.T) map[string]bool {
 // The route list in Doku/api/openapi.json and the router agree: no route without an entry and no entry
 // without a route, each with a short description.
 func TestOpenAPIListsEveryRoute(t *testing.T) {
+	t.Parallel()
 	raw, err := os.ReadFile(openAPIFile)
 	if err != nil {
 		t.Fatalf("read %s: %v", openAPIFile, err)

@@ -68,7 +68,7 @@ TZ_RUN_TESTS='(?i)(time|zone|alarm|due|digest|summar|backup|today|clock|day|date
 # results of the first run (code that reads TZ through the time package is not tracked). ZONEINFO names Go's
 # own zone data, as the Alpine image has no /usr/share/zoneinfo; clock's TestProcessRunsInTZ fails when the
 # zone is not in effect.
-# -timeout 40m per package: internal/api alone takes about four minutes and more than Go's default ten beside
+# -timeout 40m per package: internal/api alone takes about three minutes and can take more than Go's default ten beside
 # the other parts and other builds on the machine (a passing run is not slowed by the higher bound).
 backend() {
   "$ENGINE" run --rm -v "$ROOT":/src:z -v mindsift-go-cache:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \

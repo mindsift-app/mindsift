@@ -22,6 +22,7 @@ func metricsGet(router http.Handler, token string) *httptest.ResponseRecorder {
 }
 
 func TestMetricsOffWithoutToken(t *testing.T) {
+	t.Parallel()
 	srv, _, _ := setupTestServer(t)
 	if rec := metricsGet(srv.Router(), testMetricsToken); rec.Code != http.StatusNotFound {
 		t.Fatalf("without METRICS_TOKEN /metrics must stay unknown: %d", rec.Code)
@@ -29,6 +30,7 @@ func TestMetricsOffWithoutToken(t *testing.T) {
 }
 
 func TestMetricsNeedTheToken(t *testing.T) {
+	t.Parallel()
 	srv, _, token := setupTestServer(t)
 	srv.cfg.MetricsToken = testMetricsToken
 	router := srv.Router()
@@ -74,6 +76,7 @@ func TestMetricsNeedTheToken(t *testing.T) {
 }
 
 func TestHealthWithDatabase(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	call := func() *httptest.ResponseRecorder {
@@ -92,6 +95,7 @@ func TestHealthWithDatabase(t *testing.T) {
 
 // Made-up methods share one label value: otherwise every request with a new one would add series for good
 func TestMetricsMadeUpMethodsShareALabel(t *testing.T) {
+	t.Parallel()
 	srv, _, _ := setupTestServer(t)
 	srv.cfg.MetricsToken = testMetricsToken
 	router := srv.Router()

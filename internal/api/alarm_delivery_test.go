@@ -68,6 +68,7 @@ func newAlarmBench(srv *Server) *alarmBench {
 // channel delivered once, the subject and text of each, a failed channel tried again without the others
 // going out twice, a pause, the channels left off, and a channel that is not set up.
 func TestTaskAlarmDeliveryOnEveryChannel(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	srv.cfg.SMTPHost = "smtp.example.com" // a mail server is set up (the hook takes the mail)
 	router := srv.Router()

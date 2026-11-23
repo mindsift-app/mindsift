@@ -12,6 +12,7 @@ import (
 // GET /documents answers without bullets but with their counts; to-dos and single bullets have their own
 // routes, and nobody reads a bullet of a note they cannot see.
 func TestNoteListRoutes(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

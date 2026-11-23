@@ -15,6 +15,7 @@ import (
 // the local network and the backups. The administration shows the environment's value as locked, a
 // save does not change what is stored, and the server works with the environment's value.
 func TestEnvLocksNetworkAndBackupSettings(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	on, off := true, false
@@ -67,6 +68,7 @@ func TestEnvLocksNetworkAndBackupSettings(t *testing.T) {
 
 // INSTANCE_NAME is only a default: the instance carries it until the administration sets a name.
 func TestInstanceNameFromEnvIsADefault(t *testing.T) {
+	t.Parallel()
 	store, err := storage.NewStore(t.TempDir()+"/name.db", storage.WithDefaultInstanceName("Familie Müller"))
 	if err != nil {
 		t.Fatal(err)

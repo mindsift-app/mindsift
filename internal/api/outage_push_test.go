@@ -95,6 +95,7 @@ func addPushDevice(t *testing.T, store *storage.Store, userID, endpoint string) 
 // service is back, and an outage longer than MaxAlarmFailures runs gives up only the alarm that was
 // really tried.
 func TestTaskAlarmPushGoesOnPastAPushServiceThatIsDown(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	const wait = 300 * time.Millisecond
 	push := newPushServices(srv, wait)
@@ -152,6 +153,7 @@ func TestTaskAlarmPushGoesOnPastAPushServiceThatIsDown(t *testing.T) {
 // Digests by push: the down push service is tried for one recipient per run; the others' events wait
 // without counting an attempt and go out once the service is back.
 func TestDigestPushGoesOnPastAPushServiceThatIsDown(t *testing.T) {
+	t.Parallel()
 	srv, _ := notifyServer(t)
 	store := srv.store
 	push := newPushServices(srv, 100*time.Millisecond)
@@ -198,6 +200,7 @@ func TestDigestPushGoesOnPastAPushServiceThatIsDown(t *testing.T) {
 // The test push in the settings has no circuit breaker: every device is tried, even after the first
 // one's push service did not answer.
 func TestPushTestTriesEveryDevice(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	push := newPushServices(srv, 10*time.Millisecond)
 	push.setDown("down.push.example", true)
@@ -252,6 +255,7 @@ func TestQueuedNotificationsDroppedAfterTwoDays(t *testing.T) {
 
 // The alarm mail greets by the time of the alarm run, not by the clock.
 func TestAlarmMailGreetsByTheRunTime(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	srv.cfg.SMTPHost = "smtp.example.com"
 	bench := newAlarmBench(srv)

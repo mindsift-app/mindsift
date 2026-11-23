@@ -98,6 +98,7 @@ type snapshotUploadResult struct {
 // into the local account (things others shared with it are listed as skipped), with its settings; the
 // other account, the sharing and the server's settings stay out, and the instance keeps its one account.
 func TestDesktopTakesOverOneAccountOfAServerSnapshot(t *testing.T) {
+	t.Parallel()
 	snapshot, anna, _ := serverSnapshot(t)
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
@@ -191,6 +192,7 @@ func TestDesktopTakesOverOneAccountOfAServerSnapshot(t *testing.T) {
 
 // What is not a snapshot is refused, and a cancelled one is removed.
 func TestDesktopSnapshotRefusesOtherFilesAndCancels(t *testing.T) {
+	t.Parallel()
 	snapshot, _, _ := serverSnapshot(t)
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)

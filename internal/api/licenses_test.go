@@ -12,6 +12,7 @@ import (
 // The third-party licenses come as plain text to signed-in people only (they name every dependency's
 // version); without the file (development) the address answers 404. The old public address is gone.
 func TestThirdPartyLicenses(t *testing.T) {
+	t.Parallel()
 	srv, _, token := setupTestServer(t)
 	srv.staticFS = fstest.MapFS{"index.html": {Data: []byte("<html><head></head></html>")}}
 	file := filepath.Join(t.TempDir(), thirdPartyLicensesName)

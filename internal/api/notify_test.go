@@ -43,6 +43,7 @@ func notifyServer(t *testing.T) (*Server, *[]sentNote) {
 }
 
 func TestWatchedTaskChangesAreBundled(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	router := srv.Router()
@@ -87,6 +88,7 @@ func TestWatchedTaskChangesAreBundled(t *testing.T) {
 }
 
 func TestOwnChangesPauseAndChannels(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	router := srv.Router()
@@ -143,6 +145,7 @@ func TestOwnChangesPauseAndChannels(t *testing.T) {
 }
 
 func TestDailySummary(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	me, _ := newTestUser(t, store, "summary@example.com")
@@ -189,6 +192,7 @@ func TestDailySummary(t *testing.T) {
 }
 
 func TestDailySummaryIncludesGroupSharedLists(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	owner, _ := newTestUser(t, store, "chef@example.com")
@@ -230,6 +234,7 @@ func mailsTo(sent []sentNote, to string) []string {
 }
 
 func TestAssignedNotification(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	router := srv.Router()
@@ -276,6 +281,7 @@ func TestAssignedNotification(t *testing.T) {
 }
 
 func TestTaskAddedToSharedList(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	router := srv.Router()
@@ -312,6 +318,7 @@ func TestTaskAddedToSharedList(t *testing.T) {
 }
 
 func TestWatchedTaskNamesEveryChange(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	router := srv.Router()
@@ -349,6 +356,7 @@ func TestWatchedTaskNamesEveryChange(t *testing.T) {
 }
 
 func TestTaskTickedInNoteNotifiesWatchers(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	owner, _ := newTestUser(t, store, "owner@example.com")
@@ -393,6 +401,7 @@ func TestTaskTickedInNoteNotifiesWatchers(t *testing.T) {
 }
 
 func TestCreatorAssignedAndMutedLists(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	router := srv.Router()
@@ -461,6 +470,7 @@ func TestCreatorAssignedAndMutedLists(t *testing.T) {
 }
 
 func TestRenameShoppingList(t *testing.T) {
+	t.Parallel()
 	srv, _ := notifyServer(t)
 	store := srv.store
 	router := srv.Router()
@@ -486,6 +496,7 @@ func TestRenameShoppingList(t *testing.T) {
 // Notifications of events reach e-mail and push as chosen; push without a device holds nothing back:
 // the mail goes out once and the queue is empty afterwards (no retry that would send it again).
 func TestNotificationOnMailAndPush(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	router := srv.Router()

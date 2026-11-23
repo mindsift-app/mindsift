@@ -40,6 +40,7 @@ func lastAudit(t *testing.T, store *storage.Store, action string) storage.AuditE
 }
 
 func TestAuditAccountActions(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	admin, _ := store.GetFirstUser()
@@ -126,6 +127,7 @@ func TestAuditAccountActions(t *testing.T) {
 }
 
 func TestAuditInvitesOrganizationsSettings(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	call := func(method, path, body string, want int) []byte {
@@ -212,6 +214,7 @@ func TestAuditInvitesOrganizationsSettings(t *testing.T) {
 
 // The log is for server admins: members and user managers get 403
 func TestAuditOnlyForServerAdmins(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	member, memberToken := newTestUser(t, store, "member@example.com")
@@ -261,6 +264,7 @@ func TestAuditOIDCAccountAndRole(t *testing.T) {
 }
 
 func TestSettingsChangesSkipsReadOnlyAndSecrets(t *testing.T) {
+	t.Parallel()
 	on, off := true, false
 	before := &domain.SystemSettings{InstanceName: "A", SMTPPass: "alt", SMTPPassSet: true, MCPEnabled: &on, MCPViaEnv: true, AllowRegistration: false, RegistrationMode: "closed"}
 	after := &domain.SystemSettings{InstanceName: "A", SMTPPass: "neu", SMTPPassSet: false, MCPEnabled: &off, MCPViaEnv: false, AllowRegistration: true, RegistrationMode: "open"}

@@ -8,6 +8,7 @@ import (
 )
 
 func TestSecurityHeaders(t *testing.T) {
+	t.Parallel()
 	srv, _, _ := setupTestServer(t)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)

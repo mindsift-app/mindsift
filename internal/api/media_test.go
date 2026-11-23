@@ -45,6 +45,7 @@ func mediaUpload(t *testing.T, router http.Handler, token, docID string, data []
 }
 
 func TestMediaUploadReadAndAccess(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	srv.cfg.Media.MaxImageMB, srv.cfg.Media.MaxAudioMB = 1, 2
 	router := srv.Router()
@@ -88,6 +89,7 @@ func TestMediaUploadReadAndAccess(t *testing.T) {
 }
 
 func TestMediaQuota(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	srv.cfg.Media.MaxImageMB, srv.cfg.Media.QuotaMB = 2, 1
 	router := srv.Router()
@@ -102,6 +104,7 @@ func TestMediaQuota(t *testing.T) {
 }
 
 func TestMediaCleanupAndCopiedBlocks(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	srv.cfg.Media.MaxImageMB, srv.cfg.Media.MaxAudioMB = 2, 2
 	router := srv.Router()
@@ -147,6 +150,7 @@ func TestMediaCleanupAndCopiedBlocks(t *testing.T) {
 }
 
 func TestDetectMedia(t *testing.T) {
+	t.Parallel()
 	webm := append([]byte{0x1A, 0x45, 0xDF, 0xA3}, make([]byte, 40)...)
 	m4a := append([]byte{0, 0, 0, 0x20}, []byte("ftypM4A ")...)
 	m4a = append(m4a, make([]byte, 40)...)

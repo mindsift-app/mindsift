@@ -249,6 +249,7 @@ func TestSavingTheWhisperServerFetchesNothing(t *testing.T) {
 // Pieces while speaking: on with 8 s by default, the administration switches them off or shortens them,
 // STT_CHUNKED and STT_CHUNK_SECONDS fix them; /auth/status tells the app.
 func TestSpeechChunkSettings(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	srv.cfg.Speech = config.SpeechConfig{}
 	router := srv.Router()
@@ -344,6 +345,7 @@ func TestSpeechModelDelete(t *testing.T) {
 // A fresh server: the mode stays automatic ("") until the admin chooses one, so the address entered
 // later makes it server mode; a mode chosen on purpose stays as chosen.
 func TestSpeechModeAutomaticUntilChosen(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	srv.cfg.Speech = config.SpeechConfig{}
 	router := srv.Router()

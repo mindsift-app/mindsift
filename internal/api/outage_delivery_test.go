@@ -49,6 +49,7 @@ func (o *slowOutage) attempts() int {
 }
 
 func TestUnreachableTripsOnlyOnConnectionErrors(t *testing.T) {
+	t.Parallel()
 	trips := []error{
 		&net.OpError{Op: "dial", Net: "tcp", Err: errors.New("connection refused")},
 		&smtpStepError{"Verbindung", &net.OpError{Op: "dial", Net: "tcp", Err: os.ErrDeadlineExceeded}},

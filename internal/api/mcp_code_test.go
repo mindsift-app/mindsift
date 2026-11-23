@@ -16,6 +16,7 @@ const codeLanguagesFile = "../../frontend/src/features/workspace/codeLanguages.j
 // The languages MCP accepts for code bullets are the editor's: the same ids, the same short names, and the
 // examples in the tool description are ids of the editor.
 func TestMCPCodeLanguagesMatchEditor(t *testing.T) {
+	t.Parallel()
 	raw, err := os.ReadFile(codeLanguagesFile)
 	if err != nil {
 		t.Fatal(err)
@@ -60,6 +61,7 @@ func TestMCPCodeLanguagesMatchEditor(t *testing.T) {
 // The advice in the descriptions holds: a fence on its own line becomes a code block with its language,
 // below a bullet as its child, one block for the whole command sequence; backticks stay in the text.
 func TestMCPCodeStyleExampleBecomesCodeBlock(t *testing.T) {
+	t.Parallel()
 	blocks := mcpContentBlocks("- Install\n\t```bash\n\tnpm ci\n\tnpm test\n\t```\n- Run `npm ci` first")
 	if len(blocks) != 3 {
 		t.Fatalf("blocks: %+v", blocks)

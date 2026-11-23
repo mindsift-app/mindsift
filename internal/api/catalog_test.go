@@ -10,5 +10,6 @@ import (
 // a change of the API's texts is tested with this package while working, and a missing translation used
 // to show up only in the image build, which tests every package.
 func TestCatalogsCoverServerTexts(t *testing.T) {
+	t.Parallel()
 	i18ncheck.CatalogsCoverServerTexts(t)
 }

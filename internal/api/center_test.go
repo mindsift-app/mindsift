@@ -29,6 +29,7 @@ func getCenter(t *testing.T, srv *Server, token string) centerView {
 
 // The center gets everything, whatever the channels or a pause; watched tasks keep one entry each
 func TestNotificationCenter(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	router := srv.Router()
@@ -115,6 +116,7 @@ func TestNotificationCenter(t *testing.T) {
 
 // A muted list stays out of the center too, an assignment there does not
 func TestCenterRespectsMutedLists(t *testing.T) {
+	t.Parallel()
 	srv, _ := notifyServer(t)
 	store := srv.store
 	router := srv.Router()

@@ -20,6 +20,7 @@ import (
 // A push sent by the server can be decrypted like a browser does (RFC 8291, aes128gcm) and carries
 // a VAPID authorization; a device the push service no longer knows (410) is forgotten.
 func TestPushPayloadDecryptsLikeABrowser(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	me, _ := newTestUser(t, store, "geraet@example.com")
 

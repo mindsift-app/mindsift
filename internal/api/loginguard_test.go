@@ -11,6 +11,7 @@ import (
 )
 
 func TestResolveClientIP(t *testing.T) {
+	t.Parallel()
 	h := func(kv ...string) http.Header {
 		out := http.Header{}
 		for i := 0; i < len(kv); i += 2 {
@@ -45,6 +46,7 @@ func TestResolveClientIP(t *testing.T) {
 }
 
 func TestLoginGuardBuckets(t *testing.T) {
+	t.Parallel()
 	g := newLoginGuard(true)
 	now := time.Date(2026, 10, 29, 12, 0, 0, 0, time.UTC)
 	g.now = func() time.Time { return now }
@@ -101,6 +103,7 @@ func TestLoginGuardBuckets(t *testing.T) {
 }
 
 func TestLoginLockedAfterThreeFailures(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	_, _ = store.CreateUser("lock@example.com", mustHash(t, "richtig123"), "Lock", "member")

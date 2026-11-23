@@ -9,6 +9,7 @@ import (
 )
 
 func TestParsePageMeta(t *testing.T) {
+	t.Parallel()
 	doc := `<!doctype html><html><head>
 	<meta charset="utf-8"><title>Fallback Titel</title>
 	<meta property="og:title" content="Rezept: Käsespätzle &amp; Salat">
@@ -56,6 +57,7 @@ func TestParsePageMeta(t *testing.T) {
 }
 
 func TestLinkPreviewEndpoints(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	if rec := sessionCall(router, "GET", "/api/v1/link-preview?url=http://example.com", token, "", ""); rec.Code != http.StatusUnprocessableEntity {
@@ -84,6 +86,7 @@ func TestLinkPreviewEndpoints(t *testing.T) {
 // The administration switches link previews off for the whole server: nothing is fetched or served (not
 // even a cached preview), the answer says why in a way the app understands, and the status tells the app.
 func TestLinkPreviewsSwitchedOffServerWide(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	p := &storage.LinkPreview{URL: "https://example.com/", Title: "Beispiel", OK: true, Icon: []byte("\x89PNG\r\n\x1a\n"), IconMime: "image/png"}

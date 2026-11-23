@@ -21,6 +21,7 @@ func requestFrom(t *testing.T, srv *Server, peer string, headers map[string]stri
 
 // HSTS when the visitor came over https, and only a trusted proxy can say so (SA-09, SA-05)
 func TestHSTSOnlyOverHTTPS(t *testing.T) {
+	t.Parallel()
 	srv, _, _ := setupTestServer(t)
 	https := map[string]string{"X-Forwarded-Proto": "https"}
 	if got := requestFrom(t, srv, "10.0.0.2", https).Header().Get("Strict-Transport-Security"); got != "max-age=31536000" {
@@ -60,6 +61,7 @@ func TestRequestOriginTrustsOnlyProxies(t *testing.T) {
 
 // Outgoing requests never step down from https to http (SA-16)
 func TestRedirectNoDowngrade(t *testing.T) {
+	t.Parallel()
 	check := guardedClient(false).CheckRedirect
 	from, _ := http.NewRequest(http.MethodGet, "https://example.com/a", nil)
 	to, _ := http.NewRequest(http.MethodGet, "http://example.com/b", nil)
@@ -74,6 +76,7 @@ func TestRedirectNoDowngrade(t *testing.T) {
 
 // The admin can narrow web push down to the services of the big browsers (SA-18)
 func TestPushKnownServices(t *testing.T) {
+	t.Parallel()
 	for _, ep := range []string{"https://fcm.googleapis.com/fcm/send/x", "https://updates.push.services.mozilla.com/wpush/v2/x", "https://web.push.apple.com/x", "https://wns2-db5p.notify.windows.com/w/?token=x"} {
 		if err := validPushEndpoint(ep, true); err != nil {
 			t.Errorf("%s: %v", ep, err)
@@ -92,6 +95,7 @@ func TestPushKnownServices(t *testing.T) {
 
 // The consent page warns when the way back does not lead to a known AI service or this computer (SA-10)
 func TestKnownRedirectHost(t *testing.T) {
+	t.Parallel()
 	for raw, want := range map[string]bool{
 		"https://claude.ai/api/mcp/auth_callback":      true,
 		"https://chatgpt.com/connector_platform_oauth": true,

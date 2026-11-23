@@ -40,6 +40,7 @@ func userWithPassword(t *testing.T, srv *Server, store *storage.Store, email, pa
 
 // Deleting data or the account asks for the password: wrong guesses count like failed logins (SA-01)
 func TestPasswordConfirmationIsGuarded(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	_, tok := userWithPassword(t, srv, store, "anna@example.com", "richtig-geheim", "member")
@@ -98,6 +99,7 @@ func TestAlarmMailsGoToTheLoginAddress(t *testing.T) {
 
 // A new login address waits for its link; the old one stays in use until then (SA-02, SA-11)
 func TestNewAddressesWaitForConfirmation(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	id, tok := userWithPassword(t, srv, store, "anna@example.com", "richtig-geheim", "member")
@@ -137,6 +139,7 @@ func TestNewAddressesWaitForConfirmation(t *testing.T) {
 
 // The admin user list leaves out alarm targets and the token version (SA-03)
 func TestAdminUserListHidesAlarmTargets(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	_, adminTok := userWithPassword(t, srv, store, "chef@example.com", "richtig-geheim", "admin")

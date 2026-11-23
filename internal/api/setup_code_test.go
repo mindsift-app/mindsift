@@ -52,6 +52,7 @@ func responseCode(t *testing.T, body []byte) string {
 var setupCodeFormat = regexp.MustCompile(`^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$`)
 
 func TestSetupCodeFormat(t *testing.T) {
+	t.Parallel()
 	seen := map[string]bool{}
 	for range 200 {
 		c := newSetupCode()
@@ -202,6 +203,7 @@ func TestSetupCodeNotInDemoOrWithAdminUser(t *testing.T) {
 
 // A restart with an existing account makes no code.
 func TestNoSetupCodeOnceAnAccountExists(t *testing.T) {
+	t.Parallel()
 	srv, _, _ := setupTestServer(t)
 	if setupCodeOf(srv) != "" {
 		t.Fatal("a server with accounts needs no setup code")

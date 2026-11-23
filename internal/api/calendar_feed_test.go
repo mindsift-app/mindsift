@@ -295,6 +295,7 @@ func TestCalendarFeedMissesThrottled(t *testing.T) {
 // The same tasks in three zones: all-day events keep their calendar day (also on the day daylight saving
 // time starts), timed events are the right instant in UTC, alarms of all-day tasks fire at 09:00 local.
 func TestRenderCalendarFeedTimeZones(t *testing.T) {
+	t.Parallel()
 	tasks := []storage.CalendarTask{
 		{ID: "th_a", Content: "Ganztägig", DueDate: "2026-03-29", Reminders: []int{24 * 60}, CreatedAt: "2026-03-01T10:00:00Z"},
 		{ID: "th_b", Content: "Mit Zeit", DueDate: "2026-03-29T09:30", CreatedAt: "2026-03-01T10:00:00Z", ChangedAt: "2026-03-02T11:00:00Z"},

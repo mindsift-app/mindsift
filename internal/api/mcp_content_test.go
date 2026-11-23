@@ -10,6 +10,7 @@ import (
 // create_note takes content the way small models send it, never stores an empty note silently,
 // checks the icon and links the note into the app.
 func TestMCPCreateNoteContentIconAndLinks(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	srv.cfg.BaseURL = "https://ms.example/"
 	srv.cfg.BaseURLSet = true

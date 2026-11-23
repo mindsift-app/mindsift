@@ -35,6 +35,7 @@ func getWith(t *testing.T, router http.Handler, path, token string) *httptest.Re
 // The people directory and collaborator list must never expose other users' private settings
 // (Discord/custom webhook URL, alarm e-mail, role, token version).
 func TestDirectoryHidesPrivateUserFields(t *testing.T) {
+	t.Parallel()
 	srv, router, aID, _, _, bTok := twoUsers(t)
 
 	// User A gives themselves a secret Discord webhook and a custom webhook
@@ -71,6 +72,7 @@ func TestDirectoryHidesPrivateUserFields(t *testing.T) {
 
 // Someone without access to a note/list/folder must not be able to read its share list.
 func TestShareListsRequireAccess(t *testing.T) {
+	t.Parallel()
 	srv, router, aID, aTok, _, bTok := twoUsers(t)
 
 	// Note owned by A
@@ -111,6 +113,7 @@ func TestShareListsRequireAccess(t *testing.T) {
 
 // Deleting a note that the caller cannot see returns 404, not a 500 with a raw SQL error.
 func TestDeleteForeignDocumentIsNotFound(t *testing.T) {
+	t.Parallel()
 	srv, router, aID, _, _, bTok := twoUsers(t)
 	doc, err := srv.store.CreateDocument(aID, "", "Geheim", "📝", "", []domain.DocumentBlock{{ID: "b1", Type: "bullet", Content: "x"}}, nil, false)
 	if err != nil {

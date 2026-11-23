@@ -15,6 +15,7 @@ import (
 // from a template does: same levels, to-dos open, placeholders filled in (not in code), content
 // below. It needs notes:read, finds templates by id or title and only among the person's own.
 func TestMCPCreateNoteFromTemplate(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	uid := claims.UserID

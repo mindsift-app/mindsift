@@ -28,6 +28,7 @@ func newTestUserWithRole(t *testing.T, store *storage.Store, email, role string)
 // A new role from the administration signs the account out everywhere (token version), so its sessions
 // start again with the new rights; a change of the display name does not
 func TestAdminRoleChangeSignsOut(t *testing.T) {
+	t.Parallel()
 	srv, store, admin := setupTestServer(t)
 	router := srv.Router()
 	member, token := newTestUser(t, store, "rolle@example.com")
