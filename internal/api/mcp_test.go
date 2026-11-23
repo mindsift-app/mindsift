@@ -238,7 +238,7 @@ func TestMCPCreateDeleteAndOrigin(t *testing.T) {
 	}
 
 	// A task of the user changed by the agent: changed via MCP, with key and time
-	own, _ := srv.createTask(claims.UserID, "Von mir", "", "manual", "", "", "", nil)
+	own, _ := srv.insertTask(claims.UserID, "Von mir", "", "manual", "", "", "", nil)
 	if own.Origin != nil {
 		t.Fatalf("own task must not have an origin: %+v", own.Origin)
 	}
@@ -309,7 +309,7 @@ func TestMCPSubtasks(t *testing.T) {
 		return result["structuredContent"].(map[string]any), false
 	}
 
-	task, _ := srv.createTask(claims.UserID, "Umzug", "", "manual", "", "", "", nil)
+	task, _ := srv.insertTask(claims.UserID, "Umzug", "", "manual", "", "", "", nil)
 	call(1, "add_subtask", `{"taskId":"`+task.ID+`","title":"Kartons kaufen"}`)
 	res, isErr := call(2, "add_subtask", `{"taskId":"`+task.ID+`","title":" Strom ummelden "}`)
 	if isErr {

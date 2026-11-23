@@ -621,7 +621,7 @@ var mcpTools = []mcpTool{
 			if _, ok := domain.NormalizeReminders(a.Reminders); !ok {
 				return nil, storage.ErrInvalidReminders
 			}
-			t, err := s.createTask(userID, a.Content, a.Priority, "agent", a.DueDate, a.TaskListID, a.Notes, actor)
+			t, err := s.insertTask(userID, a.Content, a.Priority, "agent", a.DueDate, a.TaskListID, a.Notes, actor)
 			if err != nil {
 				return nil, err
 			}

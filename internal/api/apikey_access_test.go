@@ -34,7 +34,7 @@ func TestAPIKeyRESTAccess(t *testing.T) {
 	writer, _ := store.CreateAPIKey(claims.UserID, "Skript", []string{"tasks:write", "lists:write"})
 	inbox, _ := store.CreateAPIKey(claims.UserID, "Nur Inbox", nil)
 
-	task, _ := srv.createTask(claims.UserID, "Müll rausbringen", "", "manual", clock.Today(), "", "", nil)
+	task, _ := srv.insertTask(claims.UserID, "Müll rausbringen", "", "manual", clock.Today(), "", "", nil)
 	list, _ := store.CreateList(claims.UserID, "Einkauf", "", "shopping")
 
 	if code, body := keyRequest(t, router, reader.RawKey, http.MethodGet, "/api/v1/tasks?due=today&status=open", ""); code != http.StatusOK || !strings.Contains(string(body), "Müll rausbringen") {

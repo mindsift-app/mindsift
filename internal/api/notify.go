@@ -509,7 +509,8 @@ func (s *Server) notifyTaskAdded(actorID string, t *domain.Thought, skip map[str
 
 // insertTask creates a task in one write (storage.CreateTask) together with the notifications about it:
 // its list's members hear that it was added, people mentioned in its description that they were. Then
-// everyone who sees it gets it in their open apps.
+// everyone who sees it gets it in their open apps. A task list the user may not write to is refused
+// with storage.ErrTaskListReadOnly, also before an empty text. actor: the API key, if any.
 func (s *Server) insertTask(userID, content, priority, source, dueDate, taskListID, notes string, actor *apiActor) (*domain.Thought, error) {
 	var b notifyBatch
 	plan := func(t *domain.Thought, members []string) ([]storage.CenterAdd, []storage.QueuedAdd) {

@@ -92,6 +92,10 @@ func (s *Store) CreateTask(userID, content, priority, source, dueDate, taskListI
 // newThought checks the input of a new thought and builds it (tags from the text and the source); the
 // caller inserts it with insertThought.
 func (s *Store) newThought(userID, content, priority, source, dueDate, taskListID, kanbanStatus, notes string) (*domain.Thought, error) {
+	// Before the text is checked, so an empty task in a read-only list is refused as such
+	if err := s.ensureTaskListWritable(userID, taskListID); err != nil {
+		return nil, err
+	}
 	content = strings.TrimSpace(content)
 	dueDate = domain.NormalizeDue(dueDate)
 	if content == "" {
@@ -105,9 +109,6 @@ func (s *Store) newThought(userID, content, priority, source, dueDate, taskListI
 	}
 	if kanbanStatus == "" {
 		kanbanStatus = "todo"
-	}
-	if err := s.ensureTaskListWritable(userID, taskListID); err != nil {
-		return nil, err
 	}
 
 	tags := domain.ExtractTags(content)
