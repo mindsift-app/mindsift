@@ -42,7 +42,7 @@ import type { TemplateChoice } from './NoteTemplates';
 import type { BlockLock } from './OutlinerBlock';
 import { NoteClientContext, NoteSharedContext } from './drawing/noteShared';
 import { extractHashtags } from '../../lib/hashtags';
-import { isPhoneWidth } from '../../lib/breakpoints';
+import { isLargeWidth, isPhoneWidth, LARGE_QUERY } from '../../lib/breakpoints';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 
@@ -99,15 +99,11 @@ export interface DocumentEditorProps {
 }
 
 // Large screens (lg) put the note's actions into the workspace tab bar and drop the editor header
-const LARGE_QUERY = '(min-width: 1024px)';
 function subscribeLarge(onChange: () => void) {
   if (typeof window === 'undefined' || !window.matchMedia) return () => {};
   const mq = window.matchMedia(LARGE_QUERY);
   mq.addEventListener('change', onChange);
   return () => mq.removeEventListener('change', onChange);
-}
-function isLargeScreen() {
-  return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(LARGE_QUERY).matches;
 }
 // Phones (below sm) show a home button instead of the zoom path, which would fill half the screen there
 function subscribePhone(onChange: () => void) {
@@ -166,7 +162,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const inTagPage = variant === 'tag';
   // Embedded in a list of notes (journal, hashtag page): no own scrolling, action bar or backlinks
   const embedded = inJournal || inTagPage;
-  const large = useSyncExternalStore(subscribeLarge, isLargeScreen, () => false);
+  const large = useSyncExternalStore(subscribeLarge, isLargeWidth, () => false);
   const phone = useSyncExternalStore(subscribePhone, isPhoneWidth, () => false);
   // The journal's active day puts its actions into the tab bar as well
   const desktopBar = (!embedded || inJournal) && large && Boolean(actionsTarget);

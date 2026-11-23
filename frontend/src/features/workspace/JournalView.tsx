@@ -8,6 +8,7 @@ import { JournalCalendar } from './JournalCalendar';
 import { useTranslation } from 'react-i18next';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { can } from '../../lib/capabilities';
+import { isLargeWidth } from '../../lib/breakpoints';
 
 const PAGE = 7;
 // The sidebar's journal panel opens in 300 ms; the days after the first get their editor only after that
@@ -140,7 +141,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
       setFocusTopGap(0);
       return;
     }
-    if (!window.matchMedia?.('(min-width: 1024px)').matches) return;
+    if (!isLargeWidth()) return;
     setFocusTopGap(Math.max(focusBarPinned ? 0 : 41, workspaceTopRef.current - pageTop(root)));
   }, [focusMode, focusBarPinned]);
   // After a page load the bars above appear later than the journal: measured again whenever its pane changes
