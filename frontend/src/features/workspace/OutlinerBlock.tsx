@@ -68,7 +68,6 @@ import { ownClipboardText } from '../../lib/outlineMarkdown';
 import { caretAfterChange, caretAtPoint, mapRenderedOffsetToRaw, rawOffsetAtPoint } from '../../lib/caret';
 import { keepOutlineRowNear, observeOutlineRow } from '../../lib/outlineNear';
 import { droppedText, transferText } from '../../lib/dropText';
-import { toggleInlineFormat } from '../../lib/inlineFormat';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { UserAvatar } from '../../components/UserAvatar';
@@ -78,6 +77,7 @@ import { errorMessage } from '../../lib/errorMessage';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { useOutlinerActions } from './OutlinerActionsContext';
 import { matchSlashQuery, removeSlashQuery, slashCommandFitsText } from '../../lib/slashCommand';
+import { bulletKeyAction } from './bulletKeys';
 
 export interface SlashCommand {
   type: BlockType | 'link' | 'secret' | 'dictation' | 'extract' | 'template';
@@ -1184,227 +1184,131 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     [onTagClick, onWikiLinkClick, tableWikiLinkClick, resolveWikiLink, renderTableSecret]
   );
 
+  // Ctrl/Cmd+Z and Y, Enter, Tab, Backspace, the arrows and the slash menu: bulletKeyAction decides, this does it
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (mention.handleKeyDown(e, localContentRef.current, applyMention)) return;
-    if ((e.ctrlKey || e.metaKey) && !e.altKey && ['z', 'y'].includes(e.key.toLowerCase())) {
+    const selection = (el: HTMLTextAreaElement) => ({ start: el.selectionStart, end: el.selectionEnd, value: el.value });
+    const field = textareaRef.current;
+    const action = bulletKeyAction(e, {
+      type: block.type,
+      canEdit,
+      lockedAppend: !!lockedBy && !!canAppendBelow,
+      content: localContent,
+      target: selection(e.currentTarget),
+      field: field ? selection(field) : null,
+      slashOpen: slashSearch !== null,
+      slashCount: filteredSlashCommands.length,
+      level: Math.max(0, block.level || 0),
+      minLevel: levelOffset || 0,
+      siblingFollows,
+      canCreateAbove: !!onCreateBlockAboveRef.current,
+      canMerge: !!onMergeWithPreviousRef.current,
+    });
+    const stop = () => {
       e.preventDefault();
       e.stopPropagation();
-      runHistory(e.key.toLowerCase() === 'y' || e.shiftKey);
-      return;
-    }
-    // Enter in a block someone else is editing cannot split it (read-only), so it adds a new block below
-    // without touching the locked one. (Chromium does not move the caret with End in read-only fields.)
-    if (lockedBy && canAppendBelow && e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      onCreateBlockBelowRef.current(block.id, '');
-      return;
-    }
-    if (!canEdit) return;
-
-    // Formatting shortcuts (Ctrl/Cmd+B, Ctrl/Cmd+I, Ctrl/Cmd+L for a link) - not in code blocks. Ctrl+K
-    // stays with the global search; Ctrl+L would otherwise go to the browser's address bar.
-    const isMod = (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey;
-    if (isMod && canEdit && block.type !== 'code' && ['b', 'i', 'l'].includes(e.key.toLowerCase())) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const ta = textareaRef.current || e.currentTarget;
-      const start = ta.selectionStart ?? 0;
-      const end = ta.selectionEnd ?? 0;
-      const text = ta.value;
-      const hasSelection = start < end;
-
-      if (e.key.toLowerCase() === 'l') {
-        if (!hasSelection) {
-          // The link goes in at the cursor (without these it replaced the whole text)
-          linkBeforeRef.current = text.slice(0, start);
-          linkAfterRef.current = text.slice(start);
-          linkCaretRef.current = start;
-          setShowLinkModal(true);
-          return;
-        }
-        // The marked text becomes the link's own text (note, bullet or web link)
-        linkBeforeRef.current = text.slice(0, start);
-        linkAfterRef.current = text.slice(end);
-        linkCaretRef.current = start;
-        setLinkLabel(text.slice(start, end).trim());
-        setShowLinkModal(true);
-        return;
-      }
-
-      const next = toggleInlineFormat(text, start, end, e.key.toLowerCase() === 'b');
-      applyFormattingChange(next.value, next.start, next.end);
-      return;
-    }
-
-    // Slash command navigation
-    if (slashSearch !== null) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setSlashMatchInfo(null);
-        return;
-      }
-      if (filteredSlashCommands.length > 0) {
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          setSlashIndex((prev) => (prev + 1) % filteredSlashCommands.length);
-          return;
-        }
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          setSlashIndex((prev) => (prev - 1 + filteredSlashCommands.length) % filteredSlashCommands.length);
-          return;
-        }
-        if (e.key === 'Enter' || e.key === 'Tab') {
-          e.preventDefault();
-          const selected = filteredSlashCommands[slashIndex];
-          if (selected) {
-            applySlashCommand(selected);
-          }
-          return;
-        }
-      }
-    }
-
-    // 1. Tab / Shift+Tab -> Strict Indent / Outdent
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      e.stopPropagation();
-      flushDebounce(localContent);
-      onIndentBlockRef.current(block.id, e.shiftKey ? -1 : 1);
-      return;
-    }
-
-    // 2. Enter (without Shift) -> If block is completely empty:
-    //    - A to-do becomes a plain bullet
-    //    - If level > minLevel, outdent (Shift+Tab behaviour)
-    //    - Otherwise split paragraph at cursor and create new block below
-    if (e.key === 'Enter' && !e.shiftKey && block.type !== 'code') {
-      e.preventDefault();
-      e.stopPropagation();
-      setSlashMatchInfo(null);
-
-      const fenceMatch = localContent.match(/^```([a-z0-9_+#.-]{0,40})$/i);
-      if (fenceMatch) {
-        const rawLang = fenceMatch[1];
-        const resolvedLang = rawLang ? resolveLanguageId(rawLang) || rawLang : '';
-        setLocalContent('');
-        localContentRef.current = '';
-        refocusAfterTypeChangeRef.current = true;
-        flushDebounce('', {
-          type: 'code',
-          lang: resolvedLang,
-          checked: false,
-        });
-        return;
-      }
-
-      const minLevel = levelOffset || 0;
-      if (localContent === '') {
-        // Enter in an empty to-do ends the to-dos: it becomes a plain bullet on the same level
-        if (block.type === 'todo') {
-          refocusAfterTypeChangeRef.current = true;
-          flushDebounce('', { type: 'text', checked: false, taskId: '' });
-          return;
-        }
-        if (Math.max(0, block.level || 0) > minLevel && !siblingFollows) {
-          flushDebounce(localContent);
-          onIndentBlockRef.current(block.id, -1);
-          return;
-        }
-        // Enter in an empty last numbered item at the top ends the list
-        if (block.type === 'numbered' && !siblingFollows) {
-          flushDebounce('', { type: 'text' });
-          return;
-        }
-      }
-
-      const start = e.currentTarget.selectionStart ?? localContent.length;
-      const end = e.currentTarget.selectionEnd ?? start;
-      // At the very start of a bullet with text, Enter pushes the bullet down a line: a new empty bullet goes
-      // above it and this one keeps its text, type, children and the cursor
-      if (start === 0 && end === 0 && localContent !== '' && onCreateBlockAboveRef.current) {
-        flushDebounce(localContent);
-        onCreateBlockAboveRef.current(block.id);
-        return;
-      }
-      let beforeText = localContent.slice(0, start);
-      let afterText = localContent.slice(end);
-
-      // Clean linebreaks at the split boundary if present
-      if (beforeText.endsWith('\r\n')) {
-        beforeText = beforeText.slice(0, -2);
-      } else if (beforeText.endsWith('\n')) {
-        beforeText = beforeText.slice(0, -1);
-      }
-      if (afterText.startsWith('\r\n')) {
-        afterText = afterText.slice(2);
-      } else if (afterText.startsWith('\n')) {
-        afterText = afterText.slice(1);
-      }
-
-      setLocalContent(beforeText);
-      localContentRef.current = beforeText;
-      flushDebounce(beforeText);
-      onCreateBlockBelowRef.current(block.id, afterText);
-      return;
-    }
-
-    // 3. Backspace on empty block -> IMMEDIATELY DELETE THE BLOCK (regardless of level)!
-    // Outdenting is strictly done via Shift+Tab.
-    if (e.key === 'Backspace' && localContent === '') {
-      e.preventDefault();
-      e.stopPropagation();
-      setSlashMatchInfo(null);
+    };
+    const dropPendingSave = () => {
       if (debounceTimerRef.current !== null) {
         window.clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
       }
-      onDeleteBlockRef.current(block.id);
-      return;
-    }
-
-    // 3b. Backspace at the very start of a non-empty block -> append its text to the previous block
-    if (
-      e.key === 'Backspace' &&
-      localContent !== '' &&
-      block.type !== 'code' &&
-      onMergeWithPreviousRef.current &&
-      e.currentTarget.selectionStart === 0 &&
-      e.currentTarget.selectionEnd === 0
-    ) {
-      if (onMergeWithPreviousRef.current(block.id, localContent)) {
-        // Text lives in the previous block afterwards, so drop this block's pending save
-        if (debounceTimerRef.current !== null) {
-          window.clearTimeout(debounceTimerRef.current);
-          debounceTimerRef.current = null;
-        }
+    };
+    switch (action.kind) {
+      case 'none':
+        return;
+      case 'history':
+        stop();
+        runHistory(action.redo);
+        return;
+      case 'appendBelow':
         e.preventDefault();
-        e.stopPropagation();
+        onCreateBlockBelowRef.current(block.id, '');
+        return;
+      case 'linkDialog':
+        stop();
+        linkBeforeRef.current = action.before;
+        linkAfterRef.current = action.after;
+        linkCaretRef.current = action.caret;
+        if (action.label !== null) setLinkLabel(action.label);
+        setShowLinkModal(true);
+        return;
+      case 'format':
+        stop();
+        applyFormattingChange(action.value, action.start, action.end);
+        return;
+      case 'closeSlash':
+        e.preventDefault();
         setSlashMatchInfo(null);
+        return;
+      case 'moveSlash': {
+        e.preventDefault();
+        const n = filteredSlashCommands.length;
+        setSlashIndex((prev) => (prev + action.step + n) % n);
+        return;
       }
-      return;
-    }
-
-    // 4. Arrow navigation between blocks
-    if (e.key === 'ArrowUp' && !e.shiftKey && !e.altKey) {
-      const el = textareaRef.current;
-      if (el && el.selectionStart === 0 && el.selectionEnd === 0) {
+      case 'applySlash': {
+        e.preventDefault();
+        const selected = filteredSlashCommands[slashIndex];
+        if (selected) applySlashCommand(selected);
+        return;
+      }
+      case 'indent':
+        stop();
+        flushDebounce(localContent);
+        onIndentBlockRef.current(block.id, action.delta);
+        return;
+      case 'deleteEmpty':
+        stop();
+        setSlashMatchInfo(null);
+        dropPendingSave();
+        onDeleteBlockRef.current(block.id);
+        return;
+      case 'merge':
+        if (onMergeWithPreviousRef.current?.(block.id, localContent)) {
+          // The text lives in the previous bullet now, so this bullet's pending save goes
+          dropPendingSave();
+          stop();
+          setSlashMatchInfo(null);
+        }
+        return;
+      case 'navigate':
         e.preventDefault();
         flushDebounce(localContent);
-        onNavigateFocusRef.current(block.id, 'up');
-      }
-      return;
+        onNavigateFocusRef.current(block.id, action.direction);
+        return;
     }
-
-    if (e.key === 'ArrowDown' && !e.shiftKey && !e.altKey) {
-      const el = textareaRef.current;
-      if (el && el.selectionStart === localContent.length && el.selectionEnd === localContent.length) {
-        e.preventDefault();
+    // The rest is Enter
+    stop();
+    setSlashMatchInfo(null);
+    switch (action.kind) {
+      case 'toCode':
+        setLocalContent('');
+        localContentRef.current = '';
+        refocusAfterTypeChangeRef.current = true;
+        flushDebounce('', { type: 'code', lang: action.lang ? resolveLanguageId(action.lang) || action.lang : '', checked: false });
+        return;
+      case 'endTodo':
+        refocusAfterTypeChangeRef.current = true;
+        flushDebounce('', { type: 'text', checked: false, taskId: '' });
+        return;
+      case 'outdentEmpty':
         flushDebounce(localContent);
-        onNavigateFocusRef.current(block.id, 'down');
-      }
-      return;
+        onIndentBlockRef.current(block.id, -1);
+        return;
+      case 'endNumbered':
+        flushDebounce('', { type: 'text' });
+        return;
+      case 'createAbove':
+        flushDebounce(localContent);
+        onCreateBlockAboveRef.current?.(block.id);
+        return;
+      case 'split':
+        setLocalContent(action.before);
+        localContentRef.current = action.before;
+        flushDebounce(action.before);
+        onCreateBlockBelowRef.current(block.id, action.after);
+        return;
     }
   };
 
