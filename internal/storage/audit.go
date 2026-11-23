@@ -74,6 +74,7 @@ const (
 	AuditBackupDownloaded          = "backup.downloaded"
 	AuditBackupRestored            = "backup.restored"       // the whole instance from a full backup (in the restored log)
 	AuditBackupRestoreFailed       = "backup.restore_failed" // the restored data did not open; the previous data stayed
+	AuditBackupTakenOver           = "backup.taken_over"     // the desktop app took an account of a server backup over (details.account)
 	AuditSpeechModelDownload       = "speech_model.download" // the admin asked the Whisper server for a model
 	AuditSpeechModelDeleted        = "speech_model.deleted"
 )

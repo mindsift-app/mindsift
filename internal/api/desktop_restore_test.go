@@ -160,6 +160,11 @@ func TestDesktopTakesOverOneAccountOfAServerSnapshot(t *testing.T) {
 	if len(users) != 1 || users[0].ID != me.ID || users[0].Role != domain.RoleAdmin || users[0].Username != me.Username {
 		t.Fatalf("accounts after the take over: %+v", users)
 	}
+	// Recorded like the other changes of the backups: who took which account over, and how
+	if e := lastAudit(t, store, storage.AuditBackupTakenOver); e.ActorID != me.ID || e.TargetKind != storage.AuditTargetBackup ||
+		!strings.Contains(string(e.Details), `"mode":"restore"`) || !strings.Contains(string(e.Details), `"notes":1`) || strings.Contains(string(e.Details), `"account":""`) {
+		t.Errorf("audit row of the take over: %+v %s", e, e.Details)
+	}
 	if users[0].DisplayName != "Anna Server" || store.Language(me.ID) != "en" {
 		t.Errorf("settings not taken over: name %q, language %q", users[0].DisplayName, store.Language(me.ID))
 	}

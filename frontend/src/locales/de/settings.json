@@ -1300,6 +1300,7 @@
       "backup_downloaded": "Backup heruntergeladen",
       "backup_restored": "Backup wiederhergestellt",
       "backup_restore_failed": "Wiederherstellung fehlgeschlagen",
+      "backup_taken_over": "Konto aus Server-Backup übernommen",
       "speech_model_download": "Sprachmodell angefordert",
       "speech_model_deleted": "Sprachmodell gelöscht",
       "account_registered": "Selbst registriert",

@@ -1301,6 +1301,7 @@
       "backup_downloaded": "Sauvegarde téléchargée",
       "backup_restored": "Sauvegarde restaurée",
       "backup_restore_failed": "Restauration échouée",
+      "backup_taken_over": "Compte repris d’une sauvegarde du serveur",
       "speech_model_download": "Modèle vocal demandé",
       "speech_model_deleted": "Modèle vocal supprimé",
       "account_registered": "Inscription",

@@ -1301,6 +1301,7 @@
       "backup_downloaded": "Backup downloaded",
       "backup_restored": "Backup restored",
       "backup_restore_failed": "Restore failed",
+      "backup_taken_over": "Account taken over from server backup",
       "speech_model_download": "Speech model requested",
       "speech_model_deleted": "Speech model deleted",
       "account_registered": "Signed up",

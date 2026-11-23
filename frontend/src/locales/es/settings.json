@@ -1301,6 +1301,7 @@
       "backup_downloaded": "Copia de seguridad descargada",
       "backup_restored": "Copia de seguridad restaurada",
       "backup_restore_failed": "Restauración fallida",
+      "backup_taken_over": "Cuenta tomada de una copia del servidor",
       "speech_model_download": "Modelo de voz solicitado",
       "speech_model_deleted": "Modelo de voz eliminado",
       "account_registered": "Registro propio",

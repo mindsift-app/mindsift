@@ -33,6 +33,7 @@ export const AUDIT_ACTIONS = [
   'backup.downloaded',
   'backup.restored',
   'backup.restore_failed',
+  'backup.taken_over',
   'speech_model.download',
   'speech_model.deleted',
 ] as const;
