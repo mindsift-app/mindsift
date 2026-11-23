@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -429,9 +430,9 @@ func (s *Store) WriteAudioTranscript(userID, docID, blockID, mediaID, captionBef
 	a := collab.Actor{UserID: userID, ClientID: collab.ServerHolder}
 	results, _, err := s.applyDocChange(docID, a, nil, func(d *collab.Doc) []collab.Op {
 		b, ok := d.Blocks[blockID]
-		ref, isMedia := MediaRef{}, false
+		ref, isMedia := blockfmt.MediaRef{}, false
 		if ok && !b.Deleted && b.Type == "audio" {
-			ref, isMedia = ParseMediaContent(b.Content)
+			ref, isMedia = blockfmt.ParseMediaContent(b.Content)
 		}
 		if !isMedia || ref.ID != mediaID {
 			out.Gone = true
@@ -450,7 +451,7 @@ func (s *Store) WriteAudioTranscript(userID, docID, blockID, mediaID, captionBef
 			}
 			caption = current + " " + text
 		}
-		content := MediaContent("audio", mediaID, caption)
+		content := blockfmt.MediaContent("audio", mediaID, caption)
 		out.Ops = []collab.Op{{OpID: domain.NewID("op"), Kind: collab.OpSetContent, BlockID: blockID, BaseVersion: b.Version, Content: &content}}
 		return out.Ops
 	})

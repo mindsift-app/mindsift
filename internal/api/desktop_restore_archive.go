@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/mindsift-app/mindsift/internal/importer"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -357,7 +358,7 @@ func extractAccountMedia(st *storage.Store, dir, accountID string) error {
 	// In the account's backup: Obsidian/attachments/<id><ext>, media/<id><ext> in older ones
 	return walkArchive(uploadZip, userZip, func(e archiveEntry) error {
 		d := entryDir(e.name)
-		if d != storage.BackupVaultDir+"/attachments" && d != "media" {
+		if d != importer.BackupVaultDir+"/attachments" && d != "media" {
 			return nil
 		}
 		if dst, ok := byFile[path.Base(e.name)]; ok {

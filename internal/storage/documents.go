@@ -168,9 +168,6 @@ func (s *Store) GetAuthorizedSharedFolderUsers(folderID string) ([]string, error
 	return users, nil
 }
 
-// ErrNoteTooLarge: a note would hold more bullets than it may (collab.MaxNoteBlocks).
-var ErrNoteTooLarge = i18n.NewError("Eine Notiz kann höchstens {max} Punkte haben", "max", strconv.Itoa(collab.MaxNoteBlocks))
-
 // ErrNoteTitleTooLong: a title given through the API is longer than a note title may be (collab.MaxTitleRunes)
 var ErrNoteTitleTooLong = i18n.NewError("Ein Notiztitel darf höchstens {max} Zeichen haben", "max", strconv.Itoa(collab.MaxTitleRunes))
 
@@ -232,7 +229,7 @@ func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, 
 	// an import or an agent, would otherwise skip it
 	if len(blocks) > collab.MaxNoteBlocks {
 		secrets.discard()
-		return nil, ErrNoteTooLarge
+		return nil, collab.ErrNoteTooLarge
 	}
 	tags = stripFolderTags(tags)
 	tagsJSON, _ := json.Marshal(tags)

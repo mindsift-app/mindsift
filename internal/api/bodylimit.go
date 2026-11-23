@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mindsift-app/mindsift/internal/storage"
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 // Request bodies are capped for every endpoint (FLAW-36), so a session or API key cannot tie up memory
@@ -19,7 +19,7 @@ func (s *Server) bodyLimitFor(path string) int64 {
 	case path == "/api/v1/voice/transcribe", path == "/api/v1/voice/captures":
 		return int64(s.speech().MaxUploadMB)<<20 + 1<<20
 	case strings.HasPrefix(path, "/api/v1/import/"):
-		return storage.MaxImportUploadBytes + 1<<20
+		return importer.MaxUploadBytes + 1<<20
 	case path == "/api/v1/admin/backups/server-snapshot" && s.desktopMode():
 		return maxSnapshotUploadBytes + 1<<20
 	case strings.HasPrefix(path, "/api/v1/admin/backups/uploads/"):

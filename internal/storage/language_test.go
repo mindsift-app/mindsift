@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 // Accounts from before the language choice keep German; new ones start without a choice.
@@ -76,8 +78,8 @@ func TestStoreTextsInLanguage(t *testing.T) {
 	if !strings.Contains(strings.Join(names, ","), "Tasks/No list.md") {
 		t.Fatalf("English archive folders: %v", names)
 	}
-	plan, err := PlanMindSiftArchiveImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
-	if err != nil || len(plan.TaskLists) != 2 || plan.TaskLists[1].title != "" || len(plan.TaskLists[1].tasks) != 1 || len(plan.Folders) != 0 {
+	plan, err := importer.PlanMindSiftArchiveImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil || len(plan.TaskLists) != 2 || plan.TaskLists[1].Title != "" || len(plan.TaskLists[1].Tasks) != 1 || len(plan.Folders) != 0 {
 		t.Fatalf("English archive must import its tasks: %v %+v", err, plan)
 	}
 }

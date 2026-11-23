@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
@@ -19,10 +20,7 @@ import (
 // A bullet copied or moved into another note gets a copy of the value there (secret_gate.go), so every
 // reference points into its own note and no note reveals the value of another.
 
-// SecretRefRe matches a reference in block text; group 1 is the id.
-var SecretRefRe = regexp.MustCompile(`\{\{secret:([A-Za-z0-9_]+)\}\}`)
-
-// secretValueRefRe matches a reference with the id format of a stored value (NewSecretID; ids of older
+// secretValueRefRe matches a reference with the id format of a stored value (blockfmt.NewSecretID; ids of older
 // versions have "_" after "sec"). Code blocks keep none (codeBlockText).
 var secretValueRefRe = regexp.MustCompile(`\{\{secret:sec_?[0-9a-f]{24}\}\}`)
 
@@ -60,8 +58,6 @@ func (s *Store) migrateNoteSecrets() error {
 	)
 }
 
-func secretRef(id string) string { return "{{secret:" + id + "}}" }
-
 // A code block shows its text as it is and cannot show a hidden value as a chip: a reference in it showed
 // its raw id, and the gates made copies of values nobody saw. So a code block keeps no reference to a
 // value. Whatever brings one in (a bullet turned into a code block, text written or pasted into one, a new
@@ -97,12 +93,8 @@ func MaskSecretRefs(text string) string {
 	if !strings.Contains(text, "{{secret:") {
 		return text
 	}
-	return SecretRefRe.ReplaceAllString(text, "••••")
+	return blockfmt.SecretRefRe.ReplaceAllString(text, "••••")
 }
-
-// NewSecretID: the id is known before encrypting, so the ciphertext can be bound to it. Without "_",
-// so "_" in the text around a reference cannot be read as Markdown italics reaching into it.
-func NewSecretID() string { return strings.Replace(domain.NewID("sec"), "_", "", 1) }
 
 func (s *Store) CreateSecret(id, docID, userID, ciphertext string) error {
 	now := domain.NowISO()

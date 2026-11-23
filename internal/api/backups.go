@@ -16,10 +16,12 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
+	"github.com/mindsift-app/mindsift/internal/importer"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -244,13 +246,13 @@ func (s *Server) handleRestoreMyBackup(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	plan, err := storage.PlanMindSiftImport(file, info.Size(), filepath.Base(path))
+	plan, err := importer.PlanMindSiftImport(file, info.Size(), filepath.Base(path))
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	sections := storage.NormalizeSections(strings.Split(r.URL.Query().Get("sections"), ","))
-	plan = plan.Only(sections)
+	plan = plan.Only(storage.ImportSections(sections))
 	if r.URL.Query().Get("preview") == "1" {
 		s.previewImport(w, userID, plan)
 		return

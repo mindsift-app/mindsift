@@ -18,8 +18,10 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/i18n"
+	"github.com/mindsift-app/mindsift/internal/importer"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -333,7 +335,7 @@ func unpackSnapshot(src, dst string) error {
 // snapshotSummary: the preview or result of taking an account over: what the import creates and skips,
 // whose data it is and whether the person's settings come along.
 type snapshotSummary struct {
-	storage.ImportSummary
+	importer.Summary
 	Account  storage.SnapshotAccount `json:"account"`
 	Settings bool                    `json:"settings"`
 	// SettingsSkipped: settings of the account left out as invalid (keys of PATCH /auth/settings)
@@ -414,13 +416,13 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, err)
 		return
 	}
-	plan, err := storage.PlanMindSiftImport(archive, info.Size(), filepath.Base(archive.Name()))
+	plan, err := importer.PlanMindSiftImport(archive, info.Size(), filepath.Base(archive.Name()))
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	sections := storage.NormalizeSections(strings.Split(q.Get("sections"), ","))
-	plan = plan.Only(sections)
+	plan = plan.Only(storage.ImportSections(sections))
 	plan.CarryHiddenValues(s.snapshotHiddenValuesOf(st, dir, accountID, plan.HiddenValueIDs()), snapshotHiddenValues)
 	settings := q.Get("settings") != "0"
 	if q.Get("preview") == "1" {

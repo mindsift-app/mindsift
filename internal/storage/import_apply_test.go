@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 // countOf counts the rows of a table that belong to the user (column user_id).
@@ -27,7 +28,7 @@ func TestFailedImportIsTakenOut(t *testing.T) {
 	seedAnna(t, store, anna)
 	exp, _ := store.ExportUserData(anna.ID)
 	raw, _ := json.Marshal(exp)
-	plan, err := PlanMindSiftJSONImport(raw)
+	plan, err := importer.PlanMindSiftJSONImport(raw)
 	if err != nil {
 		t.Fatalf("plan: %v", err)
 	}
@@ -82,7 +83,7 @@ func TestConcurrentImportsAllComplete(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			plan, err := PlanMindSiftJSONImport(raw)
+			plan, err := importer.PlanMindSiftJSONImport(raw)
 			if err == nil {
 				_, err = store.ApplyImport(id, plan)
 			}
@@ -107,7 +108,7 @@ func TestFailedImportLeavesWikiLinksAlone(t *testing.T) {
 	seedAnna(t, store, anna)
 	exp, _ := store.ExportUserData(anna.ID)
 	raw, _ := json.Marshal(exp)
-	plan, err := PlanMindSiftJSONImport(raw)
+	plan, err := importer.PlanMindSiftJSONImport(raw)
 	if err != nil {
 		t.Fatalf("plan: %v", err)
 	}
@@ -147,7 +148,7 @@ func TestFailedRestoreKeepsPreviousData(t *testing.T) {
 	seedAnna(t, store, anna)
 	exp, _ := store.ExportUserData(anna.ID)
 	raw, _ := json.Marshal(exp)
-	plan, err := PlanMindSiftJSONImport(raw)
+	plan, err := importer.PlanMindSiftJSONImport(raw)
 	if err != nil {
 		t.Fatalf("plan: %v", err)
 	}

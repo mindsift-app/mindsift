@@ -12,7 +12,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 func pngBytes(t *testing.T, w int) []byte {
@@ -27,7 +29,7 @@ func pngBytes(t *testing.T, w int) []byte {
 // storeTestMedia creates a media row with its file and returns it.
 func storeTestMedia(t *testing.T, store *Store, docID, ownerID string, data []byte) *Media {
 	t.Helper()
-	mime, kind, ok := DetectMedia(data, "")
+	mime, kind, ok := blockfmt.DetectMedia(data, "")
 	if !ok {
 		t.Fatal("test data not recognised")
 	}
@@ -52,7 +54,7 @@ func mediaBlocksOf(t *testing.T, store *Store, userID string) map[string][]byte 
 			if b.Type != "image" && b.Type != "audio" {
 				continue
 			}
-			ref, ok := ParseMediaContent(b.Content)
+			ref, ok := blockfmt.ParseMediaContent(b.Content)
 			if !ok {
 				t.Fatalf("block content is no media reference: %q", b.Content)
 			}
@@ -77,7 +79,7 @@ func TestBackupZipCarriesMedia(t *testing.T) {
 	m := storeTestMedia(t, store, doc.ID, anna.ID, img)
 	_, _ = store.CreateDocument(anna.ID, "", "Urlaub", "🏖️", "Reisen", []domain.DocumentBlock{
 		{ID: "blk_t", Type: "bullet", Content: "Strand"},
-		{ID: "blk_i", Type: "image", Content: MediaContent("image", m.ID, "Sonnenuntergang [Süd]")},
+		{ID: "blk_i", Type: "image", Content: blockfmt.MediaContent("image", m.ID, "Sonnenuntergang [Süd]")},
 	}, nil, false)
 
 	exp, _ := store.ExportUserData(anna.ID)
@@ -99,7 +101,7 @@ func TestBackupZipCarriesMedia(t *testing.T) {
 		t.Fatalf("backup ZIP must hold the note as Markdown: %v", names)
 	}
 
-	plan, err := PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "backup.zip")
+	plan, err := importer.PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "backup.zip")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,19 +121,19 @@ func TestOldBackupZipMediaStillRestores(t *testing.T) {
 	img := pngBytes(t, 3)
 	m := storeTestMedia(t, store, doc.ID, anna.ID, img)
 	_, _ = store.CreateDocument(anna.ID, "", "Urlaub", "🏖️", "", []domain.DocumentBlock{
-		{ID: "blk_i", Type: "image", Content: MediaContent("image", m.ID, "Alt")},
+		{ID: "blk_i", Type: "image", Content: blockfmt.MediaContent("image", m.ID, "Alt")},
 	}, nil, false)
 	exp, _ := store.ExportUserData(anna.ID)
 	raw, _ := json.Marshal(exp)
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
-	for name, data := range map[string][]byte{BackupFileName: raw, "media/" + m.ID + ".png": img} {
+	for name, data := range map[string][]byte{importer.BackupFileName: raw, "media/" + m.ID + ".png": img} {
 		f, _ := zw.Create(name)
 		_, _ = f.Write(data)
 	}
 	_ = zw.Close()
 
-	plan, err := PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "backup.zip")
+	plan, err := importer.PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "backup.zip")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +151,7 @@ func TestMarkdownVaultCarriesMedia(t *testing.T) {
 	img := pngBytes(t, 5)
 	m := storeTestMedia(t, store, doc.ID, anna.ID, img)
 	_, _ = store.CreateDocument(anna.ID, "", "Plan", "", "Projekte/Haus", []domain.DocumentBlock{
-		{ID: "blk_p", Type: "image", Content: MediaContent("image", m.ID, "Grundriss")},
+		{ID: "blk_p", Type: "image", Content: blockfmt.MediaContent("image", m.ID, "Grundriss")},
 	}, nil, false)
 
 	var buf bytes.Buffer
@@ -174,7 +176,7 @@ func TestMarkdownVaultCarriesMedia(t *testing.T) {
 		t.Fatalf("vault: attachment %v, note:\n%s", hasFile, note)
 	}
 
-	plan, err := PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "vault.zip")
+	plan, err := importer.PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "vault.zip")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +203,7 @@ func TestObsidianVaultImagesAreImported(t *testing.T) {
 	add("Vault/Anhänge/handbuch.pdf", []byte("%PDF-1.4"))
 	_ = zw.Close()
 
-	plan, err := PlanObsidianImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "Vault.zip")
+	plan, err := importer.PlanObsidianImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "Vault.zip")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
@@ -154,7 +156,7 @@ func (s *Server) audioSettings() audioSettings {
 	return out
 }
 
-var detectMedia = storage.DetectMedia
+var detectMedia = blockfmt.DetectMedia
 
 func (s *Server) canEditDoc(userID, docID string) bool {
 	role := s.store.DocRole(userID, docID)

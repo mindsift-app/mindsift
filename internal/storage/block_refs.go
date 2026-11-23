@@ -3,10 +3,11 @@ package storage
 import (
 	"database/sql"
 	"fmt"
-	"regexp"
 	"slices"
 	"sort"
 	"strings"
+
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 )
 
 // References from bullets to other records, so "which bullets show file X" or "which notes hold secret
@@ -48,10 +49,6 @@ const (
 		JOIN blocks b ON b.id = r.block_id WHERE b.document_id = r.document_id AND b.deleted = 0`
 )
 
-// mediaIDRe finds every file a block points to, wherever in the content (image and audio bullets, but
-// also a reference pasted into text); the id is the media id format of domain.NewID.
-var mediaIDRe = regexp.MustCompile(`media:(med_[0-9a-f]+)`)
-
 type blockRef struct{ kind, id string }
 
 // maxBlockRefs caps the references kept per bullet. A real bullet shows a file or two (an image, audio, a
@@ -91,7 +88,7 @@ func (s *Store) mediaBeyondRefCap(userID string) (map[string][]string, error) {
 		if err := rows.Scan(&docID, &content); err != nil {
 			return nil, err
 		}
-		for _, m := range mediaIDRe.FindAllStringSubmatch(content, -1) {
+		for _, m := range blockfmt.MediaIDRe.FindAllStringSubmatch(content, -1) {
 			if docs := out[m[1]]; len(docs) == 0 || docs[len(docs)-1] != docID {
 				out[m[1]] = append(docs, docID)
 			}
@@ -116,7 +113,7 @@ func secretsBeyondRefCap(q docQueryer) (map[string][]string, error) {
 		if err := rows.Scan(&d, &content); err != nil {
 			return nil, err
 		}
-		for _, m := range SecretRefRe.FindAllStringSubmatch(content, -1) {
+		for _, m := range blockfmt.SecretRefRe.FindAllStringSubmatch(content, -1) {
 			if docs := out[m[1]]; !slices.Contains(docs, d) {
 				out[m[1]] = append(docs, d)
 			}
@@ -143,12 +140,12 @@ func blockRefsOf(typ, content string) []blockRef {
 		}
 	}
 	if hasMedia {
-		for _, m := range mediaIDRe.FindAllStringSubmatch(content, -1) {
+		for _, m := range blockfmt.MediaIDRe.FindAllStringSubmatch(content, -1) {
 			add(blockRef{refMedia, m[1]})
 		}
 	}
 	if hasSecret {
-		for _, m := range SecretRefRe.FindAllStringSubmatch(content, -1) {
+		for _, m := range blockfmt.SecretRefRe.FindAllStringSubmatch(content, -1) {
 			add(blockRef{refSecret, m[1]})
 		}
 	}

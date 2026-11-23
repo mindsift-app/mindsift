@@ -4,6 +4,7 @@ import (
 	"maps"
 	"testing"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -38,7 +39,7 @@ func TestJournalDayEmptyFromBullets(t *testing.T) {
 	}
 	typed := day("2026-11-01", nil)
 	day("2026-11-02", flatBlocks([3]any{"b1", 0, ""}, [3]any{"b2", 1, ""}))
-	day("2026-11-03", []domain.DocumentBlock{{ID: "img", Type: "image", Content: MediaContent("image", "med_aa", "Berg")}})
+	day("2026-11-03", []domain.DocumentBlock{{ID: "img", Type: "image", Content: blockfmt.MediaContent("image", "med_aa", "Berg")}})
 	day("2026-11-04", []domain.DocumentBlock{{ID: "dw", Type: "drawing", Content: `{"v":1,"els":[{"id":"e1","t":"text","x":1,"y":2,"txt":"Skizze"}]}`}})
 	day("2026-11-05", []domain.DocumentBlock{{ID: "dw0", Type: "drawing", Content: `{"v":1,"els":[{"id":"e1","t":"pen","x":1,"y":2,"pts":[[0,0],[1,1]]}]}`}})
 	day("2026-11-06", []domain.DocumentBlock{{ID: "td", Type: "todo", Content: "Milch kaufen"}})

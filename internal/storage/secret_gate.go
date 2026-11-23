@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -84,7 +85,7 @@ func (g *secretGate) prepare(contents ...string) {
 		if !strings.Contains(c, "{{secret:") {
 			continue
 		}
-		for _, m := range SecretRefRe.FindAllStringSubmatch(c, -1) {
+		for _, m := range blockfmt.SecretRefRe.FindAllStringSubmatch(c, -1) {
 			if _, done := g.to[m[1]]; !done && !seen[m[1]] {
 				seen[m[1]] = true
 				ids = append(ids, m[1])
@@ -162,7 +163,7 @@ func (g *secretGate) copyOf(r NoteSecret, copies *[]NoteSecret) string {
 	if g.copies == 0 {
 		return r.ID
 	}
-	id := NewSecretID()
+	id := blockfmt.NewSecretID()
 	sealed, err := SealValue(g.s.secretsKey, id, plain)
 	if err != nil {
 		slog.Error("Copying a hidden value failed", "id", r.ID, "error", err)
@@ -182,7 +183,7 @@ func (g *secretGate) clean(content string) (out string, changed bool) {
 		return content, false
 	}
 	g.prepare(content)
-	out = SecretRefRe.ReplaceAllStringFunc(content, func(ref string) string {
+	out = blockfmt.SecretRefRe.ReplaceAllStringFunc(content, func(ref string) string {
 		id := ref[len("{{secret:") : len(ref)-len("}}")]
 		to, ok := g.to[id]
 		if !ok || to == id {
@@ -193,7 +194,7 @@ func (g *secretGate) clean(content string) (out string, changed bool) {
 			g.denied++
 			return g.placeholderFor(ref)
 		}
-		return secretRef(to)
+		return blockfmt.SecretRef(to)
 	})
 	return out, changed
 }

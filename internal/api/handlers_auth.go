@@ -13,10 +13,12 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
+	"github.com/mindsift-app/mindsift/internal/importer"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -721,11 +723,11 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 // is removed after the request, so a large archive is not held in memory while it is imported.
 const importUploadMemory = 8 << 20
 
-// importUpload opens the multipart field "file" (max. storage.MaxImportUploadBytes). The import reads
+// importUpload opens the multipart field "file" (max. importer.MaxUploadBytes). The import reads
 // it until it is done; the caller closes it.
 func importUpload(w http.ResponseWriter, r *http.Request) (multipart.File, int64, string, error) {
 	allowLongTransfer(w)
-	r.Body = http.MaxBytesReader(w, r.Body, storage.MaxImportUploadBytes+1<<20)
+	r.Body = http.MaxBytesReader(w, r.Body, importer.MaxUploadBytes+1<<20)
 	if err := r.ParseMultipartForm(importUploadMemory); err != nil {
 		return nil, 0, "", fmt.Errorf("Keine Datei erhalten oder Datei zu groß (max. 100 MB)")
 	}
@@ -733,7 +735,7 @@ func importUpload(w http.ResponseWriter, r *http.Request) (multipart.File, int64
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("Keine Datei erhalten oder Datei zu groß (max. 100 MB)")
 	}
-	if header.Size > storage.MaxImportUploadBytes {
+	if header.Size > importer.MaxUploadBytes {
 		file.Close()
 		return nil, 0, "", fmt.Errorf("Datei zu groß (max. 100 MB)")
 	}

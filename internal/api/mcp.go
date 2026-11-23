@@ -17,10 +17,12 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/i18n"
+	"github.com/mindsift-app/mindsift/internal/importer"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -431,7 +433,7 @@ func (s *Server) noteMarkdown(blocks []domain.DocumentBlock, titles map[string]s
 		b.Content = s.store.ReadableMentions(storage.ReadableWikiLinks(b.Content, titles))
 		if b.Type == "image" || b.Type == "audio" {
 			label := map[string]string{"image": "Bild", "audio": "Aufnahme"}[b.Type]
-			if ref, ok := storage.ParseMediaContent(b.Content); ok && ref.Caption != "" {
+			if ref, ok := blockfmt.ParseMediaContent(b.Content); ok && ref.Caption != "" {
 				label += ": " + ref.Caption
 			}
 			b.Type, b.Content = "paragraph", "["+label+"]"
@@ -1211,7 +1213,7 @@ func mcpContentBlocks(content string) []domain.DocumentBlock {
 			inFence = !inFence
 		}
 		// The rows of a Markdown table stay together (they are one table bullet)
-		inTable = !inFence && (storage.IsTableStart(all, i) || (inTable && trimmed != "" && strings.Contains(line, "|")))
+		inTable = !inFence && (blockfmt.IsTableStart(all, i) || (inTable && trimmed != "" && strings.Contains(line, "|")))
 		plain := !inFence && !inTable && trimmed != "" && mcpPlainLine.MatchString(line)
 		if plain && prevPlain {
 			lines = append(lines, "")
@@ -1219,7 +1221,7 @@ func mcpContentBlocks(content string) []domain.DocumentBlock {
 		lines = append(lines, line)
 		prevPlain = plain
 	}
-	blocks := storage.MarkdownToBlocks(strings.Join(lines, "\n"))
+	blocks := importer.MarkdownToBlocks(strings.Join(lines, "\n"))
 	// Mermaid diagrams become drawings, laid out here
 	for i, b := range blocks {
 		if b.Type == "code" && strings.EqualFold(b.Lang, "mermaid") {
@@ -1237,7 +1239,7 @@ func mcpContentBlocks(content string) []domain.DocumentBlock {
 	for _, line := range strings.Split(content, "\n") {
 		line = strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(line), "-*+"))
 		if line != "" {
-			blocks = append(blocks, storage.MarkdownToBlocks(line)...)
+			blocks = append(blocks, importer.MarkdownToBlocks(line)...)
 		}
 	}
 	return blocks

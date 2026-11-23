@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -104,7 +105,7 @@ func noteWithRecording(t *testing.T, srv *Server, store *storage.Store, token, u
 	var up struct{ ID string }
 	_ = json.Unmarshal(rec.Body.Bytes(), &up)
 	doc, err := store.CreateDocument(userID, "", "Sprachnotizen", "", "", []domain.DocumentBlock{
-		{ID: "blk_audio", Type: "audio", Content: storage.MediaContent("audio", up.ID, caption)},
+		{ID: "blk_audio", Type: "audio", Content: blockfmt.MediaContent("audio", up.ID, caption)},
 	}, nil, false)
 	if err != nil {
 		t.Fatal(err)
@@ -161,7 +162,7 @@ func TestTranscribeBlockInBackground(t *testing.T) {
 	})
 	close(jw.release)
 
-	want := storage.MediaContent("audio", mediaID, "Text von "+string(append([]byte{0x1A, 0x45, 0xDF, 0xA3}, []byte("aufnahme-im-block")...)))
+	want := blockfmt.MediaContent("audio", mediaID, "Text von "+string(append([]byte{0x1A, 0x45, 0xDF, 0xA3}, []byte("aufnahme-im-block")...)))
 	eventually(t, "caption written", func() bool { return blockContent(t, store, docID, "blk_audio") == want })
 	eventually(t, "job gone", func() bool {
 		jobs, _ := store.DocTranscriptions(docID)
@@ -193,7 +194,7 @@ func TestTranscribeBlockKeepsCaptionAndWaitsForEditor(t *testing.T) {
 			version = b.Version
 		}
 	}
-	content := storage.MediaContent("audio", mediaID, "Besprechung")
+	content := blockfmt.MediaContent("audio", mediaID, "Besprechung")
 	if _, _, err := store.ApplyDocOps(docID, editor, []collab.Op{{OpID: "op-cap", Kind: collab.OpSetContent, BlockID: "blk_audio", BaseVersion: version, Content: &content}}, srv.leases.View(docID)); err != nil {
 		t.Fatal(err)
 	}

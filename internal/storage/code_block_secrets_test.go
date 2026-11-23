@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -49,7 +50,7 @@ func TestCodeBlockKeepsNoHiddenValue(t *testing.T) {
 	setType := func(id, typ string) collab.Op {
 		return collab.Op{OpID: domain.NewID("op"), Kind: collab.OpSetProps, BlockID: id, Patch: &collab.PropsPatch{Type: &typ}}
 	}
-	withRef := "IP " + secretRef(x)
+	withRef := "IP " + blockfmt.SecretRef(x)
 	apply(setContent("blk_c1", withRef))
 	if secretRefRows(t, s, "blk_c1") != 1 {
 		t.Fatal("a bullet with a value is in block_refs")
@@ -83,9 +84,9 @@ func TestCodeBlockKeepsNoHiddenValue(t *testing.T) {
 	other, _ := s.CreateDocument(anna.ID, "", "Andere", "", "", nil, nil, false)
 	y := hideValue(t, s, other.ID, anna.ID, "geheim")
 	values := countSecrets(t, s)
-	apply(setContent("blk_c1", "token="+secretRef(y)))
+	apply(setContent("blk_c1", "token="+blockfmt.SecretRef(y)))
 	root := ""
-	code := "curl -H " + secretRef(y)
+	code := "curl -H " + blockfmt.SecretRef(y)
 	apply(collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: "blk_c2", ParentID: &root, OrderKey: "a5", Type: "code", Content: &code})
 	if got := contentOf(t, s, doc.ID, "blk_c1"); got != "token="+secretPlaceholder {
 		t.Errorf("text written into a code block: %q", got)
@@ -109,8 +110,8 @@ func TestCodeBlockKeepsNoHiddenValue(t *testing.T) {
 
 	// A new note with a code block (API, MCP, import)
 	created, err := s.CreateDocument(anna.ID, "", "Neu", "", "", []domain.DocumentBlock{
-		{ID: "blk_n1", Type: "code", Content: "export KEY=" + secretRef(y)},
-		{ID: "blk_n2", Type: "bullet", Content: "Wert " + secretRef(y)},
+		{ID: "blk_n1", Type: "code", Content: "export KEY=" + blockfmt.SecretRef(y)},
+		{ID: "blk_n2", Type: "bullet", Content: "Wert " + blockfmt.SecretRef(y)},
 	}, nil, false)
 	if err != nil {
 		t.Fatal(err)
@@ -132,7 +133,7 @@ func TestCodeBlockPlaceholderInTheWritersLanguage(t *testing.T) {
 	}
 	doc, _ := s.CreateDocument(anna.ID, "", "Tech", "", "", []domain.DocumentBlock{{ID: "blk_l1", Type: "bullet", Content: "x"}}, nil, false)
 	x := hideValue(t, s, doc.ID, anna.ID, "v")
-	text := "key " + secretRef(x)
+	text := "key " + blockfmt.SecretRef(x)
 	root := ""
 	res, _, err := s.ApplyDocOps(doc.ID, collab.Actor{UserID: anna.ID, ClientID: "tab"}, []collab.Op{
 		{OpID: "ins-l2", Kind: collab.OpInsert, BlockID: "blk_l2", ParentID: &root, OrderKey: "a5", Type: "code", Content: &text},
@@ -159,7 +160,7 @@ func TestMigrationClearsHiddenValuesFromCodeBlocks(t *testing.T) {
 		sql  string
 		args []any
 	}{
-		{`UPDATE blocks SET content = ? WHERE id = 'blk_o1'`, []any{"ssh " + secretRef(x)}},
+		{`UPDATE blocks SET content = ? WHERE id = 'blk_o1'`, []any{"ssh " + blockfmt.SecretRef(x)}},
 		{`INSERT INTO block_refs (block_id, document_id, kind, ref_id) VALUES ('blk_o1', ?, 'secret', ?)`, []any{doc.ID, x}},
 	} {
 		if _, err := s.db.Exec(q.sql, q.args...); err != nil {
@@ -189,18 +190,18 @@ func TestMigrationClearsHiddenValuesFromCodeBlocks(t *testing.T) {
 }
 
 func TestCodeBlockText(t *testing.T) {
-	id := NewSecretID()
+	id := blockfmt.NewSecretID()
 	old := "sec_0123456789abcdef01234567"
 	for _, c := range []struct{ in, want string }{
 		{"no reference", "no reference"},
-		{"a " + secretRef(id) + " b " + secretRef(old), "a (P) b (P)"},
+		{"a " + blockfmt.SecretRef(id) + " b " + blockfmt.SecretRef(old), "a (P) b (P)"},
 		{"{{secret:id}} and {{secret:sec123}}", "{{secret:id}} and {{secret:sec123}}"},
 	} {
 		if got := codeBlockText(c.in, "(P)"); got != c.want {
 			t.Errorf("codeBlockText(%q) = %q, want %q", c.in, got, c.want)
 		}
 	}
-	if got := codeBlockText(secretRef(id), strings.Repeat("x", 100)); got != "" {
+	if got := codeBlockText(blockfmt.SecretRef(id), strings.Repeat("x", 100)); got != "" {
 		t.Errorf("a placeholder longer than the reference leaves nothing: %q", got)
 	}
 }

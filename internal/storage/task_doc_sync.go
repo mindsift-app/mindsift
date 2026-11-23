@@ -5,6 +5,7 @@ import (
 	"hash/fnv"
 	"strings"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -484,7 +485,7 @@ func (s *Store) SyncTaskToDocFrom(userID string, t, before *domain.Thought) stri
 			return raw
 		}
 		gate.keep = map[string]bool{}
-		for _, m := range mediaIDRe.FindAllStringSubmatch(current, -1) {
+		for _, m := range blockfmt.MediaIDRe.FindAllStringSubmatch(current, -1) {
 			gate.keep[m[1]] = true
 		}
 		out, _ := gate.clean(raw)

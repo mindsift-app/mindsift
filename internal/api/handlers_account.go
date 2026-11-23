@@ -8,9 +8,11 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -78,14 +80,14 @@ func (s *Server) confirmPassword(w http.ResponseWriter, r *http.Request) (*domai
 }
 
 // runImport answers a preview (?preview=1) with what would be created, otherwise imports.
-func (s *Server) runImport(w http.ResponseWriter, r *http.Request, plan *storage.ImportPlan, err error) {
+func (s *Server) runImport(w http.ResponseWriter, r *http.Request, plan *importer.Plan, err error) {
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	// sections=notes,tasks,…: only these parts of a MindSift backup (all when not given)
 	sections := storage.NormalizeSections(strings.Split(r.URL.Query().Get("sections"), ","))
-	plan = plan.Only(sections)
+	plan = plan.Only(storage.ImportSections(sections))
 	if r.URL.Query().Get("preview") == "1" {
 		s.previewImport(w, auth.GetUserID(r.Context()), plan)
 		return
@@ -95,7 +97,7 @@ func (s *Server) runImport(w http.ResponseWriter, r *http.Request, plan *storage
 
 // previewImport answers with what the plan would create and skip, including references to files the
 // person may not read (they are dropped when the plan is applied).
-func (s *Server) previewImport(w http.ResponseWriter, userID string, plan *storage.ImportPlan) {
+func (s *Server) previewImport(w http.ResponseWriter, userID string, plan *importer.Plan) {
 	s.store.CheckImportMedia(userID, plan)
 	writeJSON(w, http.StatusOK, trSummary(w, plan.Summary(false)))
 }
@@ -103,7 +105,7 @@ func (s *Server) previewImport(w http.ResponseWriter, userID string, plan *stora
 // applyImport adds the plan to the user's data; with restore it replaces the chosen sections, whose
 // previous content is deleted only once the plan is in completely (Store.RestoreImport). A failed
 // import or restore keeps nothing of the plan and leaves the previous data as it was.
-func (s *Server) applyImport(w http.ResponseWriter, userID string, plan *storage.ImportPlan, sections map[string]bool, restore bool) {
+func (s *Server) applyImport(w http.ResponseWriter, userID string, plan *importer.Plan, sections map[string]bool, restore bool) {
 	var replace map[string]bool
 	if restore {
 		replace = sections
@@ -118,7 +120,7 @@ func (s *Server) applyImport(w http.ResponseWriter, userID string, plan *storage
 }
 
 // trSummary translates why files of an import were skipped ("Theme: …" part by part).
-func trSummary(w http.ResponseWriter, sum storage.ImportSummary) storage.ImportSummary {
+func trSummary(w http.ResponseWriter, sum importer.Summary) importer.Summary {
 	for i := range sum.Skipped {
 		sum.Skipped[i].Reason = tr(w, sum.Skipped[i].Reason)
 	}
@@ -138,7 +140,7 @@ func (s *Server) handleImportMindSift(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer done()
-	plan, err := storage.PlanMindSiftImport(file, size, name)
+	plan, err := importer.PlanMindSiftImport(file, size, name)
 	s.runImport(w, r, plan, err)
 }
 
@@ -155,7 +157,7 @@ func (s *Server) handleImportObsidian(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer done()
-	plan, err := storage.PlanObsidianImport(file, size, name)
+	plan, err := importer.PlanObsidianImport(file, size, name)
 	s.runImport(w, r, plan, err)
 }
 

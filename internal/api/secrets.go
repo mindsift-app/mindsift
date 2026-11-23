@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -55,7 +57,7 @@ func (s *Server) handleCreateSecret(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	id := storage.NewSecretID()
+	id := blockfmt.NewSecretID()
 	sealed, err := s.sealSecret(id, value)
 	if err == nil {
 		err = s.store.CreateSecret(id, docID, userID, sealed)
