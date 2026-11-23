@@ -35,7 +35,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
   const close = () => guardLeave(() => setShowMobileCapture(false), { close: true, held: mobileVoice.state !== 'idle' });
   return (
     <div
-      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-overlay backdrop-blur-xs animate-in fade-in duration-150"
       onClick={close}
     >
       <div

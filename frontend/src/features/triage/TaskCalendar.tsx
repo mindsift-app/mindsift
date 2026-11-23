@@ -529,7 +529,7 @@ export function TaskCalendar({
         {unplannedBox}
         {touch.ghost}
         {openDay && (
-          <div className="fixed inset-0 z-50 flex items-end bg-overlay/60" onClick={() => setOpenDay(null)}>
+          <div className="fixed inset-0 z-50 flex items-end bg-overlay backdrop-blur-xs" onClick={() => setOpenDay(null)}>
             <div
               role="dialog"
               aria-label={dayLabel(openDay, { weekday: 'long', day: 'numeric', month: 'long' })}

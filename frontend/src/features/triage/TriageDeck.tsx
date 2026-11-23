@@ -1024,7 +1024,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
       {/* LONG-PRESS / MORE OPTIONS ACTION SHEET (For Triage Card & Queue Items) */}
       {actionSheetCard && (
         <div
-          className="fixed inset-0 m-0! modal-overlay z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 m-0! modal-overlay z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150"
           onClick={() => setActionSheetCard(null)}
         >
           <div
