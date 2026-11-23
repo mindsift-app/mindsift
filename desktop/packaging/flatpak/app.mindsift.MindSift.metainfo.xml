@@ -36,19 +36,19 @@
   <screenshots>
     <screenshot type="default">
       <caption>Notes as nested outlines</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.1/screenshots/store/notes.png</image>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.2/screenshots/store/notes.png</image>
     </screenshot>
     <screenshot>
       <caption>Tasks on a Kanban board</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.1/screenshots/store/board.png</image>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.2/screenshots/store/board.png</image>
     </screenshot>
     <screenshot>
       <caption>Tasks in the calendar</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.1/screenshots/store/calendar.png</image>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.2/screenshots/store/calendar.png</image>
     </screenshot>
     <screenshot>
       <caption>A journal for each day</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.1/screenshots/store/journal.png</image>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.2/screenshots/store/journal.png</image>
     </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
@@ -74,6 +74,12 @@
     <keyword>outliner</keyword>
   </keywords>
   <releases>
+    <release version="0.99.2" date="2026-11-23" type="stable">
+      <description>
+        <p>Escape and clicks beside menus close only what is on top, "Collapse all" folds only the level you see, and the desktop app asks before throwing away a recording.</p>
+      </description>
+      <url type="details">https://github.com/mindsift-app/mindsift/releases/tag/v0.99.2</url>
+    </release>
     <release version="0.99.1" date="2026-11-23" type="stable">
       <description>
         <p>Background transcriptions retry by themselves, dictations are guarded against reloads and closing, and phone sheets share one look.</p>
