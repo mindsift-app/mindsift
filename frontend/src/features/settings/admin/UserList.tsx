@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AtSign, Ban, ChevronDown, ChevronRight, KeyRound, Mail, Search, ShieldCheck, ShieldOff, Trash, UserCheck, X } from 'lucide-react';
 import { User, UserRole } from '../../../lib/types';
@@ -7,7 +7,7 @@ import { BottomSheet } from '../../../components/BottomSheet';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { formatDate } from '../../../lib/format';
-import { isPhoneWidth } from '../../../lib/breakpoints';
+import { usePhoneWidth } from '../../../lib/breakpoints';
 import { MASKED, NO_AUTOFILL } from '../../../lib/noAutofill';
 import { useAdminSettings } from './useAdminSettings';
 import { isFiltered, matchesUser, OrgFilter, RoleFilter, sortUsers, USER_PAGE_SIZE, UserListFilter, UserSort } from './userListView';
@@ -28,17 +28,6 @@ const readSort = (): UserSort => {
     return 'name';
   }
 };
-
-// Phone layout follows the window (rotating, resizing the desktop window)
-function usePhoneWidth() {
-  const [phone, setPhone] = useState(isPhoneWidth);
-  useEffect(() => {
-    const onResize = () => setPhone(isPhoneWidth());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  return phone;
-}
 
 // "Weitere anzeigen" under a list that renders only its first rows
 export function ShowMoreButton({ shown, total, onMore }: { shown: number; total: number; onMore: () => void }) {
