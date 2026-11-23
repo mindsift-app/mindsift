@@ -4,7 +4,8 @@
 # local Node or Go needed): tsc, ESLint and Vitest for the frontend, go vet and go test with a single
 # database connection for the backend, plus the cases of the build plan. Only here, not in the image
 # build: gofmt and golangci-lint (settings in .golangci.yml, staticcheck among its linters).
-#   ci/local-checks.sh          frontend (with the size of the bundle), backend, golangci-lint, build plan (in parallel)
+#   ci/local-checks.sh          frontend (with the size of the bundle), backend, golangci-lint, build plan,
+#                               Flatpak sources (desktop/packaging/flatpak/check-sources.sh) (in parallel)
 #   E2E=1 ci/local-checks.sh    additionally the browser tests (e2e/run.sh, a few minutes)
 # Exits non-zero when anything fails; the log of each part is printed at the end.
 set -uo pipefail
@@ -73,10 +74,12 @@ lint() {
     -e CGO_ENABLED=0 "$GOLANGCI_LINT_IMAGE" golangci-lint run ./cmd/... ./internal/...
 }
 plan() { bash ci/test-build-plan.sh; }
+# The Flatpak manifest's generated Go and npm sources, tag and metainfo fit the tree (no containers)
+flatpak() { sh desktop/packaging/flatpak/check-sources.sh && sh desktop/packaging/flatpak/test-check-sources.sh; }
 
 start=$(date +%s)
 pids=()
-for part in frontend backend lint plan; do
+for part in frontend backend lint plan flatpak; do
   "$part" >"$LOGS/$part.log" 2>&1 &
   pids+=("$!:$part")
 done
@@ -95,7 +98,7 @@ summary() {
   if [ "$1" = backend ]; then
     awk '/^time zone run:/ { tz = "TZ " } /^ok .*\/internal\/(api|storage)[[:space:]]/ { print tz $0 }' "$2"
   else
-    grep -E 'Tests +[0-9]+ passed|^bundle: |^ok |ALL CASES PASSED|All checks passed|^0 issues' "$2" | tail -n 3
+    grep -E 'Tests +[0-9]+ passed|^bundle: |^ok |ALL CASES PASSED|test-check-sources: all passed|All checks passed|^0 issues' "$2" | tail -n 3
   fi
 }
 for log in "$LOGS"/*.log; do

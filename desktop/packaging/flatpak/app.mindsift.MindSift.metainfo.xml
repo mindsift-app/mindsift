@@ -31,8 +31,8 @@
   <url type="homepage">https://mindsift.app/</url>
   <url type="bugtracker">https://github.com/mindsift-app/mindsift/issues</url>
   <url type="vcs-browser">https://github.com/mindsift-app/mindsift</url>
-  <!-- PNG from e2e/screenshots.sh (screenshots/store/, see desktop/README.md); a release build points the
-       URLs at the tag instead of main (build.sh) -->
+  <!-- PNG from e2e/screenshots.sh (screenshots/store/, see desktop/README.md); set-release.sh points the
+       URLs at the tag of the release they belong to -->
   <screenshots>
     <screenshot type="default">
       <caption>Notes as nested outlines</caption>

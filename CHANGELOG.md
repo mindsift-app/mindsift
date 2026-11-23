@@ -14,6 +14,7 @@ Versions without a git tag were development states and were never published as a
 - A background transcription that failed because the Whisper server was unreachable or had a problem of its own is now tried again by itself after 1 hour, 6 hours and 24 hours, so recordings catch up once the server is back. A time limit or a recording the server refused is not retried by itself; "Try again" still works any time.
 - A failed transcription of a recording in a note is cleared 30 days after its last attempt; the recording stays in the note and can be transcribed again. Failed recordings dictated into the inbox are kept until you try them again or discard them.
 - Notes written by AI agents through MCP now put commands, code, config files, JSON/YAML, SQL and log excerpts into code blocks with a language (one block per command sequence, not one bullet per line), and show paths, flags, file names and single commands in text as `inline code`.
+- The Flatpak of a release (the download on the release page and flatpak.mindsift.app) is now built from the release tag the way Flathub builds it: offline, with the frontend, the Go modules and the license file built from source inside the Flatpak SDK.
 
 ### Fixed
 - A recording sent for transcription no longer stays at "Transcribing…" until a reload when the server finished or failed on it very quickly; the message that another attempt follows now shows reliably.
