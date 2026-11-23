@@ -22,6 +22,9 @@ export function serverDictation(transcription: SegmentedTranscription): Dictatio
   const parts: Promise<RecordedPart[]> = transcription.handOver();
   let jobId: string | null = null;
   let thoughtId: string | null = null;
+  // Resolved once the server has the recording: the page may close from then on (dictationQueue.ts)
+  let markUploaded = () => {};
+  const uploaded = new Promise<void>((resolve) => (markUploaded = resolve));
 
   const finish = async (): Promise<string> => {
     if (!jobId) {
@@ -29,6 +32,7 @@ export function serverDictation(transcription: SegmentedTranscription): Dictatio
       if (recorded.length === 0) return '';
       // Recognised in full while speaking: the server only stores and saves it
       jobId = (await startInboxTranscription(recorded)).id;
+      markUploaded();
     }
     let done;
     try {
@@ -43,6 +47,7 @@ export function serverDictation(transcription: SegmentedTranscription): Dictatio
 
   return {
     text: finish,
+    uploaded,
     save: async (text) => {
       if (!thoughtId) return;
       const saved = await dateFromDictation(thoughtId, text, spokenAt).catch(() => null);

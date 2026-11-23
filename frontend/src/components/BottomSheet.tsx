@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { guardLeave } from '../lib/leaveGuard';
 import { isPhoneWidth } from '../lib/breakpoints';
 import { useKeyboardInset } from '../lib/useKeyboardInset';
-import { useLatestRef } from '../lib/useLatestRef';
 import { useScrollLock } from '../lib/useScrollLock';
+import { useCloseOnEscape } from '../lib/useDismiss';
 
 // Padding of a sheet's panel: room for the home indicator below the last row
 const SHEET_PADDING = 'px-4 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]';
@@ -78,21 +78,12 @@ export function BottomSheet({
     if (guard === undefined || guard === false) onClose();
     else guardLeave(onClose, guard === true ? { close: true } : { close: true, held: guard.held });
   };
-  const closeRef = useLatestRef(close);
   // A phone-only sheet left open while the window is wide is not visible: it must not hold the page or Escape
   const active = !phoneOnly || isPhoneWidth();
   useScrollLock(active);
-
-  useEffect(() => {
-    if (!closeOnEscape) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return;
-      if (phoneOnly && !isPhoneWidth()) return;
-      closeRef.current();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [closeOnEscape, phoneOnly, closeRef]);
+  // The top layer of lib/useDismiss.ts: a menu or popover opened inside closes first, a field that takes
+  // Escape (prevents its default) keeps the sheet open
+  useCloseOnEscape(close, { active: closeOnEscape && active, when: () => !phoneOnly || isPhoneWidth() });
 
   const padding = className ?? (dockToKeyboard && inset > 0 ? SHEET_PADDING_ON_KEYBOARD : SHEET_PADDING);
   const Panel = onSubmit ? 'form' : 'div';

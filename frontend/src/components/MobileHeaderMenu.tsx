@@ -1,33 +1,45 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 import { useMobileActions } from '../context/MobileActionContext';
 import { triggerHaptic } from '../lib/api';
 import { CountBadge } from './CountBadge';
+import { useDismiss } from '../lib/useDismiss';
+import { useScrollLock } from '../lib/useScrollLock';
 
 interface MobileHeaderMenuProps {
   activeTabLabel: string;
 }
 
+// The phone's menu of the current view (the button with the view's name in the header). It drops from right
+// below the header instead of coming from the bottom like a BottomSheet: it belongs to the button it opens
+// from, and the header stays visible above it, as with the notification list. It closes like every popover
+// (lib/useDismiss.ts): a tap beside it (the dimmed page) only closes it, and so does Escape; the page behind
+// does not scroll.
 export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLabel }) => {
   const { t } = useTranslation();
   const { groups, isMenuOpen, closeMenu } = useMobileActions();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const close = () => {
+    triggerHaptic(8);
+    closeMenu();
+  };
+  useDismiss(panelRef, close, { active: isMenuOpen });
+  useScrollLock(isMenuOpen);
 
   if (!isMenuOpen) return null;
 
   return (
     <div className="sm:hidden fixed inset-0 m-0! z-50">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 m-0! bg-overlay backdrop-blur-xs animate-in fade-in duration-150"
-        onClick={() => {
-          triggerHaptic(8);
-          closeMenu();
-        }}
-      />
+      <div className="fixed inset-0 m-0! bg-overlay backdrop-blur-xs animate-in fade-in duration-150" aria-hidden="true" />
 
-      {/* Menu Sheet below Header */}
-      <div className="fixed top-14 left-2.5 right-2.5 max-h-[80vh] overflow-y-auto bg-panel border border-border rounded-2xl shadow-2xl p-3 space-y-3.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+      {/* The menu below the header */}
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-label={t('menu.optionsFor', { view: activeTabLabel })}
+        className="fixed top-14 left-2.5 right-2.5 max-h-[80vh] overflow-y-auto overscroll-contain bg-panel border border-border rounded-2xl shadow-2xl p-3 space-y-3.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+      >
         {/* Menu Header */}
         <div className="flex items-center justify-between px-2 pb-2 border-b border-border">
           <div className="flex items-center gap-2">
@@ -38,11 +50,9 @@ export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLab
           </div>
           <button
             type="button"
-            onClick={() => {
-              triggerHaptic(8);
-              closeMenu();
-            }}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted hover:text-main hover:bg-canvas active:scale-95 transition-all"
+            onClick={close}
+            aria-label={t('menu.close')}
+            className="-mr-1.5 w-11 h-11 rounded-xl flex items-center justify-center text-muted hover:text-main hover:bg-canvas active:scale-95 transition-all"
             title={t('menu.close')}
           >
             <X className="w-4 h-4" />

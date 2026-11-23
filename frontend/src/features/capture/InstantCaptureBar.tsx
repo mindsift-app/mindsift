@@ -154,8 +154,8 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
   // A remembered task list that is gone (deleted, access removed) falls back to all tasks
   const selectedTaskList = writableTaskLists.find((l) => l.id === targetTaskListId);
 
-  // Close dropdown on outside click (Escape in the field empties it, below)
-  useDismiss(containerRef, () => setShowOptions(false), { active: !inlineOptions, escape: false, event: 'mousedown' });
+  // The options close on a press beside them or on Escape (Escape in the field also empties it, below)
+  useDismiss(containerRef, () => setShowOptions(false), { active: showOptions && !inlineOptions });
 
   // Escape in the field empties it (the bare "c" that opens the Quick Dump lives in app/useQuickDumpShortcut.ts)
   useEffect(() => {

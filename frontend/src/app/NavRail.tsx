@@ -112,7 +112,7 @@ export function NavRail({
 
   // Expanded, it is an overlay: a click beside it or Escape (unless something inside took it) folds it again;
   // the click still reaches its target
-  useDismiss(railRef, () => setExpanded(false), { active: expanded, escape: 'unhandled', event: 'mousedown' });
+  useDismiss(railRef, () => setExpanded(false), { active: expanded, passThrough: true });
 
   const pageLabel: Record<string, string> = {
     triage: t('common:nav.triage'),

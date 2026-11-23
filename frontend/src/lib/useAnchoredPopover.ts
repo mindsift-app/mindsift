@@ -1,6 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { useLatestRef } from './useLatestRef';
 import { useDismiss } from './useDismiss';
+import { placeInViewport } from './placeInViewport';
+
+// Space between the field and its popover
+const POPOVER_GAP = 4;
 
 export interface PopoverPosition {
   left: number;
@@ -11,7 +15,8 @@ export interface PopoverPosition {
   maxHeight: number;
 }
 
-// A popover hanging at a field (dropdown list, calendar, list of times; Doku/ui-patterns.md): fixed position
+// A popover hanging at a field (dropdown list, calendar, list of times; Doku/ui-patterns.md), placed with
+// placeInViewport (shrink: it gets shorter rather than leave the window): fixed position
 // below the field, above when there is no room, shifted left to stay on screen. Portalled to <body> by the
 // caller, so a scrolling dialog does not cut it off. It follows the field while anything scrolls and closes
 // on a pointer down outside field and popover.
@@ -26,15 +31,13 @@ export function useAnchoredPopover<A extends HTMLElement>(wanted: number, popWid
     const el = anchorRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const below = window.innerHeight - r.bottom - 8;
-    const above = r.top - 8;
-    const up = below < wanted && above > below;
-    const width = Math.max(r.width, popWidth);
+    const p = placeInViewport(r, { width: Math.max(r.width, popWidth), height: wanted }, { gap: POPOVER_GAP, shrink: true });
     const next: PopoverPosition = {
-      left: Math.max(8, Math.min(r.left, window.innerWidth - width - 8)),
+      left: p.left,
       width: r.width,
-      ...(up ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }),
-      maxHeight: Math.min(wanted, up ? above : below),
+      // Above the field it hangs at its bottom edge, so a list shorter than wanted still touches the field
+      ...(p.above ? { bottom: window.innerHeight - r.top + POPOVER_GAP } : { top: p.top }),
+      maxHeight: p.maxHeight,
     };
     // Scrolling the list inside the popover (or anything else that leaves the field in place) renders nothing
     setPos((prev) => (prev && samePosition(prev, next) ? prev : next));
@@ -66,8 +69,9 @@ export function useAnchoredPopover<A extends HTMLElement>(wanted: number, popWid
     };
   }, [open, placeRef]);
 
-  // Escape stays with the field's own keys (a list or calendar closes, the dialog around it does not)
-  useDismiss([anchorRef, popRef], () => setOpen(false), { active: open, escape: false });
+  // The field's own keys close the list or calendar first (the dialog around it stays); a press beside it only
+  // closes it (lib/useDismiss.ts)
+  useDismiss([anchorRef, popRef], () => setOpen(false), { active: open });
 
   return { open, setOpen, show, pos, anchorRef, popRef };
 }

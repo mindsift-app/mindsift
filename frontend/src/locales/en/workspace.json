@@ -348,7 +348,6 @@
   "emojiPicker": {
     "title": "Choose icon",
     "remove": "Remove icon",
-    "removeShort": "Remove",
     "loading": "Loading emoji catalog…",
     "search": "Search emoji…"
   },

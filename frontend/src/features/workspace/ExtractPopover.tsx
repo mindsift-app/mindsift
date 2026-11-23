@@ -64,8 +64,8 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, align = 'r
     };
   }, [x, y, align]);
 
-  // Escape is handled by the popover's own keys (the focus is in its search field)
-  useDismiss(ref, onCancel, { escape: false });
+  // Its search field takes Escape first (prevents the default); otherwise Escape closes it as the top layer
+  useDismiss(ref, onCancel);
 
   // The pointer marks a row only once it really moves: opening the popover under a resting pointer must
   // not take the preselected "new note" away

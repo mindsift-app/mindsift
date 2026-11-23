@@ -5,6 +5,7 @@ import { MIN_IMAGE_WIDTH, mediaObjectURL, parseMediaContent } from '../../lib/me
 import { useTranslation } from 'react-i18next';
 import { IndentArrows, OVERLAY_ARROW_BUTTON, overlayArrowsClass } from './IndentArrows';
 import { MediaCaption } from './MediaCaption';
+import { useCloseOnEscape } from '../../lib/useDismiss';
 
 interface ImageBlockProps {
   content: string;
@@ -74,12 +75,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
     };
   }, [mediaId]);
 
-  useEffect(() => {
-    if (!zoomed) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setZoomed(false);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [zoomed]);
+  useCloseOnEscape(() => setZoomed(false), { active: zoomed });
 
   useEffect(() => {
     if (!active) return;

@@ -37,7 +37,7 @@ export const MoreTabsButton = forwardRef<HTMLDivElement, MoreTabsButtonProps>(fu
   const hoverTimer = useRef<number | null>(null);
   const empty = items.length === 0;
 
-  useDismiss(boxRef, () => setOpen(false), { active: open, event: 'mousedown' });
+  useDismiss(boxRef, () => setOpen(false), { active: open });
   // A drag that ends anywhere closes a list it opened
   useEffect(() => {
     if (!dragActive) {

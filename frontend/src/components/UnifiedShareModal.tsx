@@ -16,6 +16,7 @@ import { NO_AUTOFILL } from '../lib/noAutofill';
 import { SelectMenu } from './SelectMenu';
 import { errorMessage } from '../lib/errorMessage';
 import { can } from '../lib/capabilities';
+import { useCloseOnEscape } from '../lib/useDismiss';
 
 export interface UnifiedShareModalProps {
   isOpen: boolean;
@@ -57,6 +58,8 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
   sharedBy,
 }) => {
   const { t } = useTranslation();
+  // Escape closes it, after a list or menu opened inside (lib/useDismiss.ts)
+  useCloseOnEscape(onClose);
   const effectiveFixedPerm = fixedPermission || 'viewer';
   const [shareType, setShareType] = useState<'team' | 'user'>('user');
   const [selectedTeamId, setSelectedTeamId] = useState('');
