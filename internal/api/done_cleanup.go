@@ -66,7 +66,7 @@ func (s *Server) runDoneCleanup(now time.Time) {
 	}
 	s.broadcastDeletedTasks(res.TasksToTrash)
 	for _, it := range res.ListItems {
-		s.wsHub.BroadcastListEvent(it.ListID, eventItemDeleted, map[string]string{"itemId": it.ID, "listId": it.ListID})
+		s.broadcastListItemEvent(it.ListID, eventItemDeleted, map[string]string{"itemId": it.ID, "listId": it.ListID})
 	}
 }
 

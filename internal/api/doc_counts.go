@@ -41,6 +41,7 @@ func (s *Server) startDocCountsTicker() {
 	for s.wait(docCountsTick) {
 		done := s.demoPass()
 		s.sendDueDocCounts(time.Now())
+		s.sendDueListCounts(time.Now())
 		done()
 	}
 }

@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { ListItem, SharedList, WSMessage } from '../../../lib/types';
 import { createRealtimeConnection } from '../../../lib/api';
-import { LIST_RELOAD_EVENTS, listsAfterEvent, listsAfterMessage, useListRealtime } from '../useListRealtime';
+import { LIST_RELOAD_EVENTS, listsAfterCounts, listsAfterEvent, listsAfterMessage, useListRealtime } from '../useListRealtime';
+import { listOpenCount } from '../listItems';
 import { RELOAD_SHARED_DELAY_MS, RELOAD_SOON_MS } from '../../../lib/realtimeReload';
 import { emitRealtimeMessage, emitRealtimeStatus } from '../../../lib/realtimeBus';
 
@@ -197,5 +198,39 @@ describe('reloading the lists on a list event', () => {
     const { unmount } = hook(vi.fn(async () => {}));
     expect(vi.mocked(createRealtimeConnection).mock.lastCall![0]).toEqual({ listId: 'l1' });
     unmount();
+  });
+});
+
+describe('open counts of other lists (LIST_COUNTS)', () => {
+  it('shows the count of a list not open and marks it out of date, the open one keeps its own', () => {
+    const prev = lists();
+    const next = listsAfterCounts(prev, msg('LIST_COUNTS', { listId: 'l2', open: 4 }, 'l2'), 'l1');
+    expect(listOpenCount(next[1])).toBe(4);
+    expect(next[1].liveOpenCount).toBe(4);
+    expect(next[0]).toBe(prev[0]);
+    // The open list counts its own entries (its ITEM_* events keep them current)
+    expect(listsAfterCounts(prev, msg('LIST_COUNTS', { listId: 'l1', open: 9 }), 'l1')).toBe(prev);
+    // The same count again, an unknown list or no number: nothing changes
+    expect(listsAfterCounts(next, msg('LIST_COUNTS', { listId: 'l2', open: 4 }, 'l2'), 'l1')).toBe(next);
+    expect(listsAfterCounts(prev, msg('LIST_COUNTS', { listId: 'lx', open: 1 }, 'lx'), 'l1')).toBe(prev);
+    expect(listsAfterCounts(prev, msg('LIST_COUNTS', { listId: 'l2' }, 'l2'), 'l1')).toBe(prev);
+    expect(listOpenCount(prev[0])).toBe(1);
+  });
+
+  it('loads the lists when a list with an out-of-date count is opened', () => {
+    vi.useFakeTimers();
+    try {
+      const stale = lists().map((l) => (l.id === 'l2' ? { ...l, liveOpenCount: 3 } : l));
+      const load = vi.fn(async () => {});
+      const { rerender, unmount } = renderHook(({ id }) => useListRealtime(id, stale, vi.fn(), load), { initialProps: { id: 'l1' } });
+      act(() => void vi.advanceTimersByTime(RELOAD_SHARED_DELAY_MS));
+      expect(load).not.toHaveBeenCalled();
+      rerender({ id: 'l2' });
+      act(() => void vi.advanceTimersByTime(RELOAD_SOON_MS));
+      expect(load).toHaveBeenCalledTimes(1);
+      unmount();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

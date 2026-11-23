@@ -44,6 +44,8 @@ type Server struct {
 	draw     *drawHub             // live drawing sessions (drawlive.go)
 	// docCounts: notes whose counts go to the note lists of others after a change (doc_counts.go)
 	docCounts docCountsState
+	// listCounts: LIST_COUNTS, the open entries of a list for the list overview (list_counts.go)
+	listCounts listCountsState
 	// stats: the counters of the navigation per user for a few seconds (stats_cache.go)
 	stats *statsCache
 

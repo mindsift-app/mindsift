@@ -19,6 +19,7 @@
     "ITEM_TOGGLED",
     "ITEM_UPDATED",
     "LIST_CLEARED",
+    "LIST_COUNTS",
     "LIST_CREATED",
     "LIST_DELETED",
     "LIST_SHARED",

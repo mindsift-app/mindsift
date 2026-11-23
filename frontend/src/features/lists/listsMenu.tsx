@@ -2,7 +2,7 @@ import { Pencil, Plus, Sparkles, Trash, Users } from 'lucide-react';
 import i18n from '../../i18n';
 import { SharedList } from '../../lib/types';
 import { MobileMenuGroup } from '../../context/MobileActionContext';
-import { canWriteList, deduplicateItems } from './listItems';
+import { canWriteList, listOpenCount } from './listItems';
 import { can } from '../../lib/capabilities';
 
 interface ListsMenuInput {
@@ -104,7 +104,7 @@ export function buildListsMenu({
           id: 'lists-switcher',
           title: i18n.t('lists:menu.switch'),
           items: lists.map((lst) => {
-            const openCount = deduplicateItems(lst.items || []).filter((i) => !i.isCompleted).length;
+            const openCount = listOpenCount(lst);
             return {
               id: `select-list-${lst.id}`,
               label: lst.title,

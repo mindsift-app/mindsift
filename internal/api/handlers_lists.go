@@ -303,7 +303,7 @@ func (s *Server) setListItemDoneAt(userID, listID, itemID string, done bool, at 
 		return item, nil
 	}
 	s.recordListItemOrigin(item, actor, false)
-	s.wsHub.BroadcastListEvent(listID, eventItemToggled, item)
+	s.broadcastListItemEvent(listID, eventItemToggled, item)
 	return item, nil
 }
 
@@ -382,7 +382,7 @@ func (s *Server) updateListItem(userID, listID, itemID string, content, category
 		return nil, err
 	}
 	s.recordListItemOrigin(item, actor, false)
-	s.wsHub.BroadcastListEvent(listID, eventItemUpdated, item)
+	s.broadcastListItemEvent(listID, eventItemUpdated, item)
 	return item, nil
 }
 
@@ -412,7 +412,7 @@ func (s *Server) handleDeleteListItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, eventItemDeleted, map[string]string{
+	s.broadcastListItemEvent(listID, eventItemDeleted, map[string]string{
 		"itemId": itemID,
 		"listId": listID,
 	})
@@ -456,11 +456,11 @@ func (s *Server) handleMoveListItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, eventItemDeleted, map[string]string{
+	s.broadcastListItemEvent(listID, eventItemDeleted, map[string]string{
 		"itemId": itemID,
 		"listId": listID,
 	})
-	s.wsHub.BroadcastListEvent(req.TargetListID, eventItemCreated, item)
+	s.broadcastListItemEvent(req.TargetListID, eventItemCreated, item)
 	writeJSON(w, http.StatusOK, item)
 }
 
@@ -475,7 +475,7 @@ func (s *Server) handleClearCompletedItems(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, eventListCleared, map[string]any{
+	s.broadcastListItemEvent(listID, eventListCleared, map[string]any{
 		"listId":  listID,
 		"removed": removed,
 	})
@@ -499,7 +499,7 @@ func (s *Server) handleReorderListItems(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, eventItemReordered, map[string]any{
+	s.broadcastListItemEvent(listID, eventItemReordered, map[string]any{
 		"listId": listID,
 		"items":  req.Items,
 	})
