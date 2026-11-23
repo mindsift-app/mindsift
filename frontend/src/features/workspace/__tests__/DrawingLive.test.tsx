@@ -39,6 +39,7 @@ import { NoteSharedContext } from '../drawing/noteShared';
 import { DrawingEditor } from '../drawing/DrawingEditor';
 import { actAsDesktopApp, actAsServer } from '../../../test/desktop';
 import { parseDrawing } from '../../../lib/drawing/model';
+import { useDismiss } from '../../../lib/useDismiss';
 
 const CONTENT = JSON.stringify({ v: 1, els: [{ id: 'a', ver: 1, t: 'rect', x: 0, y: 0, w: 120, h: 60, s: 'main', f: 'none', sw: 2, txt: 'Kasten' }] });
 const live = [
@@ -449,5 +450,61 @@ describe('Live drawing in the editor', () => {
     expect(screen.getByText(/bleiben in diesem Browser als Entwurf/)).toBeTruthy();
     fireEvent.click(within(document.querySelector('[data-live-notice]') as HTMLElement).getByRole('button', { name: 'Schließen' }));
     expect(JSON.parse(localStorage.getItem('mindsift_drawing_draft:b1') || '{}').content).toContain('"grid":true');
+  });
+});
+
+// A popover opened while the drawing is focused (it lies above it on the stack of lib/useDismiss.ts)
+function PopoverAbove({ onClose }: { onClose: () => void }) {
+  useDismiss(null, onClose);
+  return null;
+}
+
+describe('Focus of a drawing in the note', () => {
+  const focusedNow = () => screen.getByRole('img').className.includes('border-accent');
+
+  it('Escape and a press beside it hand the page back; a popover above closes first', () => {
+    const onClose = vi.fn();
+    const daneben = vi.fn();
+    const block = <DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit onChange={() => {}} />;
+    const outside = (
+      <button type="button" onClick={daneben}>
+        Daneben
+      </button>
+    );
+    const { rerender } = render(
+      <>
+        {block}
+        {outside}
+      </>
+    );
+    fireEvent.pointerDown(screen.getByRole('img'));
+    expect(focusedNow()).toBe(true);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(focusedNow()).toBe(false);
+
+    fireEvent.pointerDown(screen.getByRole('img'));
+    rerender(
+      <>
+        {block}
+        {outside}
+        <PopoverAbove onClose={onClose} />
+      </>
+    );
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(focusedNow()).toBe(true);
+    rerender(
+      <>
+        {block}
+        {outside}
+      </>
+    );
+
+    const button = screen.getByRole('button', { name: 'Daneben' });
+    fireEvent.pointerDown(button);
+    fireEvent.pointerUp(button);
+    fireEvent.click(button);
+    expect(focusedNow()).toBe(false);
+    expect(daneben).toHaveBeenCalledTimes(1);
   });
 });

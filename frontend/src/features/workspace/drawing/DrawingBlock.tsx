@@ -9,6 +9,7 @@ import { AvatarStack } from '../../../components/AvatarStack';
 import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
 import { can } from '../../../lib/capabilities';
 import { useLatestRef } from '../../../lib/useLatestRef';
+import { useDismiss } from '../../../lib/useDismiss';
 import { NoteClientContext, NoteSharedContext } from './noteShared';
 import { useToast, WorkspaceToast } from '../WorkspaceToast';
 import { IndentArrows, OVERLAY_ARROW_BUTTON, overlayArrowsClass } from '../IndentArrows';
@@ -271,27 +272,10 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
     onFocusChangeRef.current?.(active);
   }, [active, onFocusChangeRef]);
 
-  // Clicking elsewhere hands scrolling back to the page (its buttons in the bubble count as the drawing)
-  useEffect(() => {
-    if (!focused) return;
-    const onDown = (e: PointerEvent) => {
-      const target = e.target as Node;
-      const inside = boxRef.current?.contains(target) || actionsTarget?.parentElement?.contains(target);
-      if (!inside) leaveRef.current();
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        leaveRef.current();
-      }
-    };
-    document.addEventListener('pointerdown', onDown, true);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onDown, true);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [focused, actionsTarget, leaveRef]);
+  // Clicking elsewhere or Escape hands scrolling back to the page (its buttons in the bubble count as the
+  // drawing), as a layer of the stack in lib/useDismiss.ts: a popover or dialog opened above it closes first,
+  // and the press that leaves it still reaches its target
+  useDismiss([boxRef, actionsTarget?.parentElement], () => leaveRef.current(), { active: focused, passThrough: true });
 
   const zoomAt = (clientX: number, clientY: number, factor: number, base: View) => {
     const rect = boxRef.current!.getBoundingClientRect();

@@ -2,6 +2,13 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { HoldToRecordFab } from '../HoldToRecordFab';
+import { resetLayersForTests, useCloseOnEscape } from '../../../lib/useDismiss';
+
+// A sheet that was open before the recording began (a layer below it on the Escape stack)
+function SheetBelow({ onClose }: { onClose: () => void }) {
+  useCloseOnEscape(onClose);
+  return null;
+}
 
 class FakeSpeechRecognition {
   static instances: FakeSpeechRecognition[] = [];
@@ -56,6 +63,7 @@ describe('HoldToRecordFab', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    resetLayersForTests();
     Reflect.deleteProperty(window, 'SpeechRecognition');
     Reflect.deleteProperty(window, 'webkitSpeechRecognition');
   });
@@ -336,6 +344,40 @@ describe('HoldToRecordFab', () => {
     expect(onTranscript).not.toHaveBeenCalled();
     expect(screen.getByRole('status').textContent).toContain('Spracheingabe ist hier nicht verfügbar');
     expect(screen.getByRole('status').textContent).toContain('Whisper-Server');
+  });
+
+  it('Escape throws only the recording away as the top layer; the sheet below closes on the next one', () => {
+    const onTranscript = vi.fn();
+    const closeSheet = vi.fn();
+    render(
+      <>
+        <SheetBelow onClose={closeSheet} />
+        <HoldToRecordFab onTap={vi.fn()} onTranscript={onTranscript} />
+      </>
+    );
+    const btn = screen.getByRole('button', { name: /gedrückt halten zum Sprechen/i });
+    fireEvent.pointerDown(btn, { clientY: 600, button: 0 });
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+    const rec = FakeSpeechRecognition.instances[0];
+
+    // Something on the page took this Escape (a field, a list): the recording goes on
+    const taken = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    taken.preventDefault();
+    act(() => {
+      window.dispatchEvent(taken);
+    });
+    expect(rec.aborted).toBe(false);
+    expect(closeSheet).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(rec.aborted).toBe(true);
+    expect(onTranscript).not.toHaveBeenCalled();
+    expect(closeSheet).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(closeSheet).toHaveBeenCalledTimes(1);
   });
 });
 

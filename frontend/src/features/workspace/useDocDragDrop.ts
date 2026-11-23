@@ -116,8 +116,9 @@ export function useDocDragDrop({
 
   useEffect(() => {
     if (markedDocIds.size === 0) return;
+    // An Escape that closed a menu or dialog (lib/useDismiss.ts) keeps the marks
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMarkedDocIds(new Set());
+      if (e.key === 'Escape' && !e.defaultPrevented) setMarkedDocIds(new Set());
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

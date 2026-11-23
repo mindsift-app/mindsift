@@ -3,6 +3,7 @@ import i18n from '../../i18n';
 import { triggerHaptic } from '../../lib/api';
 import { useVoiceInput } from '../../lib/useVoiceInput';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { pushLayer } from '../../lib/useDismiss';
 import { showError } from '../../components/ErrorNotice';
 import type { DictationOutcome } from './captureDictation';
 import { DictationQueue, type DictationItem } from './dictationQueue';
@@ -277,16 +278,9 @@ export function useHoldToDictate({ onSave, touch = false, fallback }: HoldToDict
     setSeconds(0);
     setPhase('recording');
     tickTimerRef.current = window.setInterval(() => setSeconds(Math.floor((Date.now() - startedAt) / 1000)), 250);
-    // Escape throws the recording away, held or locked
-    const onKey = (ev: KeyboardEvent) => {
-      if (ev.key !== 'Escape' || phaseRef.current !== 'recording') return;
-      // Before the rail and open windows see it
-      ev.preventDefault();
-      ev.stopPropagation();
-      cancelRecording();
-    };
-    window.addEventListener('keydown', onKey, true);
-    detachKeyRef.current = () => window.removeEventListener('keydown', onKey, true);
+    // Escape throws the recording away, held or locked: as the top layer of the stack in lib/useDismiss.ts,
+    // so it goes before the rail and open windows, and only the recording ends (a sheet below stays open)
+    detachKeyRef.current = pushLayer({ escape: () => phaseRef.current === 'recording', close: cancelRecording });
     haptic([15, 60, 25]);
     void voice.start();
   };
