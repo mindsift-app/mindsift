@@ -13,6 +13,7 @@ Versions without a git tag were development states and were never published as a
 - Every form that sets a new password (first setup, reset link, the password the administration asks for, security settings) frames the repetition red and says so as soon as it differs from the new password.
 - The sharing, link and "Manage columns" dialogs have the same header as the sheets, with a close button large enough to tap on phones.
 - Tasks: Escape while editing the title only cancels the edit; after a change it no longer also asks about unsaved changes.
+- Desktop app: `LOG_FORMAT=json` writes its log as JSON lines like the server's, and `MINDSIFT_DESKTOP_DEVTOOLS` takes the same yes/no values as the server's variables.
 
 ### Fixed
 - A task list created for a group now shows up right away for the group's members and on your other devices; before, they saw it only after reloading (lists created by an AI agent already did).

@@ -858,6 +858,9 @@ func envBool(key string, def bool) bool {
 	return def
 }
 
+// EnvBool is envBool for the desktop app (desktop/), so its own switches take the same values.
+func EnvBool(key string, def bool) bool { return envBool(key, def) }
+
 // envBoolPtr reads a yes/no variable (parseBool) whose absence means "the admin settings decide": nil when
 // unset, and nil with a warning for any other value.
 func envBoolPtr(key string) *bool {

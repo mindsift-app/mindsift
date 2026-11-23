@@ -5,7 +5,6 @@ package shell
 import (
 	"context"
 	"log/slog"
-	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -54,9 +53,9 @@ type DBusNotes struct {
 	byNote map[string]uint32
 }
 
-// NewDBusNotes: the portal under Flatpak (FLATPAK_ID), the notification server otherwise.
+// NewDBusNotes: the portal under Flatpak (InFlatpak), the notification server otherwise.
 func NewDBusNotes(onClick func(data string)) *DBusNotes {
-	return &DBusNotes{Portal: os.Getenv("FLATPAK_ID") != "", OnClick: onClick}
+	return &DBusNotes{Portal: InFlatpak(), OnClick: onClick}
 }
 
 // Show shows n.

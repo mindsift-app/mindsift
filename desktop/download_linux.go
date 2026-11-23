@@ -141,7 +141,7 @@ func msDownloadDecide(download unsafe.Pointer, suggested *C.char) {
 	if home, err := os.UserHomeDir(); err == nil && downloadsDir == "" {
 		downloadsDir = filepath.Join(home, "Downloads")
 	}
-	start := downloadStartDir(lastDownloadDir, downloadsDir, os.Getenv("FLATPAK_ID") != "")
+	start := downloadStartDir(lastDownloadDir, downloadsDir, shell.InFlatpak())
 	downloadsMu.Unlock()
 	// The dialog waits for the person; WebKit waits for the destination meanwhile
 	go func() {

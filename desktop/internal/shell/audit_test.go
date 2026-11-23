@@ -36,8 +36,11 @@ func TestDevToolsEnabled(t *testing.T) {
 			t.Errorf("DevToolsEnabled(%q) = %v, want %v", version, got, want)
 		}
 	}
-	t.Setenv(DevToolsEnv, "1")
-	if !DevToolsEnabled("v0.98.0") {
-		t.Error("MINDSIFT_DESKTOP_DEVTOOLS=1 does not switch them on in a release")
+	// The same yes/no values as the server's variables
+	for raw, want := range map[string]bool{"1": true, "true": true, "yes": true, "ON": true, "0": false, "off": false, "maybe": false} {
+		t.Setenv(DevToolsEnv, raw)
+		if got := DevToolsEnabled("v0.98.0"); got != want {
+			t.Errorf("MINDSIFT_DESKTOP_DEVTOOLS=%q in a release: %v, want %v", raw, got, want)
+		}
 	}
 }
