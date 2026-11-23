@@ -1,40 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, useMemo } from 'react';
-import {
-  ChevronRight,
-  ChevronDown,
-  Check,
-  SquareCheckBig,
-  Trash,
-  Code,
-  Heading1,
-  Heading2,
-  Heading3,
-  ListTodo,
-  ListOrdered,
-  Minus,
-  MessageSquare,
-  ExternalLink,
-  Link as LinkIcon,
-  Lock,
-  TriangleAlert,
-  CircleX,
-  Image as ImageIcon,
-  Mic,
-  Shapes,
-  AudioLines,
-  FileOutput,
-  FileInput,
-  Link2,
-  Type,
-  Unlink,
-  KeyRound,
-  Table as TableIcon,
-  LayoutTemplate,
-  AppWindow,
-  Monitor,
-  Smartphone,
-  LoaderCircle,
-} from 'lucide-react';
+import { SquareCheckBig, ExternalLink, LoaderCircle } from 'lucide-react';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
 import { SecretChip, NewSecretSheet } from './SecretChip';
@@ -49,90 +14,35 @@ import { emptyDrawing, serializeDrawing } from '../../lib/drawing/model';
 import { AudioRecorderPicker } from './AudioRecorderPicker';
 import { AudioBlock } from './AudioBlock';
 import { DictationBlock } from './DictationBlock';
-import { currentVoiceConfig } from '../../lib/voice';
 import { LinkPreviewCard } from './LinkPreviewCard';
 import { linkCardUrl, hidePreviewContent, linkHost, linkPreviewsEnabled, useLinkPreviewsEnabled } from '../../lib/linkPreview';
-import { imagesAllowed, mediaContent, parseMediaContent } from '../../lib/media';
+import { mediaContent, parseMediaContent } from '../../lib/media';
 import { insertImages, PastedImages, pastedImages } from '../../lib/pasteImages';
 import { codeBlockText } from '../../lib/secretRef';
 import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown';
 import { useMentionInput } from '../../lib/useMentionInput';
 import { MentionMenu } from '../../components/MentionMenu';
-import { api } from '../../lib/api';
 import { safeHref } from '../../lib/safeUrl';
-import { isNoteLinkOnly, retargetWikiLinks, unlinkWikiLinks, WikiLink } from '../../lib/wikiLink';
+import { retargetWikiLinks, unlinkWikiLinks, WikiLink } from '../../lib/wikiLink';
 import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
 import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
-import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
 import { ownClipboardText } from '../../lib/outlineMarkdown';
 import { caretAfterChange, caretAtPoint, mapRenderedOffsetToRaw, rawOffsetAtPoint } from '../../lib/caret';
 import { keepOutlineRowNear, observeOutlineRow } from '../../lib/outlineNear';
 import { droppedText, transferText } from '../../lib/dropText';
 import { useTranslation } from 'react-i18next';
-import i18n from '../../i18n';
-import { UserAvatar } from '../../components/UserAvatar';
 import { userColorStyles } from '../../lib/userColor';
-import { showError } from '../../components/ErrorNotice';
-import { errorMessage } from '../../lib/errorMessage';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { useOutlinerActions } from './OutlinerActionsContext';
-import { matchSlashQuery, removeSlashQuery, slashCommandFitsText } from '../../lib/slashCommand';
+import { matchSlashQuery, removeSlashQuery } from '../../lib/slashCommand';
 import { bulletKeyAction } from './bulletKeys';
-
-export interface SlashCommand {
-  type: BlockType | 'link' | 'secret' | 'dictation' | 'extract' | 'template';
-  readonly label: string;
-  readonly desc: string;
-  icon: React.ReactNode;
-  /** Only offered in an empty bullet; the bullet turns into an inline picker first */
-  media?: boolean;
-  /** Further names that find the command (e.g. German ones) */
-  aliases?: string[];
-}
-
-// The command name counts most: "/li" finds /link before /number (whose description says "Liste")
-function slashRank(c: SlashCommand, q: string): number {
-  if (!q) return 0;
-  const name = c.label.slice(1).toLowerCase();
-  if (name.startsWith(q)) return 0;
-  if ((c.aliases || []).some((a) => a.startsWith(q))) return 1;
-  if (name.includes(q)) return 2;
-  if ((c.aliases || []).some((a) => a.includes(q))) return 3;
-  return 4;
-}
+import { SlashCommand, SlashMenu, slashCommandsFor } from './SlashMenu';
+import { actionBubble, bulletControls, ConflictNotice, LockBadge } from './OutlinerBlockParts';
 
 // How long the action bubble stays after the last mouse move over a bullet
 const BUBBLE_IDLE_MS = 1000;
 // On touch devices the bubble shows when a bullet gets the focus or is tapped, then hides again
 const BUBBLE_TOUCH_MS = 3000;
-
-// Warning and error icons of a collapsed row with children get the ring of a collapsed bullet
-const COLLAPSED_ICON = 'rounded-full bg-accent/15 ring-2 ring-accent/30';
-
-const SLASH_COMMANDS: SlashCommand[] = [
-  { type: 'todo', label: '/todo', get desc() { return i18n.t('workspace:slash.todo'); }, icon: <ListTodo className="w-3.5 h-3.5" /> },
-  { type: 'numbered', label: '/number', get desc() { return i18n.t('workspace:slash.numbered'); }, icon: <ListOrdered className="w-3.5 h-3.5" />, aliases: ['nummer', 'liste', 'ol'] },
-  { type: 'link', label: '/link', get desc() { return i18n.t('workspace:slash.link'); }, icon: <LinkIcon className="w-3.5 h-3.5" /> },
-  { type: 'bullet', label: '/text', get desc() { return i18n.t('workspace:slash.bullet'); }, icon: <Type className="w-3.5 h-3.5" />, aliases: ['p', 'paragraph', 'bullet', 'standard'] },
-  { type: 'h1', label: '/h1', get desc() { return i18n.t('workspace:slash.h1'); }, icon: <Heading1 className="w-3.5 h-3.5" /> },
-  { type: 'h2', label: '/h2', get desc() { return i18n.t('workspace:slash.h2'); }, icon: <Heading2 className="w-3.5 h-3.5" /> },
-  { type: 'h3', label: '/h3', get desc() { return i18n.t('workspace:slash.h3'); }, icon: <Heading3 className="w-3.5 h-3.5" /> },
-  // A hidden value; /secret, its name before, still finds it. After the headings, so "/h" still means /h1
-  { type: 'secret', label: '/hidden', get desc() { return i18n.t('workspace:slash.secret'); }, icon: <KeyRound className="w-3.5 h-3.5" />, aliases: ['secret', 'versteckt', 'verstecken', 'geheim', 'verdeckt', 'passwort', 'password', 'oculto', 'ocultar', 'secreto', 'masquer', 'masqué', 'nascosto', 'nascondi', 'segreto'] },
-  { type: 'code', label: '/code', get desc() { return i18n.t('workspace:slash.code'); }, icon: <Code className="w-3.5 h-3.5" /> },
-  { type: 'table', label: '/table', get desc() { return i18n.t('workspace:slash.table'); }, icon: <TableIcon className="w-3.5 h-3.5" />, aliases: ['tabelle', 'tabla', 'tableau', 'tabella', 'grid'] },
-  { type: 'callout', label: '/callout', get desc() { return i18n.t('workspace:slash.callout'); }, icon: <MessageSquare className="w-3.5 h-3.5" /> },
-  { type: 'warning', label: '/warn', get desc() { return i18n.t('workspace:slash.warning'); }, icon: <TriangleAlert className="w-3.5 h-3.5 text-status-warn" />, aliases: ['warnung', 'warning', 'achtung'] },
-  { type: 'error', label: '/fail', get desc() { return i18n.t('workspace:slash.error'); }, icon: <CircleX className="w-3.5 h-3.5 text-status-err" />, aliases: ['fehler', 'error', 'danger'] },
-  { type: 'divider', label: '/divider', get desc() { return i18n.t('workspace:slash.divider'); }, icon: <Minus className="w-3.5 h-3.5" /> },
-  { type: 'extract', label: '/extract', get desc() { return i18n.t('workspace:slash.extract'); }, icon: <FileOutput className="w-3.5 h-3.5" />, aliases: ['notiz', 'auslagern'] },
-  { type: 'image', label: '/image', get desc() { return i18n.t('workspace:slash.image'); }, icon: <ImageIcon className="w-3.5 h-3.5" />, media: true, aliases: ['bild', 'foto'] },
-  { type: 'drawing', label: '/canvas', get desc() { return i18n.t('workspace:slash.drawing'); }, icon: <Shapes className="w-3.5 h-3.5" />, aliases: ['draw', 'sketch', 'diagram', 'zeichnung', 'skizze'] },
-  { type: 'audio', label: '/audio', get desc() { return i18n.t('workspace:slash.audio'); }, icon: <Mic className="w-3.5 h-3.5" />, media: true, aliases: ['sprachnotiz'] },
-  { type: 'dictation', label: '/diktat', get desc() { return i18n.t('workspace:slash.dictation'); }, icon: <AudioLines className="w-3.5 h-3.5" />, media: true, aliases: ['dictate'] },
-  // A template's bullets (lib/noteTemplate.ts): named in the app's language, every language's name finds it
-  { type: 'template', get label() { return `/${i18n.t('workspace:slash.templateName')}`; }, get desc() { return i18n.t('workspace:slash.template'); }, icon: <LayoutTemplate className="w-3.5 h-3.5" />, aliases: ['template', 'vorlage', 'plantilla', 'modèle', 'modele', 'modello'] },
-];
 
 // Another user's lock on a block: name for the badge, user id for the person's color
 export interface BlockLock {
@@ -146,16 +56,6 @@ export interface BlockLock {
   /** Where the own other client runs: another tab of this browser, a phone or another computer */
   ownOn?: 'tab' | 'phone' | 'computer';
 }
-
-// One's own other tab or device holds the bullet: an icon in place of the avatar, same size (UserAvatar xxs)
-const OwnLockIcon: React.FC<{ on?: BlockLock['ownOn'] }> = ({ on }) => {
-  const Icon = on === 'tab' ? AppWindow : on === 'phone' ? Smartphone : Monitor;
-  return (
-    <span aria-hidden="true" className="w-4 h-4 shrink-0 rounded-full inline-flex items-center justify-center bg-panel-elevated border border-current">
-      <Icon className="w-2.5 h-2.5" />
-    </span>
-  );
-};
 
 // A bullet's own values; the handlers and the values of the whole tree come from OutlinerActionsContext
 export interface OutlinerBlockProps {
@@ -198,13 +98,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   originalLockedBy,
   inRangeSelection,
 }) => {
+  const actions = useOutlinerActions();
   const {
     docId,
     levelOffset,
     canAppendBelow,
-    onZoomBlock,
     onExtractBlock,
-    onInlineBlock,
     onTemplateCommand,
     onUpdateBlock,
     onSlashCommand,
@@ -222,18 +121,15 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     onOpenTask,
     onTagClick,
     onWikiLinkClick,
-    onCopyBlockLink,
-    onDragStartBlock,
     onDragOverBlock,
     onDropBlock,
     registerTextareaRef,
     onPasteMultiLines,
     onPasteImages,
     onLockedDrawing,
-    onResolveConflict,
     onUndo,
     onRedo,
-  } = useOutlinerActions();
+  } = actions;
   const { t } = useTranslation('workspace');
   // A live drawing holds its bullet: the drawing itself shows who draws, and others may join or watch
   const liveDrawing = block.type === 'drawing' && heldBy?.live?.length ? heldBy.live : undefined;
@@ -613,33 +509,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
   const filteredSlashCommands = useMemo(() => {
     if (!slashMatchInfo) return [];
-    const q = slashMatchInfo.query.toLowerCase();
-    const cmdQuery = q.startsWith('code ') ? 'code' : q;
-
     // The command works wherever the slash was typed: at the start, in the middle or at the end
     const restOfBlock = removeSlashQuery(localContent, slashMatchInfo.slashStart, slashMatchInfo.cursor).text.trim();
-
-    return SLASH_COMMANDS.filter((c) => {
-      const matchesQuery =
-        c.label.toLowerCase().includes(cmdQuery) ||
-        c.desc.toLowerCase().includes(cmdQuery) ||
-        (c.aliases || []).some((a) => a.includes(cmdQuery));
-      if (!matchesQuery) return false;
-
-      // /link, /hidden and /dictation everywhere; /template where the tree offers templates (the copy goes
-      // below the bullet, or replaces it when it is empty)
-      if (c.type === 'link' || c.type === 'secret') return true;
-      if (c.type === 'template') return !!onTemplateCommand;
-      if (c.type === 'dictation') {
-        return ['server', 'browser'].includes(currentVoiceConfig().mode);
-      }
-      // Switched off by the administration: no new images
-      if (c.type === 'image' && !imagesAllowed()) return false;
-      if (c.type === 'extract' && (!onExtractBlock || isNoteLinkOnly(restOfBlock))) return false;
-
-      // Type changes take the bullet's text along; divider, image, audio and drawing need an empty bullet
-      return slashCommandFitsText(c.type, restOfBlock);
-    }).sort((a, b) => slashRank(a, cmdQuery) - slashRank(b, cmdQuery));
+    return slashCommandsFor(slashMatchInfo.query, restOfBlock, { templates: !!onTemplateCommand, extract: !!onExtractBlock });
   }, [slashMatchInfo, localContent, onExtractBlock, onTemplateCommand]);
 
   useEffect(() => {
@@ -958,6 +830,15 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         content: val,
       });
     }, 150);
+  };
+
+  // The cursor moved with the slash menu open (click, arrow keys): the menu follows the query before it
+  const rematchSlash = () => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const cursor = ta.selectionStart;
+    const match = matchSlashQuery(ta.value, cursor);
+    setSlashMatchInfo(match ? { query: match.query, slashStart: match.slashStart, cursor } : null);
   };
 
   const handleFocus = () => {
@@ -1330,14 +1211,6 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFocus]);
   const showBubble = hasHover ? pointerMoving || pointerOnBubble : activeFocus && touchShown;
-  // A voice note's player fills the row's width on phones, so its bubble floats above the row (over the gap and
-  // the lower edge of the bullet above, or of the title for the first bullet) instead of covering the time bar
-  // and menu, and the row gets no extra space. Its buttons are 44px to tap on phones while the pill stays slim
-  const bubbleAbovePlayer = block.type === 'audio';
-  const bubbleBtn =
-    block.type === 'audio'
-      ? 'p-1 sm:p-0.5 min-w-11 min-h-11 -my-2 sm:min-w-0 sm:min-h-0 sm:my-0'
-      : 'p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0';
 
   // Rows out of view are skipped by the browser (.outline-row in index.css); a row with the cursor or a menu
   // stays rendered (data-outline-live), and afterwards until it is a screen away (lib/outlineNear.ts)
@@ -1430,120 +1303,30 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         </span>
       )}
       {/* Bullet Controls: Collapse Toggle & Bullet (Drag-Handle & Zoom) / Checkbox */}
-      <div className="flex items-center gap-0.5 pt-1 select-none shrink-0">
-        {hasChildren ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              if ((e.ctrlKey || e.metaKey) && onToggleBranch) {
-                if (debounceTimerRef.current !== null) {
-                  window.clearTimeout(debounceTimerRef.current);
-                  debounceTimerRef.current = null;
-                }
-                onToggleBranch({ ...latestBlockRef.current, content: localContent, collapsed: !block.collapsed });
-              } else {
-                flushDebounce(localContent, { collapsed: !block.collapsed });
-              }
-            }}
-            // Same width as the spacer of rows without children (the padding is taken back), so bullets stay aligned
-            className="p-0.5 -m-0.5 text-muted hover:text-accent transition-[color,opacity] opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-            title={block.collapsed ? t('block.expand') : t('block.collapse')}
-          >
-            {block.collapsed ? (
-              <ChevronRight className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5 text-accent" />
-            )}
-          </button>
-        ) : (
-          <span className="w-3.5" />
-        )}
-
-        {/* Bullet handle for dragging and zoom focus */}
-        <button
-          type="button"
-          draggable={canEdit}
-          onDragStart={(e) => {
-            if (!canEdit) return;
-            // Dropped onto another note in the sidebar, the branch moves there (moveBranchEvent.ts)
-            e.dataTransfer.setData(BLOCK_DRAG_TYPE, JSON.stringify({ docId: docId || block.documentId || block.docId || '', blockId: block.id }));
-            onDragStartBlock?.(block.id, e);
-          }}
-          onClick={() => onZoomBlock?.(block.id)}
-          className={`${
-            block.type === 'numbered' && listMarker ? 'w-4 h-4 justify-end overflow-visible' : 'w-4 h-4 justify-center'
-          } flex items-center rounded-btn group/bullet transition-transform ${
-            canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
-          }`}
-          title={
-            canEdit
-              ? t('block.dragZoom')
-              : t('block.clickZoom')
-          }
-        >
-          {block.type === 'numbered' && listMarker ? (
-            <span
-              className={`text-xs tabular-nums font-medium leading-none whitespace-nowrap transition-colors ${
-                block.collapsed && hasChildren
-                  ? // Like the dot of a collapsed bullet; the margins take the padding back, so the number stays put
-                    'text-accent bg-accent/15 ring-1 ring-accent/30 rounded-btn pl-1 pr-0.5 -mr-0.5 py-0.5 -my-0.5'
-                  : activeFocus
-                  ? 'text-main'
-                  : 'text-muted group-hover/bullet:text-accent'
-              }`}
-            >
-              {listMarker}
-            </span>
-          ) : block.type === 'warning' ? (
-            <TriangleAlert
-              className={`w-3.5 h-3.5 shrink-0 text-status-warn transition-transform group-hover/bullet:scale-110 ${
-                block.collapsed && hasChildren ? COLLAPSED_ICON : ''
-              }`}
-            />
-          ) : block.type === 'error' ? (
-            <CircleX
-              className={`w-3.5 h-3.5 shrink-0 text-status-err transition-transform group-hover/bullet:scale-110 ${
-                block.collapsed && hasChildren ? COLLAPSED_ICON : ''
-              }`}
-            />
-          ) : (
-          <span
-            className={`w-1.5 h-1.5 rounded-full transition-all duration-150 ${
-              block.collapsed && hasChildren
-                ? 'bg-accent ring-2 ring-accent/30'
-                : activeFocus
-                ? 'bg-main scale-125'
-                : // Resting dots stay quiet next to the text (a quarter of the faint colour, in every theme)
-                  'bg-faint/25 group-hover/bullet:bg-accent group-hover/bullet:scale-125'
-            } ${
-              // Empty rows show the dot only near the pointer (to-dos keep it: the guide lines start there)
-              isEmpty
-                ? 'opacity-0 group-hover:opacity-100 hover:opacity-100'
-                : 'opacity-100'
-            }`}
-          />
-          )}
-        </button>
-
-        {/* If To-Do block: checkbox alongside bullet */}
-        {block.type === 'todo' && (
-          <button
-            type="button"
-            disabled={!canEdit}
-            onClick={() =>
-              flushDebounce(localContent, { checked: !block.checked })
+      {/* Render functions, not components (OutlinerBlockParts.tsx); the handlers read refs when clicked */}
+      {/* eslint-disable-next-line react-hooks/refs */}
+      {bulletControls({
+        block,
+        hasChildren,
+        canEdit,
+        listMarker,
+        activeFocus,
+        isEmpty,
+        onToggleCollapsed: (e) => {
+          if ((e.ctrlKey || e.metaKey) && onToggleBranch) {
+            if (debounceTimerRef.current !== null) {
+              window.clearTimeout(debounceTimerRef.current);
+              debounceTimerRef.current = null;
             }
-            className={`w-4 h-4 checkbox-square flex items-center justify-center transition-colors border ${
-              block.checked
-                ? 'bg-status-ok border-status-ok text-on-accent'
-                : 'border-strong hover:border-accent text-transparent'
-            }`}
-            title={block.checked ? t('block.markOpen') : t('block.markDone')}
-          >
-            <Check className="w-3 h-3 stroke-3" />
-          </button>
-        )}
-      </div>
+            onToggleBranch({ ...latestBlockRef.current, content: localContent, collapsed: !block.collapsed });
+          } else {
+            flushDebounce(localContent, { collapsed: !block.collapsed });
+          }
+        },
+        onToggleChecked: () => flushDebounce(localContent, { checked: !block.checked }),
+        t,
+        actions,
+      })}
 
       {/* Main Block Content */}
       <div className="flex-1 min-w-0 pr-1 relative min-h-6">
@@ -1845,19 +1628,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
               }}
               className={`w-full min-h-6 leading-relaxed whitespace-pre-wrap wrap-break-word wrap-anywhere ${
                 activeFocus ? 'absolute inset-0 pointer-events-none' : 'relative cursor-text'
-              } ${
-                block.type === 'h1'
-                  ? 'text-xl sm:text-2xl sm:leading-8 font-bold text-main tracking-tight'
-                  : block.type === 'h2'
-                  ? 'text-lg sm:text-xl sm:leading-7 font-semibold text-main'
-                  : block.type === 'h3'
-                  ? 'text-base font-semibold text-main'
-                  : block.type === 'todo' && block.checked
-                  ? 'text-sm text-faint line-through'
-                  : block.type === 'callout'
-                  ? 'text-sm text-main italic'
-                  : 'text-sm text-main'
-              }`}
+              } ${fieldText}`}
             >
               {/* When actively focused, ghost text is invisible so textarea renders text/caret directly */}
               <span ref={renderedTextRef} data-outline-text className={activeFocus ? 'invisible' : ''}>
@@ -1932,38 +1703,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
               onClick={() => {
-                const ta0 = textareaRef.current;
-                if (ta0) mention.update(ta0.value, ta0.selectionStart);
-                if (slashMatchInfo) {
-                  const ta = textareaRef.current;
-                  if (ta) {
-                    const cursor = ta.selectionStart;
-                    const textBefore = ta.value.slice(0, cursor);
-                    const match = textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]{0,40}|[a-z0-9]*)$/i);
-                    if (match) {
-                      const slashStart = match.index! + match[1].length;
-                      setSlashMatchInfo({ query: match[2], slashStart, cursor });
-                    } else {
-                      setSlashMatchInfo(null);
-                    }
-                  }
-                }
+                const ta = textareaRef.current;
+                if (ta) mention.update(ta.value, ta.selectionStart);
+                if (slashMatchInfo) rematchSlash();
               }}
               onKeyUp={(e) => {
-                if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key) && slashMatchInfo) {
-                  const ta = textareaRef.current;
-                  if (ta) {
-                    const cursor = ta.selectionStart;
-                    const textBefore = ta.value.slice(0, cursor);
-                    const match = textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]{0,40}|[a-z0-9]*)$/i);
-                    if (match) {
-                      const slashStart = match.index! + match[1].length;
-                      setSlashMatchInfo({ query: match[2], slashStart, cursor });
-                    } else {
-                      setSlashMatchInfo(null);
-                    }
-                  }
-                }
+                if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key) && slashMatchInfo) rematchSlash();
               }}
               className={`${FIELD_LAYOUT} ${
                 activeFocus ? 'relative z-0 text-main' : 'absolute inset-0 text-transparent selection:text-transparent pointer-events-none'
@@ -1979,281 +1724,37 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         {pastingImages > 0 && <PastingImagesNotice count={pastingImages} />}
 
         {/* Conflict copy: text that lost against someone else's change */}
-        {block.conflictOf && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-status-warn select-none">
-            <TriangleAlert className="w-3 h-3 shrink-0" />
-            <span>
-              {block.conflictOf === 'title' ? t('block.titleConflict') : t('block.conflict')}
-              {block.conflictAuthor ? ` ${t('block.conflictBy', { name: block.conflictAuthor })}` : ''}
-            </span>
-            {onResolveConflict && (
-              <>
-                {/* Replacing waits while someone edits the original, replacing and discarding while someone edits
-                    the copy; keeping both only takes the marking off and always works */}
-                <button
-                  type="button"
-                  disabled={!!lockedBy || !!originalLockedBy}
-                  onClick={() => onResolveConflict(block.id, 'take')}
-                  className="px-1.5 py-0.5 rounded-btn border border-status-warn/40 hover:bg-status-warn/15 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                  title={
-                    lockedBy
-                      ? (lockedBy.own ? t('lock.drawingOwn') : t('lock.copy', { name: lockedBy.name }))
-                      : originalLockedBy
-                        ? t('block.originalLocked', { name: originalLockedBy.name })
-                        : block.conflictOf === 'title'
-                          ? t('block.takeTitle')
-                          : t('block.takeText')
-                  }
-                >
-                  {t('block.take')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onResolveConflict(block.id, 'keep')}
-                  className="px-1.5 py-0.5 rounded-btn border border-border text-main hover:bg-panel cursor-pointer"
-                  title={t('block.keepBothTitle')}
-                >
-                  {t('block.keepBoth')}
-                </button>
-                <button
-                  type="button"
-                  disabled={!!lockedBy}
-                  onClick={() => onResolveConflict(block.id, 'drop')}
-                  className="px-1.5 py-0.5 rounded-btn border border-border text-muted hover:text-main hover:bg-panel cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                  title={lockedBy ? (lockedBy.own ? t('lock.drawingOwn') : t('lock.copy', { name: lockedBy.name })) : t('block.dropVersion')}
-                >
-                  {t('common:discard')}
-                </button>
-              </>
-            )}
-          </div>
-        )}
-        {block.conflictOf && onResolveConflict && !lockedBy && originalLockedBy && (
-          <p className="mt-0.5 text-[11px] text-status-err select-none">{t('block.originalLocked', { name: originalLockedBy.name })}</p>
-        )}
+        {block.conflictOf && <ConflictNotice block={block} lockedBy={lockedBy} originalLockedBy={originalLockedBy} />}
 
         {canEdit && <MentionMenu mention={mention} text={localContent} apply={applyMention} className="absolute left-0 top-full mt-1" />}
 
-        {/* Floating Slash Commands Menu */}
         {slashSearch !== null && canEdit && (
-          <div
-            ref={slashMenuRef}
-            className="absolute left-0 top-8 z-40 w-72 max-w-[calc(100vw-2rem)] panel-surface shadow-panel border border-border rounded-card p-1"
-          >
-            <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-faint border-b border-border mb-1">
-              {t('block.chooseCommand')}
-            </div>
-            <div className="max-h-48 overflow-y-auto space-y-0.5">
-              {filteredSlashCommands.map((cmd, i) => (
-                <button
-                  key={cmd.type}
-                  ref={(el) => {
-                    slashItemRefs.current[i] = el;
-                  }}
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    applySlashCommand(cmd);
-                  }}
-                  className={`w-full text-left px-2 py-1 rounded-btn text-xs flex items-center justify-between transition-colors ${
-                    i === slashIndex
-                      ? 'bg-accent-dim text-accent font-semibold'
-                      : 'text-main hover:bg-panel-elevated'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {cmd.icon}
-                    <span className="font-semibold whitespace-nowrap">{cmd.label}</span>
-                  </div>
-                  <span className="ml-3 min-w-0 truncate text-right text-[10px] opacity-75">{cmd.desc}</span>
-                </button>
-              ))}
-              {filteredSlashCommands.length === 0 && (
-                <div className="p-2 text-center text-xs text-faint">
-                  {t('block.noCommand')}
-                </div>
-              )}
-            </div>
-          </div>
+          <SlashMenu commands={filteredSlashCommands} index={slashIndex} menuRef={slashMenuRef} itemRefs={slashItemRefs} onApply={applySlashCommand} />
         )}
       </div>
 
       {/* Someone else is editing this block: floats where the action bubble is (hidden then), so the text or
           drawing keeps its width while they type and nothing moves */}
-      {lockedBy && (
-        <span
-          className="absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 h-5 inline-flex items-center gap-1 pl-0.5 pr-1.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
-          style={{ color: lockColor!.text, border: `1px solid ${lockColor!.border}` }}
-          title={lockedBy.own ? t('lock.drawingOwn') : t('lock.title', { name: lockedBy.name })}
-        >
-          {lockedBy.own ? (
-            <OwnLockIcon on={lockedBy.ownOn} />
-          ) : (
-            <UserAvatar
-              userId={lockedBy.userId}
-              name={lockedBy.name}
-              avatarUrl={lockedBy.avatarUrl || ''}
-              size="xxs"
-              colorRing
-              showTitle={false}
-            />
-          )}
-          <span className="truncate">{lockedBy.own ? t('lock.you') : lockedBy.name}</span>
-          <Lock className="w-2.5 h-2.5 shrink-0 opacity-80" />
-        </span>
-      )}
+      {lockedBy && <LockBadge lockedBy={lockedBy} color={lockColor!} />}
 
-      {/* Floating Actions Overlay Bubble (block type, enhanced task, link, extract, delete). Next to a table
-          that fills the width it stays left of the table's + and ⋯, so a tap on them never hits it */}
-      <div
-        ref={bubbleRef}
-        className={`absolute ${
-          block.type === 'table' && canEdit ? 'right-12 sm:right-8' : 'right-1 sm:right-2'
-        } ${
-          bubbleAbovePlayer ? 'bottom-[calc(100%-6px)]' : 'top-0.5 sm:top-1'
-        } z-20 bg-panel/90 border border-border rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
-          lockedBy || (!canEdit && !onCopyBlockLink && block.type !== 'drawing')
-            ? // Someone else is editing the block: no actions, and the lock badge stays visible. Read only
-              // without a link to copy (a public page): nothing to show, not even an empty frame
-              'hidden'
-            : // Blurred only while shown: a backdrop filter in every bullet made scrolling a long note
-              // recompose the page each frame
-              showBubble
-            ? 'opacity-100 pointer-events-auto backdrop-blur-xs'
-            : // Hidden buttons must not take clicks; keyboard focus inside still shows it
-              'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto focus-within:backdrop-blur-xs'
-        }`}
-      >
-        {/* A drawing's own buttons (edit, save view …) come in here */}
-        {block.type === 'drawing' && <span ref={setDrawingActionsEl} className="contents" />}
-
-        {/* Convert back to bullet for to-dos, headings, callouts, warnings, dividers, code and numbered items */}
-        {canEdit && ['todo', 'callout', 'warning', 'error', 'h1', 'h2', 'h3', 'divider', 'code', 'numbered'].includes(block.type) && (
-          <button
-            type="button"
-            onClick={() => {
-              refocusAfterTypeChangeRef.current = true;
-              flushDebounce(localContent, block.type === 'todo' ? { type: 'bullet', checked: false, taskId: '' } : { type: 'bullet', checked: false });
-            }}
-            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer`}
-            title={t('block.toText')}
-          >
-            <Type className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* To-do: turn it into an enhanced task, or undo the link of one */}
-        {block.type === 'todo' && canEdit && !block.taskId && !block.subtaskOf && (
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                const targetDocId = docId || block.documentId || block.docId || '';
-                const thought = await api.createEnhancedTask(targetDocId, block.id, {
-                  content: localContent || 'Aufgabe',
-                  checked: Boolean(block.checked),
-                });
-                const updatedBlock: DocumentBlock = {
-                  ...latestBlockRef.current,
-                  content: localContent,
-                  taskId: thought.id,
-                  type: 'todo',
-                };
-                onUpdateBlockRef.current(updatedBlock, true);
-                onOpenTask?.(thought.id);
-              } catch (err) {
-                showError(errorMessage(err, t('block.createTaskFailed')));
-              }
-            }}
-            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer`}
-            title={t('block.toTask')}
-            aria-label={t('block.toTask')}
-          >
-            <SquareCheckBig className="w-3.5 h-3.5" />
-          </button>
-        )}
-        {block.type === 'todo' && canEdit && block.taskId && (
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await api.unlinkEnhancedTask(block.taskId!).catch(() => {});
-                const updatedBlock: DocumentBlock = {
-                  ...latestBlockRef.current,
-                  content: localContent,
-                  taskId: '',
-                  type: 'todo',
-                };
-                onUpdateBlockRef.current(updatedBlock, true);
-              } catch (err) {
-                showError(errorMessage(err, t('block.unlinkFailed')));
-              }
-            }}
-            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-status-warn rounded-btn transition-colors cursor-pointer`}
-            title={t('block.unlink')}
-            aria-label={t('block.unlink')}
-          >
-            <Unlink className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* Link to this bullet */}
-        {onCopyBlockLink && localContent.trim() !== '' && !mediaPicker && (
-          <button
-            type="button"
-            onClick={() => onCopyBlockLink(block.id)}
-            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer`}
-            title={t('block.copyLink')}
-            aria-label={t('block.copyLink')}
-          >
-            <Link2 className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* Branch into its own note */}
-        {canEdit && onExtractBlock && localContent.trim() !== '' && !isNoteLinkOnly(localContent) && !mediaPicker && (
-          <button
-            type="button"
-            onClick={(e) => onExtractBlock(block.id, { x: e.clientX, y: e.clientY })}
-            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer`}
-            title={t('block.extract')}
-          >
-            <FileOutput className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* The way back: a bullet that only links to a note gets that note's bullets again */}
-        {canEdit && onInlineBlock && isNoteLinkOnly(localContent) && !mediaPicker && (
-          <button
-            type="button"
-            onClick={() => onInlineBlock(block.id)}
-            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer`}
-            title={t('block.pullBackTitle')}
-            aria-label={t('block.pullBack')}
-          >
-            <FileInput className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* Delete button */}
-        {canEdit && (
-          <button
-            type="button"
-            onClick={() => {
-              // A branch goes with its children and without a question; Ctrl+Z brings it back
-              if (hasChildren) {
-                onDeleteBlockRef.current(block.id, true);
-              } else {
-                onDeleteBlockRef.current(block.id, false);
-              }
-            }}
-            className={`${bubbleBtn} flex items-center justify-center text-faint hover:text-status-err rounded-btn transition-colors cursor-pointer`}
-            title={t('block.delete')}
-          >
-            <Trash className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </div>
+      {actionBubble({
+        block,
+        canEdit,
+        hasChildren,
+        content: localContent,
+        picking: !!mediaPicker,
+        lockedBy,
+        show: showBubble,
+        bubbleRef,
+        onDrawingActionsEl: setDrawingActionsEl,
+        onToText: () => {
+          refocusAfterTypeChangeRef.current = true;
+          flushDebounce(localContent, block.type === 'todo' ? { type: 'bullet', checked: false, taskId: '' } : { type: 'bullet', checked: false });
+        },
+        onTaskLink: (taskId) => onUpdateBlockRef.current({ ...latestBlockRef.current, content: localContent, taskId, type: 'todo' }, true),
+        t,
+        actions,
+      })}
 
       {showSecretSheet && (
         <NewSecretSheet
