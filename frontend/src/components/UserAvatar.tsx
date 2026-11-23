@@ -44,7 +44,7 @@ function getInitials(name?: string, email?: string): string {
   return '?';
 }
 
-export function isEmoji(str?: string): boolean {
+function isEmoji(str?: string): boolean {
   if (!str) return false;
   const trimmed = str.trim();
   // Simple heuristic: length <= 8 and not a URL or base64 image

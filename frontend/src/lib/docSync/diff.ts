@@ -6,7 +6,7 @@ import { Doc, Op, flatten, normProps, propsEqual } from './model';
 import { codeBlockText } from '../secretRef';
 
 /** Parent index (-1 = top level) for every entry of a flat list; impossible levels are clamped. */
-export function parentsFromLevels(levels: number[]): number[] {
+function parentsFromLevels(levels: number[]): number[] {
   const parents: number[] = [];
   const stack: number[] = [];
   levels.forEach((raw, i) => {
@@ -20,7 +20,7 @@ export function parentsFromLevels(levels: number[]): number[] {
 }
 
 /** Marks a longest strictly increasing subsequence of the non-empty keys. */
-export function longestIncreasing(keys: string[]): boolean[] {
+function longestIncreasing(keys: string[]): boolean[] {
   const keep = new Array(keys.length).fill(false);
   const tails: number[] = [];
   const prev = new Array(keys.length).fill(-1);

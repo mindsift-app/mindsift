@@ -5,8 +5,8 @@ import { ListItem, ListItemSuggestion } from '../../lib/types';
 // the typed text first, then names with a word starting with it, then names containing it; within each
 // by how often they were added, weighted by how long ago. Pure functions.
 
-export const MIN_SUGGESTION_CHARS = 2;
-export const MAX_SUGGESTIONS = 6;
+const MIN_SUGGESTION_CHARS = 2;
+const MAX_SUGGESTIONS = 6;
 
 // The name as the history keys it: lower case, spaces collapsed, hashtags removed unless nothing is left
 export function suggestionKey(text: string): string {
@@ -19,7 +19,7 @@ export function suggestionKey(text: string): string {
 }
 
 // How often, halved after 60 days without use
-export function suggestionScore(s: ListItemSuggestion, now: number): number {
+function suggestionScore(s: ListItemSuggestion, now: number): number {
   const t = Date.parse(s.lastUsed);
   const days = Number.isNaN(t) ? 0 : Math.max(0, (now - t) / 86_400_000);
   return s.count / (1 + days / 60);

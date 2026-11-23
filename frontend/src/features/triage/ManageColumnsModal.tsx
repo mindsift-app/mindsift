@@ -48,7 +48,7 @@ const columnColor = (id: string, cls: string) => ({
     return i18n.t(`tasks:colors.${id}`);
   },
 });
-export const COLUMN_COLORS: { id: string; readonly label: string; cls: string }[] = [
+const COLUMN_COLORS: { id: string; readonly label: string; cls: string }[] = [
   columnColor('gray', 'bg-faint'),
   columnColor('slate', 'bg-main'),
   columnColor('green', 'bg-status-ok'),

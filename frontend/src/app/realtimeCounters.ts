@@ -10,7 +10,6 @@ import {
   RELOAD_SHARED_INTERVAL_MS,
   RELOAD_SOON_MS,
   createReloadScheduler,
-  type ReloadScheduler,
 } from '../lib/realtimeReload';
 
 // The rhythm is the one of every realtime reload (lib/realtimeReload.ts)
@@ -38,5 +37,4 @@ export function eventChangesDeck(msg: WSMessage, deckIds: ReadonlySet<string>): 
   return event !== 'TASK_DELETED' && p.status === 'inbox';
 }
 
-export type StatsScheduler = ReloadScheduler;
 export const createStatsScheduler = createReloadScheduler;

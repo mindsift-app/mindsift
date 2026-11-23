@@ -56,7 +56,7 @@ void i18n.use(initReactI18next).init({
 export const isLanguage = (v?: string | null): v is Language => LANGUAGES.some((l) => l.id === v);
 
 // The first of the browser's languages the app speaks, or '' when there is none
-export function browserLanguage(tags: readonly string[] = navigator.languages ?? [navigator.language]): Language | '' {
+function browserLanguage(tags: readonly string[] = navigator.languages ?? [navigator.language]): Language | '' {
   for (const tag of tags) {
     const code = (tag || '').toLowerCase().split(/[-_]/)[0];
     if (isLanguage(code)) return code;
@@ -80,7 +80,7 @@ export function addTexts(lang: Language, texts: Record<string, object>): void {
 }
 
 // Loads the texts of a language once
-export async function loadLanguage(lang: Language): Promise<void> {
+async function loadLanguage(lang: Language): Promise<void> {
   if (i18n.hasResourceBundle(lang, 'common')) return;
   addTexts(lang, (await loaders[lang]()).default);
 }

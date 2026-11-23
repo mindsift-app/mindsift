@@ -3,7 +3,7 @@ import type { AuthStatus } from '../lib/types';
 // Waits between attempts to learn the next demo reset: the first one shortly after the countdown ran out
 // (the reset itself takes a moment), then backing off up to a minute while the server still answers
 // with the deadline just passed or cannot be reached.
-export const DEMO_STATUS_RETRY_MS = [5000, 10000, 20000, 40000, 60000];
+const DEMO_STATUS_RETRY_MS = [5000, 10000, 20000, 40000, 60000];
 
 // The answer still names the deadline that has just passed: the reset is running or about to
 const stale = (st: AuthStatus) => Boolean(st.demoMode) && typeof st.demoResetInSeconds === 'number' && st.demoResetInSeconds <= 0;

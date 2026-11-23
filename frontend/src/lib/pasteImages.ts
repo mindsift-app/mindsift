@@ -150,7 +150,7 @@ export function dataUrlBlob(url: string): Blob {
  * shrunk and re-encoded by prepareImage, checked by the server (type, MEDIA_MAX_IMAGE_MB). Returns the
  * contents of the image bullets that succeeded and the error of each one that failed.
  */
-export async function uploadPastedImages(docId: string, images: PastedImages): Promise<{ contents: string[]; errors: unknown[] }> {
+async function uploadPastedImages(docId: string, images: PastedImages): Promise<{ contents: string[]; errors: unknown[] }> {
   const jobs: Promise<string>[] = [
     ...images.files.map(async (file) => {
       const { blob, name } = await prepareImage(file);

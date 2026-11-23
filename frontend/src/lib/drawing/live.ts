@@ -34,7 +34,7 @@ export function wins(a: Meta, b: Meta): boolean {
   return a.ver > b.ver || (a.ver === b.ver && a.nonce < b.nonce);
 }
 
-export function newNonce(): number {
+function newNonce(): number {
   return Math.floor(Math.random() * 2 ** 31);
 }
 
@@ -58,7 +58,7 @@ export function patchDrawing(d: Drawing, applied: Applied[]): Drawing {
 }
 
 /** Ids named in order first, in that order (unknown ones skipped); the rest follow as they were */
-export function orderIds(ids: string[], order: string[]): string[] {
+function orderIds(ids: string[], order: string[]): string[] {
   const have = new Set(ids);
   const seen = new Set<string>();
   const out: string[] = [];

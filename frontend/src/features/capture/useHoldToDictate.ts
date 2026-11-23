@@ -30,7 +30,7 @@ interface HoldToDictateOptions {
 
 const HOLD_DELAY_MS = 350;
 /** Moved this far from where it was pressed while held, the recording locks and goes on without holding. */
-export const LOCK_DISTANCE_PX = 56;
+const LOCK_DISTANCE_PX = 56;
 // The browser's recognition sometimes never reports its end: save what was heard after this
 const STOP_TIMEOUT_MS = 1500;
 const DONE_MS = 800;

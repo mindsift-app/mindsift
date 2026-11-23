@@ -8,7 +8,7 @@ import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { errorMessage } from '../../lib/errorMessage';
 
 // Days a trusted device signs in without a code (storage.TrustedDeviceLifetime on the server)
-export const TRUST_DAYS = 30;
+const TRUST_DAYS = 30;
 // From this many recovery codes left on, the login says to make new ones
 export const LOW_RECOVERY_CODES = 3;
 

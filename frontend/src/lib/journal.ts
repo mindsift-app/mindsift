@@ -4,7 +4,7 @@ import { localDay } from './due';
 
 // Journal helpers: dates are local calendar days as YYYY-MM-DD (the server stores them as given).
 
-export const JOURNAL_ENABLED_KEY = 'mindsift_journal_enabled';
+const JOURNAL_ENABLED_KEY = 'mindsift_journal_enabled';
 
 export function isJournalEnabled(): boolean {
   try {

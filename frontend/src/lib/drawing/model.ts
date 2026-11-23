@@ -285,7 +285,7 @@ export const isShape = (el: DrawElement | undefined): el is ShapeElement =>
 
 // Text size without a DOM in tests; in the browser a canvas measures the real font
 let measureCtx: CanvasRenderingContext2D | null | undefined;
-export function textWidth(text: string, fs: number): number {
+function textWidth(text: string, fs: number): number {
   if (measureCtx === undefined) {
     try {
       measureCtx = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
@@ -349,7 +349,7 @@ export function elementBox(el: DrawElement, byId: Map<string, DrawElement>): Box
   }
 }
 
-export function boxOfPoints(pts: Point[]): Box {
+function boxOfPoints(pts: Point[]): Box {
   if (pts.length === 0) return { x: 0, y: 0, w: 0, h: 0 };
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const [x, y] of pts) {
@@ -361,7 +361,7 @@ export function boxOfPoints(pts: Point[]): Box {
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 }
 
-export function unionBox(boxes: Box[]): Box | null {
+function unionBox(boxes: Box[]): Box | null {
   if (boxes.length === 0) return null;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const b of boxes) {
@@ -412,7 +412,7 @@ function sidePoint(s: ShapeElement, side: 'l' | 'r' | 't' | 'b', gap = 4): Point
  * sits far to the side (as laid out from Mermaid). Without two shapes, or when they overlap, the longer
  * distance decides.
  */
-export function elbowHorizontal(from: ShapeElement | undefined, to: ShapeElement | undefined, a: Point, b: Point): boolean {
+function elbowHorizontal(from: ShapeElement | undefined, to: ShapeElement | undefined, a: Point, b: Point): boolean {
   if (from && to) {
     const gapX = Math.max(to.x - (from.x + from.w), from.x - (to.x + to.w));
     const gapY = Math.max(to.y - (from.y + from.h), from.y - (to.y + to.h));
@@ -425,7 +425,7 @@ export function elbowHorizontal(from: ShapeElement | undefined, to: ShapeElement
  * An elbow line in one direction: out of the side of its start shape, along to the middle stretch at share
  * t of the way, across, and into the side of its end shape. handle: middle of the middle stretch.
  */
-export function elbowPath(from: ShapeElement | undefined, to: ShapeElement | undefined, rawA: Point, rawB: Point, horizontal: boolean, t: number) {
+function elbowPath(from: ShapeElement | undefined, to: ShapeElement | undefined, rawA: Point, rawB: Point, horizontal: boolean, t: number) {
   const a: Point = from ? sidePoint(from, horizontal ? (rawB[0] >= rawA[0] ? 'r' : 'l') : rawB[1] >= rawA[1] ? 'b' : 't') : rawA;
   const b: Point = to ? sidePoint(to, horizontal ? (rawB[0] >= rawA[0] ? 'l' : 'r') : rawB[1] >= rawA[1] ? 't' : 'b') : rawB;
   const poly: Point[] = horizontal
@@ -687,7 +687,7 @@ export function spreadLabels(els: DrawElement[]): Map<string, Point> {
 }
 
 /** Whether the stretch of a line that a point lies on runs level (a label sits above it then) */
-export function levelAt(poly: Point[], at: Point): boolean {
+function levelAt(poly: Point[], at: Point): boolean {
   let best = Infinity;
   let level = false;
   for (let i = 1; i < poly.length; i++) {
@@ -734,7 +734,7 @@ export function halfway(poly: Point[]): Point {
   return poly[0] || [0, 0];
 }
 
-export const DEFAULT_BEND = 0.25;
+const DEFAULT_BEND = 0.25;
 
 /** Radius of the rounded corners of elbow lines (in every theme; short stretches get a smaller one) */
 export const ELBOW_RADIUS = 10;
@@ -987,7 +987,7 @@ export function simplifyPoints(pts: Point[], epsilon: number): Point[] {
   return pts.filter((_, i) => keep[i]);
 }
 
-export function distToSegment(p: Point, a: Point, b: Point): number {
+function distToSegment(p: Point, a: Point, b: Point): number {
   const dx = b[0] - a[0];
   const dy = b[1] - a[1];
   const l2 = dx * dx + dy * dy;
@@ -1003,7 +1003,7 @@ function distToPolyline(p: Point, poly: Point[]): number {
 }
 
 /** Is a point inside a shape's outline (grown by a margin)? */
-export function insideShape(s: ShapeElement, p: Point, margin = 0): boolean {
+function insideShape(s: ShapeElement, p: Point, margin = 0): boolean {
   const hw = s.w / 2 + margin;
   const hh = s.h / 2 + margin;
   const dx = p[0] - (s.x + s.w / 2);

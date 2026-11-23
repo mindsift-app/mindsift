@@ -21,7 +21,7 @@ const WIDTH_RE = /^((?:[^\\]|\\.)*?)\|(\d{1,5})$/;
 /** Smallest width an image can be dragged to (px) */
 export const MIN_IMAGE_WIDTH = 48;
 /** Largest width stored; the note column limits what is shown anyway */
-export const MAX_IMAGE_WIDTH = 10000;
+const MAX_IMAGE_WIDTH = 10000;
 
 export interface MediaRef {
   id: string;
@@ -105,11 +105,6 @@ export function authorizedAudioURL(path: string): Promise<string> {
   return playableURL(path, () => loadAuthorized(path));
 }
 
-/** The file itself, e.g. to send a recording to the speech recognition. */
-export function mediaBlob(id: string): Promise<Blob> {
-  return loadMedia(id).then((m) => m.blob);
-}
-
 export interface UploadedMedia {
   id: string;
   kind: 'image' | 'audio';
@@ -177,7 +172,7 @@ export const IMAGE_QUALITY: Record<Exclude<ImageQuality, 'off'>, { webp: number;
 // The server's level, as /auth/status (or the administration's last save) said
 let serverQuality: ImageQuality = 'high';
 
-export function isImageQuality(v: unknown): v is ImageQuality {
+function isImageQuality(v: unknown): v is ImageQuality {
   return v === 'high' || v === 'medium' || v === 'low' || v === 'off';
 }
 

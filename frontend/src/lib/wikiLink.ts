@@ -79,7 +79,7 @@ export function isNoteLinkOnly(content: string): boolean {
 }
 
 /** Whether two links point to the same note: by id when both have one, else by title. */
-export function sameNote(a: WikiLink, b: WikiLink): boolean {
+function sameNote(a: WikiLink, b: WikiLink): boolean {
   if (a.docId && b.docId) return a.docId === b.docId;
   return a.title.trim().toLowerCase() === b.title.trim().toLowerCase();
 }

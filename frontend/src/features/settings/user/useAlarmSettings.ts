@@ -7,7 +7,7 @@ import { errorMessage } from '../../../lib/errorMessage';
 import { StatusMessage, useStatusMessage } from '../../../components/StatusToast';
 
 // The notification settings of an account; old accounts only have alarmChannels (the channels of due tasks)
-export function buildNotificationSettings(user: User): NotificationSettings {
+function buildNotificationSettings(user: User): NotificationSettings {
   const hasLegacy = Array.isArray(user.alarmChannels);
   const dueEmailDefault = hasLegacy ? user.alarmChannels!.includes('email') : true;
   const dueDiscordDefault = hasLegacy ? user.alarmChannels!.includes('discord') : true;

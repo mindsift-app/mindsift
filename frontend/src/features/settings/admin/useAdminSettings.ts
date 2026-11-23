@@ -21,7 +21,7 @@ const sharingMode = (id: SharingMode) => ({
 });
 export const SHARING_MODES = [sharingMode('private'), sharingMode('organizations'), sharingMode('open')];
 // Stricter modes come first; switching to a stricter one can remove shares
-export const modeRank = (m: SharingMode) => SHARING_MODES.findIndex((x) => x.id === m);
+const modeRank = (m: SharingMode) => SHARING_MODES.findIndex((x) => x.id === m);
 
 // State and actions of the administration: users and invites, organizations, server and mail settings.
 // The sections share it (users show their organization, everything loads together), so it lives in one hook.

@@ -9,7 +9,7 @@ export function pushSupported(): boolean {
 }
 
 /** iOS/iPadOS outside the installed home screen app: push is not offered there */
-export function needsHomeScreenInstall(): boolean {
+function needsHomeScreenInstall(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const standalone =

@@ -26,7 +26,7 @@ import type { DictationOutcome } from '../features/capture/captureDictation';
 // Expanded or not, per device (a convenience; private windows simply start collapsed)
 export const NAV_RAIL_KEY = 'mindsift:nav-rail-expanded';
 
-export function readNavRailExpanded(): boolean {
+function readNavRailExpanded(): boolean {
   try {
     return localStorage.getItem(NAV_RAIL_KEY) === '1';
   } catch {
@@ -34,7 +34,7 @@ export function readNavRailExpanded(): boolean {
   }
 }
 
-export function useNavRailExpanded() {
+function useNavRailExpanded() {
   const [expanded, setExpandedState] = useState(readNavRailExpanded);
   const setExpanded = useCallback((next: boolean) => {
     setExpandedState(next);

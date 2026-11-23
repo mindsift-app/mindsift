@@ -17,7 +17,7 @@ export function followTaskUpdate(extra: Thought | null, update: Thought[] | ((pr
 }
 
 // Whether a task has at least one of the chosen hashtags (any task while none is chosen)
-export function hasAnyTag(task: Thought, selectedTags: readonly string[]): boolean {
+function hasAnyTag(task: Thought, selectedTags: readonly string[]): boolean {
   if (selectedTags.length === 0) return true;
   return Array.isArray(task.tags) && task.tags.some((tag) => selectedTags.includes(tag));
 }

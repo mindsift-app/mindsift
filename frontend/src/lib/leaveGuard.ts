@@ -20,9 +20,6 @@ export const holdLeave = leave.hold;
 /** Whether leaving the view would lose something right now. */
 export const leaveHeld = leave.held;
 
-/** Holds leaving back while `active` (and the component is mounted). */
-export const useLeaveGuard = leave.useHold;
-
 export interface LeaveOptions {
   /** Closing a dialog or sheet ("Trotzdem schließen") instead of switching the view. */
   close?: boolean;
@@ -83,9 +80,6 @@ export const holdUnload = unload.hold;
 
 /** Whether reloading or closing the page would lose a recording right now. */
 export const unloadHeld = unload.held;
-
-/** Lets the browser ask before the page is left while `active` (and the component is mounted). */
-export const useUnloadGuard = unload.useHold;
 
 // A recording or dictation under way holds all three: leaving the view (unless `leave` is false, e.g. an
 // input that lives on or hands the recording on), unloading the page and the automatic reload for a new
