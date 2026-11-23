@@ -9,6 +9,8 @@ import { useScrollLock } from '../lib/useScrollLock';
 
 // Padding of a sheet's panel: room for the home indicator below the last row
 const SHEET_PADDING = 'px-4 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]';
+// The same docked to an open keyboard, which already covers the home indicator
+const SHEET_PADDING_ON_KEYBOARD = 'px-4 pt-6 pb-4';
 
 interface BottomSheetProps {
   /** Closes the sheet: the backdrop, Escape and the X of the header (when `title` is given). */
@@ -30,7 +32,10 @@ interface BottomSheetProps {
   desktopClassName?: string;
   /** Sits right above the on-screen keyboard (lib/useKeyboardInset.ts), for sheets with text fields. */
   dockToKeyboard?: boolean;
-  /** Padding and layout of the panel; default: 1 rem, more on top for the grip and at the bottom for the home indicator. */
+  /**
+   * Padding and layout of the panel; default: 1 rem, more on top for the grip and at the bottom for the home
+   * indicator (not while docked to an open keyboard).
+   */
   className?: string;
   /** Extra classes and style of the backdrop (e.g. a higher z-index). */
   overlayClassName?: string;
@@ -59,7 +64,7 @@ export function BottomSheet({
   phoneOnly = false,
   desktopClassName,
   dockToKeyboard = false,
-  className = SHEET_PADDING,
+  className,
   overlayClassName = '',
   style,
   panelRef,
@@ -89,6 +94,7 @@ export function BottomSheet({
     return () => window.removeEventListener('keydown', onKey);
   }, [closeOnEscape, phoneOnly, closeRef]);
 
+  const padding = className ?? (dockToKeyboard && inset > 0 ? SHEET_PADDING_ON_KEYBOARD : SHEET_PADDING);
   const Panel = onSubmit ? 'form' : 'div';
   const docked = dockToKeyboard
     ? ({ '--kb-inset': `${inset}px`, '--vv-max': visibleHeight ? `${visibleHeight - 16}px` : '85vh' } as React.CSSProperties)
@@ -104,7 +110,7 @@ export function BottomSheet({
         onSubmit={onSubmit}
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{ ...style, ...docked }}
-        className={`fixed inset-x-0 ${dockToKeyboard ? 'bottom-(--kb-inset) max-h-(--vv-max)' : 'bottom-0 max-h-[85vh]'} overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel animate-in slide-in-from-bottom duration-200 ${className} ${desktopClassName ? `sm:slide-in-from-bottom-2 ${desktopClassName}` : ''}`}
+        className={`fixed inset-x-0 ${dockToKeyboard ? 'bottom-(--kb-inset) max-h-(--vv-max)' : 'bottom-0 max-h-[85vh]'} overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel animate-in slide-in-from-bottom duration-200 ${padding} ${desktopClassName ? `sm:slide-in-from-bottom-2 ${desktopClassName}` : ''}`}
       >
         {title && (
           <div className="flex items-center justify-between gap-2 pb-2 border-b border-border mb-3">

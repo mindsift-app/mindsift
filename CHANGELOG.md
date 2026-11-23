@@ -19,6 +19,7 @@ Versions without a git tag were development states and were never published as a
 - All sheets from below on phones look and behave the same: a grip on top, a close button large enough to tap, the page behind does not scroll, and Escape closes them (Quick Dump, new task, task filter, profile, app install, calendar day, triage actions, a person in the administration).
 - Listing tasks through MCP (`list_tasks`) or with filters through `GET /tasks` now reads only the tasks asked for from the database, so it answers faster for people with many tasks; the results are the same.
 - Small forms opened next to a click (new folder, rename) flip above the click when there is no room below instead of running off the window.
+- Phones: the Quick Dump and new-task sheets now sit right above the on-screen keyboard like the other small forms, so it no longer covers their lower fields, and their buttons are as large as elsewhere (44 px), with Cancel and Create side by side over the full width.
 
 ### Fixed
 - Sending an invite by e-mail now checks the address like everywhere else in the app: an incomplete one such as `anna@` is refused instead of binding a single-use invite to it.

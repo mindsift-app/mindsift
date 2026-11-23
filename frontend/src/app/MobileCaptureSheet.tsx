@@ -35,6 +35,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
   return (
     <BottomSheet
       phoneOnly
+      dockToKeyboard
       onClose={() => setShowMobileCapture(false)}
       guard={{ held: mobileVoice.state !== 'idle' }}
       title={t('capture.title')}
@@ -65,8 +66,8 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
                 }
                 className={
                   mobileVoiceActive && mobileVoice.mode === 'server'
-                    ? 'w-full input-field px-3 py-2 pr-24 text-sm'
-                    : 'w-full input-field px-3 py-2 pr-10 text-sm'
+                    ? 'w-full input-field h-11 px-3 pr-24 text-base'
+                    : 'w-full input-field h-11 px-3 pr-11 text-base'
                 }
               />
               {mobileVoice.available && (
@@ -144,7 +145,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
                       triggerHaptic(10);
                       setMobileTriagePriority(p);
                     }}
-                    className={`h-9 px-1 text-xs rounded-btn font-medium transition-colors border flex items-center justify-center gap-1 cursor-pointer ${
+                    className={`h-11 px-1 text-xs rounded-btn font-medium transition-colors border flex items-center justify-center gap-1 cursor-pointer ${
                       active
                         ? item.activeClass
                         : 'bg-canvas border-border text-muted hover:text-main'
@@ -174,18 +175,18 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
           </div>
 
           {/* Bottom Buttons */}
-          <div className="pt-2 flex justify-end gap-2">
+          <div className="pt-2 flex gap-2">
             <button
               type="button"
               onClick={close}
-              className="btn-ghost h-10 px-4 text-xs cursor-pointer"
+              className="btn-action flex-1 h-11 px-3 text-sm cursor-pointer"
             >
               {t('common:cancel')}
             </button>
             <button
               type="submit"
               disabled={!mobileTriageContent.trim()}
-              className="btn-primary h-10 px-5 text-xs font-semibold disabled:opacity-40 cursor-pointer"
+              className="btn-primary flex-1 h-11 px-4 text-sm font-semibold disabled:opacity-40 cursor-pointer"
             >
               {t('capture.submit')}
             </button>
