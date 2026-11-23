@@ -1,25 +1,28 @@
 // Transcriptions in the background (internal/api/transcription_jobs.go, frontend/src/lib/transcriptionJobs.ts)
-// against a server with its own Whisper server, which this script plays itself (a slow one: every answer
-// takes WHISPER_DELAY_MS). Checked, in Chromium with a fake microphone:
+// against a server with its own Whisper server, which this script plays itself: it holds its answers until
+// the script has seen the waiting state, so nothing depends on how long a step takes. Checked, in Chromium
+// with a fake microphone:
 //   - "Transkribieren" on a voice note: the bullet shows "Wird erkannt…", also after switching to another
 //     note and after a reload; the text arrives in the caption by itself, and the server has it
 //   - holding the rail's + : the recording is on the server once released; a reload right after loses
 //     nothing, the Quick Dump shows it as being transcribed, and the server makes the entry
-//   - a failing Whisper server: the recording stays above the Quick Dump with "Erneut versuchen", which
+//   - a failing Whisper server: the recording stays above the Quick Dump, "Neuer Versuch folgt gleich";
+//     discarding it removes it. With TRANSCRIPTION_FULL=1 also the end (the server tries twice more, after
+//     30 s and 2 min, so it takes about 3 minutes): "nicht transkribiert" with "Erneut versuchen", which
 //     makes the entry once the Whisper server works again
 //   - dictating into a text field and switching the view asks first: "Bleiben" stays, "Trotzdem wechseln" goes
-// Needs a server without demo mode (the demo has no Whisper server) started with STT_URL pointing here, e.g.
-//   podman run -d --network host -e PORT=18564 -e DEFAULT_LANGUAGE=de -e ADMIN_USER=admin -e ADMIN_PASSWORD=… \
-//     -e STT_URL=http://localhost:18566 -e STT_MODEL=fake mindsift-image
-//   MINDSIFT_URL=http://localhost:18564 MINDSIFT_PASSWORD=… WHISPER_PORT=18566 node transcription.e2e.mjs
+// Needs a server without demo mode (the demo has no Whisper server): MINDSIFT_PLAIN_URL with the first admin
+// (MINDSIFT_PLAIN_ADMIN / MINDSIFT_PLAIN_PASSWORD), as e2e/run.sh starts it. The script points the server's
+// speech recognition at its fake Whisper server on WHISPER_PORT (the administration's setting, put back at
+// the end); the server must reach that port on localhost (host network).
 import http from 'node:http';
 import { chromium } from 'playwright';
 
-const BASE = process.env.MINDSIFT_URL || 'http://localhost:18564';
-const LOGIN = process.env.MINDSIFT_LOGIN || 'admin';
-const PASSWORD = process.env.MINDSIFT_PASSWORD || 'admin';
+const BASE = process.env.MINDSIFT_PLAIN_URL || 'http://localhost:18081';
+const LOGIN = process.env.MINDSIFT_PLAIN_ADMIN || 'admin';
+const PASSWORD = process.env.MINDSIFT_PLAIN_PASSWORD || 'Tour-Angebot-2026';
 const WHISPER_PORT = Number(process.env.WHISPER_PORT || 18566);
-const DELAY = Number(process.env.WHISPER_DELAY_MS || 10000);
+const FULL = process.env.TRANSCRIPTION_FULL === '1';
 const TEXT = 'Automatisch erkannter Text';
 
 let failures = 0;
@@ -28,8 +31,21 @@ const check = (cond, msg, detail) => {
   if (!cond) failures++;
 };
 
-// The Whisper server: model list and slow transcriptions; `failing` answers every transcription with 500
-const whisper = { calls: 0, failing: false };
+// The Whisper server: model list and transcriptions. While `held`, answers wait until release();
+// `failing` answers every transcription with 500.
+const whisper = {
+  calls: 0,
+  failing: false,
+  held: false,
+  waiting: [],
+  hold() {
+    this.held = true;
+  },
+  release() {
+    this.held = false;
+    for (const answer of this.waiting.splice(0)) answer();
+  },
+};
 const fake = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/v1/models') {
     res.setHeader('Content-Type', 'application/json');
@@ -39,8 +55,8 @@ const fake = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/v1/audio/transcriptions') {
     whisper.calls++;
     req.resume();
-    req.on('end', () =>
-      setTimeout(() => {
+    req.on('end', () => {
+      const answer = () => {
         if (whisper.failing) {
           res.statusCode = 500;
           res.end('model crashed');
@@ -48,8 +64,10 @@ const fake = http.createServer((req, res) => {
         }
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ text: TEXT }));
-      }, DELAY)
-    );
+      };
+      if (whisper.held) whisper.waiting.push(answer);
+      else answer();
+    });
     return;
   }
   res.statusCode = 404;
@@ -100,10 +118,18 @@ const main = async () => {
       createSampleData: false,
     });
   }
+  // Speech recognition through the fake Whisper server; the setting as it was goes back at the end
+  const settings = await api(token, 'GET', '/api/v1/admin/settings');
+  const speechBefore = settings.speech;
+  await api(token, 'PUT', '/api/v1/admin/settings', {
+    ...settings,
+    speech: { ...speechBefore, mode: 'server', url: `http://localhost:${WHISPER_PORT}`, model: 'fake' },
+  });
   const stamp = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
   const title = `Transkription ${stamp}`;
   const otherTitle = `Andere ${stamp}`;
   const created = [];
+  const inboxJobs = [];
   const browser = await chromium.launch({ args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
   try {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
@@ -147,6 +173,7 @@ const main = async () => {
     await openNote(page, title);
     const transcribe = page.getByRole('button', { name: /Transkribieren/ });
     await transcribe.waitFor({ timeout: 15000 });
+    whisper.hold();
     await transcribe.click();
     await page.getByText('Wird erkannt…').first().waitFor({ timeout: 5000 });
     check(true, 'Notiz: Transkribieren zeigt „Wird erkannt…“');
@@ -156,7 +183,8 @@ const main = async () => {
     const pending = await page.getByText('Wird erkannt…').first().waitFor({ timeout: 4000 }).then(() => true, () => false);
     check(pending, 'Notiz: nach Notizwechsel und Neuladen noch als „Wird erkannt…“ markiert');
     await shot(page, 'transcription-note');
-    await page.getByText(TEXT).first().waitFor({ timeout: DELAY + 20000 });
+    whisper.release();
+    await page.getByText(TEXT).first().waitFor({ timeout: 30000 });
     check(true, 'Notiz: der Text erscheint ohne Zutun in der Beschriftung');
     const blocks = (await api(token, 'GET', `/api/v1/documents/${doc.id}`)).blocks || [];
     check(blocks.some((b) => b.content === `[${TEXT}](media:${mediaId})`), 'Notiz: der Server hat den Text in der Beschriftung', blocks.map((b) => b.content));
@@ -166,45 +194,69 @@ const main = async () => {
     await page.getByRole('button', { name: /^Triage/ }).locator('visible=true').first().click();
     const plus = page.locator('[data-tour="capture"]').locator('visible=true').first();
     const box = await plus.boundingBox();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.down();
-    await page.waitForTimeout(3000);
-    const uploaded = page.waitForResponse((r) => r.url().endsWith('/api/v1/voice/captures') && r.status() === 202, { timeout: 15000 });
-    await page.mouse.up();
-    await uploaded;
+    // Holding the + records from the fake microphone; let go after a moment of "speech"
+    const dictate = async () => {
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.locator('[data-tour="capture"][data-dictation="recording"]').locator('visible=true').first().waitFor({ timeout: 5000 });
+      await page.waitForTimeout(1500);
+      const uploaded = page.waitForResponse((r) => r.url().endsWith('/api/v1/voice/captures') && r.status() === 202, { timeout: 15000 });
+      await page.mouse.up();
+      const job = await (await uploaded).json();
+      inboxJobs.push(job.id);
+      return job;
+    };
+    whisper.hold();
+    await dictate();
     check(true, 'Quick Dump: die Aufnahme liegt nach dem Loslassen auf dem Server');
     await page.reload();
-    const shown = await page.getByText('Sprachaufnahme wird transkribiert…').first().waitFor({ timeout: 5000 }).then(() => true, () => false);
+    const pendingRow = page.getByText('Sprachaufnahme wird transkribiert…').first();
+    const shown = await pendingRow.waitFor({ timeout: 5000 }).then(() => true, () => false);
     check(shown, 'Quick Dump: nach dem Neuladen als „wird transkribiert…“ zu sehen');
     await shot(page, 'transcription-inbox');
+    whisper.release();
     const entry = await until('inbox entry', async () => {
       const list = await api(token, 'GET', '/api/v1/thoughts?status=inbox');
       return (Array.isArray(list) ? list : []).find((t) => t.content === TEXT && t.source === 'voice');
-    }, DELAY + 30000);
+    }, 30000);
     check(!!entry, 'Quick Dump: der Server hat den Eintrag angelegt, obwohl die Seite neu geladen wurde');
     check(whisper.calls > before, 'Quick Dump: der Whisper-Server wurde gefragt');
-    await page.getByText('Sprachaufnahme wird transkribiert…').first().waitFor({ state: 'detached', timeout: 10000 }).catch(() => {});
+    const gone = await pendingRow.waitFor({ state: 'detached', timeout: 10000 }).then(() => true, () => false);
+    check(gone, 'Quick Dump: „wird transkribiert…“ verschwindet, sobald der Eintrag da ist');
     if (entry) await api(token, 'DELETE', `/api/v1/thoughts/${entry.id}`).catch(() => {});
 
-    // 3. A failing Whisper server: the recording stays with "Erneut versuchen"
+    // 3. A failing Whisper server: the recording stays above the Quick Dump, the server tries again later
+    // The failure is held back until the app has the server's answer to the upload: an event that comes
+    // before that answer is overwritten by it (frontend/src/lib/transcriptionJobs.ts, put after await)
     whisper.failing = true;
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.down();
-    await page.waitForTimeout(2500);
-    await page.mouse.up();
-    // The server tries twice more by itself (after 30 s and 2 min); then the recording waits for the person
-    const failedRow = page.locator('[data-transcription="failed"]').first();
-    await failedRow.waitFor({ timeout: 3 * DELAY + 200000 });
-    check(true, 'Fehler: die Aufnahme bleibt als „nicht transkribiert“ über dem Quick Dump');
-    await shot(page, 'transcription-failed');
-    whisper.failing = false;
-    await failedRow.getByRole('button', { name: 'Erneut versuchen' }).click();
-    const retried = await until('entry after retry', async () => {
-      const list = await api(token, 'GET', '/api/v1/thoughts?status=inbox');
-      return (Array.isArray(list) ? list : []).find((t) => t.content === TEXT && t.source === 'voice');
-    }, DELAY + 30000);
-    check(!!retried, 'Fehler: „Erneut versuchen“ legt den Eintrag an, sobald der Whisper-Server wieder geht');
-    if (retried) await api(token, 'DELETE', `/api/v1/thoughts/${retried.id}`).catch(() => {});
+    whisper.hold();
+    const job = await dictate();
+    whisper.release();
+    const retrying = page.getByText('Neuer Versuch folgt gleich').first();
+    await retrying.waitFor({ timeout: 15000 });
+    check(true, 'Fehler: die Aufnahme bleibt über dem Quick Dump, „Neuer Versuch folgt gleich“');
+    await shot(page, 'transcription-retrying');
+    if (FULL) {
+      // The server tries twice more by itself (after 30 s and 2 min); then the recording waits for the person
+      const failedRow = page.locator('[data-transcription="failed"]').first();
+      await failedRow.waitFor({ timeout: 200000 });
+      check(true, 'Fehler: nach dem letzten Versuch „nicht transkribiert“ mit „Erneut versuchen“');
+      await shot(page, 'transcription-failed');
+      whisper.failing = false;
+      await failedRow.getByRole('button', { name: 'Erneut versuchen' }).click();
+      const retried = await until('entry after retry', async () => {
+        const list = await api(token, 'GET', '/api/v1/thoughts?status=inbox');
+        return (Array.isArray(list) ? list : []).find((t) => t.content === TEXT && t.source === 'voice');
+      }, 30000);
+      check(!!retried, 'Fehler: „Erneut versuchen“ legt den Eintrag an, sobald der Whisper-Server wieder geht');
+      if (retried) await api(token, 'DELETE', `/api/v1/thoughts/${retried.id}`).catch(() => {});
+    } else {
+      // Without waiting minutes for the last attempt: the recording is thrown away, and its row goes
+      await api(token, 'DELETE', `/api/v1/voice/jobs/${job.id}`);
+      const left = await retrying.waitFor({ state: 'detached', timeout: 10000 }).then(() => true, () => false);
+      check(left, 'Fehler: verworfen verschwindet die Aufnahme über dem Quick Dump');
+      whisper.failing = false;
+    }
 
     // 4. Dictating into a text field, then switching the view: asks first
     await page.getByRole('button', { name: /^Aufgaben/ }).locator('visible=true').first().click();
@@ -215,7 +267,7 @@ const main = async () => {
     await page.getByRole('button', { name: /^Workspace/ }).locator('visible=true').first().click();
     const dialog = page.getByRole('alertdialog');
     await dialog.waitFor({ timeout: 5000 });
-    check((await dialog.textContent()).includes('Diktat'), 'Diktat: der Wechsel fragt nach');
+    check((await dialog.textContent()).includes('Aufnahme'), 'Diktat: der Wechsel fragt nach');
     await shot(page, 'transcription-leave');
     await dialog.getByRole('button', { name: 'Bleiben' }).click();
     check(await page.getByRole('button', { name: 'Aufnahme beenden' }).first().isVisible(), '„Bleiben“: die Aufnahme läuft weiter, die Ansicht bleibt');
@@ -230,10 +282,14 @@ const main = async () => {
     throw err;
   } finally {
     await browser.close();
+    for (const id of inboxJobs) await api(token, 'DELETE', `/api/v1/voice/jobs/${id}`).catch(() => {});
     for (const id of created) {
       await api(token, 'DELETE', `/api/v1/documents/${id}`).catch(() => {});
       await api(token, 'DELETE', `/api/v1/documents/${id}/permanent`).catch(() => {});
     }
+    await api(token, 'PUT', '/api/v1/admin/settings', { ...(await api(token, 'GET', '/api/v1/admin/settings')), speech: speechBefore }).catch((e) =>
+      console.error('Speech setting not put back:', e.message)
+    );
     fake.close();
   }
   if (failures) {

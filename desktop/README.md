@@ -290,24 +290,61 @@ UI.
 ```bash
 desktop/packaging/flatpak/build.sh     # -> desktop/out/mindsift-desktop-linux-amd64.flatpak
 flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatpak run app.mindsift.MindSift
+APP_VERSION=v1.2.0 desktop/packaging/flatpak/build.sh   # the tag v1.2.0, as the release builds it
+desktop/packaging/flatpak/update-sources.sh             # after changing go.mod, go.sum or package-lock.json
 ```
 
 - **Files** in `packaging/flatpak/`: the manifest `app.mindsift.MindSift.yml` (each permission explained
-  there), the AppStream metainfo, `build.sh` and `bundle.sh` (makes the bundle, see below). The desktop
-  file and the icons are those of `packaging/linux/`.
+  there), the AppStream metainfo, the generated sources `go.mod.yml`, `modules.txt` and
+  `node-sources.json` with `sources.sha256`, and the scripts `build.sh`, `bundle.sh` (makes the bundle,
+  see below), `update-sources.sh`, `check-sources.sh` (with `test-check-sources.sh`) and `set-release.sh`.
+  The desktop file and the icons are those of `packaging/linux/`.
 - **Runtime:** `org.gnome.Platform//51` (GTK 4, WebKitGTK 6.0). The binary is built inside
-  `org.gnome.Sdk//51` with `org.freedesktop.Sdk.Extension.golang//26.08`, so it links against the
-  runtime's libraries; the extension is pinned to a commit in `build.sh` (Go 1.27.3), the GNOME branch
-  follows its security rebuilds. The bundle names Flathub as the runtime's source, so `flatpak install`
-  fetches the runtime from there.
-- **Build:** `build.sh` builds the frontend and the license file (`desktop/build.sh licenses`), stages the
-  repository with `frontend/dist` in `desktop/dist`, `THIRD_PARTY_LICENSES.txt` (installed in
-  `/app/share/licenses/app.mindsift.MindSift/` and next to the binary), the version in
-  `desktop/app-version` (`APP_VERSION`, read by the manifest), a release entry in the metainfo when
-  `CHANGELOG.md` has a section for that version, and the Go modules vendored (`go mod vendor` in `desktop/`, which includes the main
-  module through its `replace`), then runs `flatpak-builder` offline (`GOFLAGS=-mod=vendor`,
-  `GOPROXY=off`, `--default-branch=stable`) in a privileged Debian container; the runtimes stay in the
-  volume `mindsift-flatpak`.
+  `org.gnome.Sdk//51` with `org.freedesktop.Sdk.Extension.golang//26.08` and the frontend with
+  `org.freedesktop.Sdk.Extension.node24//26.08`, so the binary links against the runtime's libraries; both
+  extensions are pinned to a commit in `build.sh` (Go 1.27.3), the GNOME branch follows its security
+  rebuilds. The bundle names Flathub as the runtime's source, so `flatpak install` fetches the runtime
+  from there.
+- **Build, as Flathub builds:** the manifest's source is a `git` source of
+  `https://github.com/mindsift-app/mindsift.git` with `tag` (and `commit`), next to the generated sources
+  `go.mod.yml` (one archive of `proxy.golang.org` per Go module, unpacked into `desktop/vendor/<path>`, plus
+  `modules.txt`) and `node-sources.json` (every npm package of `frontend/package-lock.json` as a file of
+  the npm cache). Everything else happens inside the SDK without network: `npm ci --offline`, the frontend
+  build with `APP_VERSION` into `desktop/dist`, MindSift's own module copied into `desktop/vendor` (the
+  packages `modules.txt` lists for it; `desktop/go.mod` replaces it with `../`), `go build -mod=vendor`
+  (`GOPROXY=off`, `GOTOOLCHAIN=local`), `THIRD_PARTY_LICENSES.txt` (see below), then the desktop file,
+  icons, metainfo and `LICENSE`. The version is `v` plus `frontend/package.json`'s, which a release sets
+  to its tag, unless `desktop/app-version` names another.
+- **`build.sh`** runs `flatpak-builder` with that manifest (`--default-branch=stable`) in a Debian
+  container with the capabilities bubblewrap needs; the runtimes stay in the volume `mindsift-flatpak`,
+  the downloaded sources (git mirror, module archives, npm packages) in `mindsift-flatpak-sources`. Only
+  the source depends on what is built:
+  - **A tag** (`APP_VERSION` names a tag of the checkout, as `ci/release-desktop.sh` in the release
+    workflow): the manifest's tag must be that version; `build.sh` pins the commit the tag points to and
+    `flatpak-builder` clones it from GitHub, so the bundle is made of the tag's files. It fails when the
+    built metainfo has no `<release>` entry for the version or the bundle's appstream data lacks one of
+    its screenshots (`CHECK_SCREENSHOTS=0` skips that, for tags from before the PNG screenshots).
+  - **Anything else** (local builds, the Gitea builds of `main`, `…-dev` versions): the git source is
+    swapped for a `dir` source of the working tree (the files git knows or would add, uncommitted changes
+    included, ignored ones left out, staged in `desktop/out/flatpak/src`), with the version in
+    `desktop/app-version` (default `v<package.json>-dev`).
+- **Generated sources:** `update-sources.sh` makes `go.mod.yml` and `modules.txt` (flatpak-go-mod v0.1.0
+  in the Go image, on a copy of the Go sources) and `node-sources.json` (flatpak-node-generator, pinned to a
+  commit of flatpak-builder-tools, in a Python image, its PyPI packages as of a fixed date: 14-day rule) and
+  writes `sources.sha256` with the checksums of `desktop/go.mod`, `desktop/go.sum` and
+  `frontend/package-lock.json`. Run it after every change of those files and commit the result.
+  `check-sources.sh` (in `ci/local-checks.sh` and at the start of `ci/release-desktop.sh`) fails with the
+  name of the script when the checksums differ, and when the manifest's tag is not `v<package.json>` or
+  the metainfo has no entry for that version. A package that the desktop app newly imports from
+  MindSift's own module changes `modules.txt` without changing `go.mod`: run the script then, too.
+- **Release:** a build from the git source takes manifest and metainfo as they are in the tag, so the
+  release commit already names the release: `set-release.sh vX.Y.Z '<one sentence>'` (release step 1 in AGENTS.md) moves
+  the manifest's tag and drops its commit (unknown before tagging; `build.sh` pins it), adds the
+  `<release>` entry (the sentence as its description, the date of the CHANGELOG section, `development`
+  for pre-releases) and points the
+  screenshot URLs at the tag. Tags up to v0.99.0 carry neither the generated sources nor the manifest;
+  v0.99.0 builds with this manifest (its dependencies are those of the generated sources) and
+  `CHECK_SCREENSHOTS=0`, as its metainfo still names WebP screenshots.
 - **Branch and origin of the bundle:** the ref is `app/app.mindsift.MindSift/x86_64/stable`, the same as
   in the own Flatpak repository (the branch is set on the command line, not in the manifest, which stays
   as Flathub expects it). With `FLATPAK_GPG_PRIVATE_KEY` set (the repository's ASCII-armored signing key,
@@ -326,31 +363,27 @@ flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatp
   downloads every screenshot and silently drops the ones it cannot read (gdk-pixbuf in the build has no
   WebP loader); the composed `share/app-info` of the bundle is what `flatpak build-update-repo` puts into
   the appstream branch of the own repository. Up to v0.99.0 the metainfo pointed at the README's WebP
-  files, so the software centers showed none. A release build (CHANGELOG has the version) rewrites the URLs
-  from `main` to the tag (`…/mindsift/v1.2.0/screenshots/store/…`), which never changes, and fails when the
-  bundle's appstream data lacks one of them. Flathub builds from the unchanged metainfo and mirrors the
-  images itself (`--mirror-screenshots-url`). Check the published data with
+  files, so the software centers showed none. `set-release.sh` points the URLs at the release's tag
+  (`…/mindsift/v1.2.0/screenshots/store/…`), which never changes, in the release commit itself, so the
+  tag's metainfo names its own images; a tag build fails when the bundle's appstream data lacks one of
+  them. Between releases they stay on that tag (`check-sources.sh` allows `main` and the current version's
+  tag). Flathub builds from the same metainfo and mirrors the images itself
+  (`--mirror-screenshots-url`). Check the published data with
   `flatpak remote-ls --user --app mindsift` and
   `~/.local/share/flatpak/appstream/mindsift/x86_64/active/appstream.xml`.
 - **Data:** under Flatpak `XDG_DATA_HOME` is `~/.var/app/app.mindsift.MindSift/data`, so the base folder
   is `~/.var/app/app.mindsift.MindSift/data/MindSift`; the app needs no access to the home folder. It
   writes no desktop entry of its own (`FLATPAK_ID`); Flatpak exports the packaged one.
-- **Flathub later** needs the sources in the manifest instead of the staged folder: a `git` source of the
-  release tag, the Go modules as generated sources (e.g. flatpak-go-mod's `modules.txt` plus one archive
-  source per module) or a vendor archive attached to the release, and the frontend either built from
-  generated npm sources (flatpak-node-generator, with the node SDK extension) or taken as a release asset.
-- **License file in an offline vendor build:** the app reads `THIRD_PARTY_LICENSES.txt` next to its binary
-  (*About MindSift*), so a build without network and without a Go module cache has to produce it too.
-  Run this from the repository root after the frontend's `node_modules` (`npm ci`, offline from the
-  generated sources) and `desktop/vendor/` are in place, before installing:
-
-  ```bash
-  node ci/third-party-licenses-npm.mjs frontend > third-party-npm.txt
-  (cd desktop && SUBJECT='The desktop app' GO_PLATFORMS='linux/amd64' GOFLAGS=-mod=vendor GOPROXY=off \
-    bash ../ci/third-party-licenses.sh ../third-party-npm.txt . > ../THIRD_PARTY_LICENSES.txt)
-  install -Dm644 THIRD_PARTY_LICENSES.txt /app/bin/THIRD_PARTY_LICENSES.txt
-  install -Dm644 THIRD_PARTY_LICENSES.txt /app/share/licenses/app.mindsift.MindSift/THIRD_PARTY_LICENSES.txt
-  ```
+- **Flathub** builds the same way; its manifest lives in Flathub's repository and is not written here
+  (Flathub's rules on generated submissions). The repository's manifest, its generated sources and
+  `build.sh` are what the release download and the own Flatpak repository are built with, so a build
+  problem shows up before the tag.
+- **License file in the offline build:** the app reads `THIRD_PARTY_LICENSES.txt` next to its binary
+  (*About MindSift*), so the manifest makes it in the build, after `npm ci` and `desktop/vendor/`:
+  `node ci/third-party-licenses-npm.mjs frontend` for the npm part, then `ci/third-party-licenses.sh` in
+  `desktop/` (`SUBJECT='The desktop app'`, `GO_PLATFORMS=linux/<arch of the build>`, `GOFLAGS=-mod=vendor`
+  and `GOPROXY=off` from the build options), installed to `/app/bin/` and
+  `/app/share/licenses/app.mindsift.MindSift/`.
 
   - The npm script only reads `frontend/package-lock.json` and the installed `frontend/node_modules`; it
     needs nothing else (no network, no packages of its own).

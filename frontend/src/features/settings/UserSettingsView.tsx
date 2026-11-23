@@ -119,7 +119,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
     // aligned; nothing grows beyond that
     <div className="w-full md:max-w-[64rem] space-y-4">
       {/* Top Page Header */}
-      <div className="flex items-center justify-between border-b border-border pb-3">
+      <div className="flex items-center justify-between border-b border-border pb-3 sm:min-h-[3.3rem]">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -131,9 +131,6 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           </button>
           <div>
             <h1 className="text-base font-bold text-main tracking-tight">{t('user.title')}</h1>
-            <p className="text-xs text-muted">
-              {t('user.subtitle')}
-            </p>
           </div>
         </div>
 

@@ -447,8 +447,10 @@
     "ignore": "Ne pas utiliser cette date"
   },
   "leaveGuard": {
-    "message": "La dictée n’est pas encore terminée. En changeant maintenant, elle sera perdue.",
+    "message": "L’enregistrement n’est pas encore terminé. En changeant maintenant, il sera perdu.",
     "leave": "Changer quand même",
+    "closeMessage": "L’enregistrement n’est pas encore terminé. En fermant maintenant, il sera perdu.",
+    "close": "Fermer quand même",
     "stay": "Rester"
   },
   "voiceJobs": {

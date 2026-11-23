@@ -35,7 +35,7 @@ func TestCapabilitiesInAuthStatus(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	caps := statusCapabilities(t, srv)
-	for _, c := range []capability{capAccounts, capSignIn, capSharing, capEmail, capPush, capPublicLinks, capPublicAddress, capLiveDrawing, capInstall} {
+	for _, c := range []capability{capAccounts, capSignIn, capSharing, capWatch, capEmail, capPush, capPublicLinks, capPublicAddress, capLiveDrawing, capInstall} {
 		if !caps[string(c)] {
 			t.Errorf("server: %s off", c)
 		}
@@ -54,7 +54,7 @@ func TestCapabilitiesInAuthStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 	caps = statusCapabilities(t, srv)
-	if caps[string(capSharing)] || !caps[string(capAccounts)] || !caps[string(capEmail)] {
+	if caps[string(capSharing)] || !caps[string(capAccounts)] || !caps[string(capWatch)] || !caps[string(capEmail)] {
 		t.Errorf("sharing mode private: %v, want only sharing off", caps)
 	}
 

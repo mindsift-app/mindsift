@@ -6,6 +6,7 @@
 // recording is on the server already (serverDictation.ts): the server finishes those by itself.
 import { errorMessage } from '../../lib/errorMessage';
 import { holdReload } from '../../lib/reloadHold';
+import { holdUnload } from '../../lib/leaveGuard';
 
 export type DictationItemState = 'transcribing' | 'saving' | 'failed';
 
@@ -159,6 +160,8 @@ export class DictationQueue<R = unknown> {
     // Dictations still being transcribed or saved: the app does not reload for a new version meanwhile.
     // Failed ones wait for "Erneut versuchen" and do not hold it (a reload loses them).
     holdReload(this, this.entries.some((e) => e.state !== 'failed'));
+    // Reloading or closing the page by hand loses all of them, failed ones too: the browser asks first
+    holdUnload(this, this.entries.length > 0);
     this.options.onChange(this.items());
   }
 }

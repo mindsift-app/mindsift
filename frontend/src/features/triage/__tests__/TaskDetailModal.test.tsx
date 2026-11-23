@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TaskDetailModal } from '../TaskDetailModal';
 import { api } from '../../../lib/api';
 import { Thought } from '../../../lib/types';
+import { actAsDesktopApp } from '../../../test/desktop';
 
 const task: Thought = {
   id: 'th_1',
@@ -118,6 +119,13 @@ describe('TaskDetailModal', () => {
     expect(unwatchSpy).toHaveBeenCalledWith('th_1');
     const watch = await screen.findByRole('button', { name: 'Beobachten' });
     await waitFor(() => expect((watch as HTMLButtonElement).disabled).toBe(false));
+  });
+
+  it('has no watch button where tasks cannot be watched (a local instance of the desktop app)', () => {
+    actAsDesktopApp();
+    render(<TaskDetailModal {...props({ task: { ...task, isWatching: false } })} />);
+    expect(screen.queryByRole('button', { name: 'Beobachten' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Nicht mehr beobachten' })).toBeNull();
   });
 
   it('hands the new watch state to the parent instead of changing the task it was given', async () => {

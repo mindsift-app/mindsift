@@ -1,16 +1,19 @@
 # Flatpak manifest of the MindSift desktop app (desktop/, Wails v3, GTK 4 + WebKitGTK 6.0).
-# Built by desktop/packaging/flatpak/build.sh, which stages the sources next to this file as src/: the
-# repository with the built frontend in desktop/dist and the Go modules vendored in desktop/vendor, so the
-# build itself needs no network. For Flathub the dir source becomes a git source plus the vendored modules
-# (see desktop/README.md, "Flatpak").
+# Built the way Flathub builds: the sources are the release's git tag, the Go modules (go.mod.yml,
+# modules.txt) and npm packages (node-sources.json) generated next to this file by update-sources.sh, and
+# everything is built inside the SDK without network: the frontend, the vendor folder, the binary and its
+# license file. build.sh builds with this manifest; for a state that is not a tag it swaps the git source
+# for the working tree (see desktop/README.md, "Flatpak"). set-release.sh moves the tag to a new release.
 id: app.mindsift.MindSift
 # GNOME 51 (September 2026) ships GTK 4 and WebKitGTK 6.0, which the binary links against
 runtime: org.gnome.Platform
 runtime-version: '51'
 sdk: org.gnome.Sdk
-# Go for the cgo build; the 26.08 branch matches the freedesktop base of GNOME 51
+# Go for the cgo build and Node.js for the frontend; the 26.08 branch matches the freedesktop base of
+# GNOME 51
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.golang
+  - org.freedesktop.Sdk.Extension.node24
 command: mindsift-desktop
 
 finish-args:
@@ -43,28 +46,68 @@ modules:
   - name: mindsift-desktop
     buildsystem: simple
     build-options:
-      append-path: /usr/lib/sdk/golang/bin
+      append-path: /usr/lib/sdk/golang/bin:/usr/lib/sdk/node24/bin
       env:
+        # npm only from the cache node-sources.json fills (flatpak-node-generator)
+        npm_config_cache: /run/build/mindsift-desktop/flatpak-node/npm-cache
+        npm_config_offline: 'true'
+        XDG_CACHE_HOME: /run/build/mindsift-desktop/flatpak-node/cache
+        # Only the vendored modules and the SDK's Go: no download of modules or of another toolchain; no VCS stamp
+        # (a tag build has .git, the working tree's none)
         CGO_ENABLED: '1'
-        # Only the vendored modules and the SDK's Go: no download of modules or of another toolchain
-        GOFLAGS: -mod=vendor -trimpath
+        GOFLAGS: -mod=vendor -trimpath -buildvcs=false
         GOTOOLCHAIN: local
         GOPROXY: 'off'
+        GOCACHE: /run/build/mindsift-desktop/.gocache
     build-commands:
-      # The version build.sh staged in desktop/app-version (the release's tag, or v<package.json>-dev),
-      # without it the one from frontend/package.json as for a development build
+      # The version the app knows itself as: that of frontend/package.json, which a release sets to its
+      # tag; build.sh writes desktop/app-version for other states (v<package.json>-dev or APP_VERSION)
       - |
-        version="$(cat desktop/app-version 2>/dev/null || echo "v$(sed -n 's/.*"version": "\(.*\)".*/\1/p' frontend/package.json | head -1)-dev")"
+        [ -s desktop/app-version ] || echo "v$(sed -n 's/.*"version": "\(.*\)".*/\1/p' frontend/package.json | head -1)" > desktop/app-version
+        cat desktop/app-version
+      # The frontend, embedded into the binary from desktop/dist. --ignore-scripts: no package's install
+      # script runs; the only one in package-lock.json is fsevents (macOS only), esbuild finds its binary in
+      # its platform package without one.
+      - cd frontend && npm ci --offline --ignore-scripts --no-audit --no-fund
+      - cd frontend && APP_VERSION="$(cat ../desktop/app-version)" npm run build
+      - rm -rf desktop/dist && cp -r frontend/dist desktop/dist
+      # desktop/vendor: the module archives (go.mod.yml) and modules.txt are in place; MindSift's own
+      # module, which desktop/go.mod replaces with ../, is copied in from the source tree, each package that
+      # modules.txt lists for it
+      - |
         cd desktop
-        GOCACHE="$PWD/.gocache" go build -ldflags "-s -w -X main.version=$version" -o /app/bin/mindsift-desktop .
+        own=github.com/mindsift-app/mindsift
+        sed -n "\|^# $own |,\|^# |{\|^$own/|p}" vendor/modules.txt | while read -r pkg; do
+          mkdir -p "vendor/$pkg"
+          cp -r "../${pkg#$own/}/." "vendor/$pkg/"
+        done
+        test -d "vendor/$own/internal/api"
+      - cd desktop && go build -ldflags "-s -w -X main.version=$(cat app-version)" -o /app/bin/mindsift-desktop .
+      # The licenses of the bundled npm packages and Go modules (read from frontend/node_modules and
+      # desktop/vendor): in the licenses folder, and next to the binary, where the app reads it for "About
+      # MindSift"
+      - node ci/third-party-licenses-npm.mjs frontend > third-party-npm.txt
+      - |
+        cd desktop
+        SUBJECT='The desktop app' GO_PLATFORMS="linux/$(go env GOARCH)" \
+          bash ../ci/third-party-licenses.sh ../third-party-npm.txt . > ../THIRD_PARTY_LICENSES.txt
+      - install -Dm644 THIRD_PARTY_LICENSES.txt /app/share/licenses/app.mindsift.MindSift/THIRD_PARTY_LICENSES.txt
+      - install -Dm644 THIRD_PARTY_LICENSES.txt /app/bin/THIRD_PARTY_LICENSES.txt
       - install -Dm644 desktop/packaging/linux/app.mindsift.MindSift.desktop /app/share/applications/app.mindsift.MindSift.desktop
       - cp -r desktop/packaging/linux/icons /app/share/icons
       - install -Dm644 desktop/packaging/flatpak/app.mindsift.MindSift.metainfo.xml /app/share/metainfo/app.mindsift.MindSift.metainfo.xml
       - install -Dm644 LICENSE /app/share/licenses/app.mindsift.MindSift/LICENSE
-      # The licenses of the bundled npm packages and Go modules (build.sh, desktop/build.sh licenses): in
-      # the licenses folder, and next to the binary, where the app reads it for "About MindSift"
-      - install -Dm644 THIRD_PARTY_LICENSES.txt /app/share/licenses/app.mindsift.MindSift/THIRD_PARTY_LICENSES.txt
-      - install -Dm644 THIRD_PARTY_LICENSES.txt /app/bin/THIRD_PARTY_LICENSES.txt
     sources:
-      - type: dir
-        path: src
+      # The release: set-release.sh moves the tag (and drops the commit, unknown before tagging); build.sh
+      # pins the commit the tag points to
+      - type: git
+        url: https://github.com/mindsift-app/mindsift.git
+        tag: v0.99.0
+        commit: c7ad6eb361bdd887278322c5dbb13d14ee741220
+      # Generated by update-sources.sh from desktop/go.mod and desktop/go.sum (flatpak-go-mod: one archive
+      # of proxy.golang.org per module, unpacked into desktop/vendor, and modules.txt)
+      - go.mod.yml
+      # Generated by update-sources.sh from frontend/package-lock.json (flatpak-node-generator: the npm
+      # cache in flatpak-node/)
+      - node-sources.json
+

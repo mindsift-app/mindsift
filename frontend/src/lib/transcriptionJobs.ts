@@ -18,6 +18,17 @@ const watchedDocs = new Map<string, number>();
 let watchedInbox = 0;
 let version = 0;
 let installed = false;
+// Server events seen so far (a count), and the count at the last event for each job: an answer to a
+// request is older than an event for its job that came after the request was sent (the server sends the
+// event before the answer, and every change of a job as an event), so it must not overwrite it
+let eventSeq = 0;
+const lastEvent = new Map<string, number>();
+
+// The last ends seen, so waiting for a job that ended before the answer to its start came still gets it
+const ended = new Map<string, TranscriptionDone>();
+const ENDED_KEEP = 50;
+
+const newerEventSince = (id: string, since: number) => (lastEvent.get(id) ?? 0) > since;
 
 function changed() {
   version++;
@@ -30,29 +41,40 @@ function put(job: TranscriptionJob) {
 }
 
 function finish(done: TranscriptionDone) {
+  ended.set(done.id, done);
+  if (ended.size > ENDED_KEEP) ended.delete(ended.keys().next().value as string);
   if (jobs.delete(done.id)) changed();
   doneListeners.forEach((l) => l(done));
 }
 
-// Replaces the known jobs that match with the server's list
-function replace(list: TranscriptionJob[], matches: (j: TranscriptionJob) => boolean) {
-  for (const [id, j] of jobs) if (matches(j)) jobs.delete(id);
-  for (const j of list) jobs.set(j.id, j);
+// Takes a job from the answer to a request sent at event count since, unless an event about it came
+// meanwhile (its state then, or its end, is newer than the answer)
+function putAnswer(job: TranscriptionJob, since: number) {
+  if (!newerEventSince(job.id, since)) put(job);
+}
+
+// Replaces the known jobs that match with the server's list (requested at event count since); jobs with
+// an event since then keep what the event said
+function replace(list: TranscriptionJob[], matches: (j: TranscriptionJob) => boolean, since: number) {
+  for (const [id, j] of jobs) if (matches(j) && !newerEventSince(id, since)) jobs.delete(id);
+  for (const j of list) if (!newerEventSince(j.id, since)) jobs.set(j.id, j);
   changed();
 }
 
 function loadDoc(docId: string) {
+  const since = eventSeq;
   api
     .docTranscriptions(docId)
-    .then((list) => replace(list, (j) => j.docId === docId))
+    .then((list) => replace(list, (j) => j.docId === docId, since))
     .catch(() => {});
 }
 
 function loadInbox() {
   const me = getCurrentUserId();
+  const since = eventSeq;
   api
     .voiceJobs()
-    .then((list) => replace(list.filter((j) => j.kind === 'inbox'), (j) => j.kind === 'inbox' && j.userId === me))
+    .then((list) => replace(list.filter((j) => j.kind === 'inbox'), (j) => j.kind === 'inbox' && j.userId === me, since))
     .catch(() => {});
 }
 
@@ -61,8 +83,12 @@ function install() {
   installed = true;
   window.addEventListener('mindsift:ws', (e) => {
     const msg = (e as CustomEvent<WSMessage | undefined>).detail;
-    if (msg?.event === 'TRANSCRIPTION_UPDATED' && msg.payload) put(msg.payload as TranscriptionJob);
-    else if (msg?.event === 'TRANSCRIPTION_DONE' && msg.payload) finish(msg.payload as TranscriptionDone);
+    if (msg?.event !== 'TRANSCRIPTION_UPDATED' && msg?.event !== 'TRANSCRIPTION_DONE') return;
+    const payload = msg.payload as TranscriptionJob | TranscriptionDone | undefined;
+    if (!payload?.id) return;
+    lastEvent.set(payload.id, ++eventSeq);
+    if (msg.event === 'TRANSCRIPTION_UPDATED') put(payload as TranscriptionJob);
+    else finish(payload as TranscriptionDone);
   });
   // Events of the time without a connection are lost: load what is on screen again
   window.addEventListener('mindsift:ws:status', (e) => {
@@ -122,21 +148,24 @@ export function useInboxTranscriptions(): TranscriptionJob[] {
 /** Asks the server to transcribe a recording in a note; its text comes into the caption by itself. */
 export async function startBlockTranscription(docId: string, blockId: string): Promise<TranscriptionJob> {
   install();
+  const since = eventSeq;
   const job = await api.transcribeBlock(docId, blockId);
-  put(job);
+  putAnswer(job, since);
   return job;
 }
 
 /** Stores a recording for the inbox on the server, which makes the entry once it is transcribed. */
 export async function startInboxTranscription(parts: { blob: Blob; text: string | null }[]): Promise<TranscriptionJob> {
   install();
+  const since = eventSeq;
   const job = await api.captureVoice(parts);
-  put(job);
+  putAnswer(job, since);
   return job;
 }
 
 export async function retryTranscription(id: string): Promise<void> {
-  put(await api.retryVoiceJob(id));
+  const since = eventSeq;
+  putAnswer(await api.retryVoiceJob(id), since);
 }
 
 export async function discardTranscription(id: string): Promise<void> {
@@ -177,13 +206,20 @@ export function waitForTranscription(id: string): Promise<TranscriptionDone | nu
       stop();
       reject(new Error(transcriptionError(job)));
     };
+    const early = ended.get(id);
+    if (early) {
+      resolve(early.text || early.thoughtId ? early : null);
+      return;
+    }
     doneListeners.add(onDone);
     listeners.add(onChange);
     onChange();
     timer = window.setInterval(() => {
+      const since = eventSeq;
       api
         .voiceJobs()
         .then((list) => {
+          if (newerEventSince(id, since)) return; // the events are ahead of this list
           const job = list.find((j) => j.id === id);
           if (!job) {
             stop();

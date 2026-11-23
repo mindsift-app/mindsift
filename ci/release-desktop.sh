@@ -43,10 +43,13 @@ D="${ROOT}/desktop/out"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# The Flatpak manifest's generated sources, tag and metainfo must fit the tree (update-sources.sh,
+# set-release.sh), before anything is built
+sh "${ROOT}/desktop/packaging/flatpak/check-sources.sh"
 # The previous build's files must not be taken for this one's
 rm -f "${D}"/mindsift-desktop-* "${D}/THIRD_PARTY_LICENSES.txt" "${D}/third-party-npm.txt"
 "${ROOT}/desktop/build.sh" all
-SKIP_FRONTEND=1 "${ROOT}/desktop/packaging/flatpak/build.sh"
+"${ROOT}/desktop/packaging/flatpak/build.sh"
 "${ROOT}/desktop/packaging/windows/build.sh"
 
 fail() { echo "release-desktop: $*" >&2; exit 1; }
@@ -57,7 +60,8 @@ grep -qaF "${VERSION}" "${D}/mindsift-desktop-windows-amd64.exe" || fail "the Wi
 [ "$(od -An -tx1 -j18 -N2 "${D}/mindsift-desktop-linux-amd64" | tr -d ' \n')" = "3e00" ] || fail "the Linux binary is not for x86-64"
 pe="$(od -An -tu4 -j60 -N4 "${D}/mindsift-desktop-windows-amd64.exe" | tr -d ' ')"
 [ "$(od -An -tx1 -j"${pe}" -N6 "${D}/mindsift-desktop-windows-amd64.exe" | tr -d ' \n')" = "504500006486" ] || fail "the Windows exe is not for x86-64"
-# The bundle's version is in its metainfo (flatpak/build.sh); the build fails when build-bundle does
+# The bundle of a tag is built from the tag's git source and checked for its metainfo entry and screenshots
+# (flatpak/build.sh); the build fails when build-bundle does
 bundle="${D}/mindsift-desktop-linux-amd64.flatpak"
 [ -s "${bundle}" ] || fail "the Flatpak bundle is missing"
 # The bundle's header names its ref and, when it has one, its origin repository in plain text; the ref must

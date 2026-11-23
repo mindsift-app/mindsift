@@ -21,6 +21,7 @@ const SHELL_FILES = new Set([
   'features/settings/admin/DataSettingsSection.tsx', // taking over an account from a server's snapshot
   'features/settings/admin/UpdateStatusCard.tsx', // updating means installing the app's new version
   'features/help/content/desktop.tsx', // InDesktop / NotInDesktop for the help texts above
+  'lib/leaveGuard.ts', // no beforeunload question in the app's window (closing it, switching instance)
 ]);
 
 const sources = import.meta.glob(['../../**/*.{ts,tsx}', '!../../**/__tests__/**'], {

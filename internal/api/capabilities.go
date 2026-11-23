@@ -22,6 +22,9 @@ const (
 	// capSharing: notes, folders and lists can be shared with others: share buttons, groups, assignees,
 	// mentions, muting shared lists (off in sharing mode private)
 	capSharing capability = "sharing"
+	// capWatch: tasks can be watched (the eye in a task's details, the alarm event "watched" and its switch
+	// for own changes): only where others change them, so with several accounts
+	capWatch capability = "watch"
 	// capEmail: the instance may send mail at all (e-mail alarms, invite mails); off with SMTP_DISABLED
 	capEmail capability = "email"
 	// capPush: web push to browsers and installed apps
@@ -47,7 +50,7 @@ const (
 
 // allCapabilities: the ones /auth/status reports.
 var allCapabilities = []capability{
-	capAccounts, capSignIn, capSharing, capEmail, capPush, capPasskeys, capPublicLinks, capPublicAddress,
+	capAccounts, capSignIn, capSharing, capWatch, capEmail, capPush, capPasskeys, capPublicLinks, capPublicAddress,
 	capLiveDrawing, capInstall, capDesktopNotify, capRestore,
 }
 
@@ -63,6 +66,8 @@ func (s *Server) can(c capability) bool {
 		return !desktop
 	case capSharing:
 		return s.can(capAccounts) && s.store.SharingMode() != storage.SharingPrivate
+	case capWatch:
+		return s.can(capAccounts)
 	case capEmail:
 		return !s.cfg.SMTPDisabled
 	case capPasskeys:

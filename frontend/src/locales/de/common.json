@@ -445,8 +445,10 @@
     "ignore": "Datum nicht übernehmen"
   },
   "leaveGuard": {
-    "message": "Das Diktat ist noch nicht fertig. Beim Wechseln geht es verloren.",
+    "message": "Die Aufnahme ist noch nicht fertig. Beim Wechseln geht sie verloren.",
     "leave": "Trotzdem wechseln",
+    "closeMessage": "Die Aufnahme ist noch nicht fertig. Beim Schließen geht sie verloren.",
+    "close": "Trotzdem schließen",
     "stay": "Bleiben"
   },
   "voiceJobs": {

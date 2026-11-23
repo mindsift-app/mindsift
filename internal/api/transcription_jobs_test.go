@@ -2,7 +2,9 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -338,6 +340,108 @@ func TestTranscriptionDiscardAndRequeue(t *testing.T) {
 	}
 	if pieces, _ := store.TranscriptionAudio(job.ID); len(pieces) != 0 {
 		t.Fatal("audio of a discarded job still there")
+	}
+}
+
+// After the quick retries a failed job is tried again by itself hours later, but only when the Whisper
+// server was down or had a problem of its own; a time limit or a refused recording would fail again.
+func TestTranscriptionRetryTimes(t *testing.T) {
+	now := time.Date(2026, 3, 29, 1, 30, 0, 0, time.FixedZone("CET", 3600)) // the night the clocks change
+	down := errors.New("dial tcp: connection refused")
+	cases := []struct {
+		attempt      int
+		err          error
+		retry, later time.Duration
+	}{
+		{1, down, transcriptionRetryDelays[0], 0},
+		{1, context.DeadlineExceeded, transcriptionRetryDelays[0], 0},
+		{2, down, transcriptionRetryDelays[1], 0},
+		{3, down, 0, transcriptionLaterDelays[0]},
+		{3, &sttStatusError{Status: 503}, 0, transcriptionLaterDelays[0]},
+		{3, &sttStatusError{Status: 429}, 0, transcriptionLaterDelays[0]},
+		{4, down, 0, transcriptionLaterDelays[1]},
+		{5, down, 0, transcriptionLaterDelays[2]},
+		{6, down, 0, 0},
+		{3, context.DeadlineExceeded, 0, 0},
+		{3, &sttStatusError{Status: 400}, 0, 0},
+		{3, &sttStatusError{Status: 413}, 0, 0},
+	}
+	for _, c := range cases {
+		retryAt, laterAt := transcriptionRetryTimes(c.attempt, c.err, now)
+		var gotRetry, gotLater time.Duration
+		if !retryAt.IsZero() {
+			gotRetry = retryAt.Sub(now)
+		}
+		if !laterAt.IsZero() {
+			gotLater = laterAt.Sub(now)
+		}
+		if gotRetry != c.retry || gotLater != c.later {
+			t.Errorf("attempt %d, %v: retry %v later %v, want %v %v", c.attempt, c.err, gotRetry, gotLater, c.retry, c.later)
+		}
+	}
+}
+
+// A failed job waiting for a later attempt stays failed until then and is queued again with its error;
+// failed jobs of notes go 30 days after their last attempt, a failed inbox recording stays.
+func TestFailedTranscriptionsLaterAndCleanup(t *testing.T) {
+	srv, store, token, userID, _ := jobServer(t)
+	docID, mediaID := noteWithRecording(t, srv, store, token, userID, "")
+	srv.cfg.Speech.URL = "" // no worker run in between
+	note, err := store.CreateNoteTranscription(userID, docID, "blk_audio", mediaID, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	inbox, err := store.CreateInboxTranscription(userID, []storage.AudioPiece{{Mime: "audio/webm", Data: []byte("x")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	if err := store.FailTranscription(note.ID, transcriptionErrFailed, time.Time{}, now.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.FailTranscription(inbox.ID, transcriptionErrFailed, time.Time{}, time.Time{}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := store.GetTranscription(note.ID); got.Status != storage.TranscriptionFailed {
+		t.Fatalf("waiting for a later attempt: %s", got.Status)
+	}
+	if ids, err := store.RequeueDueTranscriptions(now.Add(59 * time.Minute)); err != nil || len(ids) != 0 {
+		t.Fatalf("requeued before it is due: %v %v", ids, err)
+	}
+	ids, err := store.RequeueDueTranscriptions(now.Add(time.Hour))
+	if err != nil || len(ids) != 1 || ids[0] != note.ID {
+		t.Fatalf("requeued when due: %v %v", ids, err)
+	}
+	if got, _ := store.GetTranscription(note.ID); got.Status != storage.TranscriptionQueued || got.Error != transcriptionErrFailed {
+		t.Fatalf("after the requeue: %+v", got)
+	}
+	if got, _ := store.GetTranscription(inbox.ID); got.Status != storage.TranscriptionFailed {
+		t.Fatalf("failed job without a later attempt was queued: %s", got.Status)
+	}
+
+	// The last attempt fails for good
+	if err := store.FailTranscription(note.ID, transcriptionErrFailed, time.Time{}, time.Time{}); err != nil {
+		t.Fatal(err)
+	}
+	now = time.Now()
+	if jobs, err := store.PurgeFailedTranscriptions(now.Add(29 * 24 * time.Hour)); err != nil || len(jobs) != 0 {
+		t.Fatalf("purged before 30 days: %v %v", jobs, err)
+	}
+	srv.runFailedTranscriptionCleanup(now.Add(storage.FailedTranscriptionKeep + time.Minute))
+	if _, err := store.GetTranscription(note.ID); err == nil {
+		t.Fatal("failed job of a note still there after 30 days")
+	}
+	if snap := blockContent(t, store, docID, "blk_audio"); !strings.Contains(snap, mediaID) {
+		t.Fatalf("recording gone from the note: %q", snap)
+	}
+	if _, err := store.GetMedia(mediaID); err != nil {
+		t.Fatalf("recording's file gone: %v", err)
+	}
+	if got, err := store.GetTranscription(inbox.ID); err != nil || got.Status != storage.TranscriptionFailed {
+		t.Fatalf("failed inbox recording removed: %v", err)
+	}
+	if pieces, _ := store.TranscriptionAudio(inbox.ID); len(pieces) != 1 {
+		t.Fatal("audio of the failed inbox recording removed")
 	}
 }
 

@@ -174,6 +174,8 @@ export interface OutlinerBlockProps {
   /** /vorlage: the bullet asks for a template, the picker opens at its text field (anchor) */
   onTemplateCommand?: (blockId: string, anchor: HTMLElement | null) => void;
   onUpdateBlock: (updated: DocumentBlock, immediate?: boolean) => void;
+  /** Runs a slash command's change (`apply`) so that one undo also takes back the typed "/command" */
+  onSlashCommand?: (blockId: string, textBefore: string, apply: () => void) => void;
   onCreateBlockBelow: (afterBlockId: string, newContent?: string) => void;
   /** Enter at the start of a bullet with text: a new empty bullet directly above it */
   onCreateBlockAbove?: (beforeBlockId: string) => void;
@@ -241,6 +243,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   onInlineBlock,
   onTemplateCommand,
   onUpdateBlock,
+  onSlashCommand,
   onCreateBlockBelow,
   onCreateBlockAbove,
   onDeleteBlock,
@@ -391,6 +394,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
   // Callback refs to avoid stale closures in setTimeout, debounce flush, and event listeners
   const onUpdateBlockRef = useLatestRef(onUpdateBlock);
+  const onSlashCommandRef = useLatestRef(onSlashCommand);
   const onCreateBlockBelowRef = useLatestRef(onCreateBlockBelow);
   const onCreateBlockAboveRef = useLatestRef(onCreateBlockAbove);
   const onPasteMultiLinesRef = useLatestRef(onPasteMultiLines);
@@ -699,6 +703,14 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
     // Only the typed "/query" goes, from where it was typed; the rest of the text stays as it is
     const { before, after, text: clean, caret } = removeSlashQuery(localContent, slashStart, slashEnd);
+    // Every change below goes out through this: one undo then also removes the typed "/command", the bullet
+    // is as it was before the slash (the engine's undo step, lib/docSync/engine.ts slashCommand)
+    const flushSlash = (content: string, overrides?: Partial<DocumentBlock>) => {
+      const run = () => flushDebounce(content, overrides);
+      const slash = onSlashCommandRef.current;
+      if (slash) slash(block.id, clean, run);
+      else run();
+    };
 
     if (cmd.type === 'link') {
       linkBeforeRef.current = before;
@@ -706,6 +718,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       linkCaretRef.current = caret;
       setLocalContent(clean);
       localContentRef.current = clean;
+      flushSlash(clean);
       setShowLinkModal(true);
       return;
     }
@@ -717,6 +730,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       linkCaretRef.current = caret;
       setLocalContent(clean);
       localContentRef.current = clean;
+      flushSlash(clean);
       setShowSecretSheet(true);
       return;
     }
@@ -726,7 +740,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       dictationAfterRef.current = after;
       setLocalContent(clean);
       localContentRef.current = clean;
-      flushDebounce(clean);
+      flushSlash(clean);
       setMediaPicker('dictation');
       return;
     }
@@ -734,7 +748,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     if (cmd.type === 'extract') {
       setLocalContent(clean);
       localContentRef.current = clean;
-      flushDebounce(clean);
+      flushSlash(clean);
       // The same choice as the button (new note or an existing one), opened under the bullet's text where
       // the slash menu was, and steered with the keyboard
       const r = textareaRef.current?.getBoundingClientRect();
@@ -745,7 +759,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     if (cmd.type === 'template') {
       setLocalContent(clean);
       localContentRef.current = clean;
-      flushDebounce(clean);
+      flushSlash(clean);
       onTemplateCommand?.(block.id, textareaRef.current);
       return;
     }
@@ -756,7 +770,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       setLocalContent(content);
       localContentRef.current = content;
       setDrawingAutoOpen(true);
-      flushDebounce(content, { type: 'drawing' });
+      flushSlash(content, { type: 'drawing' });
       return;
     }
 
@@ -766,7 +780,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       setLocalContent(content);
       localContentRef.current = content;
       refocusAfterTypeChangeRef.current = true;
-      flushDebounce(content, { type: 'table', lang: '', checked: false, taskId: '' });
+      flushSlash(content, { type: 'table', lang: '', checked: false, taskId: '' });
       return;
     }
 
@@ -774,7 +788,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       // The typed "/image" must not stay in the synced text; the block type changes only after the upload
       setLocalContent('');
       localContentRef.current = '';
-      flushDebounce('');
+      flushSlash('');
       setMediaPicker(cmd.type as 'image' | 'audio');
       return;
     }
@@ -792,7 +806,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     setLocalContent(nextContent);
     localContentRef.current = nextContent;
     if (cmd.type !== block.type) refocusAfterTypeChangeRef.current = true;
-    flushDebounce(nextContent, {
+    flushSlash(nextContent, {
       type: cmd.type as BlockType,
       ...(langOverride !== undefined ? { lang: langOverride } : {}),
       checked: cmd.type === 'todo' ? Boolean(block.checked) : false,
@@ -875,6 +889,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     let typeOverride: BlockType | undefined;
     let checkedOverride: boolean | undefined;
     let langOverride: string | undefined;
+    // A typed slash command ("/code js ", "/text "): one undo takes it back with the typed command
+    let slashTyped = false;
 
     if (block.type !== 'code') {
       // Quick markdown shortcuts. A language name has 1-40 of these characters, as in the language menu
@@ -897,10 +913,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         const rawLang = slashCodeSpaceMatch[1];
         val = slashCodeSpaceMatch[2];
         typeOverride = 'code';
+        slashTyped = true;
         langOverride = resolveLanguageId(rawLang) || rawLang;
       } else if (slashCodeDirectMatch && isUnambiguousLanguageShortcut(slashCodeDirectMatch[1])) {
         val = '';
         typeOverride = 'code';
+        slashTyped = true;
         langOverride = resolveLanguageId(slashCodeDirectMatch[1]) || slashCodeDirectMatch[1];
       } else if (val.startsWith('[] ') || val.startsWith('[ ] ')) {
         val = val.replace(/^\[\s?\]\s/, '');
@@ -937,6 +955,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       ) {
         val = val.replace(/^\/(text|p|paragraph|bullet|standard)\s+/, '');
         typeOverride = 'bullet';
+        slashTyped = true;
       }
 
       // Check for slash command invocation at cursor position
@@ -963,12 +982,17 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
     if (typeOverride) {
       refocusAfterTypeChangeRef.current = true;
-      flushDebounce(val, {
-        type: typeOverride,
-        ...(langOverride !== undefined ? { lang: langOverride } : {}),
-        checked: checkedOverride ?? latestBlockRef.current.checked,
-        ...(typeOverride === 'bullet' ? { taskId: '', checked: false } : {}),
-      });
+      const type = typeOverride;
+      const run = () =>
+        flushDebounce(val, {
+          type,
+          ...(langOverride !== undefined ? { lang: langOverride } : {}),
+          checked: checkedOverride ?? latestBlockRef.current.checked,
+          ...(type === 'bullet' ? { taskId: '', checked: false } : {}),
+        });
+      const slash = slashTyped ? onSlashCommandRef.current : undefined;
+      if (slash) slash(block.id, val, run);
+      else run();
       return;
     }
 

@@ -9,12 +9,20 @@ Versions without a git tag were development states and were never published as a
 ## [Unreleased]
 
 ### Changed
+- Desktop app (local instance): watching tasks is gone, since nobody else changes your tasks there: no "Watch" button in a task's details, no "Watched tasks" row in Settings → Alarms, no switch for your own changes, and no help text about it. Tasks watched earlier stay quiet. Servers and browsers are unchanged.
+- Settings → Account settings: the intro line under the title is gone; the sidebar names the sections anyway.
+- A background transcription that failed because the Whisper server was unreachable or had a problem of its own is now tried again by itself after 1 hour, 6 hours and 24 hours, so recordings catch up once the server is back. A time limit or a recording the server refused is not retried by itself; "Try again" still works any time.
+- A failed transcription of a recording in a note is cleared 30 days after its last attempt; the recording stays in the note and can be transcribed again. Failed recordings dictated into the inbox are kept until you try them again or discard them.
 - Notes written by AI agents through MCP now put commands, code, config files, JSON/YAML, SQL and log excerpts into code blocks with a language (one block per command sequence, not one bullet per line), and show paths, flags, file names and single commands in text as `inline code`.
+- The Flatpak of a release (the download on the release page and flatpak.mindsift.app) is now built from the release tag the way Flathub builds it: offline, with the frontend, the Go modules and the license file built from source inside the Flatpak SDK.
 
 ### Fixed
+- A recording sent for transcription no longer stays at "Transcribing…" until a reload when the server finished or failed on it very quickly; the message that another attempt follows now shows reliably.
 - Slash commands now work anywhere in a bullet that already has text, not only at the end: typing `/code`, `/h2`, `/todo`, `/table` and the other block types at the start or in the middle of the text opens the menu and turns the whole bullet into that type. Only the typed command is removed, the rest of the text stays exactly as it was, the cursor stays where you typed, and Ctrl+Z undoes the change in one step. Dividers, pictures, voice notes and drawings still need an empty bullet.
+- Ctrl+Z after a slash command now takes back the command and the typed `/command` together: the bullet is again as it was before you typed the slash, instead of showing `/code` (or the other command) and needing a second Ctrl+Z. Ctrl+Y brings the command back.
 - A code block written as a list item (```` - ```bash ```` with the code indented below it) in Markdown from AI agents (MCP), imports or pasted text now becomes a code block at that bullet's level. Before, the fence ended up as bullet text, the code was lost or split, and the bullets after it could be swallowed into a code block. A fence without its closing line now ends at the next bullet that is indented less.
 - The Flatpak shows screenshots in GNOME Software and Discover.
+- A dictation or recording in progress is no longer lost by accident. Reloading the page, closing the tab or leaving the site while one is running or not yet saved now lets the browser ask first (not in the desktop app, which has no reload of its own). The browser's back and forward buttons, the mouse's back button and Android's back gesture ask too ("Switch anyway" / "Stay") and otherwise stay where you are, and closing the task dialog, the new-task sheet or the Quick Dump sheet on phones while dictating asks "Close anyway" first. Audio recordings in notes (`/audio`) are now covered as well, also when switching to another note.
 
 ## [0.99.0] - 2026-11-22
 

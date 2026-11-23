@@ -6,7 +6,9 @@
 # A second server without the demo (fresh database, first admin from ADMIN_USER) serves the tests that
 # need a real account of their own (tour-offer.e2e.mjs; mfa.e2e.mjs and passkey.e2e.mjs, as two-factor
 # sign-in is off in the demo); its port is E2E_PLAIN_PORT, else E2E_PORT + 1, else a free one. Its
-# BASE_URL is http://localhost:<port>, the address the browsers open, so passkeys work there.
+# BASE_URL is http://localhost:<port>, the address the browsers open, so passkeys work there. It also serves
+# transcription.e2e.mjs (pointed at the fake Whisper server the script plays on E2E_WHISPER_PORT, else E2E_PORT + 5,
+# else a free one) and, last of all, backup.e2e.mjs, whose restores reset that server to its own backup.
 # A third server signs in through an OpenID Connect provider, a Dex started here as well (e2e/dex.yaml), with
 # the password login off (oidc.e2e.mjs). Their ports: E2E_OIDC_PORT and E2E_DEX_PORT, else E2E_PORT + 2 and
 # + 3, else free ones.
@@ -66,6 +68,10 @@ SETUP_PORT="${E2E_SETUP_PORT:-}"
 if [ -z "$SETUP_PORT" ]; then
   if [ -n "${E2E_PORT:-}" ]; then SETUP_PORT=$((E2E_PORT + 4)); else SETUP_PORT="$(free_port "$PORT" "$PLAIN_PORT" "$OIDC_PORT" "$DEX_PORT")"; fi
 fi
+WHISPER_PORT="${E2E_WHISPER_PORT:-}"
+if [ -z "$WHISPER_PORT" ]; then
+  if [ -n "${E2E_PORT:-}" ]; then WHISPER_PORT=$((E2E_PORT + 5)); else WHISPER_PORT="$(free_port "$PORT" "$PLAIN_PORT" "$OIDC_PORT" "$DEX_PORT" "$SETUP_PORT")"; fi
+fi
 cleanup() {
   "$ENGINE" rm -f "$NAME" "$PLAIN_NAME" "$OIDC_NAME" "$DEX_NAME" "$SETUP_NAME" >/dev/null 2>&1 || true
   "$ENGINE" rmi "$IMAGE" >/dev/null 2>&1 || true
@@ -110,11 +116,11 @@ if [ -z "$SETUP_CODE" ]; then
   exit 1
 fi
 
-echo "Starting the browser tests (port $PORT, without demo $PLAIN_PORT, OIDC $OIDC_PORT with Dex on $DEX_PORT, setup $SETUP_PORT) …"
+echo "Starting the browser tests (port $PORT, without demo $PLAIN_PORT, OIDC $OIDC_PORT with Dex on $DEX_PORT, setup $SETUP_PORT, Whisper $WHISPER_PORT) …"
 "$ENGINE" run --rm --network host -e MINDSIFT_URL="http://localhost:$PORT" -e METRICS_TOKEN="$METRICS_TOKEN" \
   -e MINDSIFT_PLAIN_URL="http://localhost:$PLAIN_PORT" -e MINDSIFT_PLAIN_ADMIN=admin -e MINDSIFT_PLAIN_PASSWORD="$PLAIN_ADMIN_PASSWORD" \
   -e MINDSIFT_OIDC_URL="http://localhost:$OIDC_PORT" -e MINDSIFT_OIDC_ADMIN=admin -e MINDSIFT_OIDC_PASSWORD="$OIDC_ADMIN_PASSWORD" \
-  -e MINDSIFT_SETUP_URL="http://localhost:$SETUP_PORT" -e MINDSIFT_SETUP_CODE="$SETUP_CODE" \
+  -e MINDSIFT_SETUP_URL="http://localhost:$SETUP_PORT" -e MINDSIFT_SETUP_CODE="$SETUP_CODE" -e WHISPER_PORT="$WHISPER_PORT" \
   -v "$ROOT/e2e":/e2e:Z -w /e2e \
   mcr.microsoft.com/playwright:v1.65.0-noble \
-  sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node caret.e2e.mjs && node paste-image.e2e.mjs && node audio.e2e.mjs && node drop-text.e2e.mjs && node secrets.e2e.mjs && node drawing-live.e2e.mjs && node table.e2e.mjs && node templates.e2e.mjs && node live.e2e.mjs && node linked-todos.e2e.mjs && node channels.e2e.mjs && node share-target.e2e.mjs && node offline.e2e.mjs && node lists-offline.e2e.mjs && node tasks-offline.e2e.mjs && node tour.e2e.mjs && node tour-offer.e2e.mjs && node mfa.e2e.mjs && node passkey.e2e.mjs && node oidc.e2e.mjs && node setup.e2e.mjs'
+  sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node caret.e2e.mjs && node paste-image.e2e.mjs && node audio.e2e.mjs && node drop-text.e2e.mjs && node secrets.e2e.mjs && node drawing-live.e2e.mjs && node table.e2e.mjs && node templates.e2e.mjs && node live.e2e.mjs && node linked-todos.e2e.mjs && node channels.e2e.mjs && node share-target.e2e.mjs && node offline.e2e.mjs && node lists-offline.e2e.mjs && node tasks-offline.e2e.mjs && node tour.e2e.mjs && node tour-offer.e2e.mjs && node mfa.e2e.mjs && node passkey.e2e.mjs && node oidc.e2e.mjs && node setup.e2e.mjs && node transcription.e2e.mjs && node backup.e2e.mjs'

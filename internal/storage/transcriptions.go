@@ -16,6 +16,10 @@ import (
 // a restart of the server: a job that was running when the server stopped is queued again at the start.
 // An inbox recording keeps its audio here (transcription_audio) until its entry exists, so nothing spoken
 // is lost when the Whisper server fails; a note's recording is its media file anyway.
+//
+// A failed job of a note goes after FailedTranscriptionKeep without another attempt (PurgeFailedTranscriptions,
+// hourly): the recording stays in the note and can be transcribed again any time. A failed inbox job is
+// kept, since it holds the only copy of what was spoken.
 
 const (
 	TranscriptionNote  = "note"
@@ -25,6 +29,9 @@ const (
 	TranscriptionRunning = "running"
 	TranscriptionFailed  = "failed"
 )
+
+// FailedTranscriptionKeep: how long a failed job of a note stays after its last attempt.
+const FailedTranscriptionKeep = 30 * 24 * time.Hour
 
 // ErrTranscriptionNotFound: no such job of this person.
 var ErrTranscriptionNotFound = errors.New("transcription not found")
@@ -239,14 +246,76 @@ func (s *Store) RequeueTranscriptions() (int64, error) {
 }
 
 // FailTranscription records why a job failed: with retryAt it waits until then and is tried again,
-// without it stays failed until the person tries again (RetryTranscription).
-func (s *Store) FailTranscription(id, reason string, retryAt time.Time) error {
+// without it stays failed until the person tries again (RetryTranscription). With laterAt (and no
+// retryAt) it is shown as failed, but queued again at that time by RequeueDueTranscriptions.
+func (s *Store) FailTranscription(id, reason string, retryAt, laterAt time.Time) error {
 	status, next := TranscriptionFailed, ""
-	if !retryAt.IsZero() {
+	switch {
+	case !retryAt.IsZero():
 		status, next = TranscriptionQueued, retryAt.UTC().Format(time.RFC3339)
+	case !laterAt.IsZero():
+		next = laterAt.UTC().Format(time.RFC3339)
 	}
 	_, err := s.db.Exec(`UPDATE transcriptions SET status = ?, error = ?, next_at = ?, updated_at = ? WHERE id = ?`, status, reason, next, nowUTC(), id)
 	return err
+}
+
+// RequeueDueTranscriptions queues the failed jobs again whose later attempt (FailTranscription's laterAt)
+// is due, and returns their ids. The error stays, so the app shows them as waiting for a retry.
+func (s *Store) RequeueDueTranscriptions(now time.Time) ([]string, error) {
+	due := now.UTC().Format(time.RFC3339)
+	rows, err := s.db.Query(`SELECT id FROM transcriptions WHERE status = ? AND next_at != '' AND next_at <= ?`, TranscriptionFailed, due)
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	_ = rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, id := range ids {
+		res, err := s.db.Exec(`UPDATE transcriptions SET status = ?, updated_at = ? WHERE id = ? AND status = ? AND next_at != '' AND next_at <= ?`,
+			TranscriptionQueued, nowUTC(), id, TranscriptionFailed, due)
+		if err != nil {
+			return out, err
+		}
+		if n, _ := res.RowsAffected(); n == 1 {
+			out = append(out, id)
+		}
+	}
+	return out, nil
+}
+
+// PurgeFailedTranscriptions removes the failed jobs of notes whose last attempt is longer ago than
+// FailedTranscriptionKeep and returns them (the recordings stay in their notes). Failed inbox jobs are
+// left alone: their audio is the only copy of the recording.
+func (s *Store) PurgeFailedTranscriptions(now time.Time) ([]Transcription, error) {
+	jobs, err := s.queryTranscriptions(`WHERE t.status = ? AND t.kind = ? AND t.updated_at < ? ORDER BY t.created_at, t.id`,
+		TranscriptionFailed, TranscriptionNote, now.Add(-FailedTranscriptionKeep).UTC().Format(time.RFC3339))
+	if err != nil {
+		return nil, err
+	}
+	var out []Transcription
+	for _, j := range jobs {
+		// A note's job has no audio rows; the status check skips one tried again meanwhile
+		res, err := s.db.Exec(`DELETE FROM transcriptions WHERE id = ? AND status = ?`, j.ID, TranscriptionFailed)
+		if err != nil {
+			return out, err
+		}
+		if n, _ := res.RowsAffected(); n == 1 {
+			out = append(out, j)
+		}
+	}
+	return out, nil
 }
 
 // FinishTranscription removes a job with its audio (done, or its recording is gone).

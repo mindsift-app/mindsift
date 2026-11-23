@@ -4,6 +4,7 @@ import { TriangleAlert, Calendar, SquareCheckBig, Flame, X } from 'lucide-react'
 import { PriorityLevel, TaskList } from '../../lib/types';
 import { triggerHaptic } from '../../lib/api';
 import { useHoldReload } from '../../lib/reloadHold';
+import { guardLeave } from '../../lib/leaveGuard';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { DateField } from '../../components/DateField';
 import { SelectMenu } from '../../components/SelectMenu';
@@ -43,6 +44,9 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
 
   if (!open) return null;
 
+  // The backdrop, the X and "Abbrechen": a dictation still running in the field asks first (lib/leaveGuard.ts)
+  const close = () => guardLeave(onClose, { close: true });
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -58,7 +62,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
   return (
     <div
       className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={() => onClose()}
+      onClick={close}
     >
       <div
         className="w-full max-h-[85vh] overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] animate-in slide-in-from-bottom duration-200"
@@ -73,7 +77,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
           </div>
           <button
             type="button"
-            onClick={() => onClose()}
+            onClick={close}
             className="p-1.5 text-faint hover:text-main rounded-btn transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -177,7 +181,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
           <div className="pt-2 flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => onClose()}
+              onClick={close}
               className="btn-ghost h-10 px-4 text-xs cursor-pointer"
             >
               {t('common:cancel')}

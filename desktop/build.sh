@@ -5,9 +5,9 @@
 #   desktop/build.sh            frontend, Linux, Windows and licenses
 #   desktop/build.sh linux      only Linux (plus the frontend)
 #   desktop/build.sh windows    only Windows (plus the frontend)
-#   desktop/build.sh frontend   only the frontend (frontend/dist), e.g. for packaging/flatpak/build.sh
+#   desktop/build.sh frontend   only the frontend (frontend/dist)
 #   desktop/build.sh licenses   only desktop/out/THIRD_PARTY_LICENSES.txt (plus the frontend, whose npm
-#                               packages are part of it), e.g. for packaging/flatpak/build.sh
+#                               packages are part of it)
 #   SKIP_FRONTEND=1 desktop/build.sh      reuse frontend/dist and desktop/out/third-party-npm.txt
 #   APP_VERSION=v1.2.0 desktop/build.sh   the version the app knows itself as (a release's tag, set by
 #                               ci/release-desktop.sh); default v<frontend/package.json version>-dev, like

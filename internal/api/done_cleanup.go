@@ -18,7 +18,7 @@ import (
 // values no note holds any more (secrets.go), expired public links (publiclinks.go), backups of
 // deleted accounts past the backup retention, copies from before migrations older than 90 days
 // (backups.go), uploads of backups nobody finished (backup_upload.go) and rows of the audit log older
-// than a year (audit.go).
+// than a year (audit.go), and failed transcriptions of notes untried for 30 days (transcription_jobs.go).
 func (s *Server) startDoneCleanupTicker() {
 	if !s.wait(2 * time.Minute) {
 		return
@@ -34,6 +34,7 @@ func (s *Server) startDoneCleanupTicker() {
 		s.runPreMigrationBackupExpiry(now)
 		s.runUploadCleanup(now)
 		s.runAuditCleanup(now)
+		s.runFailedTranscriptionCleanup(now)
 		select {
 		case <-s.stop:
 			return

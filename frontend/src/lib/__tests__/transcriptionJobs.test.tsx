@@ -11,7 +11,14 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock('../api', () => ({ api, getCurrentUserId: () => 'u1' }));
 
-import { startBlockTranscription, useBlockTranscription, waitForTranscription } from '../transcriptionJobs';
+import {
+  retryTranscription,
+  startBlockTranscription,
+  startInboxTranscription,
+  useBlockTranscription,
+  useInboxTranscriptions,
+  waitForTranscription,
+} from '../transcriptionJobs';
 import type { TranscriptionJob } from '../types';
 
 const job = (over: Partial<TranscriptionJob>): TranscriptionJob => ({
@@ -41,6 +48,7 @@ describe('transcriptionJobs', () => {
   beforeEach(() => {
     Object.values(api).forEach((f) => f.mockReset());
     api.voiceJobs.mockResolvedValue([]);
+    api.docTranscriptions.mockResolvedValue([]);
   });
 
   it('shows a bullet as being transcribed after a reload, follows the server events and forgets it at its end', async () => {
@@ -75,5 +83,86 @@ describe('transcriptionJobs', () => {
     ws('TRANSCRIPTION_UPDATED', job({ id: 'trs_4', status: 'queued', error: 'failed' }));
     ws('TRANSCRIPTION_UPDATED', job({ id: 'trs_4', status: 'failed', error: 'timeout' }));
     await expect(failing).rejects.toThrow('Spracherkennung hat zu lange gedauert');
+  });
+  // The answer to a request is older than an event about its job that came while it was under way
+  // (the server sends the event first); it must not overwrite it, in either order
+  describe('answers and events in either order', () => {
+    const deferred = <T,>() => {
+      let resolve!: (v: T) => void;
+      const promise = new Promise<T>((r) => (resolve = r));
+      return { promise, resolve };
+    };
+    const Inbox = () => (
+      <span data-testid="inbox">
+        {useInboxTranscriptions()
+          .map((j) => `${j.id}:${j.status}:${j.error ?? ''}`)
+          .join(',')}
+      </span>
+    );
+    const blob = new Blob(['x']);
+
+    it('keeps a failure the server sent before the answer to the upload', async () => {
+      render(<Inbox />);
+      await act(async () => {});
+      const answer = deferred<TranscriptionJob>();
+      api.captureVoice.mockReturnValue(answer.promise);
+      const started = startInboxTranscription([{ blob, text: null }]);
+      ws('TRANSCRIPTION_UPDATED', job({ id: 'trs_10', kind: 'inbox', status: 'queued', error: 'failed', attempts: 1 }));
+      await act(async () => {
+        answer.resolve(job({ id: 'trs_10', kind: 'inbox', status: 'queued' }));
+        await started;
+      });
+      expect(screen.getByTestId('inbox').textContent).toBe('trs_10:queued:failed');
+    });
+
+    it('takes the answer to the upload when the failure comes after it', async () => {
+      render(<Inbox />);
+      await act(async () => {});
+      api.captureVoice.mockResolvedValue(job({ id: 'trs_11', kind: 'inbox', status: 'queued' }));
+      await act(async () => {
+        await startInboxTranscription([{ blob, text: null }]);
+      });
+      expect(screen.getByTestId('inbox').textContent).toBe('trs_11:queued:');
+      ws('TRANSCRIPTION_UPDATED', job({ id: 'trs_11', kind: 'inbox', status: 'queued', error: 'failed', attempts: 1 }));
+      expect(screen.getByTestId('inbox').textContent).toBe('trs_11:queued:failed');
+    });
+
+    it('does not bring back a job that ended before the answer to its start, and still hands over its text', async () => {
+      render(<Bullet blockId="blk_20" />);
+      await act(async () => {});
+      const answer = deferred<TranscriptionJob>();
+      api.transcribeBlock.mockReturnValue(answer.promise);
+      const started = startBlockTranscription('doc_1', 'blk_20');
+      ws('TRANSCRIPTION_DONE', { id: 'trs_20', kind: 'note', userId: 'u1', text: 'Schnell', docId: 'doc_1', blockId: 'blk_20' });
+      let id = '';
+      await act(async () => {
+        answer.resolve(job({ id: 'trs_20', blockId: 'blk_20' }));
+        id = (await started).id;
+      });
+      expect(screen.getByTestId('blk_20').textContent).toBe('none');
+      await expect(waitForTranscription(id)).resolves.toMatchObject({ text: 'Schnell' });
+    });
+
+    it('takes the answer to a retry unless the job moved on meanwhile', async () => {
+      render(<Bullet blockId="blk_30" />);
+      await act(async () => {});
+      ws('TRANSCRIPTION_UPDATED', job({ id: 'trs_30', blockId: 'blk_30', status: 'failed', error: 'failed', attempts: 3 }));
+      api.retryVoiceJob.mockResolvedValue(job({ id: 'trs_30', blockId: 'blk_30', status: 'queued' }));
+      await act(async () => {
+        await retryTranscription('trs_30');
+      });
+      expect(screen.getByTestId('blk_30').textContent).toBe('queued');
+
+      const answer = deferred<TranscriptionJob>();
+      api.retryVoiceJob.mockReturnValue(answer.promise);
+      ws('TRANSCRIPTION_UPDATED', job({ id: 'trs_30', blockId: 'blk_30', status: 'failed', error: 'failed', attempts: 3 }));
+      const retried = retryTranscription('trs_30');
+      ws('TRANSCRIPTION_UPDATED', job({ id: 'trs_30', blockId: 'blk_30', status: 'running', attempts: 1 }));
+      await act(async () => {
+        answer.resolve(job({ id: 'trs_30', blockId: 'blk_30', status: 'queued' }));
+        await retried;
+      });
+      expect(screen.getByTestId('blk_30').textContent).toBe('running');
+    });
   });
 });

@@ -93,6 +93,13 @@ const LONG_POLL_WAIT_S = 25; // below typical proxy timeouts (nginx 60 s, Cloudf
 const LONG_POLL_MAX_FAILURES = 3;
 const BACKOFF_MAX_MS = 30_000;
 const UNDO_LIMIT = 200;
+
+// A step that only sets texts back to what they already are (the slash command's typing taken out of it)
+function isNoopStep(step: UndoStep): boolean {
+  return step.inverse.every(
+    (op) => op.kind === 'set_content' && step.checks.some((c) => c.kind === 'content' && c.blockId === op.blockId && c.content === op.content)
+  );
+}
 const UNDO_GROUP_MS = 1_000; // keystrokes in the same block are one undo step until a pause this long
 // What the server confirmed is stored with the queue (persist) and the whole note at most this often, when
 // leaving the note or the page, or once this many log entries wait: storing all blocks after every typing
@@ -200,6 +207,8 @@ export class DocSyncEngine {
   private serverWritten = new Map<string, number>();
   private undoStack: UndoStep[] = [];
   private redoStack: UndoStep[] = [];
+  // Set while a slash command runs (slashCommand): its step undoes the typed "/command" too
+  private slashUndo: { blockId: string; text: string } | null = null;
   /** The editor's own part of the undo history (server actions), kept with the steps (undoHistory.ts) */
   undoExtra: unknown = undefined;
 
@@ -423,6 +432,26 @@ export class DocSyncEngine {
   }
 
   /**
+   * Runs a slash command on a block (`apply` hands the changed bullets to the engine) so that one undo
+   * takes back the command and the typed "/command" together: the bullet comes back as `textBefore`, its
+   * text before the slash was typed. Typing before the slash stays a step of its own.
+   */
+  slashCommand(blockId: string, textBefore: string, apply: () => void): void {
+    if (!this.ready || !this.canEdit) {
+      apply();
+      return;
+    }
+    this.slashUndo = { blockId, text: textBefore };
+    try {
+      apply();
+    } finally {
+      // No change reached the engine (the text was already as before the slash): the typing still ends here
+      if (this.slashUndo) this.recordSlash(null, this.slashUndo);
+      this.slashUndo = null;
+    }
+  }
+
+  /**
    * Settles a conflict copy: 'take' replaces the original's text with it, 'keep' keeps both (the copy
    * becomes a normal block right under the original), 'drop' deletes the copy.
    */
@@ -540,6 +569,12 @@ export class DocSyncEngine {
 
   private record(before: Doc, ops: Op[]): void {
     const step = buildStep(before, ops, this.now());
+    if (this.slashUndo) {
+      const slash = this.slashUndo;
+      this.slashUndo = null;
+      this.recordSlash(step, slash);
+      return;
+    }
     if (!step) return;
     this.redoStack = [];
     const top = this.undoStack[this.undoStack.length - 1];
@@ -548,8 +583,36 @@ export class DocSyncEngine {
       top.checks = step.checks;
       top.at = step.at;
     } else {
-      this.undoStack.push(step);
-      if (this.undoStack.length > UNDO_LIMIT) this.undoStack.shift();
+      this.pushUndo(step);
+    }
+    this.emit();
+  }
+
+  private pushUndo(step: UndoStep): void {
+    this.undoStack.push(step);
+    if (this.undoStack.length > UNDO_LIMIT) this.undoStack.shift();
+  }
+
+  /**
+   * Records a slash command's step so that undoing it restores the text from before the slash: the typed
+   * "/command" is taken out of the step before (the typing in that block), which then ends at that text and
+   * goes away if nothing else was typed. The command's step ends the typing group.
+   */
+  private recordSlash(step: UndoStep | null, slash: { blockId: string; text: string }): void {
+    const { blockId, text } = slash;
+    if (step) {
+      for (const op of step.inverse) if (op.kind === 'set_content' && op.blockId === blockId) op.content = text;
+    }
+    const top = this.undoStack[this.undoStack.length - 1];
+    if (top && top.textKey === blockId) {
+      for (const c of top.checks) if (c.kind === 'content' && c.blockId === blockId) c.content = text;
+      top.textKey = undefined;
+      if (isNoopStep(top)) this.undoStack.pop();
+    }
+    if (step && !isNoopStep(step)) {
+      step.textKey = undefined;
+      this.redoStack = [];
+      this.pushUndo(step);
     }
     this.emit();
   }
