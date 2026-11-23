@@ -111,7 +111,14 @@ Voice notes, recorded in Chromium (fake microphone) and played in WebKit, whose 
 
 ## transcription.e2e.mjs
 
-Transcriptions in the background with the own Whisper server, which the script plays itself (slow on purpose, `WHISPER_DELAY_MS`, default 10 s; port `WHISPER_PORT`, default 18566). It needs a server without demo mode started with `STT_URL=http://localhost:<WHISPER_PORT>` and `STT_MODEL=fake` (`MINDSIFT_URL`, `MINDSIFT_LOGIN`, `MINDSIFT_PASSWORD`; the command is in the file's header); `run.sh` does not start one yet. Checked in Chromium with a fake microphone: "Transkribieren" on a voice note still shows "Wird erkannt…" after switching notes and reloading, and the text arrives in the caption by itself; a dictation by holding the rail's + is on the server once released, a reload right after shows it above the Quick Dump and the server makes the entry; with a failing Whisper server the recording stays there (after the server's own two retries, about 3 minutes) and "Erneut versuchen" makes the entry; dictating into a text field and switching the view asks first, "Bleiben" stays and "Trotzdem wechseln" goes.
+Transcriptions in the background with the own Whisper server, which the script plays itself (port `WHISPER_PORT`, in `run.sh` `E2E_WHISPER_PORT`, else `E2E_PORT` + 5, else a free one). It runs on the server without the demo (`MINDSIFT_PLAIN_URL`, `MINDSIFT_PLAIN_ADMIN`, `MINDSIFT_PLAIN_PASSWORD`), points that server's speech recognition at its fake Whisper server through the administration and puts the setting back at the end. The fake holds its answers until the script has seen the waiting state, so no step depends on timing. Checked in Chromium with a fake microphone:
+
+- "Transkribieren" on a voice note still shows "Wird erkannt…" after switching notes and reloading, and the text arrives in the caption by itself; the server has it in the note
+- a dictation by holding the rail's + is on the server once released; a reload right after shows it above the Quick Dump as being transcribed, the server makes the entry and the row goes
+- with a failing Whisper server the recording stays above the Quick Dump with "Neuer Versuch folgt gleich"; discarded, its row goes. `TRANSCRIPTION_FULL=1` waits for the server's own two retries instead (after 30 s and 2 min, about 3 minutes more): "nicht transkribiert" with "Erneut versuchen", which makes the entry once the Whisper server works again
+- dictating into a text field and switching the view asks first, "Bleiben" stays and "Trotzdem wechseln" goes
+
+`SHOTS=<folder>` saves pictures of the states checked. Takes about 30 s.
 
 ## caret.e2e.mjs
 
@@ -224,3 +231,14 @@ The first-boot setup wizard with its one-time setup code (`internal/api/setup_co
 - the right code, typed in lower case, creates the admin and signs in; afterwards the status asks for no code, the code is refused, and the new admin signs in with the password
 
 Against a server that is already running (fresh, without `ADMIN_USER`): `MINDSIFT_SETUP_URL` and `MINDSIFT_SETUP_CODE` from its log. The test sets up that server, so it runs once per fresh database.
+
+## backup.e2e.mjs
+
+Full server backups (`internal/api/fullrestore.go`, `backup_upload.go`), under Administration → Daten in Chromium, on the server without the demo (restoring is off in the demo). `run.sh` runs it last there, as each restore puts that server back to the backup's state. Checked:
+
+- "Jetzt sichern" makes a full backup with the media files, listed as "Komplett mit … Mediendatei(en)"
+- "Download" saves one `.tar` archive holding the database (`mindsift.db.gz`), the media files and `secrets.key`
+- restoring it from the list asks first, shows "Stelle wieder her…" and reloads the page by itself; the notes are as at the backup (one made later is gone, the picture is there), the state before is listed as "vor einer Wiederherstellung", and the restore is in the audit log
+- the downloaded archive uploaded again goes in several chunks (made smaller than the server's, so there are at least four) with a progress bar, asks before replacing everything and restores it
+
+Against a server that is already running: `MINDSIFT_PLAIN_URL`, `MINDSIFT_PLAIN_ADMIN`, `MINDSIFT_PLAIN_PASSWORD`; everything after the backup on that server is undone. Takes about 15 s.
