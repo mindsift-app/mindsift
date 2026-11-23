@@ -594,7 +594,7 @@ export function createRealtimeConnection(options: {
   docId?: string;
   rooms?: string[];
   onMessage?: (msg: WSMessage) => void;
-  onStatusChange?: (status: { connected: boolean; transport: RealtimeTransport; reason?: string }) => void;
+  onStatusChange?: (status: { connected: boolean; transport: RealtimeTransport }) => void;
 }) {
   let isClosed = false;
 
@@ -612,11 +612,7 @@ export function createRealtimeConnection(options: {
   // Subscribe to status changes
   const unsubStatus = onRealtimeStatus((connected, transport) => {
     if (isClosed) return;
-    options.onStatusChange?.({
-      connected,
-      transport,
-      reason: connected ? undefined : 'Verbindung getrennt',
-    });
+    options.onStatusChange?.({ connected, transport });
   }, { current: true });
 
   // Subscribe to messages
