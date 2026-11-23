@@ -416,13 +416,6 @@ func (s *Store) migrateDropTaskListIndex() error {
 	return err
 }
 
-// migrateSearchCoverIndex is migration 53: the note search (sqlNoteSearchHits) looks up every matched
-// bullet by its key in the index and reads deleted, document_id and id of it. With only
-// idx_blocks_fts_rowid that is one seek in the index and one in the table per match; the covering index
-// answers it from the index alone (search for a common word: 17.8 to 12.1 ms). idx_blocks_fts_rowid stays:
-// it keeps the key unique, and a key held twice would make the external-content index delete the text of
-// the wrong bullet. The extra index is written when a bullet is inserted, deleted or restored, not when
-// its text changes.
 // migrateListItemDoneChangedAt is migration 56: list_items.done_changed_at holds when the checked state
 // last changed (doneTimeLayout, UTC), so a tick sent late by a phone that was offline does not undo a
 // change somebody made after it (SetListItemDone). Empty: never changed since the column exists.
@@ -509,6 +502,13 @@ func (s *Store) migrateTaskUpdatedAt() error {
 // sqlTaskUpdatedAt reads when the task t last changed (created_at until its first change).
 const sqlTaskUpdatedAt = `COALESCE(NULLIF(t.updated_at, ''), t.created_at)`
 
+// migrateSearchCoverIndex is migration 53: the note search (sqlNoteSearchHits) looks up every matched
+// bullet by its key in the index and reads deleted, document_id and id of it. With only
+// idx_blocks_fts_rowid that is one seek in the index and one in the table per match; the covering index
+// answers it from the index alone (search for a common word: 17.8 to 12.1 ms). idx_blocks_fts_rowid stays:
+// it keeps the key unique, and a key held twice would make the external-content index delete the text of
+// the wrong bullet. The extra index is written when a bullet is inserted, deleted or restored, not when
+// its text changes.
 func (s *Store) migrateSearchCoverIndex() error {
 	_, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_blocks_fts_cover ON blocks(fts_rowid, deleted, document_id, id)`)
 	return err
