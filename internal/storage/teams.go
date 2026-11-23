@@ -41,62 +41,6 @@ func (s *Store) DeleteTeam(teamID string) error {
 	return err
 }
 
-func (s *Store) GetAllTeams() ([]domain.Team, error) {
-	rows, err := s.db.Query(
-		`SELECT id, org_id, name, description, created_at FROM teams ORDER BY name COLLATE NOCASE ASC`,
-	)
-	if err != nil {
-		return []domain.Team{}, err
-	}
-	defer rows.Close()
-
-	teams := make([]domain.Team, 0)
-	for rows.Next() {
-		var t domain.Team
-		if err := rows.Scan(&t.ID, &t.OrgID, &t.Name, &t.Description, &t.CreatedAt); !dbFailed(err) {
-			t.Members = []domain.TeamMember{}
-			teams = append(teams, t)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return []domain.Team{}, err
-	}
-	for i := range teams {
-		members, _ := s.GetTeamMembers(teams[i].ID)
-		teams[i].Members = members
-	}
-	return teams, nil
-}
-
-func (s *Store) GetTeamsForOrg(orgID string) ([]domain.Team, error) {
-	rows, err := s.db.Query(
-		`SELECT id, org_id, name, description, created_at FROM teams WHERE org_id = ? ORDER BY created_at ASC`,
-		orgID,
-	)
-	if err != nil {
-		return []domain.Team{}, err
-	}
-
-	teams := make([]domain.Team, 0)
-	for rows.Next() {
-		var t domain.Team
-		if err := rows.Scan(&t.ID, &t.OrgID, &t.Name, &t.Description, &t.CreatedAt); !dbFailed(err) {
-			t.Members = []domain.TeamMember{}
-			teams = append(teams, t)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return []domain.Team{}, err
-	}
-	_ = rows.Close()
-
-	for i := range teams {
-		members, _ := s.GetTeamMembers(teams[i].ID)
-		teams[i].Members = members
-	}
-	return teams, nil
-}
-
 func (s *Store) GetTeamByID(teamID string) (*domain.Team, error) {
 	var t domain.Team
 	err := s.db.QueryRow(

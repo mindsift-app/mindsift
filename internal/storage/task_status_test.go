@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
@@ -103,8 +104,26 @@ func TestUpdateTaskStatusSentLate(t *testing.T) {
 
 	// Changes that do not go through UpdateTask (a to-do ticked in the note, a Kanban drag) are stamped by
 	// the trigger: an older change sent late does not undo them
-	plants := newTask("Blumen gießen")
-	store.SyncTaskFromBlockCheck(alice.ID, plants, true)
+	doc, err := store.CreateDocument(alice.ID, "", "Garten", "", "", []domain.DocumentBlock{{ID: "plants", Type: "todo", Content: "Blumen gießen"}}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	linked, err := store.CreateTaskFromDocBlock(alice.ID, doc.ID, "plants", "Blumen gießen", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plants := linked.ID
+	if _, err := store.UpdateThoughtDetails(alice.ID, plants, nil, nil, nil, nil, &tl.ID, nil, nil, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	on := true
+	edit(t, store, alice.ID, doc.ID, func(*collab.Doc) []collab.Op {
+		return []collab.Op{{OpID: domain.NewID("op"), Kind: collab.OpSetProps, BlockID: "plants", Patch: &collab.PropsPatch{Checked: &on}}}
+	})
+	store.ReconcileDocTaskLinks(doc.ID)
+	if th, _ := store.GetThoughtByID(alice.ID, plants); !th.IsCompleted {
+		t.Fatal("ticking in the note did not complete the task")
+	}
 	if stamp(plants) == "" {
 		t.Fatal("ticking in the note stored no time")
 	}

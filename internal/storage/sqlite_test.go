@@ -92,9 +92,9 @@ func TestStoreLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateAPIKey failed: %v", err)
 	}
-	validatedUser, err := store.ValidateAPIKeyAndGetUser(apiKey.RawKey)
+	validatedUser, _, _, err := store.ValidateAPIKey(apiKey.RawKey)
 	if err != nil || validatedUser.ID != user.ID {
-		t.Fatalf("ValidateAPIKeyAndGetUser failed: %v", err)
+		t.Fatalf("ValidateAPIKey failed: %v", err)
 	}
 
 	// 5. Test TaskLists CRUD

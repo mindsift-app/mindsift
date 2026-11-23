@@ -97,16 +97,7 @@ func TestPlainTickUsesTheListsDoneColumn(t *testing.T) {
 		}
 	}
 
-	// Ticked in a linked note
-	rake := newTask("Laub rechen", tl.ID, "col_offen")
-	store.SyncTaskFromBlockCheck(alice.ID, rake, true)
-	if th, _ := store.GetThoughtByID(alice.ID, rake); !th.IsCompleted || th.KanbanStatus != "col_fertig" {
-		t.Fatalf("ticked in the note: done=%v status=%q", th.IsCompleted, th.KanbanStatus)
-	}
-	store.SyncTaskFromBlockCheck(alice.ID, rake, false)
-	if th, _ := store.GetThoughtByID(alice.ID, rake); th.IsCompleted || th.KanbanStatus != "col_offen" {
-		t.Fatalf("unticked in the note: done=%v status=%q", th.IsCompleted, th.KanbanStatus)
-	}
+	// Ticked in a linked note: TestReconcileTickUsesTheListsDoneColumn
 }
 
 // A to-do of a note linked to a task in a list with its own done columns: ticking it in the note moves
