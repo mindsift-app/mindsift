@@ -32,6 +32,7 @@ Versions without a git tag were development states and were never published as a
 - A dictation or recording in progress is no longer lost by accident. Reloading the page, closing the tab or leaving the site while one is running or not yet saved now lets the browser ask first (not in the desktop app, which has no reload of its own). The browser's back and forward buttons, the mouse's back button and Android's back gesture ask too ("Switch anyway" / "Stay") and otherwise stay where you are, and closing the task dialog, the new-task sheet or the Quick Dump sheet on phones while dictating asks "Close anyway" first. Audio recordings in notes (`/audio`) are now covered as well, also when switching to another note.
 - Working only in notes, or with live updates by long polling, now keeps you signed in like the rest of the app does, and a session that ended there is cleared like everywhere else (the desktop app then signs in again by itself).
 - An audio recording in a note (`/audio`) is no longer cut off when the app reloads itself for a new server version: like a dictation, it now holds the automatic reload back until it is saved.
+- Desktop app: "Switch instance" in the profile menu now asks first ("Switch anyway" / "Stay") while a dictation or recording is under way, instead of throwing it away.
 - Triage: while the actions sheet of a card ("More options") or another dialog is open, the keyboard shortcuts (arrows, H, L, D, T, Space) no longer sort the card behind it.
 
 ## [0.99.0] - 2026-11-22

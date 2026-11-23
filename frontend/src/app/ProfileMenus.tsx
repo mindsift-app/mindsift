@@ -10,8 +10,14 @@ import { BottomSheet } from '../components/BottomSheet';
 import { APP_VERSION } from '../version';
 import { openDesktopStart } from '../lib/desktopStart';
 import { openDesktopShellStart, useDesktopShellStart } from '../lib/useDesktopShellStart';
+import { guardLeave } from '../lib/leaveGuard';
 import { ActiveTab } from './appTabs';
 import { usePwaInstall } from './usePwaInstall';
+
+// "Instanz wechseln" leaves the page: a dictation or recording under way asks first, as switching the view
+// does (the desktop app has no beforeunload question that would catch it)
+const switchToDesktopStart = () => guardLeave(openDesktopStart);
+const switchToShellStart = (address: string) => guardLeave(() => openDesktopShellStart(address));
 
 interface ProfileMenuProps {
   user: User;
@@ -136,7 +142,7 @@ export function ProfileDropdown({
       <div className="py-1">
         {isDesktopApp() ? (
           <button
-            onClick={openDesktopStart}
+            onClick={switchToDesktopStart}
             className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 text-main hover:bg-panel-elevated transition-colors"
           >
             <ArrowLeftRight className="w-4 h-4 text-accent" />
@@ -147,7 +153,7 @@ export function ProfileDropdown({
             {/* A server's page in the desktop app: back to the app's start view, sign-out stays */}
             {shellStart && (
               <button
-                onClick={() => openDesktopShellStart(shellStart)}
+                onClick={() => switchToShellStart(shellStart)}
                 className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 text-main hover:bg-panel-elevated transition-colors"
               >
                 <ArrowLeftRight className="w-4 h-4 text-accent" />
@@ -329,7 +335,7 @@ export function MobileProfileSheet({
           {isDesktopApp() ? (
             <button
               type="button"
-              onClick={openDesktopStart}
+              onClick={switchToDesktopStart}
               className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-main hover:bg-panel-elevated transition-colors text-xs cursor-pointer"
             >
               <ArrowLeftRight className="w-4 h-4 text-accent" />
@@ -340,7 +346,7 @@ export function MobileProfileSheet({
             {shellStart && (
               <button
                 type="button"
-                onClick={() => openDesktopShellStart(shellStart)}
+                onClick={() => switchToShellStart(shellStart)}
                 className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-main hover:bg-panel-elevated transition-colors text-xs cursor-pointer"
               >
                 <ArrowLeftRight className="w-4 h-4 text-accent" />
