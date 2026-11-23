@@ -5,6 +5,7 @@ import { api, isDesktopApp } from '../../../lib/api';
 import type { UpdateStatus } from '../../../lib/types';
 import { formatDate } from '../../../lib/format';
 import { APP_VERSION } from '../../../version';
+import { SettingsCard } from '../../../components/SettingsCard';
 
 const UPDATE_COMMAND = 'docker compose pull && docker compose up -d';
 
@@ -48,16 +49,12 @@ export const UpdateStatusCard: React.FC = () => {
   }
 
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3" data-update-status>
-      <div>
-        <p className="font-bold text-main flex items-center gap-1.5">
-          <CircleArrowUp className="w-3.5 h-3.5 text-accent" />
-          <span>{t('update.admin.title')}</span>
-        </p>
-        <p className="text-[11px] text-muted mt-0.5">
-          {status.enabled ? t('update.admin.hint') : t(`update.admin.${status.reason ?? 'off'}`)}
-        </p>
-      </div>
+    <SettingsCard
+      data-update-status
+      title={t('update.admin.title')}
+      icon={<CircleArrowUp className="w-3.5 h-3.5 text-accent" />}
+      hint={status.enabled ? t('update.admin.hint') : t(`update.admin.${status.reason ?? 'off'}`)}
+    >
       <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-xs">
         {rows.map(([label, value]) => (
           <React.Fragment key={label}>
@@ -104,6 +101,6 @@ export const UpdateStatusCard: React.FC = () => {
           )}
         </div>
       )}
-    </div>
+    </SettingsCard>
   );
 };

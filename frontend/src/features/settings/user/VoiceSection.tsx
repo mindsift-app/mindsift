@@ -6,6 +6,7 @@ import { browserRecognition, type EffectiveVoiceMode } from '../../../lib/voice'
 import { voiceLanguageOptions } from '../../../lib/voiceLanguages';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { InstantSaveToast, useInstantSave } from './InstantSave';
+import { SettingsCard } from '../../../components/SettingsCard';
 
 // Voice input: Whisper server or the browser (only offered with a Whisper server that allows the
 // browser), and the language spoken into the microphone
@@ -88,11 +89,7 @@ export function VoiceSection({
           })}
         </div>
       )}
-      <div className="space-y-1.5">
-        <p className="block font-semibold text-main">
-          {t('voice.languageTitle')}
-        </p>
-        <p className="text-muted leading-relaxed">{t('voice.languageIntro')}</p>
+      <SettingsCard title={t('voice.languageTitle')} hint={t('voice.languageIntro')}>
         <div className="w-full sm:max-w-sm">
           <SelectMenu
             ariaLabel={t('voice.languageTitle')}
@@ -107,9 +104,9 @@ export function VoiceSection({
           />
         </div>
         {spoken === 'auto' && (
-          <p className="text-muted leading-relaxed">{whisper ? t('voice.languageAutoHint') : t('voice.languageAutoBrowser')}</p>
+          <p className="text-[11px] text-muted">{whisper ? t('voice.languageAutoHint') : t('voice.languageAutoBrowser')}</p>
         )}
-      </div>
+      </SettingsCard>
     </div>
   );
 }

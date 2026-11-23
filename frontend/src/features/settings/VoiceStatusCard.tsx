@@ -6,6 +6,7 @@ import { api } from '../../lib/api';
 import { VoiceAdminStatus } from '../../lib/types';
 import { errorMessage } from '../../lib/errorMessage';
 import { Spinner } from '../../components/Spinner';
+import { SettingsCard } from '../../components/SettingsCard';
 
 const TEST_SECONDS = 6;
 
@@ -89,17 +90,11 @@ export const VoiceStatusCard: React.FC = () => {
   const serverOk = info?.mode === 'server' && status?.reachable && status?.modelReady;
 
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-bold text-main flex items-center gap-1.5">
-            <Mic className="w-4 h-4 text-accent" />
-            {t('settings:voiceStatus.title')}
-          </h3>
-          <p className="text-muted mt-0.5">
-            <Trans t={t} i18nKey="voiceStatus.intro" components={{ c: <code className="font-mono" /> }} />
-          </p>
-        </div>
+    <SettingsCard
+      title={t('settings:voiceStatus.title')}
+      icon={<Mic className="w-4 h-4 text-accent" />}
+      hint={<Trans t={t} i18nKey="voiceStatus.intro" components={{ c: <code className="font-mono" /> }} />}
+      action={
         <button
           type="button"
           onClick={load}
@@ -109,8 +104,8 @@ export const VoiceStatusCard: React.FC = () => {
         >
           <RefreshCw className="w-3.5 h-3.5" />
         </button>
-      </div>
-
+      }
+    >
       {info && (
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
           <dt className="text-muted">{t('voiceStatus.active')}</dt>
@@ -193,6 +188,6 @@ export const VoiceStatusCard: React.FC = () => {
       )}
 
       {error && <p className="text-status-err text-xs">{error}</p>}
-    </div>
+    </SettingsCard>
   );
 };

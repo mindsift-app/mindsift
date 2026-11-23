@@ -6,6 +6,7 @@ import { AdminPage } from './AdminPage';
 import { useAdminSettings } from './useAdminSettings';
 import { useTranslation } from 'react-i18next';
 import { can } from '../../../lib/capabilities';
+import { SettingRow } from '../../../components/SettingsCard';
 
 // Administration → Voice input & AI: the server's speech recognition and AI agents over MCP
 // (state in useAdminSettings)
@@ -35,21 +36,22 @@ export function AiSection({
       <VoiceStatusCard key={statusKey} />
 
       {/* AI agents over MCP (and claude.ai / ChatGPT over OAuth) */}
-      <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
-        <div className="pr-4">
-          <p className="font-bold text-main">{t('server.mcp')}</p>
-          <p className="text-[11px] text-muted mt-0.5">
+      <SettingRow
+        title={t('server.mcp')}
+        hint={
+          <>
             {t('server.mcpHint')}
             {can('publicAddress') && ` ${t('server.mcpHintConnectors')}`}
             {settings.mcpConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MCP_ENABLED' })}`}
-          </p>
-        </div>
+          </>
+        }
+      >
         <ToggleSwitch
           checked={settings.mcpEnabled !== false}
           disabled={Boolean(settings.mcpConfiguredViaEnv)}
           onChange={(mcpEnabled) => handleSaveSystemSettings({ mcpEnabled })}
         />
-      </div>
+      </SettingRow>
     </AdminPage>
   );
 }

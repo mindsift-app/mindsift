@@ -17,6 +17,7 @@ import { setLinkPreviewsEnabled, useServerLinkPreviews } from '../../../lib/link
 import { setJournalEnabled } from '../../../lib/journal';
 import { useAppearanceSettings } from './useAppearanceSettings';
 import { CustomThemesSection } from './CustomThemesSection';
+import { SettingRow, SettingsCard } from '../../../components/SettingsCard';
 
 // Kontoeinstellungen → Darstellung & Themes (state in useAppearanceSettings)
 export function AppearanceSection({
@@ -55,24 +56,19 @@ export function AppearanceSection({
 
       {/* Only while the server offers link previews at all (the administration can switch them off) */}
       {serverPreviews && (
-        <div className="p-3.5 rounded-card border border-border bg-canvas flex items-center justify-between gap-4" data-device-link-previews>
-          <div className="text-xs">
-            <p className="font-semibold text-main">{t('appearance.linkPreviews')}</p>
-            <p className="text-[11px] text-faint">
-              {t('appearance.linkPreviewsHint')}
-            </p>
-          </div>
+        <SettingRow
+          data-device-link-previews
+          title={t('appearance.linkPreviews')}
+          hint={t('appearance.linkPreviewsHint')}
+        >
           <ToggleSwitch checked={linkPreviewsOn} onChange={setLinkPreviewsEnabled} title={t('appearance.linkPreviews')} />
-        </div>
+        </SettingRow>
       )}
 
-      <div className="p-3.5 rounded-card border border-border bg-canvas flex items-center justify-between gap-4">
-        <div className="text-xs">
-          <p className="font-semibold text-main">{t('appearance.journal')}</p>
-          <p className="text-[11px] text-faint">
-            {t('appearance.journalHint')}
-          </p>
-        </div>
+      <SettingRow
+        title={t('appearance.journal')}
+        hint={t('appearance.journalHint')}
+      >
         <ToggleSwitch
           checked={journalOn}
           onChange={(v) => {
@@ -81,7 +77,7 @@ export function AppearanceSection({
           }}
           title={t('appearance.journal')}
         />
-      </div>
+      </SettingRow>
 
       {/* Colour families: left light, right dark */}
       <div className="space-y-2">
@@ -129,11 +125,10 @@ export function AppearanceSection({
       </div>
 
       {/* Corners for every theme (per device) */}
-      <div className="p-3.5 rounded-card border border-border bg-canvas flex flex-wrap items-center justify-between gap-3">
-        <div className="text-xs">
-          <p className="font-semibold text-main">{t('appearance.corners')}</p>
-          <p className="text-[11px] text-faint">{t('appearance.cornersHint')}</p>
-        </div>
+      <SettingRow
+        title={t('appearance.corners')}
+        hint={t('appearance.cornersHint')}
+      >
         <div className="flex items-center bg-panel-elevated rounded-btn p-0.5 text-xs" role="radiogroup" aria-label={t('appearance.corners')}>
           {(
             [
@@ -159,14 +154,13 @@ export function AppearanceSection({
             </button>
           ))}
         </div>
-      </div>
+      </SettingRow>
 
       {/* Light/dark: fixed, or following the system inside the family */}
-      <div className="p-3.5 rounded-card border border-border bg-canvas flex flex-wrap items-center justify-between gap-3">
-        <div className="text-xs">
-          <p className="font-semibold text-main">{t('appearance.mode')}</p>
-          <p className="text-[11px] text-faint">{t('appearance.modeHint')}</p>
-        </div>
+      <SettingRow
+        title={t('appearance.mode')}
+        hint={t('appearance.modeHint')}
+      >
         <div className="flex items-center bg-panel-elevated rounded-btn p-0.5 text-xs" role="radiogroup" aria-label={t('appearance.mode')}>
           {(
             [
@@ -192,14 +186,13 @@ export function AppearanceSection({
             </button>
           ))}
         </div>
-      </div>
+      </SettingRow>
 
       {/* Frames around buttons */}
-      <div className="p-3.5 rounded-card border border-border bg-canvas flex flex-wrap items-center justify-between gap-3">
-        <div className="text-xs">
-          <p className="font-semibold text-main">{t('appearance.borders')}</p>
-          <p className="text-[11px] text-faint">{t('appearance.bordersHint')}</p>
-        </div>
+      <SettingRow
+        title={t('appearance.borders')}
+        hint={t('appearance.bordersHint')}
+      >
         <div className="flex items-center bg-panel-elevated rounded-btn p-0.5 text-xs" role="radiogroup" aria-label={t('appearance.borders')}>
           {(
             [
@@ -224,16 +217,14 @@ export function AppearanceSection({
             </button>
           ))}
         </div>
-      </div>
+      </SettingRow>
 
       {/* Own accent colour on top of the theme */}
-      <div className="p-3.5 rounded-card border border-border bg-canvas space-y-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div>
-            <p className="font-semibold text-main">{t('appearance.accent')}</p>
-            <p className="text-[11px] text-faint">{t('appearance.accentHint')}</p>
-          </div>
-          {accent && (
+      <SettingsCard
+        title={t('appearance.accent')}
+        hint={t('appearance.accentHint')}
+        action={
+          accent && (
             <button
               type="button"
               onClick={() => {
@@ -244,8 +235,9 @@ export function AppearanceSection({
             >
               {t('appearance.likeTheme')}
             </button>
-          )}
-        </div>
+          )
+        }
+      >
         <div className="flex flex-wrap items-center gap-2">
           {['#2563eb', '#0f766e', '#16a34a', '#ca8a04', '#c2410c', '#dc2626', '#db2777', '#8e44c9', '#475569'].map((c) => (
             <button
@@ -277,7 +269,7 @@ export function AppearanceSection({
             {t('settings:appearance.customAccent')}
           </label>
         </div>
-      </div>
+      </SettingsCard>
 
       <CustomThemesSection appearance={appearance} activeTheme={activeTheme} customThemes={customThemes} onThemeChange={onThemeChange} />
     </div>

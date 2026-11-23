@@ -10,6 +10,7 @@ import { formatDate } from '../../../lib/format';
 import { TimeField } from '../../../components/TimeField';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { can, type Capability } from '../../../lib/capabilities';
+import { SettingRow, SettingsCard } from '../../../components/SettingsCard';
 
 // The routing matrix: the event, Discord and the own webhook, plus e-mail, push and system notifications
 // where available
@@ -87,28 +88,26 @@ export function AlarmsSection({
 
       <form onSubmit={handleSaveAlarms} className="space-y-4">
         {/* Global Pause & Own Watched Toggles */}
-        <div className="p-3.5 bg-canvas border border-border space-y-3">
-          <div className="flex items-center justify-between gap-4">
-            <p className="font-semibold text-main">{t('alarms.pauseAll')}</p>
+        <SettingsCard
+          title={t('alarms.pauseAll')}
+          action={
             <ToggleSwitch
               checked={notificationSettings.paused}
               onChange={(v) => setNotificationSettings((prev) => ({ ...prev, paused: v }))}
               title={t('alarms.pauseAll')}
             />
-          </div>
+          }
+        >
           {can('watch') && (
-            <div className="flex items-center justify-between gap-4 pt-3 border-t border-border">
-              <p className="font-semibold text-main">
-                {t('alarms.ownChanges')}
-              </p>
+            <SettingRow plain className="pt-3 border-t border-border" title={t('alarms.ownChanges')}>
               <ToggleSwitch
                 checked={notificationSettings.includeOwnWatched}
                 onChange={(v) => setNotificationSettings((prev) => ({ ...prev, includeOwnWatched: v }))}
                 title={t('alarms.ownChanges')}
               />
-            </div>
+            </SettingRow>
           )}
-        </div>
+        </SettingsCard>
 
         {/* Routing Matrix: Events x (E-Mail / Discord / own webhook) */}
         {(() => {
@@ -123,7 +122,7 @@ export function AlarmsSection({
           const matrixCols = MATRIX_COLS[Number(mail) + Number(push) + Number(desktop)];
           return (
             <>
-              <div className="p-4 bg-canvas border border-border space-y-3">
+              <SettingsCard>
                 <div className={`grid ${matrixCols} items-center gap-1 sm:gap-4 pb-2 border-b border-border`}>
                   <span className="font-bold text-main">{t('alarms.eventHeader')}</span>
                   {mail && (
@@ -233,17 +232,13 @@ export function AlarmsSection({
                     {t('settings:alarms.webhookHint')}
                   </p>
                 )}
-              </div>
+              </SettingsCard>
 
               {/* Daily Summary */}
-              <div className="p-4 bg-canvas border border-border space-y-3">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-bold text-main">{t('alarms.daily.title')}</p>
-                    <p className="text-[11px] text-muted">
-                      {t('alarms.daily.hint')}
-                    </p>
-                  </div>
+              <SettingsCard
+                title={t('alarms.daily.title')}
+                hint={t('alarms.daily.hint')}
+                action={
                   <ToggleSwitch
                     checked={notificationSettings.dailySummary.enabled}
                     onChange={(v) =>
@@ -253,8 +248,8 @@ export function AlarmsSection({
                     }
                     title={t('alarms.daily.title')}
                   />
-                </div>
-
+                }
+              >
                 <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-border">
                   <div className="flex items-center gap-2 text-xs text-main font-medium">
                     <span>{t('alarms.daily.time')}</span>
@@ -353,16 +348,13 @@ export function AlarmsSection({
                     )}
                   </div>
                 </div>
-              </div>
+              </SettingsCard>
             </>
           );
         })()}
 
         {/* Lead Time Selector */}
-        <div className="p-3.5 bg-canvas border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <label className="font-semibold text-main block">
-            {t('alarms.lead.title')}
-          </label>
+        <SettingRow title={t('alarms.lead.title')}>
           <div className="w-full sm:w-auto sm:min-w-[200px]">
             <SelectMenu
               ariaLabel={t('alarms.lead.title')}
@@ -371,17 +363,15 @@ export function AlarmsSection({
               options={[0, 15, 30, 60, 120, 1440].map((m) => ({ value: String(m), label: t(`alarms.lead.${m}`) }))}
             />
           </div>
-        </div>
+        </SettingRow>
 
         {/* Channel 1: E-Mail, where the instance may send mail */}
         {can('email') && (
-        <div className="p-4 border border-border transition-colors space-y-3 bg-canvas">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <Mail className="w-4 h-4 text-accent" />
-              <span className="font-bold text-main block">{t('alarms.email.title')}</span>
-            </div>
-
+        <SettingsCard
+          title={t('alarms.email.title')}
+          icon={<Mail className="w-3.5 h-3.5 text-accent" />}
+          hint={<span className="wrap-break-word">{t('alarms.email.recipient', { email: currentUser.email })}</span>}
+          action={
             <button
               type="button"
               onClick={() => handleTestChannel('email')}
@@ -391,26 +381,17 @@ export function AlarmsSection({
               <Send className="w-3 h-3 text-accent" />
               <span>{testingChannel === 'email' ? t('sending') : t('alarms.email.test')}</span>
             </button>
-          </div>
-
-          <p className="pl-6 text-[11px] text-muted wrap-break-word">{t('alarms.email.recipient', { email: currentUser.email })}</p>
-        </div>
+          }
+        />
         )}
 
         {/* System notifications of the desktop app (its local instances, while the app is open) */}
         {can('desktopNotify') && (
-        <div className="p-4 border border-border transition-colors space-y-3 bg-canvas">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <Monitor className="w-4 h-4 text-accent" />
-              <div>
-                <span className="font-bold text-main block">{t('alarms.desktop.title')}</span>
-                <span className="text-[11px] text-muted">
-                  {t('alarms.desktop.hint')}
-                </span>
-              </div>
-            </div>
-
+        <SettingsCard
+          title={t('alarms.desktop.title')}
+          icon={<Monitor className="w-3.5 h-3.5 text-accent" />}
+          hint={t('alarms.desktop.hint')}
+          action={
             <button
               type="button"
               onClick={() => handleTestChannel('desktop')}
@@ -420,18 +401,15 @@ export function AlarmsSection({
               <Send className="w-3 h-3 text-accent" />
               <span>{testingChannel === 'desktop' ? t('sending') : t('alarms.desktop.test')}</span>
             </button>
-          </div>
-        </div>
+          }
+        />
         )}
 
         {/* Channel 2: Discord Webhook */}
-        <div className="p-4 border border-border transition-colors space-y-3 bg-canvas">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <MessageSquare className="w-4 h-4 text-accent" />
-              <span className="font-bold text-main block">{t('alarms.discord.title')}</span>
-            </div>
-
+        <SettingsCard
+          title={t('alarms.discord.title')}
+          icon={<MessageSquare className="w-3.5 h-3.5 text-accent" />}
+          action={
             <button
               type="button"
               onClick={() => handleTestChannel('discord')}
@@ -441,9 +419,9 @@ export function AlarmsSection({
               <Send className="w-3 h-3 text-accent" />
               <span>{testingChannel === 'discord' ? t('sending') : t('alarms.discord.test')}</span>
             </button>
-          </div>
-
-          <div className="pl-6">
+          }
+        >
+          <div>
             <label className="block text-muted mb-1">{t('alarms.discord.url')}</label>
             <input
               type="url"
@@ -453,27 +431,15 @@ export function AlarmsSection({
               className="w-full h-11 sm:h-8 px-2.5 input-field font-mono"
             />
           </div>
-        </div>
+        </SettingsCard>
 
         {/* Channel 3: Custom HTTP Webhook */}
-        <div
-          className={`p-4 border transition-colors space-y-3 bg-canvas ${
-            customWebhookUrl.trim() ? 'border-accent' : 'border-border'
-          }`}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <Globe className="w-4 h-4 text-accent" />
-              <div>
-                <span className="font-bold text-main block">
-                  {t('alarms.webhook.title')}
-                </span>
-                <span className="text-[11px] text-muted">
-                  {t('alarms.webhook.hint')}
-                </span>
-              </div>
-            </div>
-
+        <SettingsCard
+          active={Boolean(customWebhookUrl.trim())}
+          title={t('alarms.webhook.title')}
+          icon={<Globe className="w-3.5 h-3.5 text-accent" />}
+          hint={t('alarms.webhook.hint')}
+          action={
             <button
               type="button"
               onClick={() => handleTestChannel('webhook')}
@@ -483,9 +449,9 @@ export function AlarmsSection({
               <Send className="w-3 h-3 text-accent" />
               <span>{testingChannel === 'webhook' ? t('sending') : t('alarms.webhook.test')}</span>
             </button>
-          </div>
-
-          <div className="pl-6">
+          }
+        >
+          <div>
             <label className="block text-muted mb-1">
               {t('alarms.webhook.url')}
             </label>
@@ -497,22 +463,17 @@ export function AlarmsSection({
               className="w-full h-11 sm:h-8 px-2.5 input-field font-mono"
             />
           </div>
-        </div>
+        </SettingsCard>
 
         {/* Web push: this browser or installed app (not in the desktop app's webview) */}
         {can('push') && (
-        <div className={`p-4 border transition-colors space-y-3 bg-canvas ${pushHere ? 'border-accent' : 'border-border'}`}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Bell className="w-4 h-4 text-accent shrink-0" />
-              <div className="min-w-0">
-                <span className="font-bold text-main block">{t('alarms.push.title')}</span>
-                <span className="text-[11px] text-muted">
-                  {t('alarms.push.hint')}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
+        <SettingsCard
+          active={pushHere}
+          title={t('alarms.push.title')}
+          icon={<Bell className="w-3.5 h-3.5 text-accent shrink-0" />}
+          hint={t('alarms.push.hint')}
+          action={
+            <>
               <span className="text-xs text-muted">{t('alarms.push.thisDeviceLabel')}</span>
               <ToggleSwitch
                 checked={pushHere}
@@ -529,10 +490,11 @@ export function AlarmsSection({
                 <Send className="w-3 h-3 text-accent" />
                 <span>{t('alarms.push.test')}</span>
               </button>
-            </div>
-          </div>
+            </>
+          }
+        >
           {pushDevices.length > 0 && (
-            <div className="pl-6 space-y-1">
+            <div className="space-y-1">
               <p className="text-[11px] text-faint">
                 {t('alarms.push.activeOn', { count: pushDevices.length })}
               </p>
@@ -562,7 +524,7 @@ export function AlarmsSection({
               </ul>
             </div>
           )}
-        </div>
+        </SettingsCard>
         )}
 
         <div className="pt-2 border-t border-border flex justify-end">

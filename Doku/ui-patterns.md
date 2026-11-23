@@ -140,6 +140,23 @@ Components: [MfaStep.tsx](../frontend/src/features/auth/MfaStep.tsx) (sign-in), 
 - Removing the last second factor says so in red in the sheet before (two-factor sign-in goes off, recovery codes and trusted devices are deleted).
 - On phones fields, buttons and the switch row are 44 px high.
 
+## Settings Cards and Rows
+
+Components: [SettingsCard.tsx](../frontend/src/components/SettingsCard.tsx) (`SettingsCard`, `SettingRow`, `SettingsHeading`)
+
+- **`SettingsCard`**: one block of a page in the account settings or the administration: frame `p-4 bg-canvas border border-border rounded-card`, the title in `font-bold text-main` (12 px like the text around it; only the page's own heading is `text-sm`), an optional icon (`w-3.5 h-3.5 text-accent`) before it, a short hint in `text-[11px] text-muted` below it and an `action` on the right (a switch, a dropdown, a "Test" button, a badge); the content follows below with `space-y-3`. `active` frames it in the accent colour (an alarm channel in use).
+- **`SettingRow`**: one setting in a line: title and hint on the left, the control (`children`) on the right; it moves below the text when both do not fit (phones). On its own it is framed like a card; `plain` leaves the frame off for rows inside a card or a list with dividers (at least 44 px high).
+- **`SettingsHeading`**: the same title, hint and action for parts of a page without a frame (the parts of Sicherheit, the server backups, the imports).
+- **Hints are short:** one short sentence at most; what needs more goes into the help (`features/help/content/<code>.tsx`). "Fixed by `ENV`" notes are appended to the hint.
+- Data attributes (`data-admin-…`) are passed on to the frame, the browser tests find the blocks by them.
+
+## Restoring a Backup
+
+Components: `RestoreResult` and `RestoreConfirm` in [RestoreResult.tsx](../frontend/src/features/settings/RestoreResult.tsx)
+
+- The box after reading or restoring (import, own server backups, the desktop app's take-over of a server account): what it would create or created, the entries left out folded below, then the caller's own lines and buttons. Neutral while it is a preview, green (`status-ok`) when done.
+- Replacing data cannot be undone, so it is never one click: a red box with the warning naming the chosen sections and a tick box; the button stays disabled until it is ticked. No second click on the same button ("Wirklich …?").
+
 ## Error Notice
 
 Component: [ErrorNotice.tsx](../frontend/src/components/ErrorNotice.tsx), `showError(message)` from anywhere.

@@ -8,6 +8,7 @@ import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { askConfirm } from '../../../components/askConfirm';
 import { StatusMessage, StatusToast } from '../../../components/StatusToast';
 import { errorMessage } from '../../../lib/errorMessage';
+import { SettingsCard } from '../../../components/SettingsCard';
 
 // Calendar apps with a short how-to each (settings:calendarFeed.apps.<key>)
 const CALENDAR_APPS = ['google', 'apple', 'thunderbird', 'outlook'] as const;
@@ -79,18 +80,14 @@ export const CalendarFeedSection: React.FC = () => {
 
       {state?.enabled && (
         <>
-          <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
-            <div className="flex items-center justify-between gap-4 min-h-11 sm:min-h-0">
-              <div className="pr-4">
-                <p className="font-bold text-main flex items-center gap-1.5">
-                  <CalendarDays className="w-3.5 h-3.5 text-accent" />
-                  {t('calendarFeed.switch')}
-                </p>
-                <p className="text-[11px] text-muted mt-0.5">{t('calendarFeed.switchHint')}</p>
-              </div>
+          <SettingsCard
+            title={t('calendarFeed.switch')}
+            icon={<CalendarDays className="w-3.5 h-3.5 text-accent" />}
+            hint={t('calendarFeed.switchHint')}
+            action={
               <ToggleSwitch checked={state.active} disabled={busy} title={t('calendarFeed.switch')} onChange={(on) => void toggle(on)} />
-            </div>
-
+            }
+          >
             {state.active && state.unreadable && (
               <div className="pt-3 border-t border-border space-y-2">
                 <p className="text-[11px] text-status-err">{t('calendarFeed.unreadable')}</p>
@@ -130,11 +127,11 @@ export const CalendarFeedSection: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
+          </SettingsCard>
 
           {state.active && url && (
             <div className="space-y-2">
-              <h3 className="text-xs font-bold text-main">{t('calendarFeed.howTo')}</h3>
+              <h3 className="font-bold text-main">{t('calendarFeed.howTo')}</h3>
               <ul className="space-y-1.5">
                 {CALENDAR_APPS.map((app) => (
                   <li key={app} className="text-[11px] text-muted">

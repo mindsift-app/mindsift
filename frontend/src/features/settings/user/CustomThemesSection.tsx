@@ -48,7 +48,7 @@ export function CustomThemesSection({
 
   return (
     <div className="space-y-2" data-custom-themes>
-      <p className="font-semibold text-main text-sm pt-1">{t('appearance.customThemes')}</p>
+      <h3 className="font-bold text-main pt-1">{t('appearance.customThemes')}</h3>
 
       {customThemes.map((theme) => (
         <CustomThemeRow

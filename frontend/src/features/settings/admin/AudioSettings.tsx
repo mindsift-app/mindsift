@@ -3,6 +3,7 @@ import { SelectMenu } from '../../../components/SelectMenu';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { NumberField } from '../../../components/NumberField';
 import { SystemSettings } from '../../../lib/types';
+import { SettingsCard } from '../../../components/SettingsCard';
 
 type AudioCompression = NonNullable<SystemSettings['audioCompression']>;
 
@@ -29,15 +30,16 @@ export function AudioSettings({
   const bitrates = BITRATES.includes(bitrate) ? BITRATES : [...BITRATES, bitrate].sort((a, b) => a - b);
 
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3" data-admin-audio>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
-          <p className="font-bold text-main">{t('server.audioCompression')}</p>
-          <p className="text-[11px] text-muted mt-0.5">
-            {t('server.audioCompressionHint')}
-            {settings.audioCompressionConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_AUDIO_COMPRESSION' })}`}
-          </p>
-        </div>
+    <SettingsCard
+      data-admin-audio
+      title={t('server.audioCompression')}
+      hint={
+        <>
+          {t('server.audioCompressionHint')}
+          {settings.audioCompressionConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_AUDIO_COMPRESSION' })}`}
+        </>
+      }
+      action={
         <SelectMenu<AudioCompression>
           size="sm"
           ariaLabel={t('server.audioCompression')}
@@ -49,8 +51,8 @@ export function AudioSettings({
             { value: 'off', label: t('server.audioCompressionOff') },
           ]}
         />
-      </div>
-
+      }
+    >
       <div
         className={`flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border ${compression === 'off' ? 'opacity-50' : ''}`}
         data-admin-audio-bitrate
@@ -109,6 +111,6 @@ export function AudioSettings({
           title={t('server.audioUploads')}
         />
       </div>
-    </div>
+    </SettingsCard>
   );
 }

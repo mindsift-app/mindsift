@@ -6,6 +6,7 @@ import { SectionPicker } from './SectionPicker';
 import { RestoreConfirm, RestoreResult } from './RestoreResult';
 import { api } from '../../lib/api';
 import { errorMessage } from '../../lib/errorMessage';
+import { SettingsCard } from '../../components/SettingsCard';
 
 interface ImportCardProps {
   source: 'mindsift' | 'obsidian';
@@ -78,12 +79,10 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
   const shown = result || preview;
 
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
-      <div>
-        <h4 className="font-bold text-main">{title}</h4>
-        <p className="text-muted text-[11px] mt-0.5">{description}</p>
-      </div>
-
+    <SettingsCard
+      title={title}
+      hint={description}
+    >
       {source === 'mindsift' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label={t('import.mode')}>
           {(
@@ -199,6 +198,6 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
           )}
         </RestoreResult>
       )}
-    </div>
+    </SettingsCard>
   );
 };

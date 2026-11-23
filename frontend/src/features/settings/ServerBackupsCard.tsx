@@ -9,6 +9,7 @@ import { RestoreConfirm, RestoreResult } from './RestoreResult';
 import { formatDateTime } from '../../lib/format';
 import { errorMessage } from '../../lib/errorMessage';
 import { EmptyState } from '../../components/EmptyState';
+import { SettingsHeading } from '../../components/SettingsCard';
 
 // The user's own automatic backups on the server: download or restore (all or some sections); after a
 // restore the app loads the own data again (onRestored)
@@ -66,15 +67,11 @@ export const ServerBackupsCard: React.FC<{ onRestored?: () => void }> = ({ onRes
 
   return (
     <div className="space-y-2">
-      <div>
-        <h3 className="font-bold text-main flex items-center gap-1.5">
-          <Archive className="w-3.5 h-3.5 text-accent" />
-          {t('backups.serverTitle')}
-        </h3>
-        <p className="text-muted text-[11px] mt-0.5">
-          {t('backups.serverHint')}
-        </p>
-      </div>
+      <SettingsHeading
+        title={t('backups.serverTitle')}
+        icon={<Archive className="w-3.5 h-3.5 text-accent" />}
+        hint={t('backups.serverHint')}
+      />
       <div className="border border-border divide-y divide-border bg-canvas">
         {files.length === 0 ? (
           <EmptyState>{t('backups.none')}</EmptyState>

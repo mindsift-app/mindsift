@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CircleAlert, Check, ShieldCheck } from 'lucide-react';
 import { OidcAdminStatus } from '../../../lib/types';
+import { SettingsCard } from '../../../components/SettingsCard';
 
 // Admin: the sign-in through an OpenID Connect provider. Set up by environment only (OIDC_*), so this card just
 // shows the state: provider, whether it answers, who may create accounts and whether passwords still sign in.
@@ -35,14 +36,12 @@ export const OidcStatusCard: React.FC<{ status?: OidcAdminStatus }> = ({ status 
       ]
     : [];
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3" data-oidc-status>
-      <div>
-        <p className="font-bold text-main flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-          <span>{t('server.oidc.title')}</span>
-        </p>
-        <p className="text-[11px] text-muted mt-0.5">{status.configured ? t('server.oidc.hint') : t('server.oidc.notConfigured')}</p>
-      </div>
+    <SettingsCard
+      data-oidc-status
+      title={t('server.oidc.title')}
+      icon={<ShieldCheck className="w-3.5 h-3.5 text-accent" />}
+      hint={status.configured ? t('server.oidc.hint') : t('server.oidc.notConfigured')}
+    >
       {status.configured && !status.enabled && (
         <div role="alert" className="alert-err flex items-center gap-2 text-xs">
           <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
@@ -74,6 +73,6 @@ export const OidcStatusCard: React.FC<{ status?: OidcAdminStatus }> = ({ status 
           ))}
         </dl>
       )}
-    </div>
+    </SettingsCard>
   );
 };

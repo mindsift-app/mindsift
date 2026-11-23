@@ -12,6 +12,7 @@ import { RecoveryCodesPanel } from './RecoveryCodesPanel';
 import { passkeyProof, secondFactorOf, SecondFactorFields } from './SecondFactorFields';
 import { errorMessage } from '../../../lib/errorMessage';
 import { LoadingState } from '../../../components/Spinner';
+import { SettingsHeading } from '../../../components/SettingsCard';
 
 type Flow =
   | { step: 'idle' }
@@ -168,13 +169,11 @@ export function PasskeyCard({
 
   return (
     <div className="space-y-3" data-security-card="passkeys">
-      <div>
-        <h3 className="text-xs font-bold text-main flex items-center gap-1.5">
-          <FingerprintPattern className="w-3.5 h-3.5 text-accent" />
-          <span>{t('security.passkeys.title')}</span>
-        </h3>
-        <p className="text-[11px] text-muted">{t('security.passkeys.intro')}</p>
-      </div>
+      <SettingsHeading
+        title={t('security.passkeys.title')}
+        icon={<FingerprintPattern className="w-3.5 h-3.5 text-accent" />}
+        hint={t('security.passkeys.intro')}
+      />
 
       {demoMode || status?.available === false ? (
         <p className="text-[11px] text-muted p-3 rounded-card border border-border bg-canvas">{t('security.twoFactor.demo')}</p>
@@ -279,7 +278,7 @@ export function PasskeyCard({
           {!off && browserCan && flow.step === 'idle' && (
             <div
               className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                passkeys.length === 0 ? 'p-3.5 rounded-card border border-border bg-canvas' : 'sm:justify-end'
+                passkeys.length === 0 ? 'p-4 rounded-card border border-border bg-canvas' : 'sm:justify-end'
               }`}
             >
               {passkeys.length === 0 && <p className="text-[11px] text-muted">{t('security.passkeys.none')}</p>}
@@ -303,7 +302,7 @@ export function PasskeyCard({
                 e.preventDefault();
                 void confirm();
               }}
-              className="p-3.5 rounded-card border border-border bg-canvas space-y-3"
+              className="p-4 rounded-card border border-border bg-canvas space-y-3"
               data-passkey-setup="confirm"
             >
               <SecondFactorFields
@@ -337,7 +336,7 @@ export function PasskeyCard({
                 e.preventDefault();
                 void create();
               }}
-              className="p-3.5 rounded-card border border-border bg-canvas space-y-3"
+              className="p-4 rounded-card border border-border bg-canvas space-y-3"
               data-passkey-setup="name"
             >
               <label className="block text-xs text-muted">

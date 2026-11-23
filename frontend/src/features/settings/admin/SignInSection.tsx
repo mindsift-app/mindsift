@@ -7,6 +7,7 @@ import { useAdminSettings } from './useAdminSettings';
 import { Trans, useTranslation } from 'react-i18next';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
 import { SelectMenu } from '../../../components/SelectMenu';
+import { SettingRow, SettingsCard } from '../../../components/SettingsCard';
 
 // Administration → Sign-in & registration: who may register, the second factor and single sign-on
 // (state in useAdminSettings)
@@ -23,13 +24,11 @@ export function SignInSection({
   return (
     <AdminPage title={t('admin.nav.signin')} intro={t('admin.pages.signinIntro')} demoMode={demoMode}>
       {/* Who may register without an invite */}
-      <div className="p-4 bg-canvas border border-border rounded-card space-y-3" data-admin-registration>
-        <div>
-          <p className="font-bold text-main">{t('server.registration')}</p>
-          <p className="text-[11px] text-muted mt-0.5">
-            {t('server.registrationHint')}
-          </p>
-        </div>
+      <SettingsCard
+        data-admin-registration
+        title={t('server.registration')}
+        hint={t('server.registrationHint')}
+      >
         <SelectMenu<RegistrationMode>
           ariaLabel={t('server.registration')}
           value={mode}
@@ -89,14 +88,14 @@ export function SignInSection({
             />
           </div>
         )}
-      </div>
+      </SettingsCard>
 
       {/* Who must sign in with a second factor; without one the next request leads to its setup */}
-      <div className="p-4 bg-canvas border border-border rounded-card flex flex-wrap items-center justify-between gap-4" data-admin-mfa-required>
-        <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
-          <p className="font-bold text-main">{t('server.mfaRequired')}</p>
-          <p className="text-[11px] text-muted mt-0.5">{t('server.mfaRequiredHint')}</p>
-        </div>
+      <SettingRow
+        data-admin-mfa-required
+        title={t('server.mfaRequired')}
+        hint={t('server.mfaRequiredHint')}
+      >
         <SelectMenu
           size="sm"
           ariaLabel={t('server.mfaRequired')}
@@ -109,7 +108,7 @@ export function SignInSection({
             { value: 'all', label: t('server.mfaRequiredAll') },
           ]}
         />
-      </div>
+      </SettingRow>
 
       {/* Single sign-on over OIDC: set up in the .env, shown here read only */}
       <OidcStatusCard status={settings.oidc} />

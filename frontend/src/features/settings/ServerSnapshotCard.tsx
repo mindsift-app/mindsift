@@ -7,6 +7,7 @@ import { errorMessage } from '../../lib/errorMessage';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { SectionPicker } from './SectionPicker';
 import { RestoreConfirm, RestoreResult } from './RestoreResult';
+import { SettingsCard } from '../../components/SettingsCard';
 
 // Desktop app, Administration → Data: one account of a server's backup into this instance's account: a
 // packed copy of the server's data or backups folder (.zip, .tar, .tar.gz, with the account's pictures and
@@ -112,15 +113,11 @@ export const ServerSnapshotCard: React.FC = () => {
   const restoring = mode === 'restore';
 
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
-      <div>
-        <p className="font-bold text-main flex items-center gap-1.5">
-          <Server className="w-3.5 h-3.5 text-accent" />
-          {t('backups.snapshot.title')}
-        </p>
-        <p className="text-[11px] text-muted mt-0.5">{t('backups.snapshot.hint')}</p>
-      </div>
-
+    <SettingsCard
+      title={t('backups.snapshot.title')}
+      icon={<Server className="w-3.5 h-3.5 text-accent" />}
+      hint={t('backups.snapshot.hint')}
+    >
       {!staged && (
         <div
           onDragOver={(e) => {
@@ -297,6 +294,6 @@ export const ServerSnapshotCard: React.FC = () => {
           </button>
         </RestoreResult>
       )}
-    </div>
+    </SettingsCard>
   );
 };

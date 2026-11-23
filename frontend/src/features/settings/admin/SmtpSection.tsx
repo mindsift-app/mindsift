@@ -7,6 +7,7 @@ import {
 import { useAdminSettings } from './useAdminSettings';
 import { SmtpFields } from './SmtpFields';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
+import { SettingsCard } from '../../../components/SettingsCard';
 
 // Administration → E-Mail / SMTP-Server (state in useAdminSettings)
 export function SmtpSection({
@@ -84,11 +85,10 @@ export function SmtpSection({
 
         {/* Test SMTP Delivery (not while mail is switched off) */}
         <fieldset disabled={Boolean(settings.smtpDisabledViaEnv)} className="min-w-0 border-0 p-0 m-0">
-        <div className="p-4 bg-canvas border border-border rounded-card space-y-2">
-          <h3 className="font-bold text-main">{t('smtp.test')}</h3>
-          <p className="text-[11px] text-muted">
-            {t('smtp.testHint')}
-          </p>
+        <SettingsCard
+          title={t('smtp.test')}
+          hint={t('smtp.testHint')}
+        >
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               {...NO_AUTOFILL}
@@ -108,7 +108,7 @@ export function SmtpSection({
               <span>{testingSmtp ? t('smtp.testSending') : t('smtp.testSend')}</span>
             </button>
           </div>
-        </div>
+        </SettingsCard>
         </fieldset>
       </div>
     </fieldset>

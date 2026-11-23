@@ -9,6 +9,7 @@ import { PendingEmailNote } from './PendingEmailNote';
 import { getCurrentOidc } from '../../../lib/api';
 import { can } from '../../../lib/capabilities';
 import { Spinner } from '../../../components/Spinner';
+import { SettingRow } from '../../../components/SettingsCard';
 
 // Kontoeinstellungen → Profil (state in useProfileSettings); password, two-factor sign-in and sessions
 // are in Sicherheit (SecuritySection)
@@ -62,7 +63,7 @@ export function ProfileSection({
 
       <form onSubmit={handleSaveProfile} className="space-y-5">
         {/* Avatar Management */}
-        <div className="p-3.5 bg-panel-elevated/40 border border-border rounded-box space-y-3">
+        <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
           <label className="block text-muted font-medium">{t('profile.avatar')}</label>
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
             <div className="relative group shrink-0">
@@ -247,13 +248,16 @@ export function ProfileSection({
           <CircleAlert className="w-4 h-4" />
           <span>{t('profile.danger')}</span>
         </h3>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <p className="text-main font-medium">{t('profile.deleteData')}</p>
-            <p className="text-[11px] text-muted">
-              {t('profile.deleteDataHint')}{accounts && ` ${t('profile.deleteDataSharedHint')}`}
-            </p>
-          </div>
+        <SettingRow
+          plain
+          title={t('profile.deleteData')}
+          hint={
+            <>
+              {t('profile.deleteDataHint')}
+              {accounts && ` ${t('profile.deleteDataSharedHint')}`}
+            </>
+          }
+        >
           <button
             type="button"
             onClick={() => openDanger('data')}
@@ -263,18 +267,15 @@ export function ProfileSection({
           >
             {t('profile.deleteDataButton')}
           </button>
-        </div>
+        </SettingRow>
         {/* One account only (the desktop app): it cannot be deleted */}
         {accounts && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-status-err/20">
-            <div>
-              <p className="text-main font-medium">{t('profile.deleteAccount')}</p>
-              <p className="text-[11px] text-muted">
-                {isLastAdmin
-                  ? t('profile.lastAdmin')
-                  : t('profile.deleteAccountHint')}
-              </p>
-            </div>
+          <SettingRow
+            plain
+            className="pt-3 border-t border-status-err/20"
+            title={t('profile.deleteAccount')}
+            hint={isLastAdmin ? t('profile.lastAdmin') : t('profile.deleteAccountHint')}
+          >
             <button
               type="button"
               onClick={() => openDanger('account')}
@@ -284,7 +285,7 @@ export function ProfileSection({
             >
               {t('profile.deleteAccountButton')}
             </button>
-          </div>
+          </SettingRow>
         )}
         {dangerDone && <p className="text-[11px] text-status-ok">{dangerDone}</p>}
       </div>

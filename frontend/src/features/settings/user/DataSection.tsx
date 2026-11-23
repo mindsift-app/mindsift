@@ -7,6 +7,7 @@ import { saveBlob } from '../../../lib/download';
 import { ImportCard } from '../ImportCard';
 import { ServerBackupsCard } from '../ServerBackupsCard';
 import { errorMessage } from '../../../lib/errorMessage';
+import { SettingRow, SettingsHeading } from '../../../components/SettingsCard';
 
 // Export of the own data: full backup (JSON) and the notes as an Obsidian vault
 export function useDataExport() {
@@ -60,13 +61,10 @@ export function DataSection({
       <ServerBackupsCard onRestored={onDataChanged} />
 
       {/* Full Data Backup */}
-      <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h3 className="font-bold text-main">{t('data.backupTitle')}</h3>
-          <p className="text-muted text-[11px]">
-            <Trans t={t} i18nKey="data.backupHint" components={{ c: <code className="font-mono" /> }} />
-          </p>
-        </div>
+      <SettingRow
+        title={t('data.backupTitle')}
+        hint={<Trans t={t} i18nKey="data.backupHint" components={{ c: <code className="font-mono" /> }} />}
+      >
         <button
           onClick={handleExportData}
           disabled={exportingBackup}
@@ -75,17 +73,18 @@ export function DataSection({
           <Download className="w-3.5 h-3.5 text-accent" />
           <span>{exportingBackup ? t('data.creating') : t('data.backupDownload')}</span>
         </button>
-      </div>
+      </SettingRow>
 
       {/* Obsidian-compatible Markdown vault */}
-      <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h3 className="font-bold text-main">{t('data.vaultTitle')}</h3>
-          <p className="text-muted text-[11px]">
+      <SettingRow
+        title={t('data.vaultTitle')}
+        hint={
+          <>
             <Trans t={t} i18nKey="data.vaultHint" components={{ c: <code className="font-mono" /> }} />
-          </p>
-          {vaultError && <p className="text-[11px] text-status-err mt-1">{vaultError}</p>}
-        </div>
+            {vaultError && <span className="block text-status-err mt-1">{vaultError}</span>}
+          </>
+        }
+      >
         <button
           onClick={handleExportVault}
           disabled={exportingVault}
@@ -94,16 +93,11 @@ export function DataSection({
           <Download className="w-3.5 h-3.5 text-accent" />
           <span>{exportingVault ? t('data.creating') : t('data.vaultDownload')}</span>
         </button>
-      </div>
+      </SettingRow>
 
       {/* Import: two separate paths, never guessed from the file */}
-      <div className="pt-4 border-t border-border space-y-3">
-        <div>
-          <h3 className="font-bold text-main">{t('data.importTitle')}</h3>
-          <p className="text-muted text-[11px]">
-            {t('data.importHint')}
-          </p>
-        </div>
+      <div className="pt-2 space-y-3">
+        <SettingsHeading title={t('data.importTitle')} hint={t('data.importHint')} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <ImportCard
             source="mindsift"

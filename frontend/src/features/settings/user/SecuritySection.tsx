@@ -14,6 +14,7 @@ import { TwoFactorCard } from './TwoFactorCard';
 import { PasskeyCard } from './PasskeyCard';
 import { withSecondFactor } from './askSecondFactor';
 import { errorMessage } from '../../../lib/errorMessage';
+import { SettingRow, SettingsHeading } from '../../../components/SettingsCard';
 
 // Kontoeinstellungen → Sicherheit: a new password, two-factor sign-in, passkeys and the signed-in devices; with
 // an OIDC provider how the account signs in there. The password and the second factors only matter where the
@@ -83,15 +84,11 @@ function OidcCard({ currentUser, name }: { currentUser: User; name: string }) {
   };
   return (
     <form onSubmit={link} className="space-y-3" data-security-card="oidc">
-      <div>
-        <h3 className="text-xs font-bold text-main flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-          <span>{t('security.oidc.title', { name })}</span>
-        </h3>
-        <p className="text-[11px] text-muted">
-          {currentUser.oidc ? t('security.oidc.linked', { name }) : t('security.oidc.notLinked', { name })}
-        </p>
-      </div>
+      <SettingsHeading
+        title={<>{t('security.oidc.title', { name })}</>}
+        icon={<ShieldCheck className="w-3.5 h-3.5 text-accent" />}
+        hint={currentUser.oidc ? t('security.oidc.linked', { name }) : t('security.oidc.notLinked', { name })}
+      />
       {!currentUser.oidc && (
         <>
           <label className="block text-muted font-medium">
@@ -162,19 +159,19 @@ function PasswordCard({ currentUser, onUserUpdated, demoMode }: { currentUser: U
 
   return (
     <form onSubmit={submit} className="space-y-3" data-security-card="password">
-      <div>
-        <h3 className="text-xs font-bold text-main flex items-center gap-1.5">
-          <KeyRound className="w-3.5 h-3.5 text-accent" />
-          <span>{firstPassword ? t('security.password.setTitle') : t('security.password.title')}</span>
-        </h3>
-        <p className="text-[11px] text-muted">
-          {firstPassword
+      <SettingsHeading
+        title={firstPassword ? t('security.password.setTitle') : t('security.password.title')}
+        icon={<KeyRound className="w-3.5 h-3.5 text-accent" />}
+        hint={
+          <>
+            {firstPassword
             ? t(currentUser.role === 'admin' && !getCurrentOidc().passwordLogin ? 'security.password.setHintAdmin' : 'security.password.setHint', {
-                name: getCurrentOidc().name,
-              })
+            name: getCurrentOidc().name,
+            })
             : t('security.password.hint')}
-        </p>
-      </div>
+          </>
+        }
+      />
       <StatusToast msg={msg} onClose={() => setMsg(null)} />
       <NewPasswordFields
         value={next}
@@ -241,20 +238,14 @@ function SessionsCard({ demoMode }: { demoMode: boolean }) {
 
   return (
     <div className="space-y-3" data-security-card="sessions">
-      <div>
-        <h3 className="text-xs font-bold text-main flex items-center gap-1.5">
-          <MonitorSmartphone className="w-3.5 h-3.5 text-accent" />
-          <span>{t('security.sessions.title')}</span>
-        </h3>
-        <p className="text-[11px] text-muted">{t('security.sessions.hint')}</p>
-      </div>
+      <SettingsHeading
+        title={t('security.sessions.title')}
+        icon={<MonitorSmartphone className="w-3.5 h-3.5 text-accent" />}
+        hint={t('security.sessions.hint')}
+      />
       <SessionsPanel />
       {error && <p className="text-[11px] text-status-err">{error}</p>}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-card border border-border bg-canvas">
-        <div className="text-xs">
-          <p className="font-semibold text-main">{t('security.sessions.revokeAll')}</p>
-          <p className="text-[11px] text-faint">{t('security.sessions.revokeAllHint')}</p>
-        </div>
+      <SettingRow title={t('security.sessions.revokeAll')} hint={t('security.sessions.revokeAllHint')}>
         <button
           type="button"
           onClick={revokeAll}
@@ -264,7 +255,7 @@ function SessionsCard({ demoMode }: { demoMode: boolean }) {
         >
           {revoking ? t('security.sessions.revoking') : t('security.sessions.revokeAllButton')}
         </button>
-      </div>
+      </SettingRow>
     </div>
   );
 }
