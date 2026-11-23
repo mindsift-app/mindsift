@@ -85,7 +85,7 @@ func (s *Server) resetDemo() {
 		return
 	}
 	s.stats.clear()
-	s.wsHub.BroadcastSystem("DEMO_RESET")
+	s.wsHub.BroadcastSystem(eventDemoReset)
 }
 
 func (s *Server) demoResetInterval() time.Duration {

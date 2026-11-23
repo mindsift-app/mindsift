@@ -339,7 +339,7 @@ func (h *Hub) Register(c *Client) {
 	h.enforceUserConnLimit(c.userID)
 
 	if c.roomID != "" {
-		h.Broadcast(c.roomID, "", "USER_PRESENCE", map[string]any{
+		h.Broadcast(c.roomID, "", EventUserPresence, map[string]any{
 			"onlineCount": onlineCount,
 		})
 	}
@@ -424,7 +424,7 @@ func (h *Hub) RegisterSSE(c *SSEClient) {
 	h.enforceUserConnLimit(c.userID)
 
 	if c.roomID != "" {
-		h.Broadcast(c.roomID, "", "USER_PRESENCE", map[string]any{
+		h.Broadcast(c.roomID, "", EventUserPresence, map[string]any{
 			"onlineCount": onlineCount,
 		})
 	}
@@ -894,7 +894,7 @@ func (h *Hub) ServeSSE(w http.ResponseWriter, r *http.Request, roomID, userID st
 	// Send initial connected comment and event
 	fmt.Fprintf(w, ": connected (transport: sse, id: %s)\n\n", client.id)
 	connectedMsg, _ := json.Marshal(domain.WSMessage{
-		Event: "SSE_CONNECTED",
+		Event: EventSSEConnected,
 		Payload: map[string]any{
 			"sseId":     client.id,
 			"transport": "sse",
@@ -965,10 +965,10 @@ func (c *Client) readPump() {
 			}
 
 			// Room subscription without requiring docID
-			if incoming.Event == "PING" {
+			if incoming.Event == MsgPing {
 				// App-level heartbeat: lets clients detect proxies that accept the upgrade but forward nothing
-				c.SendEvent("PONG", nil)
-			} else if incoming.Event == "JOIN_ROOM" {
+				c.SendEvent(EventPong, nil)
+			} else if incoming.Event == MsgJoinRoom {
 				room := incoming.Room
 				if room == "" {
 					room = docID
@@ -976,7 +976,7 @@ func (c *Client) readPump() {
 				if room != "" {
 					c.hub.JoinRoom(c, room)
 				}
-			} else if incoming.Event == "LEAVE_ROOM" {
+			} else if incoming.Event == MsgLeaveRoom {
 				room := incoming.Room
 				if room == "" {
 					room = docID
@@ -984,7 +984,7 @@ func (c *Client) readPump() {
 				if room != "" {
 					c.hub.LeaveRoom(c, room)
 				}
-			} else if strings.HasPrefix(incoming.Event, "DRAW_") {
+			} else if strings.HasPrefix(incoming.Event, drawMessagePrefix) {
 				// Live drawing: only over WebSocket, the one way a browser can send this fast
 				if m := c.hub.messageHandler(); m != nil {
 					m.HandleMessage(c, incoming.Event, incoming.Payload)

@@ -526,7 +526,7 @@ var mcpTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			s.broadcastTaskListChange(tl.ID, nil, "TASK_LIST_CREATED")
+			s.broadcastTaskListChange(tl.ID, nil, eventTaskListCreated)
 			tl.IsOwner = true
 			return s.toTaskListView(*tl), nil
 		},
@@ -856,7 +856,7 @@ var mcpTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			s.wsHub.BroadcastToUser(userID, "LIST_CREATED", l)
+			s.wsHub.BroadcastToUser(userID, eventListCreated, l)
 			return s.toListView(*l), nil
 		},
 	},
@@ -954,7 +954,7 @@ var mcpTools = []mcpTool{
 				return nil, err
 			}
 			s.recordListItemOrigin(item, actor, false)
-			s.wsHub.BroadcastListEvent(a.ListID, "ITEM_UPDATED", item)
+			s.wsHub.BroadcastListEvent(a.ListID, eventItemUpdated, item)
 			return item, nil
 		},
 	},
@@ -1105,7 +1105,7 @@ var mcpTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			s.broadcastDocToAuthorizedUsers(d.ID, "DOC_CREATED")
+			s.broadcastDocToAuthorizedUsers(d.ID, eventDocCreated)
 			v := s.toNoteView(d)
 			v.Content = s.noteMarkdown(d.Blocks, s.store.DocTitles(userID))
 			v.Warnings = warnings
@@ -1168,7 +1168,7 @@ var mcpTools = []mcpTool{
 				return nil, err
 			}
 			s.recordThoughtOrigin(t, actor, true)
-			s.wsHub.BroadcastToUsers(s.taskAudience(t), "TASK_CREATED", t)
+			s.wsHub.BroadcastToUsers(s.taskAudience(t), eventTaskCreated, t)
 			return map[string]any{"id": t.ID, "content": t.Content, "status": fmt.Sprint(t.Status)}, nil
 		},
 	},

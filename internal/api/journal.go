@@ -60,6 +60,6 @@ func (s *Server) handleOpenJournalDay(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Journal-Tag konnte nicht angelegt werden")
 		return
 	}
-	s.broadcastDocToAuthorizedUsers(doc.ID, "DOC_CREATED")
+	s.broadcastDocToAuthorizedUsers(doc.ID, eventDocCreated)
 	writeJSON(w, http.StatusCreated, doc)
 }

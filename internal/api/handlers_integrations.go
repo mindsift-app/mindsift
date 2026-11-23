@@ -248,7 +248,7 @@ func (s *Server) handleWebhookIngest(w http.ResponseWriter, r *http.Request) {
 	}
 	s.recordThoughtOrigin(thought, actor, true)
 
-	s.wsHub.BroadcastToUsers(s.taskAudience(thought), "TASK_CREATED", thought)
+	s.wsHub.BroadcastToUsers(s.taskAudience(thought), eventTaskCreated, thought)
 
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"status":  "ingested",
@@ -295,7 +295,7 @@ func (s *Server) addListItem(userID, listID, content, category, quantity string,
 		return nil, err
 	}
 	s.recordListItemOrigin(item, actor, true)
-	s.wsHub.BroadcastListEvent(listID, "ITEM_CREATED", item)
+	s.wsHub.BroadcastListEvent(listID, eventItemCreated, item)
 	return item, nil
 }
 

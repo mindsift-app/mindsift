@@ -160,11 +160,14 @@ func (s *Server) statsEventDelivered(userID, event string) {
 	}
 }
 
+// statsEventPrefixes: the families of events that can change a counter (TASK_LIST_* included)
+var statsEventPrefixes = []string{"TASK_", "DOC_", "ITEM_", "LIST_"}
+
 func eventChangesStats(event string) bool {
-	if event == "DOC_SEQ" || event == "ITEM_REORDERED" {
+	if event == eventDocSeq || event == eventItemReordered {
 		return false
 	}
-	for _, prefix := range []string{"TASK_", "DOC_", "SPACE_", "ITEM_", "LIST_"} {
+	for _, prefix := range statsEventPrefixes {
 		if strings.HasPrefix(event, prefix) {
 			return true
 		}

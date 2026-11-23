@@ -38,7 +38,7 @@ func (s *Server) handleMuteTaskList(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
-	s.wsHub.BroadcastToUser(userID, "TASK_LIST_UPDATED", map[string]string{"id": listID})
+	s.wsHub.BroadcastToUser(userID, eventTaskListUpdated, map[string]string{"id": listID})
 	writeJSON(w, http.StatusOK, map[string]bool{"muted": muted})
 }
 
@@ -89,7 +89,7 @@ func (s *Server) handleUpdateTaskList(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, http.StatusBadRequest, err)
 		return
 	}
-	s.broadcastTaskListChange(listID, audienceBefore, "TASK_LIST_UPDATED")
+	s.broadcastTaskListChange(listID, audienceBefore, eventTaskListUpdated)
 	tl.Columns = storage.LocalizeColumns(tl.Columns, w.Header().Get("Content-Language"))
 	writeJSON(w, http.StatusOK, tl)
 }
@@ -102,7 +102,7 @@ func (s *Server) handleDeleteTaskList(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
-	s.broadcastTaskListChange(listID, audienceBefore, "TASK_LIST_DELETED")
+	s.broadcastTaskListChange(listID, audienceBefore, eventTaskListDeleted)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
@@ -151,7 +151,7 @@ func (s *Server) handleCreateTaskListShare(w http.ResponseWriter, r *http.Reques
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.broadcastTaskListChange(listID, nil, "TASK_LIST_UPDATED")
+	s.broadcastTaskListChange(listID, nil, eventTaskListUpdated)
 	if tl, err := s.store.GetTaskListByID(userID, listID); err == nil {
 		s.notifyShared(userID, req.TargetType, req.TargetID, "tasklist", tl.ID, tl.Title)
 	}
@@ -176,7 +176,7 @@ func (s *Server) handleDeleteTaskListShare(w http.ResponseWriter, r *http.Reques
 		writeInternal(w, err)
 		return
 	}
-	s.broadcastTaskListChange(listID, audienceBefore, "TASK_LIST_UPDATED")
+	s.broadcastTaskListChange(listID, audienceBefore, eventTaskListUpdated)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 

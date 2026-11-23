@@ -151,11 +151,11 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	wsHub.SetDeliveryListener(srv.statsEventDelivered)
 	// Next occurrences of repeating tasks appear live on every connected client
 	store.OnTaskCreated = func(th *domain.Thought) {
-		srv.wsHub.BroadcastToUsers(srv.taskAudience(th), "TASK_CREATED", th)
+		srv.wsHub.BroadcastToUsers(srv.taskAudience(th), eventTaskCreated, th)
 	}
 	// ... and the untouched next occurrence of a task ticked by mistake goes again when it is reopened
 	store.OnTaskRemoved = func(th *domain.Thought) {
-		srv.wsHub.BroadcastToUsers(srv.taskAudience(th), "TASK_DELETED", map[string]string{"id": th.ID})
+		srv.wsHub.BroadcastToUsers(srv.taskAudience(th), eventTaskDeleted, map[string]string{"id": th.ID})
 	}
 	srv.background(srv.startCompaction)
 	srv.background(srv.startDrawTicker)

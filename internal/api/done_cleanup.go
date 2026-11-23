@@ -66,7 +66,7 @@ func (s *Server) runDoneCleanup(now time.Time) {
 	}
 	s.broadcastDeletedTasks(res.TasksToTrash)
 	for _, it := range res.ListItems {
-		s.wsHub.BroadcastListEvent(it.ListID, "ITEM_DELETED", map[string]string{"itemId": it.ID, "listId": it.ListID})
+		s.wsHub.BroadcastListEvent(it.ListID, eventItemDeleted, map[string]string{"itemId": it.ID, "listId": it.ListID})
 	}
 }
 
@@ -74,7 +74,7 @@ func (s *Server) runDoneCleanup(now time.Time) {
 func (s *Server) broadcastDeletedTasks(deleted []storage.DeletedTask) {
 	for _, d := range deleted {
 		audience := append(s.store.GetTaskListUserIDs(d.TaskListID), d.UserID)
-		s.wsHub.BroadcastToUsers(audience, "TASK_DELETED", map[string]string{"id": d.ID})
+		s.wsHub.BroadcastToUsers(audience, eventTaskDeleted, map[string]string{"id": d.ID})
 	}
 }
 
@@ -115,7 +115,7 @@ func (s *Server) handleRestoreTrashedTask(w http.ResponseWriter, r *http.Request
 		writeTaskTrashError(w, err)
 		return
 	}
-	s.wsHub.BroadcastToUsers(s.taskAudience(task), "TASK_CREATED", task)
+	s.wsHub.BroadcastToUsers(s.taskAudience(task), eventTaskCreated, task)
 	if task.DocID != "" {
 		// Linked to a to-do: the task takes what the to-do became meanwhile (ticked, deleted: unlinked), and
 		// the open note shows the badge again

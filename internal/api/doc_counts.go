@@ -81,6 +81,6 @@ func (s *Server) sendDueDocCounts(now time.Time) {
 		if err != nil {
 			continue
 		}
-		s.wsHub.BroadcastToUsers(users, "DOC_COUNTS", counts)
+		s.wsHub.BroadcastToUsers(users, eventDocCounts, counts)
 	}
 }

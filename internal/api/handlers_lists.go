@@ -58,7 +58,7 @@ func (s *Server) broadcastListUpdated(l *domain.SharedList) {
 	if l == nil {
 		return
 	}
-	s.wsHub.BroadcastListEvent(l.ID, "LIST_UPDATED", listForEveryone{
+	s.wsHub.BroadcastListEvent(l.ID, eventListUpdated, listForEveryone{
 		ID: l.ID, UserID: l.UserID, OwnerName: l.OwnerName, Title: l.Title, Icon: l.Icon, ListType: l.ListType,
 		Items: l.Items, Shares: l.Shares, Members: l.Members, UpdatedAt: l.UpdatedAt, CreatedAt: l.CreatedAt,
 	})
@@ -87,7 +87,7 @@ func (s *Server) handleCreateList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Shared with nobody yet: only the creator's other devices learn of it (its room has no one in it)
-	s.wsHub.BroadcastToUser(userID, "LIST_CREATED", lst)
+	s.wsHub.BroadcastToUser(userID, eventListCreated, lst)
 	writeJSON(w, http.StatusCreated, lst)
 }
 
@@ -102,7 +102,7 @@ func (s *Server) handleDeleteList(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, http.StatusInternalServerError, err)
 		return
 	}
-	s.wsHub.BroadcastListEvent(listID, "LIST_DELETED", map[string]string{"listId": listID})
+	s.wsHub.BroadcastListEvent(listID, eventListDeleted, map[string]string{"listId": listID})
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
@@ -185,12 +185,12 @@ func (s *Server) handleCreateListShare(w http.ResponseWriter, r *http.Request) {
 	if targetType == "team" {
 		members, _ := s.store.GetTeamMembers(share.TargetID)
 		for _, tm := range members {
-			s.wsHub.BroadcastToUser(tm.UserID, "LIST_SHARED", share)
+			s.wsHub.BroadcastToUser(tm.UserID, eventListShared, share)
 		}
 	} else {
-		s.wsHub.BroadcastToUser(share.TargetID, "LIST_SHARED", share)
+		s.wsHub.BroadcastToUser(share.TargetID, eventListShared, share)
 	}
-	s.wsHub.BroadcastListEvent(listID, "LIST_SHARED", share)
+	s.wsHub.BroadcastListEvent(listID, eventListShared, share)
 
 	writeJSON(w, http.StatusCreated, share)
 }
@@ -205,7 +205,7 @@ func (s *Server) handleDeleteListShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "LIST_UNSHARED", map[string]string{
+	s.wsHub.BroadcastListEvent(listID, eventListUnshared, map[string]string{
 		"listId":  listID,
 		"shareId": shareID,
 	})
@@ -253,7 +253,7 @@ func (s *Server) handleCreateListItem(w http.ResponseWriter, r *http.Request) {
 	}
 	s.recordListItemOrigin(item, actorFrom(r.Context()), true)
 
-	s.wsHub.BroadcastListEvent(listID, "ITEM_CREATED", item)
+	s.wsHub.BroadcastListEvent(listID, eventItemCreated, item)
 	writeJSON(w, http.StatusCreated, item)
 }
 
@@ -283,7 +283,7 @@ func (s *Server) setListItemDoneAt(userID, listID, itemID string, done bool, at 
 		return item, nil
 	}
 	s.recordListItemOrigin(item, actor, false)
-	s.wsHub.BroadcastListEvent(listID, "ITEM_TOGGLED", item)
+	s.wsHub.BroadcastListEvent(listID, eventItemToggled, item)
 	return item, nil
 }
 
@@ -359,7 +359,7 @@ func (s *Server) handleUpdateListItem(w http.ResponseWriter, r *http.Request) {
 	}
 	s.recordListItemOrigin(item, actorFrom(r.Context()), false)
 
-	s.wsHub.BroadcastListEvent(listID, "ITEM_UPDATED", item)
+	s.wsHub.BroadcastListEvent(listID, eventItemUpdated, item)
 	writeJSON(w, http.StatusOK, item)
 }
 
@@ -376,7 +376,7 @@ func (s *Server) handleDeleteListItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "ITEM_DELETED", map[string]string{
+	s.wsHub.BroadcastListEvent(listID, eventItemDeleted, map[string]string{
 		"itemId": itemID,
 		"listId": listID,
 	})
@@ -417,11 +417,11 @@ func (s *Server) handleMoveListItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "ITEM_DELETED", map[string]string{
+	s.wsHub.BroadcastListEvent(listID, eventItemDeleted, map[string]string{
 		"itemId": itemID,
 		"listId": listID,
 	})
-	s.wsHub.BroadcastListEvent(req.TargetListID, "ITEM_CREATED", item)
+	s.wsHub.BroadcastListEvent(req.TargetListID, eventItemCreated, item)
 	writeJSON(w, http.StatusOK, item)
 }
 
@@ -436,7 +436,7 @@ func (s *Server) handleClearCompletedItems(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "LIST_CLEARED", map[string]any{
+	s.wsHub.BroadcastListEvent(listID, eventListCleared, map[string]any{
 		"listId":  listID,
 		"removed": removed,
 	})
@@ -461,7 +461,7 @@ func (s *Server) handleReorderListItems(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "ITEM_REORDERED", map[string]any{
+	s.wsHub.BroadcastListEvent(listID, eventItemReordered, map[string]any{
 		"listId": listID,
 		"items":  req.Items,
 	})

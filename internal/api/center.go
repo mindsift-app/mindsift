@@ -46,7 +46,7 @@ func (s *Server) handleCenterRead(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	s.wsHub.BroadcastToUser(userID, "NOTIFICATIONS_READ", map[string]any{"ids": req.IDs})
+	s.wsHub.BroadcastToUser(userID, eventNotificationsRead, map[string]any{"ids": req.IDs})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -56,6 +56,6 @@ func (s *Server) handleClearCenter(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	s.wsHub.BroadcastToUser(userID, "NOTIFICATIONS_CLEARED", map[string]any{})
+	s.wsHub.BroadcastToUser(userID, eventNotificationsCleared, map[string]any{})
 	w.WriteHeader(http.StatusNoContent)
 }
