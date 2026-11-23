@@ -1,6 +1,8 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
+import { placeInViewport } from '../lib/placeInViewport';
+import { useDismiss } from '../lib/useDismiss';
 
 interface ConfirmPopoverProps {
   // Where the click was (clientX/clientY); the popover opens right there, kept inside the window
@@ -16,8 +18,6 @@ interface ConfirmPopoverProps {
   onAlt?: () => void;
 }
 
-const MARGIN = 8;
-
 // Small confirmation right at the mouse (Doku/ui-patterns.md): Enter or the button confirms, Escape, a
 // click outside or "Abbrechen" closes it.
 export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({ x, y, message, confirmLabel, danger, onConfirm, onCancel, altLabel, onAlt }) => {
@@ -30,29 +30,12 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({ x, y, message, c
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const { width, height } = el.getBoundingClientRect();
-    let left = x - 12;
-    let top = y + MARGIN;
-    if (left + width > window.innerWidth - MARGIN) left = window.innerWidth - width - MARGIN;
-    if (top + height > window.innerHeight - MARGIN) top = y - height - MARGIN;
-    setPos({ left: Math.max(MARGIN, left), top: Math.max(MARGIN, top), ready: true });
+    const { left, top } = placeInViewport({ left: x, top: y }, el.getBoundingClientRect(), { shift: -12 });
+    setPos({ left, top, ready: true });
     confirmRef.current?.focus();
   }, [x, y]);
 
-  useEffect(() => {
-    const onDown = (e: Event) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onCancel();
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
-    };
-    document.addEventListener('pointerdown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [onCancel]);
+  useDismiss(ref, onCancel);
 
   return createPortal(
     <div

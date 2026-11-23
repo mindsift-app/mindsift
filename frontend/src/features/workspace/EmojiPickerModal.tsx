@@ -5,6 +5,11 @@ import { X, Trash, LoaderCircle } from 'lucide-react';
 import type { Categories, EmojiClickData, EmojiStyle, SuggestionMode, Theme } from 'emoji-picker-react';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
 import { isPhoneWidth } from '../../lib/breakpoints';
+import { placeInViewport } from '../../lib/placeInViewport';
+
+// Size of the desktop popover (its classes use the same values through --pick-w / --pick-h)
+const PICKER_WIDTH = 300;
+const PICKER_HEIGHT = 360;
 
 // emoji-picker-react is a chunk of its own, loaded when the picker first opens. Only types may be imported
 // from it statically: importing a value (such as its enums) would put the whole library into the app chunk.
@@ -103,11 +108,9 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
     handlePick(emojiData.emoji);
   };
 
-  const anchorStyle = anchor
-    ? ({
-        '--pick-left': `${Math.max(12, Math.min(anchor.left, window.innerWidth - 312))}px`,
-        '--pick-top': `${Math.min(anchor.bottom + 4, window.innerHeight - 360)}px`,
-      } as React.CSSProperties)
+  const placed = anchor ? placeInViewport(anchor, { width: PICKER_WIDTH, height: PICKER_HEIGHT }, { gap: 4 }) : null;
+  const anchorStyle = placed
+    ? ({ '--pick-left': `${placed.left}px`, '--pick-top': `${placed.top}px` } as React.CSSProperties)
     : undefined;
 
   const picker = (
@@ -124,15 +127,17 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
         ref={containerRef}
         className={`
           fixed inset-x-0 bottom-(--kb-inset) rounded-t-2xl max-h-(--vv-max) bg-panel border-t border-border shadow-2xl flex flex-col p-3 space-y-3
-          sm:inset-auto sm:w-[300px] sm:max-h-[360px] sm:p-1 sm:space-y-0 sm:bg-panel-elevated sm:rounded-card sm:border sm:border-border sm:shadow-xl ${
+          sm:inset-auto sm:w-(--pick-w) sm:max-h-(--pick-h) sm:p-1 sm:space-y-0 sm:bg-panel-elevated sm:rounded-card sm:border sm:border-border sm:shadow-xl ${
             anchor
-              ? 'z-61 sm:fixed sm:left-(--pick-left) sm:top-[max(12px,var(--pick-top))]'
+              ? 'z-61 sm:fixed sm:left-(--pick-left) sm:top-(--pick-top)'
               : 'z-50 sm:absolute sm:left-0 sm:top-full sm:mt-1 sm:z-40'
           }
         `}
         style={
           {
             ...anchorStyle,
+            '--pick-w': `${PICKER_WIDTH}px`,
+            '--pick-h': `${PICKER_HEIGHT}px`,
             // Theme colours for the picker (index.css); desktop: its own raised surface, so it stands apart
             // from the dialog it opens from
             '--pick-surface': isPhone ? 'var(--bg-panel)' : 'var(--bg-panel-elevated)',

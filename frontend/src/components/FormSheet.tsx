@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useKeyboardInset } from '../lib/useKeyboardInset';
+import { isPhoneWidth } from '../lib/breakpoints';
+import { placeInViewport } from '../lib/placeInViewport';
 import { BottomSheet } from './BottomSheet';
 
 interface FormSheetProps {
@@ -35,15 +37,30 @@ export const FormSheet: React.FC<FormSheetProps> = ({
 }) => {
   const { t } = useTranslation();
   const { inset } = useKeyboardInset();
+  const panelRef = useRef<HTMLElement | null>(null);
+  // Next to the click on desktops: centred below it, above it when there is no room, inside the window
+  const [placed, setPlaced] = useState<{ left: number; top: number } | null>(null);
+  const ax = anchor?.x;
+  const ay = anchor?.y;
+  useLayoutEffect(() => {
+    const el = panelRef.current;
+    if (ax === undefined || ay === undefined || !el || isPhoneWidth()) return;
+    const { width, height } = el.getBoundingClientRect();
+    const { left, top } = placeInViewport({ left: ax, top: ay }, { width, height }, { shift: -width / 2 });
+    setPlaced({ left, top });
+  }, [ax, ay]);
 
   const desktopAnchor = anchor
     ? ({
         '--sheet-left': `${anchor.x}px`,
         '--sheet-top': `${anchor.y}px`,
-        '--sheet-x': wide
-          ? `clamp(12px, calc(${anchor.x}px - 10rem), calc(100vw - 20rem - 12px))`
-          : `clamp(12px, calc(${anchor.x}px - 8.25rem), calc(100vw - 16.5rem - 12px))`,
-        '--sheet-y': `calc(${anchor.y}px + 8px)`,
+        // Before it is measured (and as the first guess): centred below the click by its known width
+        '--sheet-x': placed
+          ? `${placed.left}px`
+          : wide
+            ? `clamp(12px, calc(${anchor.x}px - 10rem), calc(100vw - 20rem - 12px))`
+            : `clamp(12px, calc(${anchor.x}px - 8.25rem), calc(100vw - 16.5rem - 12px))`,
+        '--sheet-y': placed ? `${placed.top}px` : `calc(${anchor.y}px + 8px)`,
       } as React.CSSProperties)
     : undefined;
 
@@ -53,6 +70,7 @@ export const FormSheet: React.FC<FormSheetProps> = ({
       onSubmit={onSubmit}
       label={title}
       dockToKeyboard
+      panelRef={panelRef}
       style={desktopAnchor}
       className="px-4 pt-6 pb-4 space-y-3"
       desktopClassName={`sm:pt-4 sm:inset-x-auto sm:bottom-auto sm:max-h-[85vh] sm:w-full sm:rounded-card sm:border ${

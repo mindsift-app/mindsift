@@ -35,6 +35,8 @@ interface BottomSheetProps {
   /** Extra classes and style of the backdrop (e.g. a higher z-index). */
   overlayClassName?: string;
   style?: React.CSSProperties;
+  /** The panel element (e.g. to measure it) */
+  panelRef?: React.Ref<HTMLElement>;
   /** The panel as a form (FormSheet). */
   onSubmit?: (e: React.FormEvent) => void;
   /** An open menu inside takes Escape first by preventing its default; set false where Escape must not close. */
@@ -60,6 +62,7 @@ export function BottomSheet({
   className = SHEET_PADDING,
   overlayClassName = '',
   style,
+  panelRef,
   onSubmit,
   closeOnEscape = true,
   children,
@@ -94,6 +97,7 @@ export function BottomSheet({
   return (
     <div className={`${phoneOnly ? 'sm:hidden ' : ''}fixed inset-0 m-0! z-50 modal-overlay animate-in fade-in duration-150 ${overlayClassName}`} onClick={close}>
       <Panel
+        ref={panelRef as React.Ref<HTMLFormElement & HTMLDivElement>}
         role="dialog"
         aria-modal="true"
         aria-label={label ?? (typeof title === 'string' ? title : undefined)}

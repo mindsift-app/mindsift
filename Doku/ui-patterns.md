@@ -84,6 +84,14 @@ Component: [FormSheet.tsx](../frontend/src/components/FormSheet.tsx) on `BottomS
 - Escape key and clicking the backdrop close the dialog. Used for new task lists, new shopping lists, new notes, and new folders; the emoji sheet uses the same keyboard inset logic.
 - **Icon field:** [EmojiIconButton.tsx](../frontend/src/components/EmojiIconButton.tsx) instead of a text field: displays the emoji (or a subtle "Select icon" when empty) and opens the same emoji picker as the note header, including "Remove". In the dialog, the picker renders above the page via a portal; Escape closes only the picker.
 
+## Popovers and Menus: Place and Closing
+
+Helpers: [placeInViewport.ts](../frontend/src/lib/placeInViewport.ts), [useDismiss.ts](../frontend/src/lib/useDismiss.ts)
+
+- **Place:** `placeInViewport(anchor, size, { gap, align, shift })` puts a fixed popover at a click or an element: below it, flipped above when the bottom has no room, pushed left at the right edge, at least 8 px from the edges. Used by `ConfirmPopover`, `PickerPopover`, `ExtractPopover`, the anchored `FormSheet` (measured, centred below the click), the emoji popover and the colour menu of the Kanban columns. No fixed pixel guesses of a popover's width at the caller.
+- Lists hanging at a field (dropdowns, date and time) use `useAnchoredPopover`, which also follows the field while the page scrolls.
+- **Closing:** `useDismiss(inside, onClose, { active, escape, event })` closes on a press outside the given elements (the box and, where it matters, the button it opens from) and on Escape. `escape: 'unhandled'` leaves an Escape that something inside already took (default prevented); `escape: false` where the popover's own keys handle it (search fields). Used by the popovers above, `ActionMenu`, `MoreTabsButton`, `ListSwitcher`, `OriginBadge`, the public theme picker and `useAnchoredPopover`.
+
 ## Confirmation at Mouse Position
 
 Component: [ConfirmPopover.tsx](../frontend/src/components/ConfirmPopover.tsx)
