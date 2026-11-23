@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/config"
-	"github.com/mindsift-app/mindsift/internal/storage"
 	"github.com/mindsift-app/mindsift/internal/ws"
 )
 
@@ -24,7 +24,7 @@ func TestCheckSecretsKeyWarnsWhenTheKeyDoesNotMatch(t *testing.T) {
 		t.Fatalf("empty database: checked %d, unreadable %d", checked, unreadable)
 	}
 
-	id := storage.NewSecretID()
+	id := blockfmt.NewSecretID()
 	sealed, err := srv.sealSecret(id, "10.0.0.1")
 	if err != nil {
 		t.Fatal(err)
@@ -75,7 +75,7 @@ func TestCheckSecretsKeyWarnsWhenTheKeyDoesNotMatch(t *testing.T) {
 
 	// One value sealed with the new key next to the old ones: a milder warning
 	logs.Reset()
-	id2 := storage.NewSecretID()
+	id2 := blockfmt.NewSecretID()
 	sealed2, err := other.sealSecret(id2, "new value")
 	if err != nil {
 		t.Fatal(err)

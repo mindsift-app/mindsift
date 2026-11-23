@@ -10,10 +10,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
-	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 // MCP add_note_image: an agent adds an image to a note. The file takes the same way into the note as an
@@ -114,7 +114,7 @@ func (s *Server) mcpAddNoteImage(ctx context.Context, userID string, actor *apiA
 		return nil, err
 	}
 	id := domain.NewID("blk")
-	content := storage.MediaContent("image", m.ID, a.Caption)
+	content := blockfmt.MediaContent("image", m.ID, a.Caption)
 	op := collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &parent, OrderKey: key, Type: "image", Content: &content, Props: &collab.Props{}}
 	// Should this fail, the stored file is removed with the other unused ones after mediaGrace
 	if err := s.applyNoteOpsCtx(ctx, userID, actor, a.NoteID, []collab.Op{op}); err != nil {

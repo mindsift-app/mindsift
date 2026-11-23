@@ -4,12 +4,13 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 func newImportStore(t *testing.T) (*Store, *domain.User, *domain.User) {
@@ -91,7 +92,7 @@ func TestImportMindSiftArchiveRoundTrip(t *testing.T) {
 	if err := store.WriteMarkdownVault(anna.ID, &buf); err != nil {
 		t.Fatalf("export: %v", err)
 	}
-	plan, err := PlanMindSiftArchiveImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	plan, err := importer.PlanMindSiftArchiveImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
 	if err != nil {
 		t.Fatalf("plan: %v", err)
 	}
@@ -113,7 +114,7 @@ func TestImportMindSiftJSONRoundTrip(t *testing.T) {
 	seedAnna(t, store, anna)
 	exp, _ := store.ExportUserData(anna.ID)
 	data, _ := json.Marshal(exp)
-	plan, err := PlanMindSiftJSONImport(data)
+	plan, err := importer.PlanMindSiftJSONImport(data)
 	if err != nil {
 		t.Fatalf("plan: %v", err)
 	}
@@ -122,7 +123,7 @@ func TestImportMindSiftJSONRoundTrip(t *testing.T) {
 	}
 	checkRestored(t, store, ben)
 
-	if _, err := PlanMindSiftJSONImport([]byte(`{"foo":1}`)); err == nil {
+	if _, err := importer.PlanMindSiftJSONImport([]byte(`{"foo":1}`)); err == nil {
 		t.Errorf("foreign JSON must be rejected")
 	}
 }
@@ -148,7 +149,7 @@ func TestImportIgnoresProfileAndForeignIDs(t *testing.T) {
 		}},
 	}
 	data, _ := json.Marshal(exp)
-	plan, err := PlanMindSiftJSONImport(data)
+	plan, err := importer.PlanMindSiftJSONImport(data)
 	if err != nil {
 		t.Fatalf("plan: %v", err)
 	}
@@ -202,7 +203,7 @@ func TestImportObsidianVault(t *testing.T) {
 		"Mein Vault/.obsidian/app.json": "{}",
 		"Mein Vault/../../boese.md":     "- ausgebrochen?",
 	})
-	plan, err := PlanObsidianImport(bytes.NewReader(data), int64(len(data)), "Mein Vault.zip")
+	plan, err := importer.PlanObsidianImport(bytes.NewReader(data), int64(len(data)), "Mein Vault.zip")
 	if err != nil {
 		t.Fatalf("plan: %v", err)
 	}
@@ -247,7 +248,7 @@ func TestImportObsidianVault(t *testing.T) {
 		t.Errorf("a ../ path must be imported inside the vault, not dropped silently")
 	}
 
-	if _, err := PlanObsidianImport(bytes.NewReader([]byte("kein zip")), 8, "x.zip"); err == nil {
+	if _, err := importer.PlanObsidianImport(bytes.NewReader([]byte("kein zip")), 8, "x.zip"); err == nil {
 		t.Errorf("invalid archive must be rejected")
 	}
 }
@@ -263,7 +264,7 @@ func TestImportBackupZip(t *testing.T) {
 	if buf.Len() == 0 {
 		t.Fatalf("empty archive")
 	}
-	plan, err := PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "mindsift-backup-2026-10-29.zip")
+	plan, err := importer.PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "mindsift-backup-2026-10-29.zip")
 	if err != nil {
 		t.Fatalf("plan: %v", err)
 	}
@@ -271,33 +272,6 @@ func TestImportBackupZip(t *testing.T) {
 		t.Fatalf("apply: %v", err)
 	}
 	checkRestored(t, store, ben)
-}
-
-func TestMarkdownHeadingsNestTheirSections(t *testing.T) {
-	blocks := MarkdownToBlocks("# Projekt\nEinleitung\n## Teil A\n- Punkt\n  - Unterpunkt\n## Teil B\n1. Erstens\n# Anhang\nText")
-	var got []string
-	for _, b := range blocks {
-		got = append(got, fmt.Sprintf("%d:%s:%s", b.Level, b.Type, b.Content))
-	}
-	want := []string{
-		"0:h1:Projekt", "1:bullet:Einleitung", "1:h2:Teil A", "2:bullet:Punkt", "3:bullet:Unterpunkt",
-		"1:h2:Teil B", "2:numbered:Erstens", "0:h1:Anhang", "1:bullet:Text",
-	}
-	if strings.Join(got, "|") != strings.Join(want, "|") {
-		t.Fatalf("got  %v\nwant %v", got, want)
-	}
-}
-
-func TestMarkdownListNestsUnderItsParagraph(t *testing.T) {
-	blocks := MarkdownToBlocks("# Plan\nFolgende Punkte:\n\n- eins\n  - tiefer\n- zwei\n\nDanach Text\n\n1. a")
-	var got []string
-	for _, b := range blocks {
-		got = append(got, fmt.Sprintf("%d:%s:%s", b.Level, b.Type, b.Content))
-	}
-	want := []string{"0:h1:Plan", "1:bullet:Folgende Punkte:", "2:bullet:eins", "3:bullet:tiefer", "2:bullet:zwei", "1:bullet:Danach Text", "2:numbered:a"}
-	if strings.Join(got, "|") != strings.Join(want, "|") {
-		t.Fatalf("got  %v\nwant %v", got, want)
-	}
 }
 
 func TestDrawingsSurviveExportAndImport(t *testing.T) {
@@ -315,7 +289,9 @@ func TestDrawingsSurviveExportAndImport(t *testing.T) {
 	var note string
 	svgFound := false
 	for _, f := range zr.File {
-		data, _ := readZipFile(f, 1<<20)
+		rc, _ := f.Open()
+		data, _ := io.ReadAll(rc)
+		rc.Close()
 		if strings.HasSuffix(f.Name, "d2.svg") && strings.Contains(string(data), "<svg") {
 			svgFound = true
 		}
@@ -326,7 +302,7 @@ func TestDrawingsSurviveExportAndImport(t *testing.T) {
 	if !svgFound || !strings.Contains(note, "![Idee](attachments/d2.svg)") {
 		t.Fatalf("drawing not exported as picture: svg=%v note=%q", svgFound, note)
 	}
-	plan, err := PlanMindSiftArchiveImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	plan, err := importer.PlanMindSiftArchiveImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
 	if err != nil {
 		t.Fatalf("plan: %v", err)
 	}
@@ -349,78 +325,11 @@ func TestDrawingsSurviveExportAndImport(t *testing.T) {
 
 func TestDrawingFenceBecomesADrawing(t *testing.T) {
 	md := "Davor\n\n```mindsift-canvas\n{\"v\":1,\"els\":[]}\n```\n\n```mindsift-canvas\nkein JSON\n```"
-	blocks := MarkdownToBlocks(md)
+	blocks := importer.MarkdownToBlocks(md)
 	if len(blocks) != 3 || blocks[1].Type != "drawing" || blocks[2].Type != "code" {
 		t.Fatalf("got %+v", blocks)
 	}
 	if out := BlocksToVaultMarkdown(blocks[1:2]); !strings.Contains(out, "```mindsift-canvas\n{\"v\":1,\"els\":[]}\n```") {
 		t.Fatalf("export without files: %q", out)
-	}
-}
-
-// The MCP tools recommend an empty bullet (a line with just -) before a heading to set sections apart
-func TestMarkdownEmptyBulletBeforeHeading(t *testing.T) {
-	blocks := MarkdownToBlocks("# Einkauf\n- Milch\n-\n# Urlaub\n- Koffer")
-	var got []string
-	for _, b := range blocks {
-		got = append(got, b.Type+":"+b.Content)
-	}
-	want := []string{"h1:Einkauf", "bullet:Milch", "bullet:", "h1:Urlaub", "bullet:Koffer"}
-	if strings.Join(got, "|") != strings.Join(want, "|") {
-		t.Fatalf("got %v, want %v", got, want)
-	}
-}
-
-// A fence as a list item's content ("- ```bash") is a code block at that item's level; its code is
-// what is indented under the item, and an unclosed fence ends at the next line indented less.
-func TestMarkdownFenceAfterListMarker(t *testing.T) {
-	cases := []struct {
-		name string
-		md   string
-		want []string
-	}{
-		{"with language", "- Install\n  - ```bash\n    npm ci\n    npm test\n    ```\n- next",
-			[]string{"0:bullet::Install", "1:code:bash:npm ci\nnpm test", "0:bullet::next"}},
-		{"without language", "- ```\n  a\n    b\n  ```\n- next",
-			[]string{"0:code::a\n  b", "0:bullet::next"}},
-		{"tildes", "- Setup\n  * ~~~ python\n    print(1)\n    ~~~\n- next",
-			[]string{"0:bullet::Setup", "1:code:python:print(1)", "0:bullet::next"}},
-		{"numbered item", "1. Build\n2. ```go\n   x := 1\n   ```\n3. Run",
-			[]string{"0:numbered::Build", "0:code:go:x := 1", "0:numbered::Run"}},
-		{"nested level", "- a\n  - b\n    - ```sh\n      ls\n      ```\n    - c\n  - d",
-			[]string{"0:bullet::a", "1:bullet::b", "2:code:sh:ls", "2:bullet::c", "1:bullet::d"}},
-		{"closing fence at the marker's indentation", "- x\n  - ```bash\n    npm ci\n  ```\n- next",
-			[]string{"0:bullet::x", "1:code:bash:npm ci", "0:bullet::next"}},
-		{"closing fence at column 0", "- ```bash\n  npm ci\n```\n- next",
-			[]string{"0:code:bash:npm ci", "0:bullet::next"}},
-		{"longer closing fence", "- ````md\n  ```\n  inner\n  ```\n  ````\n- next",
-			[]string{"0:code:md:```\ninner\n```", "0:bullet::next"}},
-		{"blank line inside the code", "- ```py\n  a = 1\n\n  b = 2\n  ```\n- next",
-			[]string{"0:code:py:a = 1\n\nb = 2", "0:bullet::next"}},
-		{"unclosed fence followed by bullets", "- Install\n  - ```bash\n    npm ci\n\n- next\n  - deeper",
-			[]string{"0:bullet::Install", "1:code:bash:npm ci", "0:bullet::next", "1:bullet::deeper"}},
-		{"unclosed fence at the end", "- ```bash\n  npm ci",
-			[]string{"0:code:bash:npm ci"}},
-		{"tabs", "- x\n\t- ```bash\n\t  npm ci\n\t    echo\n\t  ```\n- next",
-			[]string{"0:bullet::x", "1:code:bash:npm ci\n  echo", "0:bullet::next"}},
-		{"four spaces", "- x\n    - ```bash\n      npm ci\n      ```\n- next",
-			[]string{"0:bullet::x", "1:code:bash:npm ci", "0:bullet::next"}},
-		{"CRLF", "- Install\r\n  - ```bash\r\n    npm ci\r\n    ```\r\n- next\r\n",
-			[]string{"0:bullet::Install", "1:code:bash:npm ci", "0:bullet::next"}},
-		{"inline code stays text", "- ```x``` is inline\n- next",
-			[]string{"0:bullet::```x``` is inline", "0:bullet::next"}},
-		{"fence on its own line unchanged", "- Install\n  ```bash\n  npm ci\n  ```\n- next",
-			[]string{"0:bullet::Install", "1:code:bash:npm ci", "0:bullet::next"}},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			var got []string
-			for _, b := range MarkdownToBlocks(c.md) {
-				got = append(got, fmt.Sprintf("%d:%s:%s:%s", b.Level, b.Type, b.Lang, b.Content))
-			}
-			if strings.Join(got, "|") != strings.Join(c.want, "|") {
-				t.Fatalf("got  %q\nwant %q", got, c.want)
-			}
-		})
 	}
 }

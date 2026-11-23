@@ -4,9 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"sort"
+	"strconv"
 	"unicode/utf8"
 
 	"github.com/mindsift-app/mindsift/internal/drawing"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 const (
@@ -42,6 +44,9 @@ const (
 	// edited as long as it does not grow.
 	MaxTitleRunes = 60
 )
+
+// ErrNoteTooLarge: a note would hold more bullets than it may (MaxNoteBlocks).
+var ErrNoteTooLarge = i18n.NewError("Eine Notiz kann höchstens {max} Punkte haben", "max", strconv.Itoa(MaxNoteBlocks))
 
 // TitleAllowed: whether a note whose title is current may get title (see MaxTitleRunes)
 func TitleAllowed(title, current string) bool {

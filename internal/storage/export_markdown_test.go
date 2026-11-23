@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 func TestBlocksToVaultMarkdown(t *testing.T) {
@@ -139,7 +140,7 @@ func TestWarningAndErrorBlocksRoundTrip(t *testing.T) {
 			t.Errorf("missing %q in:\n%s", w, md)
 		}
 	}
-	back := MarkdownToBlocks(md)
+	back := importer.MarkdownToBlocks(md)
 	var got []string
 	for _, b := range back {
 		got = append(got, b.Type+":"+b.Content)
@@ -150,7 +151,7 @@ func TestWarningAndErrorBlocksRoundTrip(t *testing.T) {
 	}
 	// Other Obsidian kinds: caution is a warning, danger an error, tip a plain callout
 	for md, typ := range map[string]string{"> [!caution] A": "warning", "> [!danger]\n> B": "error", "> [!tip] C": "callout"} {
-		if b := MarkdownToBlocks(md); len(b) != 1 || b[0].Type != typ {
+		if b := importer.MarkdownToBlocks(md); len(b) != 1 || b[0].Type != typ {
 			t.Errorf("%q: got %+v, want type %s", md, b, typ)
 		}
 	}

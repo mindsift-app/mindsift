@@ -13,7 +13,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -233,7 +235,7 @@ func (s *Server) runNoteTranscription(ctx context.Context, slot *sttSlot, job *s
 		return err
 	}
 	tctx, cancel := context.WithTimeout(ctx, s.transcriptionTimeout())
-	text, err := s.transcribe(tctx, audio, "aufnahme"+storage.MediaExt(m.Mime), m.Mime, s.sttLanguage(job.UserID))
+	text, err := s.transcribe(tctx, audio, "aufnahme"+blockfmt.MediaExt(m.Mime), m.Mime, s.sttLanguage(job.UserID))
 	cancel()
 	slot.release() // the Whisper server is done; not held while the result waits for an editor below
 	if err != nil {
@@ -292,7 +294,7 @@ func (s *Server) runInboxTranscription(ctx context.Context, slot *sttSlot, job *
 			}
 			sent = true
 			tctx, cancel := context.WithTimeout(ctx, s.transcriptionTimeout())
-			text, err := s.transcribe(tctx, p.Data, "aufnahme"+storage.MediaExt(p.Mime), p.Mime, language)
+			text, err := s.transcribe(tctx, p.Data, "aufnahme"+blockfmt.MediaExt(p.Mime), p.Mime, language)
 			cancel()
 			if err != nil {
 				return err
@@ -405,7 +407,7 @@ func (s *Server) handleTranscribeBlock(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "Punkt nicht gefunden")
 		return
 	}
-	ref, isMedia := storage.ParseMediaContent(b.Content)
+	ref, isMedia := blockfmt.ParseMediaContent(b.Content)
 	if b.Type != "audio" || !isMedia {
 		writeError(w, http.StatusBadRequest, "Dieser Punkt ist keine Sprachaufnahme")
 		return
@@ -520,7 +522,7 @@ func (s *Server) handleVoiceCapture(w http.ResponseWriter, r *http.Request) {
 // captureMime: the recording's format as found in its first bytes (only a recording format, so a part is
 // served as audio when someone listens to it); anything else is passed on as plain bytes.
 func captureMime(data []byte, declared string) string {
-	if mime, kind, ok := storage.DetectMedia(data, declared); ok && kind == "audio" {
+	if mime, kind, ok := blockfmt.DetectMedia(data, declared); ok && kind == "audio" {
 		return strings.TrimSpace(strings.SplitN(mime, ";", 2)[0])
 	}
 	return "application/octet-stream"

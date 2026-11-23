@@ -19,8 +19,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -55,7 +57,7 @@ func serverWithMedia(t *testing.T) (dataDir string, anna *domain.User, annaImg, 
 		img   []byte
 	}{{anna, "Annas Urlaub", annaImg}, {ben, "Bens Garten", benImg}} {
 		doc, _ := store.CreateDocument(p.u.ID, "", p.title, "📄", "", nil, nil, false)
-		mime, kind, ok := storage.DetectMedia(p.img, "")
+		mime, kind, ok := blockfmt.DetectMedia(p.img, "")
 		if !ok {
 			t.Fatal("test picture not recognised")
 		}
@@ -68,7 +70,7 @@ func serverWithMedia(t *testing.T) (dataDir string, anna *domain.User, annaImg, 
 			t.Fatal(err)
 		}
 		if _, err := store.CreateDocument(p.u.ID, "", p.title+" (Bild)", "📄", "", []domain.DocumentBlock{
-			{ID: "b_" + p.u.ID, Type: "image", Content: storage.MediaContent("image", m.ID, "Foto")},
+			{ID: "b_" + p.u.ID, Type: "image", Content: blockfmt.MediaContent("image", m.ID, "Foto")},
 		}, nil, false); err != nil {
 			t.Fatal(err)
 		}
@@ -147,7 +149,7 @@ func packDir(t *testing.T, src, prefix string, kind uploadKind) string {
 }
 
 type takeOverAnswer struct {
-	storage.ImportSummary
+	importer.Summary
 	Media        int `json:"media"`
 	MediaMissing int `json:"mediaMissing"`
 }

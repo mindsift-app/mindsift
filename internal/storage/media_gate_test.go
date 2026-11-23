@@ -5,8 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 // blocksOf returns the live bullets of a note by id.
@@ -36,10 +38,10 @@ func TestMediaGateKeepsOnlyReadableFiles(t *testing.T) {
 
 	g := s.newMediaGate(ben.ID, nil)
 	cases := []struct{ typ, in, wantType, want string }{
-		{"image", MediaContent("image", own.ID, "Meins"), "image", MediaContent("image", own.ID, "Meins")},
-		{"image", MediaContent("image", shared.ID, "Geteilt"), "image", MediaContent("image", shared.ID, "Geteilt")},
-		{"image", MediaContent("image", private.ID, "Foto [1]"), "bullet", "Foto [1]"},
-		{"audio", MediaContent("audio", private.ID, ""), "bullet", "(Datei nicht übernommen)"},
+		{"image", blockfmt.MediaContent("image", own.ID, "Meins"), "image", blockfmt.MediaContent("image", own.ID, "Meins")},
+		{"image", blockfmt.MediaContent("image", shared.ID, "Geteilt"), "image", blockfmt.MediaContent("image", shared.ID, "Geteilt")},
+		{"image", blockfmt.MediaContent("image", private.ID, "Foto [1]"), "bullet", "Foto [1]"},
+		{"audio", blockfmt.MediaContent("audio", private.ID, ""), "bullet", "(Datei nicht übernommen)"},
 		{"image", "![x](media:med_00000000000000000000000000000000)", "bullet", "x"}, // no such file
 		{"bullet", "Vorher ![Bild](media:" + private.ID + ") und media:" + private.ID + " und ![Meins](media:" + own.ID + ")",
 			"bullet", "Vorher Bild und (Datei nicht übernommen) und ![Meins](media:" + own.ID + ")"},
@@ -54,15 +56,15 @@ func TestMediaGateKeepsOnlyReadableFiles(t *testing.T) {
 
 	// A new note and the editor's operations go through the same check
 	doc, _ := s.CreateDocument(ben.ID, "", "Neu", "", "", []domain.DocumentBlock{
-		{ID: "blk_n1", Type: "image", Content: MediaContent("image", private.ID, "Fremd")},
-		{ID: "blk_n2", Type: "image", Content: MediaContent("image", own.ID, "Eigen")},
+		{ID: "blk_n1", Type: "image", Content: blockfmt.MediaContent("image", private.ID, "Fremd")},
+		{ID: "blk_n2", Type: "image", Content: blockfmt.MediaContent("image", own.ID, "Eigen")},
 	}, nil, false)
 	got := blocksOf(t, s, doc.ID)
 	if got["blk_n1"].Content != "Fremd" || got["blk_n1"].Type != "bullet" || got["blk_n2"].Type != "image" {
 		t.Errorf("new note: %+v %+v", got["blk_n1"], got["blk_n2"])
 	}
 	root, key := "", "a0"
-	content := MediaContent("image", private.ID, "Per Sync")
+	content := blockfmt.MediaContent("image", private.ID, "Per Sync")
 	if _, _, err := s.ApplyDocOps(benDoc.ID, collab.Actor{UserID: ben.ID, ClientID: "c"}, []collab.Op{
 		{OpID: "op_gate", Kind: collab.OpInsert, BlockID: "blk_sync", ParentID: &root, OrderKey: key, Type: "image", Content: &content},
 	}, nil); err != nil {
@@ -109,16 +111,16 @@ func TestImportDropsFilesOfOthers(t *testing.T) {
 		Documents: []domain.Document{{
 			Title: "Beute", IsOwner: true,
 			Blocks: []domain.DocumentBlock{
-				{Type: "image", Content: MediaContent("image", private.ID, "Fremdes Foto")},
-				{Type: "image", Content: MediaContent("image", own.ID, "Eigenes Foto")},
+				{Type: "image", Content: blockfmt.MediaContent("image", private.ID, "Fremdes Foto")},
+				{Type: "image", Content: blockfmt.MediaContent("image", own.ID, "Eigenes Foto")},
 			},
 		}, {
 			Title: "Harmlos", IsOwner: true,
-			Blocks: []domain.DocumentBlock{{Type: "image", Content: MediaContent("image", own.ID, "Eigenes Foto")}},
+			Blocks: []domain.DocumentBlock{{Type: "image", Content: blockfmt.MediaContent("image", own.ID, "Eigenes Foto")}},
 		}},
 	}
 	data, _ := json.Marshal(exp)
-	plan, err := PlanMindSiftJSONImport(data)
+	plan, err := importer.PlanMindSiftJSONImport(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +128,7 @@ func TestImportDropsFilesOfOthers(t *testing.T) {
 	if sum := plan.Summary(false); len(sum.Skipped) != 1 || sum.Skipped[0].Path != "Beute" {
 		t.Fatalf("preview should name the note with the other person's file: %+v", sum.Skipped)
 	}
-	plan, _ = PlanMindSiftJSONImport(data)
+	plan, _ = importer.PlanMindSiftJSONImport(data)
 	sum, err := s.ApplyImport(ben.ID, plan)
 	if err != nil {
 		t.Fatal(err)
@@ -143,7 +145,7 @@ func TestImportDropsFilesOfOthers(t *testing.T) {
 		found = true
 		full, _ := s.GetDocumentByID(ben.ID, d.ID)
 		if len(full.Blocks) != 2 || full.Blocks[0].Content != "Fremdes Foto" || full.Blocks[0].Type != "bullet" ||
-			full.Blocks[1].Content != MediaContent("image", own.ID, "Eigenes Foto") {
+			full.Blocks[1].Content != blockfmt.MediaContent("image", own.ID, "Eigenes Foto") {
 			t.Errorf("imported bullets: %+v", full.Blocks)
 		}
 	}
@@ -265,7 +267,7 @@ func TestMediaGateTurnsChangedImageBulletIntoText(t *testing.T) {
 		return res
 	}
 	root := ""
-	mine := MediaContent("image", own.ID, "Meins")
+	mine := blockfmt.MediaContent("image", own.ID, "Meins")
 	apply(collab.Op{OpID: "op_img", Kind: collab.OpInsert, BlockID: "blk_img", ParentID: &root, OrderKey: "a0", Type: "image", Content: &mine},
 		collab.Op{OpID: "op_img2", Kind: collab.OpInsert, BlockID: "blk_img2", ParentID: &root, OrderKey: "a1", Type: "image", Content: &mine})
 	if b := blocksOf(t, s, benDoc.ID)["blk_img"]; b == nil || b.Type != "image" || b.Content != mine {
@@ -273,7 +275,7 @@ func TestMediaGateTurnsChangedImageBulletIntoText(t *testing.T) {
 	}
 
 	// Another own picture: still an image
-	otherContent := MediaContent("image", other.ID, "Anderes")
+	otherContent := blockfmt.MediaContent("image", other.ID, "Anderes")
 	if res := apply(collab.Op{OpID: "op_own", Kind: collab.OpSetContent, BlockID: "blk_img", BaseVersion: 1, Content: &otherContent}); res[0].Status != collab.StatusApplied {
 		t.Fatalf("own change: %+v", res)
 	}
@@ -282,7 +284,7 @@ func TestMediaGateTurnsChangedImageBulletIntoText(t *testing.T) {
 	}
 
 	// Someone else's file: the caption as a plain bullet
-	foreign := MediaContent("image", private.ID, "Fremdes Foto")
+	foreign := blockfmt.MediaContent("image", private.ID, "Fremdes Foto")
 	if res := apply(collab.Op{OpID: "op_foreign", Kind: collab.OpSetContent, BlockID: "blk_img", BaseVersion: 2, Content: &foreign}); len(res) != 1 || res[0].Status != collab.StatusApplied {
 		t.Fatalf("foreign change: %+v", res)
 	}

@@ -16,8 +16,8 @@ import (
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/domain"
-	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 func tinyJPEG(t *testing.T) []byte {
@@ -71,7 +71,7 @@ func TestMCPAddNoteImage(t *testing.T) {
 	if b["type"] != "image" || b["text"] != `![Ein [Bild\]](media:`+mediaID+`)` {
 		t.Fatalf("image bullet: %v", b)
 	}
-	ref, ok := storage.ParseMediaContent(b["text"].(string))
+	ref, ok := blockfmt.ParseMediaContent(b["text"].(string))
 	if !ok || ref.ID != mediaID || ref.Caption != "Ein [Bild]" {
 		t.Fatalf("content must render as an image: %+v %v", ref, ok)
 	}

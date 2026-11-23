@@ -1,12 +1,14 @@
 package storage
 
 import (
+	"bytes"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 func TestNextDueDate(t *testing.T) {
@@ -268,8 +270,13 @@ func TestAlarmGivesUpAfterThreeFailedRuns(t *testing.T) {
 func TestRecurrenceMarkdownRoundTrip(t *testing.T) {
 	for rule := range recurrenceEvery {
 		line := taskMarkdownLine(domain.Thought{Content: "Zeitung holen", Recurrence: rule})
-		got := parseTaskFile(line + "\n")
-		if len(got) != 1 || got[0].recurrence != rule || got[0].content != "Zeitung holen" {
+		data := zipOf(t, map[string]string{"Aufgaben/Zeitung.md": line + "\n", "Notiz.md": "- Inhalt"})
+		plan, err := importer.PlanMindSiftArchiveImport(bytes.NewReader(data), int64(len(data)))
+		if err != nil || len(plan.TaskLists) != 1 {
+			t.Fatalf("%s: %q: %v", rule, line, err)
+		}
+		got := plan.TaskLists[0].Tasks
+		if len(got) != 1 || got[0].Recurrence != rule || got[0].Content != "Zeitung holen" {
 			t.Errorf("%s: %q came back as %+v", rule, line, got)
 		}
 	}

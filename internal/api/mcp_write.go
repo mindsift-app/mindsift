@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/drawing"
@@ -418,7 +419,7 @@ var mcpWriteTools = []mcpTool{
 				}
 			}
 			if a.Type == "table" {
-				text = storage.NormalizeTable(text)
+				text = blockfmt.NormalizeTable(text)
 			}
 			props := collab.Props{Checked: a.Type == "todo" && a.Checked}
 			switch a.Type {
@@ -559,7 +560,7 @@ var mcpWriteTools = []mcpTool{
 				if a.Text != nil {
 					text = *a.Text
 				}
-				if text = storage.NormalizeTable(text); text != b.Content || a.Text != nil {
+				if text = blockfmt.NormalizeTable(text); text != b.Content || a.Text != nil {
 					a.Text = &text
 				}
 			}

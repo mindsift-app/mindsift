@@ -8,8 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 // testSealKey is the SECRETS_KEY of the stores in these tests (the server passes its key the same way).
@@ -39,7 +41,7 @@ func newSecretStoreAt(t *testing.T, path string) (*Store, *domain.User, *domain.
 // hideValue stores a value in a note the way POST /documents/{id}/secrets does and returns its id.
 func hideValue(t *testing.T, s *Store, docID, userID, value string) string {
 	t.Helper()
-	id := NewSecretID()
+	id := blockfmt.NewSecretID()
 	sealed, err := SealValue(testSealKey, id, value)
 	if err != nil {
 		t.Fatal(err)
@@ -68,7 +70,7 @@ func revealIn(t *testing.T, s *Store, docID, id string) string {
 // refIDs: the ids of the references in a text, in order.
 func refIDs(text string) []string {
 	var out []string
-	for _, m := range SecretRefRe.FindAllStringSubmatch(text, -1) {
+	for _, m := range blockfmt.SecretRefRe.FindAllStringSubmatch(text, -1) {
 		out = append(out, m[1])
 	}
 	return out
@@ -122,10 +124,10 @@ func TestSecretCopiedWithABulletIntoAnotherNote(t *testing.T) {
 	target, _ := s.CreateDocument(anna.ID, "", "Technik", "", "", nil, nil, false)
 	a := collab.Actor{UserID: anna.ID, ClientID: "tab1"}
 
-	applyOps(t, s, target.ID, a, insertOp("blk_p1", "IP "+secretRef(x)+" Port 22"))
+	applyOps(t, s, target.ID, a, insertOp("blk_p1", "IP "+blockfmt.SecretRef(x)+" Port 22"))
 	got := contentOf(t, s, target.ID, "blk_p1")
 	cp := ownCopy(t, s, target.ID, got, x, "10.0.0.1")
-	if got != "IP "+secretRef(cp)+" Port 22" {
+	if got != "IP "+blockfmt.SecretRef(cp)+" Port 22" {
 		t.Errorf("only the reference changes: %q", got)
 	}
 	if sec, _ := s.GetSecret(cp); sec.SourceID != x || sec.CreatedBy != anna.ID {
@@ -139,15 +141,15 @@ func TestSecretCopiedWithABulletIntoAnotherNote(t *testing.T) {
 	}
 
 	// The field still shows the old reference and sends it with the next keystrokes
-	text := "IP " + secretRef(x) + " Port 2222"
+	text := "IP " + blockfmt.SecretRef(x) + " Port 2222"
 	applyOps(t, s, target.ID, a, collab.Op{OpID: "op_again", Kind: collab.OpSetContent, BlockID: "blk_p1",
 		BaseVersion: blockVersion(t, s, target.ID, "blk_p1"), Content: &text})
-	if got := contentOf(t, s, target.ID, "blk_p1"); got != "IP "+secretRef(cp)+" Port 2222" {
+	if got := contentOf(t, s, target.ID, "blk_p1"); got != "IP "+blockfmt.SecretRef(cp)+" Port 2222" {
 		t.Errorf("the same reference again must give the same copy: %q", got)
 	}
 	// A second bullet pasted from the same value: the copy this note has already
-	applyOps(t, s, target.ID, a, insertOp("blk_p2", secretRef(x)))
-	if got := contentOf(t, s, target.ID, "blk_p2"); got != secretRef(cp) {
+	applyOps(t, s, target.ID, a, insertOp("blk_p2", blockfmt.SecretRef(x)))
+	if got := contentOf(t, s, target.ID, "blk_p2"); got != blockfmt.SecretRef(cp) {
 		t.Errorf("second paste: %q", got)
 	}
 	if n := countSecrets(t, s); n != 2 {
@@ -163,13 +165,13 @@ func TestSecretCopiedWithABulletIntoAnotherNote(t *testing.T) {
 		t.Error("changing the copy changed the value of origin")
 	}
 	// Pasting the original again after the copy changed: a new copy with the original text
-	applyOps(t, s, target.ID, a, insertOp("blk_p3", secretRef(x)))
+	applyOps(t, s, target.ID, a, insertOp("blk_p3", blockfmt.SecretRef(x)))
 	cp2 := ownCopy(t, s, target.ID, contentOf(t, s, target.ID, "blk_p3"), x, "10.0.0.1")
 	if cp2 == cp {
 		t.Error("a changed copy must not stand in for the original")
 	}
 	// The note's own references stay as they are
-	own := "Eigen " + secretRef(cp)
+	own := "Eigen " + blockfmt.SecretRef(cp)
 	applyOps(t, s, target.ID, a, insertOp("blk_p4", own))
 	if got := contentOf(t, s, target.ID, "blk_p4"); got != own {
 		t.Errorf("own reference: %q", got)
@@ -183,14 +185,14 @@ func TestSecretOfAnUnreadableNoteBecomesAPlaceholder(t *testing.T) {
 	origin, _ := s.CreateDocument(anna.ID, "", "Annas Server", "", "", nil, nil, false)
 	x := hideValue(t, s, origin.ID, anna.ID, "geheim")
 	benDoc, _ := s.CreateDocument(ben.ID, "", "Bens", "", "", nil, nil, false)
-	missing := NewSecretID()
+	missing := blockfmt.NewSecretID()
 
 	applyOps(t, s, benDoc.ID, collab.Actor{UserID: ben.ID, ClientID: "c"},
-		insertOp("blk_b1", "Zugang "+secretRef(x)+" und "+secretRef(missing)))
-	if got := contentOf(t, s, benDoc.ID, "blk_b1"); got != "Zugang "+secretPlaceholder+" und "+secretRef(missing) {
+		insertOp("blk_b1", "Zugang "+blockfmt.SecretRef(x)+" und "+blockfmt.SecretRef(missing)))
+	if got := contentOf(t, s, benDoc.ID, "blk_b1"); got != "Zugang "+secretPlaceholder+" und "+blockfmt.SecretRef(missing) {
 		t.Errorf("got %q", got)
 	}
-	created, _ := s.CreateDocument(ben.ID, "", "Neu", "", "", []domain.DocumentBlock{{ID: "blk_b2", Type: "bullet", Content: secretRef(x)}}, nil, false)
+	created, _ := s.CreateDocument(ben.ID, "", "Neu", "", "", []domain.DocumentBlock{{ID: "blk_b2", Type: "bullet", Content: blockfmt.SecretRef(x)}}, nil, false)
 	if got := contentOf(t, s, created.ID, "blk_b2"); got != secretPlaceholder {
 		t.Errorf("new note: %q", got)
 	}
@@ -202,7 +204,7 @@ func TestSecretOfAnUnreadableNoteBecomesAPlaceholder(t *testing.T) {
 	if _, err := s.CreateDocShare(anna.ID, origin.ID, ben.ID, "read"); err != nil {
 		t.Fatal(err)
 	}
-	applyOps(t, s, benDoc.ID, collab.Actor{UserID: ben.ID, ClientID: "c"}, insertOp("blk_b3", secretRef(x)))
+	applyOps(t, s, benDoc.ID, collab.Actor{UserID: ben.ID, ClientID: "c"}, insertOp("blk_b3", blockfmt.SecretRef(x)))
 	cp := ownCopy(t, s, benDoc.ID, contentOf(t, s, benDoc.ID, "blk_b3"), x, "geheim")
 	if sec, _ := s.GetSecret(cp); sec.CreatedBy != ben.ID {
 		t.Errorf("the copy belongs to the one who wrote it, got %q", sec.CreatedBy)
@@ -219,7 +221,7 @@ func TestSecretCopiedOnEveryWayIn(t *testing.T) {
 	}, nil, false)
 	x := hideValue(t, s, origin.ID, anna.ID, "192.168.1.1")
 	a := collab.Actor{UserID: anna.ID, ClientID: "tab1"}
-	text := "Admin " + secretRef(x)
+	text := "Admin " + blockfmt.SecretRef(x)
 	applyOps(t, s, origin.ID, a, collab.Op{OpID: "op_o2", Kind: collab.OpSetContent, BlockID: "blk_o2",
 		BaseVersion: blockVersion(t, s, origin.ID, "blk_o2"), Content: &text})
 	if contentOf(t, s, origin.ID, "blk_o2") != text {
@@ -272,7 +274,7 @@ func TestSecretCopiedOnEveryWayIn(t *testing.T) {
 	t.Run("merge", func(t *testing.T) {
 		source, _ := s.CreateDocument(anna.ID, "", "Quelle", "", "", nil, nil, false)
 		y := hideValue(t, s, source.ID, anna.ID, "token-123")
-		applyOps(t, s, source.ID, a, insertOp("blk_m1", "Token "+secretRef(y)))
+		applyOps(t, s, source.ID, a, insertOp("blk_m1", "Token "+blockfmt.SecretRef(y)))
 		target, _ := s.CreateDocument(anna.ID, "", "Sammlung", "", "", nil, nil, false)
 		if _, err := s.MergeDocuments(anna.ID, source.ID, target.ID, a, nil); err != nil {
 			t.Fatal(err)
@@ -309,7 +311,7 @@ func TestSecretCopiedOnEveryWayIn(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		title := "Login " + secretRef(x)
+		title := "Login " + blockfmt.SecretRef(x)
 		_, _ = s.UpdateThoughtDetails(anna.ID, th.ID, &title, nil, nil, nil, nil, nil, nil, nil, nil)
 		s.SyncTaskToDoc(anna.ID, th.ID)
 		got := contentOf(t, s, task.DocID, task.BlockID)
@@ -317,7 +319,7 @@ func TestSecretCopiedOnEveryWayIn(t *testing.T) {
 		before := countSecrets(t, s)
 		// The task keeps the old reference; carrying it in again changes nothing
 		s.SyncTaskToDoc(anna.ID, th.ID)
-		if again := contentOf(t, s, task.DocID, task.BlockID); again != "Login "+secretRef(cp) || countSecrets(t, s) != before {
+		if again := contentOf(t, s, task.DocID, task.BlockID); again != "Login "+blockfmt.SecretRef(cp) || countSecrets(t, s) != before {
 			t.Errorf("carried in again: %q, %d values (before %d)", again, countSecrets(t, s), before)
 		}
 	})
@@ -327,7 +329,7 @@ func TestSecretCopiedOnEveryWayIn(t *testing.T) {
 			Title: "Wiederhergestellt", IsOwner: true, Blocks: []domain.DocumentBlock{{Type: "bullet", Content: text}},
 		}}}
 		data, _ := json.Marshal(exp)
-		plan, err := PlanMindSiftJSONImport(data)
+		plan, err := importer.PlanMindSiftJSONImport(data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -355,7 +357,7 @@ func TestSecretPlaceholderInsideTheTransaction(t *testing.T) {
 	x := hideValue(t, s, annaDoc.ID, anna.ID, "privat")
 	// An old reference Ben's note holds from before (written past the gate)
 	source, _ := s.CreateDocument(ben.ID, "", "Quelle", "", "", nil, nil, false)
-	if err := s.saveDocBlocks(source.ID, ben.ID, []domain.DocumentBlock{{ID: "blk_q1", Type: "bullet", Content: "Alt " + secretRef(x)}}); err != nil {
+	if err := s.saveDocBlocks(source.ID, ben.ID, []domain.DocumentBlock{{ID: "blk_q1", Type: "bullet", Content: "Alt " + blockfmt.SecretRef(x)}}); err != nil {
 		t.Fatal(err)
 	}
 	target, _ := s.CreateDocument(ben.ID, "", "Ziel", "", "", nil, nil, false)
@@ -373,7 +375,7 @@ func TestSecretPlaceholderInsideTheTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	title := "Siehe " + secretRef(x)
+	title := "Siehe " + blockfmt.SecretRef(x)
 	_, _ = s.UpdateThoughtDetails(ben.ID, th.ID, &title, nil, nil, nil, nil, nil, nil, nil, nil)
 	s.SyncTaskToDoc(ben.ID, th.ID)
 	if got := contentOf(t, s, task.DocID, task.BlockID); got != "Siehe "+secretPlaceholder {
@@ -393,7 +395,7 @@ func TestSecretGateBoundsItsWorkAndTheSweepCatchesUp(t *testing.T) {
 	for i := range maxSecretLookups {
 		fmt.Fprintf(&sb, "{{secret:secfake%d}} ", i)
 	}
-	sb.WriteString(secretRef(x))
+	sb.WriteString(blockfmt.SecretRef(x))
 	applyOps(t, s, target.ID, collab.Actor{UserID: anna.ID, ClientID: "a"}, insertOp("blk_v1", sb.String()))
 	if contentOf(t, s, target.ID, "blk_v1") != sb.String() {
 		t.Fatal("references beyond the bound must stay as they are")
@@ -423,7 +425,7 @@ func TestSecretCopiesOutliveTheirOrigin(t *testing.T) {
 	s, anna, ben := newSecretStore(t)
 	origin, _ := s.CreateDocument(anna.ID, "", "Server", "", "", []domain.DocumentBlock{{ID: "blk_h", Type: "bullet", Content: "Text"}}, nil, false)
 	x := hideValue(t, s, origin.ID, anna.ID, "wert")
-	text := secretRef(x)
+	text := blockfmt.SecretRef(x)
 	applyOps(t, s, origin.ID, collab.Actor{UserID: anna.ID, ClientID: "a"}, collab.Op{OpID: "op_h", Kind: collab.OpSetContent,
 		BlockID: "blk_h", BaseVersion: blockVersion(t, s, origin.ID, "blk_h"), Content: &text})
 	if _, err := s.CreateDocShare(anna.ID, origin.ID, ben.ID, "read"); err != nil {
@@ -467,7 +469,7 @@ func TestSecretsGoWithTheAccount(t *testing.T) {
 	if _, err := s.CreateDocShare(anna.ID, origin.ID, ben.ID, "read"); err != nil {
 		t.Fatal(err)
 	}
-	benNote, _ := s.CreateDocument(ben.ID, "", "Bens", "", "", []domain.DocumentBlock{{ID: "blk_b", Type: "bullet", Content: secretRef(x)}}, nil, false)
+	benNote, _ := s.CreateDocument(ben.ID, "", "Bens", "", "", []domain.DocumentBlock{{ID: "blk_b", Type: "bullet", Content: blockfmt.SecretRef(x)}}, nil, false)
 	benCp := ownCopy(t, s, benNote.ID, contentOf(t, s, benNote.ID, "blk_b"), x, "geheim")
 
 	if err := s.DeleteOwnAccount(anna.ID); err != nil {
@@ -501,12 +503,12 @@ func TestImportPreviewNamesNotesWithForeignSecrets(t *testing.T) {
 		return domain.Document{Title: title, IsOwner: true, Blocks: []domain.DocumentBlock{{Type: "bullet", Content: content}}}
 	}
 	exp := domain.FullExport{ExportedAt: "2026-11-14T00:00:00Z", Version: "manipuliert", Documents: []domain.Document{
-		note("Beute", "PIN "+secretRef(foreign)+" und "+secretRef(own)),
-		note("Eigene", "PIN "+secretRef(own)),
-		note("Verwaist", "PIN "+secretRef("sec_gibtesnicht0000000000")),
+		note("Beute", "PIN "+blockfmt.SecretRef(foreign)+" und "+blockfmt.SecretRef(own)),
+		note("Eigene", "PIN "+blockfmt.SecretRef(own)),
+		note("Verwaist", "PIN "+blockfmt.SecretRef("sec_gibtesnicht0000000000")),
 	}}
 	data, _ := json.Marshal(exp)
-	plan, err := PlanMindSiftJSONImport(data)
+	plan, err := importer.PlanMindSiftJSONImport(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -524,7 +526,7 @@ func TestImportPreviewNamesNotesWithForeignSecrets(t *testing.T) {
 	}
 
 	// Applying gives the placeholder where the preview said so
-	plan, _ = PlanMindSiftJSONImport(data)
+	plan, _ = importer.PlanMindSiftJSONImport(data)
 	if _, err := s.ApplyImport(ben.ID, plan); err != nil {
 		t.Fatal(err)
 	}
@@ -553,7 +555,7 @@ func TestSecretSweepOrphansAndDeletes(t *testing.T) {
 	home, _ := s.CreateDocument(anna.ID, "", "Server", "", "", nil, nil, false)
 	kept, gone, back := hideValue(t, s, home.ID, anna.ID, "a"), hideValue(t, s, home.ID, anna.ID, "b"), hideValue(t, s, home.ID, anna.ID, "c")
 	a := collab.Actor{UserID: anna.ID, ClientID: "a"}
-	applyOps(t, s, home.ID, a, insertOp("blk_k1", "IP "+secretRef(kept)), insertOp("blk_k2", "Weg "+secretRef(back)))
+	applyOps(t, s, home.ID, a, insertOp("blk_k1", "IP "+blockfmt.SecretRef(kept)), insertOp("blk_k2", "Weg "+blockfmt.SecretRef(back)))
 	applyOps(t, s, home.ID, a, collab.Op{OpID: "op_del", Kind: collab.OpDelete, BlockID: "blk_k2"})
 
 	now := time.Date(2026, 11, 6, 3, 0, 0, 0, time.UTC)
@@ -617,7 +619,7 @@ func TestSecretBeyondTheRefCapIsKept(t *testing.T) {
 		ownMedia(t, s, anna.ID, id)
 		fmt.Fprintf(&sb, "| ![%d](media:%s) |\n", i, id)
 	}
-	sb.WriteString("| Token " + secretRef(sec) + " |\n")
+	sb.WriteString("| Token " + blockfmt.SecretRef(sec) + " |\n")
 	root, content := "", sb.String()
 	applyOps(t, s, doc.ID, collab.Actor{UserID: anna.ID, ClientID: "a"},
 		collab.Op{OpID: "op_tbl", Kind: collab.OpInsert, BlockID: "tbl", ParentID: &root, OrderKey: "a0", Type: "table", Content: &content})
@@ -646,7 +648,7 @@ func TestMigrationSplitsSharedSecrets(t *testing.T) {
 	s, anna, ben := newSecretStoreAt(t, path)
 	origin, _ := s.CreateDocument(anna.ID, "", "Server", "", "", nil, nil, false)
 	x := hideValue(t, s, origin.ID, anna.ID, "10.0.0.1")
-	broken := NewSecretID()
+	broken := blockfmt.NewSecretID()
 	if err := s.CreateSecret(broken, origin.ID, anna.ID, "v1:kaputt"); err != nil {
 		t.Fatal(err)
 	}
@@ -659,12 +661,12 @@ func TestMigrationSplitsSharedSecrets(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write(origin.ID, anna.ID, domain.DocumentBlock{ID: "blk_m0", Type: "bullet", Content: "Original " + secretRef(x)})
+	write(origin.ID, anna.ID, domain.DocumentBlock{ID: "blk_m0", Type: "bullet", Content: "Original " + blockfmt.SecretRef(x)})
 	write(annaDoc.ID, anna.ID,
-		domain.DocumentBlock{ID: "blk_m1", Type: "bullet", Content: "IP " + secretRef(x)},
-		domain.DocumentBlock{ID: "blk_m2", Type: "bullet", Content: "Kaputt " + secretRef(broken)},
-		domain.DocumentBlock{ID: "blk_m3", Type: "bullet", Content: "Nochmal " + secretRef(x)})
-	write(benDoc.ID, ben.ID, domain.DocumentBlock{ID: "blk_m4", Type: "bullet", Content: "Fremd " + secretRef(x)})
+		domain.DocumentBlock{ID: "blk_m1", Type: "bullet", Content: "IP " + blockfmt.SecretRef(x)},
+		domain.DocumentBlock{ID: "blk_m2", Type: "bullet", Content: "Kaputt " + blockfmt.SecretRef(broken)},
+		domain.DocumentBlock{ID: "blk_m3", Type: "bullet", Content: "Nochmal " + blockfmt.SecretRef(x)})
+	write(benDoc.ID, ben.ID, domain.DocumentBlock{ID: "blk_m4", Type: "bullet", Content: "Fremd " + blockfmt.SecretRef(x)})
 	for _, q := range []string{`ALTER TABLE note_secrets DROP COLUMN source_id`, `DELETE FROM schema_migrations WHERE id = 46`} {
 		if _, err := s.db.Exec(q); err != nil {
 			t.Fatalf("%s: %v", q, err)
@@ -684,16 +686,16 @@ func TestMigrationSplitsSharedSecrets(t *testing.T) {
 	s = reopen()
 	m1 := contentOf(t, s, annaDoc.ID, "blk_m1")
 	cp := ownCopy(t, s, annaDoc.ID, m1, x, "10.0.0.1")
-	if got := contentOf(t, s, annaDoc.ID, "blk_m3"); got != "Nochmal "+secretRef(cp) {
+	if got := contentOf(t, s, annaDoc.ID, "blk_m3"); got != "Nochmal "+blockfmt.SecretRef(cp) {
 		t.Errorf("two bullets of a note with the same value share its copy: %q", got)
 	}
 	if got := contentOf(t, s, benDoc.ID, "blk_m4"); got != "Fremd "+secretPlaceholder {
 		t.Errorf("a writer without access to the value's note gets the placeholder: %q", got)
 	}
-	if got := contentOf(t, s, annaDoc.ID, "blk_m2"); got != "Kaputt "+secretRef(broken) {
+	if got := contentOf(t, s, annaDoc.ID, "blk_m2"); got != "Kaputt "+blockfmt.SecretRef(broken) {
 		t.Errorf("a value that does not open stays as it is: %q", got)
 	}
-	if got := contentOf(t, s, origin.ID, "blk_m0"); got != "Original "+secretRef(x) {
+	if got := contentOf(t, s, origin.ID, "blk_m0"); got != "Original "+blockfmt.SecretRef(x) {
 		t.Errorf("the note of origin keeps its reference: %q", got)
 	}
 	values := countSecrets(t, s)

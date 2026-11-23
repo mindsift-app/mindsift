@@ -14,6 +14,7 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -127,7 +128,7 @@ func TestDesktopTakesOverOneAccountOfAServerSnapshot(t *testing.T) {
 	base := "/api/v1/admin/backups/server-snapshot/" + up.Token + "?account=" + anna.ID
 	rec = sessionCall(router, http.MethodPost, base+"&preview=1", token, "", "")
 	var prev struct {
-		storage.ImportSummary
+		importer.Summary
 		Account  storage.SnapshotAccount `json:"account"`
 		Settings bool                    `json:"settings"`
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/drawing"
 )
 
@@ -146,7 +147,7 @@ func (s *Store) searchVisibleNotes(ctx context.Context, userID, ftsQuery, folder
 				r.content = strings.Join(drawing.Texts(r.content), " · ")
 			}
 			if r.typ == "table" {
-				r.content = TableText(r.content)
+				r.content = blockfmt.TableText(r.content)
 			}
 		}
 	}

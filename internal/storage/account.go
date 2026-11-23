@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 // ErrLastAdmin protects the server from losing its last administrator.
@@ -41,6 +42,12 @@ func NormalizeSections(sections []string) map[string]bool {
 		}
 	}
 	return out
+}
+
+// ImportSections: the parts of an import plan that belong to the chosen sections (importer.Plan.Only).
+func ImportSections(sections map[string]bool) importer.Sections {
+	return importer.Sections{Notes: sections[SectionNotes], Tasks: sections[SectionTasks], Lists: sections[SectionLists],
+		Inbox: sections[SectionInbox], Themes: sections[SectionThemes]}
 }
 
 // sqlUnlinkTasksOfUserNotes: tasks (of anyone) created from bullets of a user's notes lose the link;

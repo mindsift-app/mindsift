@@ -3,6 +3,7 @@ package storage
 import (
 	"strings"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
@@ -28,7 +29,7 @@ func seedOutline(text string) []seedBlock {
 	tableLevel := 0
 	flushTable := func() {
 		if len(table) > 0 {
-			out = append(out, seedBlock{level: tableLevel, typ: "table", text: NormalizeTable(strings.Join(table, "\n"))})
+			out = append(out, seedBlock{level: tableLevel, typ: "table", text: blockfmt.NormalizeTable(strings.Join(table, "\n"))})
 			table = nil
 		}
 	}

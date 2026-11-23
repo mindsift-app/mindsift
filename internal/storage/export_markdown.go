@@ -5,16 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/i18n"
+	"github.com/mindsift-app/mindsift/internal/importer"
 )
 
 // WriteMarkdownVault streams the user's workspace as an Obsidian-compatible ZIP straight into w:
@@ -64,7 +67,7 @@ func (s *Store) writeVault(zw zipEntries, userID string) error {
 	attachments := map[string]string{} // media ID -> path in the archive
 	if media, err := s.MediaOfUser(userID); err == nil {
 		for _, m := range media {
-			attachments[m.ID] = vaultAttachmentDir + "/" + m.ID + MediaExt(m.Mime)
+			attachments[m.ID] = importer.VaultAttachmentDir + "/" + m.ID + blockfmt.MediaExt(m.Mime)
 		}
 	}
 	if err := s.writeMediaFiles(zw, userID, func(m Media) string { return attachments[m.ID] }); err != nil {
@@ -91,7 +94,7 @@ func (s *Store) writeVault(zw zipEntries, userID string) error {
 				continue
 			}
 			if svg, ok := drawing.SVG(b.Content); ok {
-				p := vaultAttachmentDir + "/" + b.ID + ".svg"
+				p := importer.VaultAttachmentDir + "/" + b.ID + ".svg"
 				if err := writeZipFile(zw, p, string(svg), parseISO(d.UpdatedAt, now)); err != nil {
 					return err
 				}
@@ -144,7 +147,7 @@ func (s *Store) writeVaultTasks(zw zipEntries, userID string, names *vaultNames,
 		for _, t := range items {
 			sb.WriteString(taskMarkdownLine(s.readableTask(t)))
 		}
-		return writeZipFile(zw, names.file(i18n.T(names.lang, vaultTasks), title, i18n.T(names.lang, vaultTasks)), sb.String(), now)
+		return writeZipFile(zw, names.file(i18n.T(names.lang, importer.VaultTasks), title, i18n.T(names.lang, importer.VaultTasks)), sb.String(), now)
 	}
 	for i := range lists {
 		if err := write(lists[i].Title, &lists[i], byList[lists[i].ID]); err != nil {
@@ -152,7 +155,7 @@ func (s *Store) writeVaultTasks(zw zipEntries, userID string, names *vaultNames,
 		}
 	}
 	if items := byList[""]; len(items) > 0 {
-		return write(i18n.T(names.lang, vaultNoList), nil, items)
+		return write(i18n.T(names.lang, importer.VaultNoList), nil, items)
 	}
 	return nil
 }
@@ -179,7 +182,7 @@ func (s *Store) writeVaultLists(zw zipEntries, userID string, names *vaultNames,
 			}
 			sb.WriteString(line + "\n")
 		}
-		if err := writeZipFile(zw, names.file(i18n.T(names.lang, vaultLists), l.Title, i18n.T(names.lang, "Liste")), sb.String(), parseISO(l.UpdatedAt, now)); err != nil {
+		if err := writeZipFile(zw, names.file(i18n.T(names.lang, importer.VaultLists), l.Title, i18n.T(names.lang, "Liste")), sb.String(), parseISO(l.UpdatedAt, now)); err != nil {
 			return err
 		}
 	}
@@ -229,18 +232,15 @@ func taskMarkdownLine(t domain.Thought) string {
 	return sb.String()
 }
 
-// BlocksToVaultMarkdown turns outliner blocks into Markdown that Obsidian renders natively:
-// top-level headings, dividers and callouts as real block elements, everything else as a nested
-// list (one tab per level), code as fenced blocks and tables inside the list.
-// vaultAttachmentDir holds images and recordings in the Markdown archive.
-const vaultAttachmentDir = "attachments"
-
 // vaultCalloutKind: the Obsidian callout for each callout-like block type
 var vaultCalloutKind = map[string]string{"callout": "note", "warning": "warning", "error": "failure"}
 
 // DrawingAttachmentKey: how a drawing's SVG file is looked up among the attachments of an export
 func DrawingAttachmentKey(blockID string) string { return "drawing:" + blockID }
 
+// BlocksToVaultMarkdown turns outliner blocks into Markdown that Obsidian renders natively:
+// top-level headings, dividers and callouts as real block elements, everything else as a nested
+// list (one tab per level), code as fenced blocks and tables inside the list.
 func BlocksToVaultMarkdown(blocks []domain.DocumentBlock) string {
 	return blocksToVaultMarkdown(blocks, nil)
 }
@@ -275,7 +275,7 @@ func blocksToVaultMarkdown(blocks []domain.DocumentBlock, attachment func(id str
 			}
 		}
 		if (b.Type == "image" || b.Type == "audio") && attachment != nil {
-			if ref, ok := ParseMediaContent(content); ok {
+			if ref, ok := blockfmt.ParseMediaContent(content); ok {
 				if p := attachment(ref.ID); p != "" {
 					// A size set by hand the way Obsidian reads it (and the import takes back)
 					size := ""
@@ -311,7 +311,7 @@ func blocksToVaultMarkdown(blocks []domain.DocumentBlock, attachment func(id str
 				lift = 1
 				continue
 			case "table":
-				sb.WriteString("\n" + NormalizeTable(content) + "\n\n")
+				sb.WriteString("\n" + blockfmt.NormalizeTable(content) + "\n\n")
 				lift = 1
 				continue
 			}
@@ -322,7 +322,7 @@ func blocksToVaultMarkdown(blocks []domain.DocumentBlock, attachment func(id str
 			sb.WriteString(indent + "```" + b.Lang + "\n" + indent + strings.ReplaceAll(content, "\n", "\n"+indent) + "\n" + indent + "```\n")
 		case "table":
 			// Indented below the list item it belongs to; Markdown needs the blank lines around a table
-			sb.WriteString("\n" + indent + strings.ReplaceAll(NormalizeTable(content), "\n", "\n"+indent) + "\n\n")
+			sb.WriteString("\n" + indent + strings.ReplaceAll(blockfmt.NormalizeTable(content), "\n", "\n"+indent) + "\n\n")
 		case "todo":
 			mark := "[ ]"
 			if b.Checked {
@@ -409,44 +409,12 @@ type vaultNames struct {
 	lang string // language of folder names and fallbacks
 }
 
-// Folders of the archive for tasks and lists and the file of tasks without a list, in the language of
-// the one exporting; the import knows them in every language.
-const (
-	vaultTasks  = "Aufgaben"
-	vaultLists  = "Listen"
-	vaultNoList = "Ohne Liste"
-)
-
-func isVaultDir(name, german string) bool {
-	for _, lang := range i18n.Supported {
-		if name == i18n.T(lang, german) {
-			return true
-		}
-	}
-	return false
-}
-
 func newVaultNames() *vaultNames { return &vaultNames{used: make(map[string]bool)} }
-
-// segment makes one path part safe on Windows, macOS and Linux and never "." or "..".
-func segment(s string) string {
-	s = strings.Map(func(r rune) rune {
-		if r < 32 || strings.ContainsRune(`/\:*?"<>|`, r) {
-			return '_'
-		}
-		return r
-	}, strings.TrimSpace(s))
-	s = strings.Trim(s, ". ")
-	if len([]rune(s)) > 100 {
-		s = string([]rune(s)[:100])
-	}
-	return s
-}
 
 func (n *vaultNames) dir(folderPath string) string {
 	parts := make([]string, 0)
 	for _, p := range strings.Split(folderPath, "/") {
-		if seg := segment(p); seg != "" {
+		if seg := importer.Segment(p); seg != "" {
 			parts = append(parts, seg)
 		}
 	}
@@ -455,7 +423,7 @@ func (n *vaultNames) dir(folderPath string) string {
 
 // file returns "dir/title.md", adding " (2)", " (3)" … when the name is already taken.
 func (n *vaultNames) file(dir, title, fallback string) string {
-	base := segment(title)
+	base := importer.Segment(title)
 	if base == "" {
 		base = fallback
 	}
@@ -488,4 +456,49 @@ func (s *Store) readableTask(t domain.Thought) domain.Thought {
 	}
 	t.Subtasks = subs
 	return t
+}
+
+// WriteBackupZip streams the JSON backup compressed into a ZIP, next to it the workspace as a Markdown
+// vault (importer.BackupVaultDir) with the images and recordings of the user's notes as attachments/<id><ext>
+// (blocks point to them as media:<id>).
+func (s *Store) WriteBackupZip(userID string, exp *domain.FullExport, w io.Writer) error {
+	zw := zip.NewWriter(w)
+	modified := parseISO(exp.ExportedAt, time.Now())
+	f, err := zw.CreateHeader(&zip.FileHeader{Name: importer.BackupFileName, Method: zip.Deflate, Modified: modified})
+	if err != nil {
+		return err
+	}
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(exp); err != nil {
+		return err
+	}
+	if err := s.writeVault(prefixedZip{zw: zw, prefix: importer.BackupVaultDir + "/"}, userID); err != nil {
+		return err
+	}
+	return zw.Close()
+}
+
+// writeMediaFiles adds the user's media files to an archive (already compressed formats: stored as is).
+// Files missing on disk are left out.
+func (s *Store) writeMediaFiles(zw zipEntries, userID string, name func(Media) string) error {
+	media, err := s.MediaOfUser(userID)
+	if err != nil {
+		return err
+	}
+	for _, m := range media {
+		src, err := os.Open(s.MediaFilePath(&m))
+		if err != nil {
+			continue
+		}
+		dst, err := zw.CreateHeader(&zip.FileHeader{Name: name(m), Method: zip.Store, Modified: parseISO(m.CreatedAt, time.Now())})
+		if err == nil {
+			_, err = io.Copy(dst, src)
+		}
+		src.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

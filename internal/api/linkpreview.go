@@ -13,8 +13,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/mindsift-app/mindsift/internal/storage"
 	xhtml "golang.org/x/net/html"
+
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
+	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 // Link previews for notes: the server fetches the page once (https only, never into its own network,
@@ -225,7 +227,7 @@ func buildLinkPreview(ctx context.Context, pageURL string) *storage.LinkPreview 
 	ct := strings.ToLower(hdr.Get("Content-Type"))
 	if !strings.Contains(ct, "html") {
 		// A direct link to an image: the image itself is the preview
-		if _, kind, ok := storage.DetectMedia(body, ""); ok && kind == "image" && len(body) <= previewMaxImage {
+		if _, kind, ok := blockfmt.DetectMedia(body, ""); ok && kind == "image" && len(body) <= previewMaxImage {
 			p.Image, p.ImageMime, p.OK = body, http.DetectContentType(body), true
 			p.Title = cleanText(strings.TrimSuffix(base.Path[strings.LastIndex(base.Path, "/")+1:], "/"), 200)
 			p.SiteName = base.Hostname()
@@ -243,7 +245,7 @@ func buildLinkPreview(ctx context.Context, pageURL string) *storage.LinkPreview 
 	}
 	if img := resolveRef(base, meta.image); img != "" {
 		if data, _, err := fetchLimited(ctx, img, previewMaxImage, "image/*"); err == nil {
-			if mime, kind, ok := storage.DetectMedia(data, ""); ok && kind == "image" {
+			if mime, kind, ok := blockfmt.DetectMedia(data, ""); ok && kind == "image" {
 				p.Image, p.ImageMime = data, mime
 			}
 		}

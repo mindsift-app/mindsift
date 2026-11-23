@@ -16,8 +16,8 @@ func TestCreateDocumentKeepsToTheNoteSizeLimit(t *testing.T) {
 	for i := range blocks {
 		blocks[i] = domain.DocumentBlock{ID: "blk_" + strconv.Itoa(i), Type: "bullet", Content: "x"}
 	}
-	if _, err := store.CreateDocument(alice.ID, "", "Zu groß", "", "", blocks, nil, false); !errors.Is(err, ErrNoteTooLarge) {
-		t.Fatalf("want ErrNoteTooLarge, got %v", err)
+	if _, err := store.CreateDocument(alice.ID, "", "Zu groß", "", "", blocks, nil, false); !errors.Is(err, collab.ErrNoteTooLarge) {
+		t.Fatalf("want collab.ErrNoteTooLarge, got %v", err)
 	}
 	if _, err := store.CreateDocument(alice.ID, "", "Gerade noch", "", "", blocks[:collab.MaxNoteBlocks], nil, false); err != nil {
 		t.Fatalf("at the limit: %v", err)

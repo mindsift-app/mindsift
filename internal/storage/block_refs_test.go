@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -122,7 +123,7 @@ func TestBlockRefsFollowBlocks(t *testing.T) {
 	ownMedia(t, s, u.ID, "med_aa", "med_bb", "med_cc")
 	a := collab.Actor{UserID: u.ID, ClientID: "tab1"}
 	doc, err := s.CreateDocument(u.ID, "", "Urlaub", "🏖️", "", []domain.DocumentBlock{
-		{ID: "img", Type: "image", Content: MediaContent("image", "med_aa", "Strand")},
+		{ID: "img", Type: "image", Content: blockfmt.MediaContent("image", "med_aa", "Strand")},
 		{ID: "ip", Type: "bullet", Content: "Router {{secret:secip}}"},
 		{ID: "txt", Type: "bullet", Content: "Nur Text"},
 	}, nil, false)
@@ -138,9 +139,9 @@ func TestBlockRefsFollowBlocks(t *testing.T) {
 	}
 
 	// Editing: another file replaces the first; text gains a secret; an insert brings a file
-	img2 := MediaContent("image", "med_bb", "Berg")
+	img2 := blockfmt.MediaContent("image", "med_bb", "Berg")
 	txt := "Nur Text und {{secret:sectxt}}"
-	audio, root := MediaContent("audio", "med_cc", "Gruß"), ""
+	audio, root := blockfmt.MediaContent("audio", "med_cc", "Gruß"), ""
 	state, _ := s.readCollabDoc(doc.ID)
 	roots := state.Children("")
 	key, _ := collab.KeyBetween(roots[len(roots)-1].OrderKey, "")
@@ -227,12 +228,12 @@ func TestBlockRefsMigrationBackfill(t *testing.T) {
 	a := collab.Actor{UserID: u.ID, ClientID: "tab1"}
 	target, _ := s.CreateDocument(u.ID, "", "Ziel", "", "", nil, nil, false)
 	doc, _ := s.CreateDocument(u.ID, "", "Quelle", "", "", []domain.DocumentBlock{
-		{ID: "b1", Type: "image", Content: MediaContent("image", "med_01", "Bild")},
+		{ID: "b1", Type: "image", Content: blockfmt.MediaContent("image", "med_01", "Bild")},
 		{ID: "b2", Type: "bullet", Content: "{{secret:s1}} und media:med_02 im Text, siehe [[Ziel]]"},
-		{ID: "b3", Type: "audio", Content: MediaContent("audio", "med_03", "")},
+		{ID: "b3", Type: "audio", Content: blockfmt.MediaContent("audio", "med_03", "")},
 	}, nil, false)
 	_, _ = s.CreateDocument(u.ID, "", "Kopie", "", "", []domain.DocumentBlock{
-		{ID: "c1", Type: "image", Content: MediaContent("image", "med_01", "Kopie")},
+		{ID: "c1", Type: "image", Content: blockfmt.MediaContent("image", "med_01", "Kopie")},
 	}, nil, false)
 	applyOps(t, s, doc.ID, a, collab.Op{OpID: "del", Kind: collab.OpDelete, BlockID: "b3"})
 	before := refRows(t, s)
@@ -287,7 +288,7 @@ func TestBlockRefQueriesUseIndexes(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		ownMedia(t, s, u.ID, fmt.Sprintf("med_%02x", i))
 		_, _ = s.CreateDocument(u.ID, "", "Notiz", "", "", []domain.DocumentBlock{
-			{ID: domain.NewID("blk"), Type: "image", Content: MediaContent("image", fmt.Sprintf("med_%02x", i), "")},
+			{ID: domain.NewID("blk"), Type: "image", Content: blockfmt.MediaContent("image", fmt.Sprintf("med_%02x", i), "")},
 			{ID: domain.NewID("blk"), Type: "bullet", Content: "Text"},
 		}, nil, false)
 	}

@@ -1,8 +1,8 @@
 // Package i18ncheck finds German server texts that lack a translation in one of the catalogs of
-// internal/i18n. Only tests import it: the check runs in internal/i18n and also in internal/api and
-// internal/storage, where most texts live. A change there is tested with its own package while working
-// (targeted checks), so a missing translation shows up then, not only in the image build that tests all
-// packages.
+// internal/i18n. Only tests import it: the check runs in internal/i18n and also in internal/api,
+// internal/storage and internal/importer, where most texts live. A change there is tested with its own
+// package while working (targeted checks), so a missing translation shows up then, not only in the image
+// build that tests all packages.
 package i18ncheck
 
 import (
@@ -19,7 +19,7 @@ import (
 )
 
 // Server texts that reach people: error answers, translated texts and errors of the storage layer
-var textCall = regexp.MustCompile(`(?:writeError\(w, [^,]+, |writeErrorCode\(w, [^,]+, "[a-z_]+", |\btr\(w, |i18n\.T\("?[\w.()]*"?, |i18n\.NewError\(|errors\.New\(|fmt\.Errorf\(|toolError\(|writeOAuthError\(w, [^,]+, "[a-z_]+", |jsonrpcError\{\w+, |\.skip\([^,]+, )"((?:[^"\\]|\\.)*)"(\s*\+)?`)
+var textCall = regexp.MustCompile(`(?:writeError\(w, [^,]+, |writeErrorCode\(w, [^,]+, "[a-z_]+", |\btr\(w, |i18n\.T\("?[\w.()]*"?, |i18n\.NewError\(|errors\.New\(|fmt\.Errorf\(|toolError\(|writeOAuthError\(w, [^,]+, "[a-z_]+", |jsonrpcError\{\w+, |\.[sS]kip\([^,]+, )"((?:[^"\\]|\\.)*)"(\s*\+)?`)
 
 // German texts are recognised by umlauts or common German words; English internal errors stay as they are
 var germanWords = regexp.MustCompile(`(?i)[äöüß]|\b(der|die|das|dem|den|des|ein|eine|einen|nicht|kein|keine|ist|und|oder|für|mit|zu|bitte|Bitte|wurde|konnte|nur|Nur|fehlt|erforderlich|Ungültig\w*|ungültig\w*|gefunden|Fehler|Benutzer|Liste|Aufgabe|Notiz|Datei|Gruppe|Sitzung|Zugriff|Berechtigung|Anfrage|Passwort|fehlgeschlagen|abgebrochen|unbekannt\w*|existiert|bereits|erlaubt|Aufgaben|Notizen|Rechte|Fehler\w*)\b`)

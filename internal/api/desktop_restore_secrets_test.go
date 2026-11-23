@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
@@ -38,7 +39,7 @@ func serverWithHiddenValues(t *testing.T, serverKey []byte, withKey bool) (strin
 	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna Server", domain.RoleAdmin)
 	ben, _ := store.CreateUser("ben@example.com", "hash", "Ben", domain.RoleMember)
 	addValue := func(u *domain.User, title, value string) string {
-		id := storage.NewSecretID()
+		id := blockfmt.NewSecretID()
 		doc, err := store.CreateDocument(u.ID, "", title, "📄", "", []domain.DocumentBlock{{ID: "s_" + id, Type: "bullet", Content: "Zugang " + secretRef(id)}}, nil, false)
 		if err != nil {
 			t.Fatal(err)
@@ -119,7 +120,7 @@ func (r secretTakeOver) noteRefs(t *testing.T, title string) (string, []string) 
 		}
 		var ids []string
 		for _, b := range doc.Blocks {
-			for _, m := range storage.SecretRefRe.FindAllStringSubmatch(b.Content, -1) {
+			for _, m := range blockfmt.SecretRefRe.FindAllStringSubmatch(b.Content, -1) {
 				ids = append(ids, m[1])
 			}
 		}
