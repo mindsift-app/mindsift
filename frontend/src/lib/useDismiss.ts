@@ -139,8 +139,6 @@ export interface DismissOptions {
    * only closing it.
    */
   passThrough?: boolean;
-  /** No longer used: every press closes at pointer down, and the rest of that press is swallowed */
-  event?: 'pointerdown' | 'mousedown';
 }
 
 /**
