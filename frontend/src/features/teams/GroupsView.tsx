@@ -480,7 +480,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                       title={t('changeRole')}
                                       value={m.role as 'admin' | 'member'}
                                       onChange={(role) => handleChangeMemberRole(team.id, m.userId, role)}
-                                      buttonClassName={`h-6 px-1.5 gap-1 text-[10px] rounded-sm input-field bg-panel ${
+                                      buttonClassName={`h-11 sm:h-6 px-2 sm:px-1.5 gap-1 text-xs sm:text-[10px] rounded-sm input-field bg-panel ${
                                         isAdmin ? 'border-accent text-accent font-semibold' : 'text-muted'
                                       }`}
                                       options={[

@@ -435,7 +435,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 onClick={handleToggleWatch}
                 disabled={watchBusy}
                 title={isWatching ? t('detail.unwatch') : t('detail.watch')}
-                className={`btn-action min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5 ${
+                className={`btn-action h-11 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5 ${
                   isWatching ? 'border-accent text-accent' : ''
                 }`}
               >
@@ -462,7 +462,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                   if (docId && onOpenDocument) onOpenDocument(docId, blockId);
                 }}
                 title={t('detail.gotoNote')}
-                className="btn-primary min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5 font-semibold"
+                className="btn-primary h-11 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5 font-semibold"
               >
                 <FileText className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                 {/* Short on phones, so the header buttons stay on one line */}
@@ -477,7 +477,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                   onConvertToDoc(task);
                 }}
                 title={t('detail.toDocTitle')}
-                className="btn-action min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5"
+                className="btn-action h-11 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5"
               >
                 <FileText className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-accent" />
                 <span className="hidden sm:inline">{t('detail.toDoc')}</span>
@@ -492,7 +492,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 onDeleteTask(task.id);
               }}
               title={t('detail.delete')}
-              className="btn-action min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs text-status-err border-status-err/30 hover:bg-status-err/10 flex items-center gap-1"
+              className="btn-action h-11 sm:h-7 px-2.5 sm:px-2 text-xs text-status-err border-status-err/30 hover:bg-status-err/10 flex items-center gap-1"
             >
               <Trash className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
               <span className="sm:hidden font-medium">{t('detail.deleteShort')}</span>
@@ -501,7 +501,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
             <button
               type="button"
               onClick={requestClose}
-              className="text-muted hover:text-main p-2 sm:p-1.5 min-h-[38px] min-w-[38px] sm:min-h-0 sm:min-w-0 flex items-center justify-center transition-colors"
+              className="text-muted hover:text-main w-11 h-11 sm:w-auto sm:h-auto sm:p-1.5 flex items-center justify-center transition-colors"
               title={t('common:close')}
             >
               <X className="w-5 h-5 sm:w-4 sm:h-4" />
