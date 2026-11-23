@@ -257,18 +257,18 @@ func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results 
 	changed, added := s.store.ReconcileDocTaskLinksNotify(docID, plan)
 	sent := map[string]bool{}
 	for _, c := range changed {
-		s.wsHub.BroadcastToUsers(audiences[c.After.ID], "TASK_UPDATED", c.After)
+		s.wsHub.BroadcastToUsers(audiences[c.After.ID], eventTaskUpdated, c.After)
 		sent[c.After.ID] = true
 	}
 	for _, t := range relinked {
 		if !sent[t.ID] {
-			s.wsHub.BroadcastToUsers(s.taskAudience(t), "TASK_UPDATED", t) // the task views show the link again
+			s.wsHub.BroadcastToUsers(s.taskAudience(t), eventTaskUpdated, t) // the task views show the link again
 		}
 	}
 	s.sendBatch(&b, added)
 	s.notifyNoteMentions(actorID, docID, ops, results)
 	if titleChanged {
-		s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
+		s.broadcastDocToAuthorizedUsers(docID, eventDocUpdated)
 	}
 }
 
@@ -285,7 +285,7 @@ func (s *Server) pokeDoc(docID string) {
 func (s *Server) notifyDocChanged(docID string, head int64) {
 	s.notifier.Notify(docID)
 	s.touchDocCounts(docID, time.Now())
-	s.wsHub.BroadcastDocEvent(docID, "DOC_SEQ", map[string]any{"docId": docID, "headSeq": head})
+	s.wsHub.BroadcastDocEvent(docID, eventDocSeq, map[string]any{"docId": docID, "headSeq": head})
 }
 
 // handleDocChanges is the long-poll fallback: it returns as soon as the note changes (or leases/presence

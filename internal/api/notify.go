@@ -78,7 +78,7 @@ func (s *Server) storeBatch(b *notifyBatch) {
 func (s *Server) sendBatch(b *notifyBatch, added []storage.CenterEntry) {
 	for i, e := range added {
 		if i < len(b.center) {
-			s.wsHub.BroadcastToUser(b.center[i].UserID, "NOTIFICATION", e)
+			s.wsHub.BroadcastToUser(b.center[i].UserID, eventNotification, e)
 		}
 	}
 }
@@ -191,7 +191,7 @@ func (s *Server) storeCenterEntry(userID string, e storage.CenterEntry, group st
 		added.Text = generic
 		logFailed("Updating the text of a notification", s.store.SetCenterEntryText(userID, added.ID, generic), "user_id", userID)
 	}
-	s.wsHub.BroadcastToUser(userID, "NOTIFICATION", added)
+	s.wsHub.BroadcastToUser(userID, eventNotification, added)
 }
 
 func (s *Server) actorName(lang, userID string) string {
@@ -525,7 +525,7 @@ func (s *Server) insertTask(userID, content, priority, source, dueDate, taskList
 		return nil, err
 	}
 	s.recordThoughtOrigin(task, actor, true)
-	s.wsHub.BroadcastToUsers(append(members, task.UserID), "TASK_CREATED", task)
+	s.wsHub.BroadcastToUsers(append(members, task.UserID), eventTaskCreated, task)
 	s.sendBatch(&b, added)
 	return task, nil
 }

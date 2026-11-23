@@ -58,7 +58,7 @@ func (s *Server) broadcastListUpdated(l *domain.SharedList) {
 	if l == nil {
 		return
 	}
-	s.wsHub.BroadcastListEvent(l.ID, "LIST_UPDATED", listForEveryone{
+	s.wsHub.BroadcastListEvent(l.ID, eventListUpdated, listForEveryone{
 		ID: l.ID, UserID: l.UserID, OwnerName: l.OwnerName, Title: l.Title, Icon: l.Icon, ListType: l.ListType,
 		Items: l.Items, Shares: l.Shares, Members: l.Members, UpdatedAt: l.UpdatedAt, CreatedAt: l.CreatedAt,
 	})
@@ -76,24 +76,45 @@ func (s *Server) handleCreateList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lst, err := s.store.CreateList(userID, req.Title, derefIcon(req.Icon), req.ListType)
-	if err == nil && lst != nil && req.Icon != nil && *req.Icon == "" {
-		if err = s.store.ClearIcon("lists", lst.ID); err == nil {
-			lst.Icon = ""
-		}
-	}
+	lst, err := s.createList(userID, req.Title, req.Icon, req.ListType)
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	// Shared with nobody yet: only the creator's other devices learn of it (its room has no one in it)
-	s.wsHub.BroadcastToUser(userID, "LIST_CREATED", lst)
 	writeJSON(w, http.StatusCreated, lst)
+}
+
+// createList creates a list (POST /lists, MCP create_list). Shared with nobody yet: only the creator's
+// other devices learn of it (its room has no one in it). icon: nil = the default, "" = none.
+func (s *Server) createList(userID, title string, icon *string, listType string) (*domain.SharedList, error) {
+	lst, err := s.store.CreateList(userID, title, derefIcon(icon), listType)
+	if err != nil {
+		return nil, err
+	}
+	if icon != nil && *icon == "" {
+		err = s.store.ClearIcon("lists", lst.ID)
+		if err == nil {
+			lst.Icon = ""
+		}
+	}
+	s.wsHub.BroadcastToUser(userID, eventListCreated, lst)
+	if err != nil {
+		return nil, err
+	}
+	return lst, nil
+}
+
+// broadcastListAudience sends a list event to everyone who could see the list before the change
+// (before, read before it) or sees it now, on all their connections: also the people who have the
+// list overview open but not this list (its room). Same message as BroadcastListEvent (with listId).
+func (s *Server) broadcastListAudience(listID string, before []string, event string, payload any) {
+	s.wsHub.BroadcastListToUsers(append(before, s.store.GetListUserIDs(listID)...), listID, event, payload)
 }
 
 func (s *Server) handleDeleteList(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	listID := chi.URLParam(r, "id")
+	audienceBefore := s.store.GetListUserIDs(listID)
 	if err := s.store.DeleteList(userID, listID); err != nil {
 		if errors.Is(err, storage.ErrListOwnerOnly) {
 			writeErrorFrom(w, http.StatusForbidden, err)
@@ -102,7 +123,8 @@ func (s *Server) handleDeleteList(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, http.StatusInternalServerError, err)
 		return
 	}
-	s.wsHub.BroadcastListEvent(listID, "LIST_DELETED", map[string]string{"listId": listID})
+	// Everyone who saw it, not only its room: the list overview of the others drops it too
+	s.broadcastListAudience(listID, audienceBefore, eventListDeleted, map[string]string{"listId": listID})
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
@@ -182,15 +204,8 @@ func (s *Server) handleCreateListShare(w http.ResponseWriter, r *http.Request) {
 	if l, err := s.store.GetListByID(currentUserID, listID); err == nil {
 		s.notifyShared(currentUserID, targetType, share.TargetID, "list", listID, l.Title)
 	}
-	if targetType == "team" {
-		members, _ := s.store.GetTeamMembers(share.TargetID)
-		for _, tm := range members {
-			s.wsHub.BroadcastToUser(tm.UserID, "LIST_SHARED", share)
-		}
-	} else {
-		s.wsHub.BroadcastToUser(share.TargetID, "LIST_SHARED", share)
-	}
-	s.wsHub.BroadcastListEvent(listID, "LIST_SHARED", share)
+	// The people it is shared with now (a team's members) and everyone who saw it before
+	s.broadcastListAudience(listID, nil, eventListShared, share)
 
 	writeJSON(w, http.StatusCreated, share)
 }
@@ -200,12 +215,14 @@ func (s *Server) handleDeleteListShare(w http.ResponseWriter, r *http.Request) {
 	listID := chi.URLParam(r, "id")
 	shareID := chi.URLParam(r, "shareId")
 
+	audienceBefore := s.store.GetListUserIDs(listID)
 	if err := s.store.RemoveListShare(currentUserID, listID, shareID); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "LIST_UNSHARED", map[string]string{
+	// Also to the people who lost it, so their list overview drops it, whether it was open or not
+	s.broadcastListAudience(listID, audienceBefore, eventListUnshared, map[string]string{
 		"listId":  listID,
 		"shareId": shareID,
 	})
@@ -246,14 +263,11 @@ func (s *Server) handleCreateListItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := s.store.CreateListItem(listID, req.Content, req.Category, req.Quantity, 0, userID)
+	item, err := s.addListItem(userID, listID, req.Content, req.Category, req.Quantity, actorFrom(r.Context()))
 	if err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		writeListItemError(w, err)
 		return
 	}
-	s.recordListItemOrigin(item, actorFrom(r.Context()), true)
-
-	s.wsHub.BroadcastListEvent(listID, "ITEM_CREATED", item)
 	writeJSON(w, http.StatusCreated, item)
 }
 
@@ -283,7 +297,7 @@ func (s *Server) setListItemDoneAt(userID, listID, itemID string, done bool, at 
 		return item, nil
 	}
 	s.recordListItemOrigin(item, actor, false)
-	s.wsHub.BroadcastListEvent(listID, "ITEM_TOGGLED", item)
+	s.wsHub.BroadcastListEvent(listID, eventItemToggled, item)
 	return item, nil
 }
 
@@ -320,12 +334,8 @@ func (s *Server) handleToggleListItem(w http.ResponseWriter, r *http.Request) {
 	at := changeTime(req.ChangedAt, req.SentAt, time.Now())
 	item, err := s.setListItemDoneAt(userID, listID, itemID, req.IsCompleted, at, actorFrom(r.Context()))
 	// Deleted (or the list unshared) since the check above: 404 like that check, not 400
-	if errors.Is(err, storage.ErrListItemNotFound) || errors.Is(err, storage.ErrListNotFound) {
-		writeErrorFrom(w, http.StatusNotFound, err)
-		return
-	}
 	if err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		writeListItemError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
@@ -348,19 +358,41 @@ func (s *Server) handleUpdateListItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := s.store.UpdateListItem(itemID, req.Content, req.Category, req.Quantity)
-	if errors.Is(err, storage.ErrListItemNotFound) {
-		writeErrorFrom(w, http.StatusNotFound, err)
-		return
-	}
+	item, err := s.updateListItem(auth.GetUserID(r.Context()), listID, itemID, req.Content, req.Category, req.Quantity, actorFrom(r.Context()))
 	if err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		writeListItemError(w, err)
 		return
 	}
-	s.recordListItemOrigin(item, actorFrom(r.Context()), false)
-
-	s.wsHub.BroadcastListEvent(listID, "ITEM_UPDATED", item)
 	writeJSON(w, http.StatusOK, item)
+}
+
+// updateListItem changes text, category or quantity of an item (nil: unchanged) and tells the list's
+// viewers. Shared by PATCH /lists/{id}/items/{itemId} with content fields and the MCP tool
+// update_list_item; access is checked first.
+func (s *Server) updateListItem(userID, listID, itemID string, content, category, quantity *string, actor *apiActor) (*domain.ListItem, error) {
+	if err := s.store.EnsureListItemsWritable(userID, listID, itemID); err != nil {
+		return nil, err
+	}
+	item, err := s.store.UpdateListItem(itemID, content, category, quantity)
+	if err != nil {
+		return nil, err
+	}
+	s.recordListItemOrigin(item, actor, false)
+	s.wsHub.BroadcastListEvent(listID, eventItemUpdated, item)
+	return item, nil
+}
+
+// writeListItemError answers a failed change of a list entry: gone (the entry, or the list for this
+// person, since the check before) 404, read only 403, anything else (empty text …) 400.
+func writeListItemError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, storage.ErrListItemNotFound), errors.Is(err, storage.ErrListNotFound):
+		writeErrorFrom(w, http.StatusNotFound, err)
+	case errors.Is(err, storage.ErrListReadOnly):
+		writeErrorFrom(w, http.StatusForbidden, err)
+	default:
+		writeErrorFrom(w, http.StatusBadRequest, err)
+	}
 }
 
 func (s *Server) handleDeleteListItem(w http.ResponseWriter, r *http.Request) {
@@ -376,7 +408,7 @@ func (s *Server) handleDeleteListItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "ITEM_DELETED", map[string]string{
+	s.wsHub.BroadcastListEvent(listID, eventItemDeleted, map[string]string{
 		"itemId": itemID,
 		"listId": listID,
 	})
@@ -417,11 +449,11 @@ func (s *Server) handleMoveListItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "ITEM_DELETED", map[string]string{
+	s.wsHub.BroadcastListEvent(listID, eventItemDeleted, map[string]string{
 		"itemId": itemID,
 		"listId": listID,
 	})
-	s.wsHub.BroadcastListEvent(req.TargetListID, "ITEM_CREATED", item)
+	s.wsHub.BroadcastListEvent(req.TargetListID, eventItemCreated, item)
 	writeJSON(w, http.StatusOK, item)
 }
 
@@ -436,7 +468,7 @@ func (s *Server) handleClearCompletedItems(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "LIST_CLEARED", map[string]any{
+	s.wsHub.BroadcastListEvent(listID, eventListCleared, map[string]any{
 		"listId":  listID,
 		"removed": removed,
 	})
@@ -461,7 +493,7 @@ func (s *Server) handleReorderListItems(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "ITEM_REORDERED", map[string]any{
+	s.wsHub.BroadcastListEvent(listID, eventItemReordered, map[string]any{
 		"listId": listID,
 		"items":  req.Items,
 	})

@@ -314,7 +314,7 @@ func (s *Server) handleDeletePublicLink(w http.ResponseWriter, r *http.Request) 
 // drops its public-link mark. Only the owner sees the mark, so nobody else is told.
 func (s *Server) announcePublicLink(userID, docID string) {
 	if listed, err := s.store.GetDocumentListItem(userID, docID); err == nil && listed != nil {
-		s.wsHub.BroadcastToUser(userID, "DOC_UPDATED", listed)
+		s.wsHub.BroadcastToUser(userID, eventDocUpdated, listed)
 	}
 }
 

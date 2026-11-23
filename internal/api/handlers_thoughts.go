@@ -103,7 +103,7 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.assignCreator(userID, thought)
-	s.wsHub.BroadcastToUsers(s.taskAudience(thought), "TASK_CREATED", thought)
+	s.wsHub.BroadcastToUsers(s.taskAudience(thought), eventTaskCreated, thought)
 	s.notifyTaskAdded(userID, thought, nil)
 	writeJSON(w, http.StatusCreated, thought)
 }
@@ -198,10 +198,10 @@ func (s *Server) afterTriage(userID string, updated *domain.Thought, convertTo, 
 		}
 	}
 	if convertTo == "document" && updated.ConvertedRefID != "" {
-		s.broadcastDocToAuthorizedUsers(updated.ConvertedRefID, "DOC_CREATED")
+		s.broadcastDocToAuthorizedUsers(updated.ConvertedRefID, eventDocCreated)
 	}
 	s.assignCreator(userID, updated)
-	s.wsHub.BroadcastToUsers(s.taskAudience(updated), "TASK_UPDATED", updated)
+	s.wsHub.BroadcastToUsers(s.taskAudience(updated), eventTaskUpdated, updated)
 	s.notifyTaskAdded(userID, updated, nil)
 }
 
@@ -301,7 +301,7 @@ func (s *Server) handleReorderTasks(w http.ResponseWriter, r *http.Request) {
 		"userId":     userID,
 	}
 	if res.Written > 0 || res.Spawned {
-		s.wsHub.BroadcastToUsers(res.Audience, "TASK_REORDERED", payload)
+		s.wsHub.BroadcastToUsers(res.Audience, eventTaskReordered, payload)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"success": true,
@@ -434,7 +434,7 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 		tellApps = append(slices.Clone(audience), s.taskAudience(before)...)
 	}
 	if !unchanged {
-		s.wsHub.BroadcastToUsers(tellApps, "TASK_UPDATED", updated)
+		s.wsHub.BroadcastToUsers(tellApps, eventTaskUpdated, updated)
 	}
 	if req.Assignees != nil {
 		watchers = s.planTaskChange(&b, userID, before, updated, false, audience)
@@ -511,7 +511,7 @@ func (s *Server) deleteTask(userID, thoughtID string) error {
 		return err
 	}
 	s.sendBatch(&b, added)
-	s.wsHub.BroadcastToUsers(audience, "TASK_DELETED", map[string]string{"id": thoughtID})
+	s.wsHub.BroadcastToUsers(audience, eventTaskDeleted, map[string]string{"id": thoughtID})
 	if th.DocID != "" {
 		s.pokeDoc(th.DocID) // the open note drops the to-do's task badge
 	}

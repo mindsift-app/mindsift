@@ -345,7 +345,7 @@ var mcpWriteTools = []mcpTool{
 				_, head, _ := s.store.GetDocOpsSince(a.ID, 0, 0)
 				s.notifyDocChanged(a.ID, head)
 			}
-			s.broadcastDocToAuthorizedUsers(a.ID, "DOC_UPDATED")
+			s.broadcastDocToAuthorizedUsers(a.ID, eventDocUpdated)
 			if a.FolderPath != nil {
 				s.announceNoteMoved(userID, a.ID)
 			}
@@ -643,7 +643,7 @@ var mcpWriteTools = []mcpTool{
 				return nil, err
 			}
 			for _, uid := range audience {
-				s.wsHub.BroadcastToUser(uid, "DOC_DELETED", map[string]string{"id": a.ID})
+				s.wsHub.BroadcastToUser(uid, eventDocDeleted, map[string]string{"id": a.ID})
 			}
 			return map[string]any{"id": a.ID, "trashed": true}, nil
 		},
@@ -743,7 +743,7 @@ var mcpWriteTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			s.wsHub.BroadcastToUsers(s.taskAudience(updated), "TASK_UPDATED", updated)
+			s.wsHub.BroadcastToUsers(s.taskAudience(updated), eventTaskUpdated, updated)
 			return map[string]any{"id": updated.ID, "status": fmt.Sprint(updated.Status)}, nil
 		},
 	},

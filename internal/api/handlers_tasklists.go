@@ -38,7 +38,7 @@ func (s *Server) handleMuteTaskList(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
-	s.wsHub.BroadcastToUser(userID, "TASK_LIST_UPDATED", map[string]string{"id": listID})
+	s.wsHub.BroadcastToUser(userID, eventTaskListUpdated, map[string]string{"id": listID})
 	writeJSON(w, http.StatusOK, map[string]bool{"muted": muted})
 }
 
@@ -55,18 +55,35 @@ func (s *Server) handleCreateTaskList(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
-	tl, err := s.store.CreateTaskList(userID, req.SpaceID, req.TeamID, req.Title, derefIcon(req.Icon), req.Color)
-	if err == nil && tl != nil && req.Icon != nil && *req.Icon == "" {
-		if err = s.store.ClearIcon("task_lists", tl.ID); err == nil {
-			tl.Icon = ""
-		}
-	}
+	tl, err := s.createTaskList(userID, req.SpaceID, req.TeamID, req.Title, req.Icon, req.Color)
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	tl.Columns = storage.LocalizeColumns(tl.Columns, w.Header().Get("Content-Language"))
 	writeJSON(w, http.StatusCreated, tl)
+}
+
+// createTaskList creates a task list (POST /task-lists, MCP create_task_list) and tells everyone who sees
+// it, the creator's other devices and, for a team's list, the team (TASK_LIST_CREATED). icon: nil = the
+// default, "" = none.
+func (s *Server) createTaskList(userID, spaceID, teamID, title string, icon *string, color string) (*domain.TaskList, error) {
+	tl, err := s.store.CreateTaskList(userID, spaceID, teamID, title, derefIcon(icon), color)
+	if err != nil {
+		return nil, err
+	}
+	if icon != nil && *icon == "" {
+		err = s.store.ClearIcon("task_lists", tl.ID)
+		if err == nil {
+			tl.Icon = ""
+		}
+	}
+	// Created either way (only the icon may be off): the other apps show it
+	s.broadcastTaskListChange(tl.ID, nil, eventTaskListCreated)
+	if err != nil {
+		return nil, err
+	}
+	return tl, nil
 }
 
 func (s *Server) handleUpdateTaskList(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +106,7 @@ func (s *Server) handleUpdateTaskList(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, http.StatusBadRequest, err)
 		return
 	}
-	s.broadcastTaskListChange(listID, audienceBefore, "TASK_LIST_UPDATED")
+	s.broadcastTaskListChange(listID, audienceBefore, eventTaskListUpdated)
 	tl.Columns = storage.LocalizeColumns(tl.Columns, w.Header().Get("Content-Language"))
 	writeJSON(w, http.StatusOK, tl)
 }
@@ -102,7 +119,7 @@ func (s *Server) handleDeleteTaskList(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
-	s.broadcastTaskListChange(listID, audienceBefore, "TASK_LIST_DELETED")
+	s.broadcastTaskListChange(listID, audienceBefore, eventTaskListDeleted)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
@@ -151,7 +168,7 @@ func (s *Server) handleCreateTaskListShare(w http.ResponseWriter, r *http.Reques
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.broadcastTaskListChange(listID, nil, "TASK_LIST_UPDATED")
+	s.broadcastTaskListChange(listID, nil, eventTaskListUpdated)
 	if tl, err := s.store.GetTaskListByID(userID, listID); err == nil {
 		s.notifyShared(userID, req.TargetType, req.TargetID, "tasklist", tl.ID, tl.Title)
 	}
@@ -176,7 +193,7 @@ func (s *Server) handleDeleteTaskListShare(w http.ResponseWriter, r *http.Reques
 		writeInternal(w, err)
 		return
 	}
-	s.broadcastTaskListChange(listID, audienceBefore, "TASK_LIST_UPDATED")
+	s.broadcastTaskListChange(listID, audienceBefore, eventTaskListUpdated)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 

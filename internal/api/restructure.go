@@ -66,7 +66,7 @@ func (s *Server) handleExtractBranch(w http.ResponseWriter, r *http.Request) {
 	if full, err := s.store.GetDocumentByID(userID, created.ID); err == nil {
 		created = full
 	}
-	s.broadcastDocToAuthorizedUsers(created.ID, "DOC_CREATED")
+	s.afterDocCreated(userID, created, true)
 	writeJSON(w, http.StatusCreated, map[string]any{"document": created, "link": link})
 }
 
@@ -142,7 +142,7 @@ func (s *Server) handleUndoExtract(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, uid := range users {
-		s.wsHub.BroadcastToUser(uid, "DOC_DELETED", map[string]string{"id": docID})
+		s.wsHub.BroadcastToUser(uid, eventDocDeleted, map[string]string{"id": docID})
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"undone": true})
 }
@@ -183,7 +183,7 @@ func (s *Server) handleInlineNote(w http.ResponseWriter, r *http.Request) {
 	}
 	users, _ := s.store.GetAuthorizedDocUsers(res.SourceID)
 	for _, uid := range users {
-		s.wsHub.BroadcastToUser(uid, "DOC_DELETED", map[string]string{"id": res.SourceID})
+		s.wsHub.BroadcastToUser(uid, eventDocDeleted, map[string]string{"id": res.SourceID})
 	}
 	writeJSON(w, http.StatusOK, res)
 }
@@ -215,7 +215,7 @@ func (s *Server) handleMergeDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 	s.notifyDocChanged(targetID, s.store.DocHead(targetID))
 	for _, uid := range sourceUsers {
-		s.wsHub.BroadcastToUser(uid, "DOC_DELETED", map[string]string{"id": req.SourceID})
+		s.wsHub.BroadcastToUser(uid, eventDocDeleted, map[string]string{"id": req.SourceID})
 	}
 	writeJSON(w, http.StatusOK, res)
 }
@@ -246,6 +246,6 @@ func (s *Server) handleUndoMerge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.notifyDocChanged(targetID, s.store.DocHead(targetID))
-	s.broadcastDocToAuthorizedUsers(req.SourceID, "DOC_CREATED")
+	s.broadcastDocToAuthorizedUsers(req.SourceID, eventDocCreated)
 	writeJSON(w, http.StatusOK, map[string]bool{"undone": true})
 }

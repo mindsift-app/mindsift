@@ -117,7 +117,7 @@ func (s *Server) handleCreateDocument(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.broadcastDocToAuthorizedUsers(doc.ID, "DOC_CREATED")
+	s.afterDocCreated(userID, doc, false)
 	writeJSON(w, http.StatusCreated, doc)
 }
 
@@ -180,14 +180,14 @@ func (s *Server) handleUpdateDocument(w http.ResponseWriter, r *http.Request) {
 		s.notifyDocChanged(docID, head)
 	}
 	if req.Title != nil || req.Icon != nil || req.FolderPath != nil {
-		s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
+		s.broadcastDocToAuthorizedUsers(docID, eventDocUpdated)
 		if req.FolderPath != nil {
 			s.announceNoteMoved(userID, docID)
 		}
 	} else if req.IsPinned != nil || req.IsTemplate != nil {
 		// Pin and template mark are the person's own: only their other tabs and devices hear of it
 		if listed, err := s.store.GetDocumentListItem(userID, docID); err == nil && listed != nil {
-			s.wsHub.BroadcastToUser(userID, "DOC_UPDATED", listed)
+			s.wsHub.BroadcastToUser(userID, eventDocUpdated, listed)
 		}
 	}
 	writeJSON(w, http.StatusOK, doc)
@@ -203,7 +203,7 @@ func (s *Server) handleDeleteDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, uid := range authorizedUsers {
-		s.wsHub.BroadcastToUser(uid, "DOC_DELETED", map[string]string{"id": docID})
+		s.wsHub.BroadcastToUser(uid, eventDocDeleted, map[string]string{"id": docID})
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
@@ -225,10 +225,10 @@ func (s *Server) handleRestoreDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Everyone with access gets the note back in their list (shared users as well), then reloads their folders
-	s.broadcastDocToAuthorizedUsers(docID, "DOC_CREATED")
+	s.broadcastDocToAuthorizedUsers(docID, eventDocCreated)
 	authorized, _ := s.store.GetAuthorizedDocUsers(docID)
 	for _, uid := range append(authorized, userID) {
-		s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventRestored, "restored": docID})
+		s.wsHub.BroadcastToUser(uid, eventFoldersUpdated, map[string]string{"type": folderEventRestored, "restored": docID})
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"restored": true})
 }
@@ -286,7 +286,9 @@ func (s *Server) handleCreateEnhancedTask(w http.ResponseWriter, r *http.Request
 	_, head, _ := s.store.GetDocOpsSince(docID, 0, 0)
 	s.notifyDocChanged(docID, head)
 
-	s.wsHub.BroadcastToUser(userID, "TASK_CREATED", thought)
+	// Always a personal task of its creator (storage.CreateTaskFromDocBlock, no task list), so nobody else
+	// sees it and no list's members are told (notifyTaskAdded); taskAudience like every other TASK_CREATED
+	s.wsHub.BroadcastToUsers(s.taskAudience(thought), eventTaskCreated, thought)
 	writeJSON(w, http.StatusCreated, thought)
 }
 
@@ -305,7 +307,7 @@ func (s *Server) handleMoveDocument(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
+	s.broadcastDocToAuthorizedUsers(docID, eventDocUpdated)
 	s.announceNoteMoved(userID, docID)
 	writeJSON(w, http.StatusOK, doc)
 }
@@ -314,7 +316,7 @@ func (s *Server) handleMoveDocument(w http.ResponseWriter, r *http.Request) {
 // as a folder now (storage.MoveDocument), so their folder lists are fetched again.
 func (s *Server) announceNoteMoved(userID, docID string) {
 	docUsers, _ := s.store.GetAuthorizedDocUsers(docID)
-	s.wsHub.BroadcastToUsers(append(docUsers, userID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventNoteMoved, "docId": docID})
+	s.wsHub.BroadcastToUsers(append(docUsers, userID), eventFoldersUpdated, map[string]string{"type": folderEventNoteMoved, "docId": docID})
 }
 
 // --- DOCUMENT SHARING & COLLABORATION ---
@@ -358,8 +360,8 @@ func (s *Server) handleCreateDocShare(w http.ResponseWriter, r *http.Request) {
 			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
-		s.broadcastDocToAuthorizedUsers(docID, "DOC_CREATED")
-		s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
+		s.broadcastDocToAuthorizedUsers(docID, eventDocCreated)
+		s.broadcastDocToAuthorizedUsers(docID, eventDocUpdated)
 		writeJSON(w, http.StatusCreated, share)
 		return
 	}
@@ -379,8 +381,8 @@ func (s *Server) handleCreateDocShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.notifyShared(userID, "user", share.UserID, "note", docID, s.docTitle(userID, docID))
-	s.broadcastDocToAuthorizedUsers(docID, "DOC_CREATED")
-	s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
+	s.broadcastDocToAuthorizedUsers(docID, eventDocCreated)
+	s.broadcastDocToAuthorizedUsers(docID, eventDocUpdated)
 	writeJSON(w, http.StatusCreated, share)
 }
 
@@ -392,8 +394,8 @@ func (s *Server) handleDeleteDocShare(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.wsHub.BroadcastToUser(targetUserID, "DOC_DELETED", map[string]string{"id": docID})
-	s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
+	s.wsHub.BroadcastToUser(targetUserID, eventDocDeleted, map[string]string{"id": docID})
+	s.broadcastDocToAuthorizedUsers(docID, eventDocUpdated)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 

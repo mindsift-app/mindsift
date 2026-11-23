@@ -322,7 +322,7 @@ func (s *Server) runInboxTranscription(ctx context.Context, slot *sttSlot, job *
 		return err
 	}
 	s.assignCreator(job.UserID, thought)
-	s.wsHub.BroadcastToUsers(s.taskAudience(thought), "TASK_CREATED", thought)
+	s.wsHub.BroadcastToUsers(s.taskAudience(thought), eventTaskCreated, thought)
 	s.notifyTaskAdded(job.UserID, thought, nil)
 	if err := s.store.FinishTranscription(job.ID); err != nil {
 		return err
@@ -356,7 +356,7 @@ func (s *Server) transcriptionAudience(job *storage.Transcription) []string {
 }
 
 func (s *Server) transcriptionChanged(job *storage.Transcription) {
-	s.wsHub.BroadcastToUsers(s.transcriptionAudience(job), "TRANSCRIPTION_UPDATED", job)
+	s.wsHub.BroadcastToUsers(s.transcriptionAudience(job), eventTranscriptionUpdated, job)
 }
 
 // transcriptionDone: the job is over. text is empty when nothing was heard or the recording is gone;
@@ -369,7 +369,7 @@ func (s *Server) transcriptionDone(job *storage.Transcription, text, thoughtID s
 	if thoughtID != "" {
 		payload["thoughtId"] = thoughtID
 	}
-	s.wsHub.BroadcastToUsers(s.transcriptionAudience(job), "TRANSCRIPTION_DONE", payload)
+	s.wsHub.BroadcastToUsers(s.transcriptionAudience(job), eventTranscriptionDone, payload)
 }
 
 // checkTranscriptionStart: the server mode and the person's hourly budget (one job counts once).

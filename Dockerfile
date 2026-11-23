@@ -56,6 +56,8 @@ COPY internal/ ./internal/
 COPY Doku/api/openapi.json ./Doku/api/openapi.json
 # The editor's code languages, which the MCP code bullets accept as well (internal/api/mcp_code_test.go)
 COPY frontend/src/features/workspace/codeLanguages.json ./frontend/src/features/workspace/codeLanguages.json
+# The realtime event names of the app, checked against the server's (internal/api/events_test.go)
+COPY frontend/src/lib/realtimeEvents.json ./frontend/src/lib/realtimeEvents.json
 COPY --from=frontend-builder /app/frontend/dist ./cmd/server/dist
 
 ARG SKIP_TESTS=0

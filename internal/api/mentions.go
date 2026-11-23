@@ -158,8 +158,7 @@ func (s *Server) planTaskMentions(b *notifyBatch, actorID string, before, after 
 // notifyNoteMentions: people newly mentioned in the bullets an edit wrote (each bullet remembers its
 // mentions, so typing around a mention does not notify again).
 func (s *Server) notifyNoteMentions(actorID, docID string, ops []collab.Op, results []collab.Result) {
-	var audience []string
-	title := ""
+	var bullets []bulletText
 	for i, op := range ops {
 		if i >= len(results) || results[i].Seq <= 0 || op.Content == nil || op.BlockID == "" {
 			continue
@@ -167,14 +166,29 @@ func (s *Server) notifyNoteMentions(actorID, docID string, ops []collab.Op, resu
 		if op.Kind != collab.OpInsert && op.Kind != collab.OpSetContent {
 			continue
 		}
-		now := storage.MentionCounts(*op.Content)
-		before, err := s.store.SwapBlockMentions(docID, op.BlockID, now)
+		bullets = append(bullets, bulletText{id: op.BlockID, content: *op.Content})
+	}
+	s.notifyBulletMentions(actorID, docID, bullets, true)
+}
+
+// bulletText is a bullet's id and text, as notifyBulletMentions reads them.
+type bulletText struct{ id, content string }
+
+// notifyBulletMentions records the mentions of bullets just written and tells the people newly mentioned
+// in them. tell false: only recorded (bullets moved over from another note, whose mentions were told
+// there), so a later edit of the bullet does not tell them either.
+func (s *Server) notifyBulletMentions(actorID, docID string, bullets []bulletText, tell bool) {
+	var audience []string
+	title := ""
+	for _, bl := range bullets {
+		now := storage.MentionCounts(bl.content)
+		before, err := s.store.SwapBlockMentions(docID, bl.id, now)
 		if err != nil {
 			logFailed("Recording the mentions of a bullet", err, "doc_id", docID)
 			continue
 		}
 		newly := storage.NewlyMentioned(before, now)
-		if len(newly) == 0 {
+		if len(newly) == 0 || !tell {
 			continue
 		}
 		if title == "" {
@@ -182,6 +196,24 @@ func (s *Server) notifyNoteMentions(actorID, docID string, ops []collab.Op, resu
 			logFailed("Loading the people of a note", err, "doc_id", docID)
 			title = s.docTitle(actorID, docID)
 		}
-		s.notifyMentioned(actorID, newly, audience, title, "note", docID, op.BlockID)
+		s.notifyMentioned(actorID, newly, audience, title, "note", docID, bl.id)
 	}
+}
+
+// afterDocCreated tells everyone who sees a new note about it (DOC_CREATED) and the people mentioned in
+// its bullets, as an edit would (a note made from a template or by an agent, in a shared folder). moved:
+// its bullets came from another note (extracted), where their mentions were told already; they are only
+// recorded. doc needs its bullets (GetDocumentByID, or CreateDocument's result).
+func (s *Server) afterDocCreated(actorID string, doc *domain.Document, moved bool) {
+	if doc == nil {
+		return
+	}
+	s.broadcastDocToAuthorizedUsers(doc.ID, eventDocCreated)
+	var bullets []bulletText
+	for _, b := range doc.Blocks {
+		if strings.Contains(b.Content, "{{mention:") {
+			bullets = append(bullets, bulletText{id: b.ID, content: b.Content})
+		}
+	}
+	s.notifyBulletMentions(actorID, doc.ID, bullets, !moved)
 }

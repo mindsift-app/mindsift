@@ -8,6 +8,11 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Fixed
+- A task list created for a group now shows up right away for the group's members and on your other devices; before, they saw it only after reloading (lists created by an AI agent already did).
+- Deleting a shared list, or taking someone off it, now removes it from the list overview of the others at once, even when they had another list open; before, it stayed there until they reloaded.
+- Someone @-mentioned in a new note (made from a template or by an AI agent, in a shared folder) is now told, as when a mention is added to an existing note. Before, they heard nothing, and a later edit of that bullet told them instead.
+
 ## [0.99.2] - 2026-11-23
 
 ### Changed

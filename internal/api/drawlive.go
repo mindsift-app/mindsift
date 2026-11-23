@@ -85,7 +85,7 @@ type drawMessage struct {
 }
 
 func drawError(c *ws.Client, docID, blockID, code string) {
-	c.SendEvent("DRAW_ERROR", map[string]any{"docId": docID, "blockId": blockID, "code": code})
+	c.SendEvent(eventDrawError, map[string]any{"docId": docID, "blockId": blockID, "code": code})
 }
 
 // drawErrorCode is what the browser shows for an error (texts in its language files).
@@ -162,26 +162,26 @@ func (s *Server) handleDrawMessage(c *ws.Client, event string, payload json.RawM
 		return
 	}
 	switch event {
-	case "DRAW_JOIN":
+	case msgDrawJoin:
 		s.drawJoin(c, p)
-	case "DRAW_WATCH":
+	case msgDrawWatch:
 		s.drawWatch(c, p)
-	case "DRAW_OPS":
+	case msgDrawOps:
 		s.drawOps(c, p)
-	case "DRAW_PRESENCE":
+	case msgDrawPresence:
 		s.drawPresence(c, p)
-	case "DRAW_SYNC":
+	case msgDrawSync:
 		d := s.draw
 		d.mu.Lock()
 		if st, ok := d.m.State(p.DocID, p.BlockID); ok && d.m.Member(p.DocID, p.BlockID, c.ID()) {
-			c.SendEvent("DRAW_STATE", withYou(st, c.ID()))
+			c.SendEvent(eventDrawState, withYou(st, c.ID()))
 		}
 		d.mu.Unlock()
-	case "DRAW_LEAVE":
+	case msgDrawLeave:
 		s.wsHub.LeaveRoom(c, drawRoom(p.DocID, p.BlockID))
 		s.drawLeave(p.DocID, p.BlockID, c.ID(), c.UserID())
-	case "DRAW_DONE", "DRAW_DISCARD":
-		s.drawFinish(c, p, event == "DRAW_DONE")
+	case msgDrawDone, msgDrawDiscard:
+		s.drawFinish(c, p, event == msgDrawDone)
 	}
 }
 
@@ -197,7 +197,7 @@ func (s *Server) allowDrawJoin(userID string) bool {
 // they ended (as when they expire); called holding d.mu.
 func (s *Server) tellDrawDropped() {
 	for _, st := range s.draw.m.Dropped() {
-		s.wsHub.BroadcastRoom(drawRoom(st.DocID, st.BlockID), "DRAW_END", map[string]any{"docId": st.DocID, "blockId": st.BlockID, "reason": "expired"}, nil)
+		s.wsHub.BroadcastRoom(drawRoom(st.DocID, st.BlockID), eventDrawEnd, map[string]any{"docId": st.DocID, "blockId": st.BlockID, "reason": "expired"}, nil)
 	}
 }
 
@@ -222,7 +222,7 @@ func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 	// One drawing per connection: joining another leaves the previous one
 	left := d.m.LeaveElsewhere(p.DocID, p.BlockID, c.ID(), s.now())
 	for _, ch := range left {
-		s.wsHub.BroadcastRoom(drawRoom(ch.DocID, ch.BlockID), "DRAW_PEOPLE", people(ch.State), nil)
+		s.wsHub.BroadcastRoom(drawRoom(ch.DocID, ch.BlockID), eventDrawPeople, people(ch.State), nil)
 		if ch.Empty {
 			s.stopPointers(ch.DocID, ch.BlockID)
 		}
@@ -257,12 +257,12 @@ func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 	st, _, won, err := d.m.Join(p.DocID, p.BlockID, me, p.Base, els, p.Grid, p.Resume, s.now())
 	if err == nil {
 		d.conns[c.ID()] = c
-		c.SendEvent("DRAW_STATE", withYou(st, c.ID()))
+		c.SendEvent(eventDrawState, withYou(st, c.ID()))
 		if len(won) > 0 {
-			s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), "DRAW_OPS",
+			s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), eventDrawOps,
 				map[string]any{"docId": p.DocID, "blockId": p.BlockID, "from": me.ID, "els": won, "seq": st.Seq}, c)
 		}
-		s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), "DRAW_PEOPLE", people(st), c)
+		s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), eventDrawPeople, people(st), c)
 	}
 	s.tellDrawDropped()
 	d.mu.Unlock()
@@ -302,9 +302,9 @@ func (s *Server) drawWatch(c *ws.Client, p drawMessage) {
 	d.mu.Lock()
 	st, ok := d.m.Watch(p.DocID, p.BlockID, me)
 	d.conns[c.ID()] = c
-	c.SendEvent("DRAW_STATE", withYou(st, c.ID()))
+	c.SendEvent(eventDrawState, withYou(st, c.ID()))
 	if ok {
-		s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), "DRAW_PEOPLE", people(st), c)
+		s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), eventDrawPeople, people(st), c)
 	}
 	d.mu.Unlock()
 }
@@ -320,9 +320,9 @@ func (s *Server) drawOps(c *ws.Client, p drawMessage) {
 	d.mu.Lock()
 	ops, changed, err := d.m.Apply(p.DocID, p.BlockID, c.ID(), els, p.Order, p.Grid, s.now())
 	if err == nil && changed {
-		s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), "DRAW_OPS", map[string]any{"docId": p.DocID, "blockId": p.BlockID,
+		s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), eventDrawOps, map[string]any{"docId": p.DocID, "blockId": p.BlockID,
 			"from": c.ID(), "els": ops.Els, "order": ops.Order, "grid": ops.Grid, "seq": ops.Seq}, c)
-		c.SendEvent("DRAW_ACK", map[string]any{"docId": p.DocID, "blockId": p.BlockID, "seq": ops.Seq})
+		c.SendEvent(eventDrawAck, map[string]any{"docId": p.DocID, "blockId": p.BlockID, "seq": ops.Seq})
 	}
 	s.tellDrawDropped()
 	d.mu.Unlock()
@@ -409,7 +409,7 @@ func (s *Server) sendDrawPointers(docID, blockID string) bool {
 	ts, _ := json.Marshal(domain.NowISO())
 	build := func(skip int) []byte {
 		out := make([]byte, 0, 96+len(head)+len(ts)+len(entries)*80)
-		out = append(out, `{"event":"DRAW_POINTERS","list_id":"","payload":`...)
+		out = append(out, `{"event":"`+eventDrawPointers+`","list_id":"","payload":`...)
 		out = append(out, head[:len(head)-1]...)
 		out = append(out, `,"pointers":[`...)
 		first := true
@@ -428,7 +428,7 @@ func (s *Server) sendDrawPointers(docID, blockID string) bool {
 		return append(out, '}')
 	}
 	all := build(-1)
-	s.wsHub.BroadcastRoomEach(drawRoom(docID, blockID), "DRAW_POINTERS", func(connID string) []byte {
+	s.wsHub.BroadcastRoomEach(drawRoom(docID, blockID), eventDrawPointers, func(connID string) []byte {
 		i, own := from[connID]
 		if !own {
 			return all
@@ -454,7 +454,7 @@ func (s *Server) drawLeave(docID, blockID, connID, userID string) {
 		ch, ok = d.m.Leave(docID, blockID, connID, s.now())
 	}
 	if ok {
-		s.wsHub.BroadcastRoom(drawRoom(docID, blockID), "DRAW_PEOPLE", people(ch.State), nil)
+		s.wsHub.BroadcastRoom(drawRoom(docID, blockID), eventDrawPeople, people(ch.State), nil)
 		if ch.Empty {
 			s.stopPointers(docID, blockID)
 		}
@@ -472,7 +472,7 @@ func (s *Server) drawConnectionGone(connID string) {
 	delete(d.conns, connID)
 	changes := d.m.Gone(connID, s.now())
 	for _, ch := range changes {
-		s.wsHub.BroadcastRoom(drawRoom(ch.DocID, ch.BlockID), "DRAW_PEOPLE", people(ch.State), nil)
+		s.wsHub.BroadcastRoom(drawRoom(ch.DocID, ch.BlockID), eventDrawPeople, people(ch.State), nil)
 		if ch.Empty {
 			s.stopPointers(ch.DocID, ch.BlockID)
 		}
@@ -499,10 +499,10 @@ func (s *Server) drawFinish(c *ws.Client, p drawMessage, save bool) {
 		}
 		host := st.Participants[0]
 		end := map[string]any{"docId": p.DocID, "blockId": p.BlockID, "reason": reason, "by": host.Name, "byUserId": host.UserID}
-		s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), "DRAW_END", end, c)
+		s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), eventDrawEnd, end, c)
 		mine := withYou(st, c.ID())
 		mine["reason"], mine["by"], mine["byUserId"] = reason, host.Name, host.UserID
-		c.SendEvent("DRAW_END", mine)
+		c.SendEvent(eventDrawEnd, mine)
 		s.stopPointers(p.DocID, p.BlockID)
 	}
 	d.mu.Unlock()
@@ -565,7 +565,7 @@ func (s *Server) drawTickOnce() {
 	active := d.m.Active()
 	expired := d.m.Sweep(s.now())
 	for _, st := range expired {
-		s.wsHub.BroadcastRoom(drawRoom(st.DocID, st.BlockID), "DRAW_END", map[string]any{"docId": st.DocID, "blockId": st.BlockID, "reason": "expired"}, nil)
+		s.wsHub.BroadcastRoom(drawRoom(st.DocID, st.BlockID), eventDrawEnd, map[string]any{"docId": st.DocID, "blockId": st.BlockID, "reason": "expired"}, nil)
 	}
 	d.mu.Unlock()
 	for _, info := range active {
@@ -650,7 +650,7 @@ func (s *Server) handleDrawWatch(w http.ResponseWriter, r *http.Request) {
 	d.mu.Lock()
 	st, ok := d.m.Watch(docID, blockID, me)
 	if ok {
-		s.wsHub.BroadcastRoom(room, "DRAW_PEOPLE", people(st), nil)
+		s.wsHub.BroadcastRoom(room, eventDrawPeople, people(st), nil)
 	}
 	d.mu.Unlock()
 	writeJSON(w, http.StatusOK, withYou(st, req.SSEID))
