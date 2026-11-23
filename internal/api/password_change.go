@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
@@ -67,8 +66,7 @@ func (s *Server) handleChangeOwnPassword(w http.ResponseWriter, r *http.Request)
 		Password        string `json:"password"`
 		secondFactor
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSONLimit(w, r, 1<<16, &req) {
 		return
 	}
 	if s.cfg.DemoMode {

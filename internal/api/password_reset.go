@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -37,7 +36,10 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email string `json:"email"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil || strings.TrimSpace(req.Email) == "" {
+	if !decodeJSONLimit(w, r, 4096, &req) {
+		return
+	}
+	if strings.TrimSpace(req.Email) == "" {
 		writeError(w, http.StatusBadRequest, "E-Mail-Adresse erforderlich")
 		return
 	}
@@ -79,7 +81,10 @@ func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		Token    string `json:"token"`
 		Password string `json:"password"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil || req.Token == "" {
+	if !decodeJSONLimit(w, r, 4096, &req) {
+		return
+	}
+	if req.Token == "" {
 		writeError(w, http.StatusBadRequest, storage.ErrResetTokenInvalid.Error())
 		return
 	}

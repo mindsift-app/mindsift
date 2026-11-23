@@ -241,8 +241,7 @@ func (s *Server) handleSetPublicLink(w http.ResponseWriter, r *http.Request) {
 		Hours    int    `json:"hours"`
 		Password string `json:"password"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	allowed := false

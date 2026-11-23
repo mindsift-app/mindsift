@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -120,7 +119,10 @@ func (s *Server) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Token string `json:"token"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil || strings.TrimSpace(req.Token) == "" {
+	if !decodeJSONLimit(w, r, 4096, &req) {
+		return
+	}
+	if strings.TrimSpace(req.Token) == "" {
 		writeError(w, http.StatusBadRequest, storage.ErrVerificationInvalid.Error())
 		return
 	}
@@ -163,7 +165,10 @@ func (s *Server) handleResendVerification(w http.ResponseWriter, r *http.Request
 	var req struct {
 		Email string `json:"email"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil || strings.TrimSpace(req.Email) == "" {
+	if !decodeJSONLimit(w, r, 4096, &req) {
+		return
+	}
+	if strings.TrimSpace(req.Email) == "" {
 		writeError(w, http.StatusBadRequest, "E-Mail-Adresse erforderlich")
 		return
 	}
@@ -263,9 +268,11 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email string `json:"email"`
 	}
-	err := json.NewDecoder(r.Body).Decode(&req)
+	if !decodeJSON(w, r, &req) {
+		return
+	}
 	email := domain.NormalizeEmail(req.Email)
-	if err != nil || !validEmail(email) {
+	if !validEmail(email) {
 		writeError(w, http.StatusBadRequest, "Bitte eine gültige E-Mail-Adresse angeben")
 		return
 	}

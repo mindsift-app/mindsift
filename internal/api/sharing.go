@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -68,8 +67,7 @@ func (s *Server) handleLookupUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Login string `json:"login"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	login := strings.TrimSpace(req.Login)

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -192,8 +191,7 @@ func (s *Server) handleSetBackupLocation(w http.ResponseWriter, r *http.Request)
 	var req struct {
 		Dir string `json:"dir"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	before := s.backupRoot()

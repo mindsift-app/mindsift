@@ -196,8 +196,7 @@ func (s *Server) handlePushSubscribe(w http.ResponseWriter, r *http.Request) {
 		// The subscription this browser had before (e.g. before a reinstall): it is dead now
 		Replaces string `json:"replaces"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if err := validPushEndpoint(req.Endpoint, s.pushKnownServicesOnly()); err != nil {
@@ -228,7 +227,10 @@ func (s *Server) handlePushUnsubscribe(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Endpoint string `json:"endpoint"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Endpoint == "" {
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.Endpoint == "" {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
 		return
 	}

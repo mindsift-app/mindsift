@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -51,8 +50,7 @@ func (s *Server) handleCreateTaskList(w http.ResponseWriter, r *http.Request) {
 		Icon    *string `json:"icon"` // "" = no icon; missing = the default
 		Color   string  `json:"color"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	tl, err := s.createTaskList(userID, req.SpaceID, req.TeamID, req.Title, req.Icon, req.Color)
@@ -96,8 +94,7 @@ func (s *Server) handleUpdateTaskList(w http.ResponseWriter, r *http.Request) {
 		SpaceID *string                `json:"spaceId"`
 		Columns *[]domain.KanbanColumn `json:"columns"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	audienceBefore := s.store.GetTaskListUserIDs(listID)
@@ -155,8 +152,7 @@ func (s *Server) handleCreateTaskListShare(w http.ResponseWriter, r *http.Reques
 		TargetID   string `json:"targetId"`
 		Permission string `json:"permission"` // editor | viewer
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	permission := strings.ToLower(strings.TrimSpace(req.Permission))

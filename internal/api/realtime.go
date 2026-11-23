@@ -115,8 +115,7 @@ func (s *Server) handleSSERooms(w http.ResponseWriter, r *http.Request) {
 		DocID  string `json:"docId"`
 		Action string `json:"action"` // "join" or "leave"
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if req.Room == "" && req.DocID != "" {

@@ -897,8 +897,7 @@ func (s *Server) handleOIDCExchange(w http.ResponseWriter, r *http.Request) {
 		Ticket string `json:"ticket"`
 		Bind   string `json:"bind"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSONLimit(w, r, 4096, &req) {
 		return
 	}
 	if wait := s.loginGuard.throttle("oidc", clientIPFrom(r), limitOIDCPerIP); wait > 0 {

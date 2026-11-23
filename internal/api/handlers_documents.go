@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -98,8 +97,7 @@ func (s *Server) handleCreateDocument(w http.ResponseWriter, r *http.Request) {
 		Tags       []string               `json:"tags"`
 		IsPinned   bool                   `json:"isPinned"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if err := storage.CheckNoteTitle(req.Title, ""); err != nil {
@@ -154,8 +152,7 @@ func (s *Server) handleUpdateDocument(w http.ResponseWriter, r *http.Request) {
 		// Personal like the pin: any note the person can read may be one of their templates
 		IsTemplate *bool `json:"isTemplate"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if req.Blocks != nil {
@@ -267,8 +264,7 @@ func (s *Server) handleCreateEnhancedTask(w http.ResponseWriter, r *http.Request
 		Content string `json:"content"`
 		Checked bool   `json:"checked"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -298,8 +294,7 @@ func (s *Server) handleMoveDocument(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		FolderPath string `json:"folderPath"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	doc, err := s.store.MoveDocument(userID, docID, req.FolderPath)
@@ -346,8 +341,7 @@ func (s *Server) handleCreateDocShare(w http.ResponseWriter, r *http.Request) {
 		TeamID     string `json:"teamId"`
 		Permission string `json:"permission"` // read | write
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 

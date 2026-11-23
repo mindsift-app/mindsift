@@ -317,8 +317,7 @@ func (s *Server) handleAdminDismissUpdate(w http.ResponseWriter, r *http.Request
 	var req struct {
 		Version string `json:"version"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	v, ok := parseReleaseVersion(req.Version)

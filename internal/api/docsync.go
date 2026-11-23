@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -102,8 +101,7 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 		Device  string `json:"device"`
 		Browser string `json:"browser"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, syncMaxBody)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSONLimit(w, r, syncMaxBody, &req) {
 		return
 	}
 	if req.ClientID == "" || len(req.ClientID) > maxClientIDLen {
@@ -351,7 +349,10 @@ func (s *Server) handleDocLeave(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		ClientID string `json:"clientId"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil || req.ClientID == "" {
+	if !decodeJSONLimit(w, r, 4096, &req) {
+		return
+	}
+	if req.ClientID == "" {
 		writeError(w, http.StatusBadRequest, "clientId fehlt")
 		return
 	}

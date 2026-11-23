@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -57,8 +56,7 @@ func (s *Server) handleCreateFolder(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Path string `json:"path"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	cleanPath, err := s.store.CreateFolder(userID, req.Path)
@@ -174,8 +172,7 @@ func (s *Server) handleMoveFolder(w http.ResponseWriter, r *http.Request) {
 		SourcePath       string `json:"sourcePath"`
 		TargetParentPath string `json:"targetParentPath"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	// Moving the place of a shared folder moves no note, but every note in it shows elsewhere
@@ -199,8 +196,7 @@ func (s *Server) handleRenameFolder(w http.ResponseWriter, r *http.Request) {
 		Path string `json:"path"`
 		Name string `json:"name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	eventType := folderEventMoved
@@ -254,8 +250,7 @@ func (s *Server) handleCreateSharedFolder(w http.ResponseWriter, r *http.Request
 		Name      string `json:"name"`
 		MountPath string `json:"mountPath"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	folder, err := s.store.CreateSharedFolder(userID, req.Name, req.MountPath)
@@ -296,8 +291,7 @@ func (s *Server) handleUpdateFolderMount(w http.ResponseWriter, r *http.Request)
 	var req struct {
 		MountPath string `json:"mountPath"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if err := s.store.UpdateFolderMount(userID, folderID, req.MountPath); err != nil {
@@ -335,8 +329,7 @@ func (s *Server) handleCreateFolderShare(w http.ResponseWriter, r *http.Request)
 		TeamId     string `json:"teamId"`
 		Permission string `json:"permission"` // read | write
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -427,8 +420,7 @@ func (s *Server) handleUpdateTagPageNote(w http.ResponseWriter, r *http.Request)
 	var req struct {
 		Content string `json:"content"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	updatedAt, err := s.store.UpdateTagPageNote(userID, tag, req.Content)

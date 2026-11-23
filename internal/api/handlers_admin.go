@@ -34,8 +34,7 @@ func (s *Server) handleAdminCreateOrganization(w http.ResponseWriter, r *http.Re
 	var req struct {
 		Name string `json:"name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	org, err := s.store.CreateOrganization(req.Name)
@@ -51,8 +50,7 @@ func (s *Server) handleAdminRenameOrganization(w http.ResponseWriter, r *http.Re
 	var req struct {
 		Name string `json:"name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	orgID := chi.URLParam(r, "id")
@@ -84,8 +82,7 @@ func (s *Server) handleAdminAddOrganizationMember(w http.ResponseWriter, r *http
 	var req struct {
 		UserID string `json:"userId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	orgID := chi.URLParam(r, "id")
@@ -190,8 +187,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 		Role            string   `json:"role"`
 		OrganizationIDs []string `json:"organizationIds"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	req.Email = domain.NormalizeEmail(req.Email)
@@ -264,8 +260,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		IsActive          *bool   `json:"isActive"`
 		DiscordWebhookURL *string `json:"discordWebhookUrl"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	// Roles, e-mail and username stay with server admins: a new address plus "forgot password" would hand
@@ -332,8 +327,7 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		MustChange bool   `json:"mustChange"`
 		RevokeKeys bool   `json:"revokeKeys"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Neues Passwort erforderlich")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
@@ -479,8 +473,7 @@ func (s *Server) handleAdminCreateInvite(w http.ResponseWriter, r *http.Request)
 		ValidDays       int      `json:"validDays"`
 		MaxUses         int      `json:"maxUses"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	inv, err := s.store.CreateUserInvite(callerID, req.Email, req.OrganizationIDs, req.ValidDays, req.MaxUses)
@@ -645,8 +638,7 @@ var timeZoneLogged atomic.Bool
 
 func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	var settings domain.SystemSettings
-	if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &settings) {
 		return
 	}
 	// Empty means unchanged (the browser never has it); without SMTP user the password goes too. One that
