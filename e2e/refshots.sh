@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Reference screenshots for refactors.
 #
 #   e2e/refshots.sh capture before     # image from the working tree, fresh server, pictures to .refshots/shots/before
@@ -9,11 +9,12 @@
 #   e2e/refshots.sh ws before          # workspace steps (refworkspace.mjs), notes/folders/trash to .refshots/shots/before.ws.txt
 #   e2e/refshots.sh lists before       # shopping list steps (reflists.mjs), lists and entries to .refshots/shots/before.lists.txt
 #
-# Requires podman (or docker via ENGINE=docker). SKIP_BUILD=1 reuses the last image. PORT, REFSHOTS_DIR,
-# REFSHOTS_IMAGE and REFSHOTS_NAME keep parallel runs apart.
+# Requires podman (or docker via ENGINE=docker). SKIP_BUILD=1 reuses the last image. REFSHOTS_DIR,
+# REFSHOTS_IMAGE and REFSHOTS_NAME keep parallel runs apart; the server's port is a free one (PORT sets it).
 set -eu
-ENGINE="${ENGINE:-podman}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# ENGINE, the images, free_port, wait_healthy and start_demo
+. "$ROOT/e2e/lib.sh"
 DIR="${REFSHOTS_DIR:-$ROOT/.refshots}"
 # Pictures and server data in separate folders: the Playwright container relabels its mount (SELinux :Z),
 # which would take the database away from the running server if it lay inside
@@ -22,20 +23,13 @@ DATA="$DIR/data"
 # Image and container name; own ones (REFSHOTS_IMAGE, REFSHOTS_NAME) let several working copies run at once
 IMAGE="${REFSHOTS_IMAGE:-mindsift-refshots}"
 NAME="${REFSHOTS_NAME:-mindsift-refshots}"
-PORT="${PORT:-18666}"
-PW=mcr.microsoft.com/playwright:v1.65.0-noble
+PORT="${PORT:-$(free_port)}"
 
 run_pw() {
   script="${SCRIPT:-refshots.mjs}"
   "$ENGINE" run --rm --network host -e MINDSIFT_URL="http://localhost:$PORT" "$@" \
-    -v "$ROOT/e2e":/e2e:Z -v "$SHOTS":/shots:Z -w /e2e "$PW" \
+    -v "$ROOT/e2e":/e2e:Z -v "$SHOTS":/shots:Z -w /e2e "$PLAYWRIGHT_IMAGE" \
     sh -c "npm install --no-audit --no-fund >/dev/null 2>&1 && node $script"
-}
-
-wait_healthy() {
-  for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/dev/null && return 0; sleep 0.5; done
-  echo "Server does not answer" >&2
-  return 1
 }
 
 mkdir -p "$SHOTS" "$DATA"
@@ -61,15 +55,14 @@ capture|drag|ws|lists)
   if [ ! -f "$DATA/seed/mindsift.db" ] || [ "${RESEED:-}" = 1 ]; then
     echo "Lege Demo-Daten als Vorlage an …"
     rm -rf "$DATA/seed" && mkdir -p "$DATA/seed"
-    "$ENGINE" run -d --entrypoint /app/mindsift --rm --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true -e DEFAULT_LANGUAGE=de -e DEMO_RESET_MINUTES=0 \
-      -v "$DATA/seed":/data:Z "$IMAGE" >/dev/null
-    wait_healthy
+    start_demo "$NAME" "$IMAGE" "$PORT" --rm -e DEFAULT_LANGUAGE=de -e DEMO_RESET_MINUTES=0 -v "$DATA/seed":/data:Z
+    wait_healthy "$PORT" "$NAME"
     "$ENGINE" stop "$NAME" >/dev/null
   fi
   rm -rf "$DATA/run" && cp -a "$DATA/seed" "$DATA/run"
   "$ENGINE" run -d --entrypoint /app/mindsift --rm --name "$NAME" --network host -e PORT="$PORT" \
     -v "$DATA/run":/data:Z "$IMAGE" >/dev/null
-  wait_healthy
+  wait_healthy "$PORT" "$NAME"
   if [ "$mode" = drag ]; then
     SCRIPT=refdrag.mjs run_pw -e OUT="/shots/$set_name.drag.txt"
   elif [ "$mode" = ws ]; then
