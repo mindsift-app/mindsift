@@ -8,6 +8,7 @@ import { passkeyCancelled } from '../../../lib/webauthn';
 import { FormSheet } from '../../../components/FormSheet';
 import { passkeyProof, secondFactorOf } from './SecondFactorFields';
 import { oidcName, startOidcConfirm, takeOidcResult, type OidcResult } from '../../../lib/oidc';
+import { errorMessage } from '../../../lib/errorMessage';
 
 const EVENT = 'mindsift:ask-second-factor';
 const OIDC_EVENT = 'mindsift:ask-oidc-confirm';
@@ -89,7 +90,7 @@ function OidcConfirmSheet() {
         e.preventDefault();
         setBusy(true);
         startOidcConfirm().catch((err) => {
-          setError(err instanceof Error ? err.message : String(err));
+          setError(errorMessage(err, i18n.t('common:errors.unknown')));
           setBusy(false);
         });
       }}
@@ -179,7 +180,7 @@ function SecondFactorSheet() {
     try {
       close(await passkeyProof());
     } catch (err) {
-      if (!passkeyCancelled(err)) setError(err instanceof Error ? err.message : String(err));
+      if (!passkeyCancelled(err)) setError(errorMessage(err, i18n.t('common:errors.unknown')));
     }
   };
 

@@ -459,7 +459,6 @@
   "profile": {
     "title": "Profil",
     "avatar": "Photo de profil",
-    "loading": "Chargement…",
     "upload": "Téléverser une image",
     "removeAvatar": "Supprimer la photo de profil",
     "remove": "Supprimer",
@@ -1073,7 +1072,6 @@
       "off": "Désactivée",
       "offHint": "Une fois activée, un mot de passe volé ne suffit plus à lui seul pour se connecter.",
       "demo": "Non disponible dans la démo : tous les visiteurs partagent les comptes.",
-      "loading": "Chargement…",
       "loadFailed": "L'état de la connexion à deux facteurs n'a pas pu être chargé",
       "failed": "L'action a échoué",
       "setUp": "Configurer",
@@ -1246,7 +1244,6 @@
     "title": "Journal d'audit",
     "intro": "Les entrées sont gardées un an ; mots de passe et adresses IP n’y figurent jamais.",
     "loadFailed": "Le journal n'a pas pu être chargé",
-    "loading": "Chargement …",
     "empty": "Aucune entrée pour le moment.",
     "emptyFiltered": "Aucune entrée pour ce filtre.",
     "more": "Charger les entrées plus anciennes",

@@ -11,6 +11,8 @@ import { fetchPublicNote, PublicNote, setPublicAccess, storedPublicKey, unlockPu
 import { PublicThemePicker } from './PublicThemePicker';
 import { formatDateTime } from '../../lib/format';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
+import { errorMessage } from '../../lib/errorMessage';
+import i18n from '../../i18n';
 
 // How often the page asks for changes while it is visible (a 204 when nothing happened)
 const POLL_MS = 4000;
@@ -164,7 +166,7 @@ const PasswordGate: React.FC<{ token: string; onUnlocked: (key: string) => void 
           try {
             onUnlocked(await unlockPublicNote(token, password));
           } catch (err) {
-            setError(err instanceof Error ? err.message : String(err));
+            setError(errorMessage(err, i18n.t('common:errors.unknown')));
           } finally {
             setBusy(false);
           }

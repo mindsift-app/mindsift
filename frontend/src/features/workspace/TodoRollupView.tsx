@@ -4,6 +4,7 @@ import { Check, ChevronDown, ChevronRight, ExternalLink, Folder, Sparkles } from
 import { Document } from '../../lib/types';
 import { ROOT_FOLDER_KEY } from './workspaceListing';
 import { SegmentedControl } from '../../components/SegmentedControl';
+import { LoadingState } from '../../components/Spinner';
 
 // One to-do of a note in the collection
 export type RollupTodo = { doc: Document; blockId: string; content: string; checked: boolean };
@@ -107,7 +108,7 @@ export function TodoRollupView({
 
         {/* Grouped Folders & To-Dos */}
         {allRollupTodos.length === 0 && loading ? (
-          <p className="p-8 text-center text-muted text-xs">{t('rollup.loading')}</p>
+          <LoadingState label={t('rollup.loading')} />
         ) : allRollupTodos.length === 0 ? (
           <div className="p-8 text-center text-muted text-xs space-y-1 border border-border rounded-card bg-main/[0.03]">
             <Sparkles className="w-6 h-6 text-accent mx-auto mb-1" />

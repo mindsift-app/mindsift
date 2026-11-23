@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ImageOff, LoaderCircle, MoveDiagonal2, RotateCcw, X } from 'lucide-react';
+import { ImageOff, MoveDiagonal2, RotateCcw, X } from 'lucide-react';
 import { MIN_IMAGE_WIDTH, mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { useTranslation } from 'react-i18next';
 import { IndentArrows, OVERLAY_ARROW_BUTTON, overlayArrowsClass } from './IndentArrows';
 import { MediaCaption } from './MediaCaption';
 import { useCloseOnEscape, useDismiss } from '../../lib/useDismiss';
+import { Spinner } from '../../components/Spinner';
 
 interface ImageBlockProps {
   content: string;
@@ -163,7 +164,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({
         </button>
       ) : (
         <div className="flex items-center justify-center w-48 h-32 rounded-card border border-border bg-panel">
-          <LoaderCircle className="w-4 h-4 animate-spin text-muted" />
+          <Spinner size="md" tone="muted" />
         </div>
       )}
       {editable && (onIndent || onOutdent) && (

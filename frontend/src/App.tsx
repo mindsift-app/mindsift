@@ -26,6 +26,7 @@ import { OfflineBanner } from './components/OfflineBanner';
 import { DemoHint } from './components/DemoHint';
 import { useConnectionState } from './lib/useConnectionState';
 import { SharedImportToast } from './components/SharedImportToast';
+import { ToastHost } from './components/Toast';
 import { EmailConfirmToast } from './components/EmailConfirmToast';
 import { DownloadNotice } from './components/DownloadNotice';
 import { useMobileActions } from './context/MobileActionContext';
@@ -115,8 +116,9 @@ export const App: React.FC = () => {
     refreshStats,
     demoDeadline,
     dataEpoch,
-    demoNotice,
-    setDemoNotice,
+    appNotice,
+    showAppNotice,
+    hideAppNotice,
     handleDemoCountdownElapsed,
   } = useSessionBootstrap(() => setShowProfileMenu(false));
   // The views come as a chunk of their own, loaded once someone is signed in (app/mainViews.ts)
@@ -445,8 +447,7 @@ export const App: React.FC = () => {
             setSharedImportIds(ids);
           } else {
             // Offline: kept for later, nothing to convert yet
-            setDemoNotice(i18n.t('app:sharedQueued'));
-            setTimeout(() => setDemoNotice(null), 4000);
+            showAppNotice(i18n.t('app:sharedQueued'));
           }
           refreshAll();
         }
@@ -462,7 +463,7 @@ export const App: React.FC = () => {
     };
 
     processShares();
-  }, [user, refreshAll, setDemoNotice]);
+  }, [user, refreshAll, showAppNotice]);
 
   // Close profile dropdown on a press beside it or on Escape
   useDismiss(dropdownRef, () => setShowProfileMenu(false), { active: showProfileMenu });
@@ -856,20 +857,12 @@ export const App: React.FC = () => {
           onClose={closeSharedImport}
           onConverted={(message) => {
             setSharedImportIds(null);
-            setDemoNotice(message);
-            setTimeout(() => setDemoNotice(null), 3000);
+            showAppNotice(message);
             refreshAll();
           }}
         />
       )}
-      {demoNotice && (
-        <div
-          role="status"
-          className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-60 px-3 py-1.5 rounded-full border border-accent/40 bg-panel-elevated text-main text-[11px] font-medium shadow-panel"
-        >
-          ✨ {demoNotice}
-        </div>
-      )}
+      <ToastHost toast={appNotice} onClose={hideAppNotice} />
 
       {/* Main Container */}
       {/* Desktop: the window never scrolls, only this area beside the navigation rail (room for the scrollbar

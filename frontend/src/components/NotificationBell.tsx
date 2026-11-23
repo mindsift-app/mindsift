@@ -8,6 +8,7 @@ import { CountBadge } from './CountBadge';
 import { loadCenter, setCenter, useNotificationCenter } from './notificationCenter';
 import { RailItemContent } from './RailItemContent';
 import { useDismiss } from '../lib/useDismiss';
+import { EmptyState } from './EmptyState';
 
 const KIND_ICON: Record<string, React.ReactNode> = {
   assigned: <UserPlus className="w-3.5 h-3.5" />,
@@ -138,7 +139,7 @@ export function NotificationBell({
           {/* 2 px between entries, so tinted unread ones do not merge into one */}
           <div className="overflow-y-auto p-1 space-y-0.5">
             {items.length === 0 ? (
-              <p className="px-3 py-6 text-center text-xs text-faint">{t('center.empty')}</p>
+              <EmptyState>{t('center.empty')}</EmptyState>
             ) : (
               items.map((entry) => (
                 <button

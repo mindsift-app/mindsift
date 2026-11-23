@@ -7,6 +7,7 @@ import { formatBytes, saveBlob } from '../../lib/download';
 import { SectionPicker } from './SectionPicker';
 import { formatDateTime } from '../../lib/format';
 import { errorMessage } from '../../lib/errorMessage';
+import { EmptyState } from '../../components/EmptyState';
 
 // The user's own automatic backups on the server: download or restore (all or some sections); after a
 // restore the app loads the own data again (onRestored)
@@ -79,7 +80,7 @@ export const ServerBackupsCard: React.FC<{ onRestored?: () => void }> = ({ onRes
       </div>
       <div className="border border-border divide-y divide-border bg-canvas">
         {files.length === 0 ? (
-          <p className="p-3 text-[11px] text-faint">{t('backups.none')}</p>
+          <EmptyState>{t('backups.none')}</EmptyState>
         ) : (
           files.map((f) => (
             <div key={f.name} className="p-3 space-y-2">

@@ -83,7 +83,7 @@ describe('TaskListView switch open / done / trash', () => {
     // The trash is not loaded yet: its button has no count, the list waits for it
     fireEvent.click(screen.getByRole('button', { name: 'Papierkorb' }));
     expect(screen.getByRole('button', { name: 'Papierkorb' }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('Lade Aufgaben…')).toBeTruthy();
+    expect(screen.getByText('Aufgaben werden geladen …')).toBeTruthy();
   });
 });
 

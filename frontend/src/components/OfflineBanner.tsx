@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { toastStack, toastSurface } from './Toast';
 import { CloudOff, RefreshCw } from 'lucide-react';
 import { outboxCount } from '../lib/offline';
 import { unsentNoteCount } from '../lib/docSync/persist';
@@ -44,13 +46,9 @@ export const OfflineBanner: React.FC = () => {
       : pending > 0
       ? t('offline.pending', { waiting })
       : t('offline.idle');
-  return (
-    <div
-      role="status"
-      className={`fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-60 max-w-[calc(100vw-1.5rem)] border text-[11px] font-medium shadow-panel bg-panel-elevated border-status-warn/40 text-main ${
-        explain ? 'w-104 rounded-card' : 'rounded-full'
-      }`}
-    >
+  // In the shared stack of the notices (Toast.tsx), so an "Undo" or an error stands above it, not on it
+  return createPortal(
+    <div role="status" className={`${toastSurface('warn')} ${explain ? 'w-104' : ''}`}>
       <button
         type="button"
         disabled={online}
@@ -67,6 +65,7 @@ export const OfflineBanner: React.FC = () => {
         <span className={explain ? '' : 'truncate'}>{online ? t('offline.syncing', { waiting }) : offlineText}</span>
       </button>
       {explain && !online && <p className="px-3 pb-2 -mt-0.5 font-normal text-muted leading-snug">{t('offline.localOnly')}</p>}
-    </div>
+    </div>,
+    toastStack()
   );
 };

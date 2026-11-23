@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Brain, CircleAlert, FolderOpen, Globe, HardDrive, LoaderCircle, Pencil, Plus, Trash, TriangleAlert } from 'lucide-react';
+import { Brain, CircleAlert, FolderOpen, Globe, HardDrive, Pencil, Plus, Trash, TriangleAlert } from 'lucide-react';
 import { ActionMenu } from '../../components/ActionMenu';
 import { ConfirmHost, askConfirm } from '../../components/askConfirm';
 import { initThemeOnBoot } from '../../lib/theme';
@@ -13,11 +13,13 @@ import {
   desktopShell,
   goTo,
 } from '../../lib/desktopShell';
+import { errorMessage } from '../../lib/errorMessage';
+import { Spinner } from '../../components/Spinner';
 
 type Form = null | 'local' | 'server';
 
 const toProblem = (e: unknown): DesktopProblem =>
-  e instanceof DesktopShellError ? e.problem : { code: 'failed', detail: e instanceof Error ? e.message : String(e) };
+  e instanceof DesktopShellError ? e.problem : { code: 'failed', detail: errorMessage(e, String(e)) };
 
 // The desktop app's start view (/__desktop/start, served by the shell itself): local instances and servers
 // used lately, instances found in the app's folder, a new instance, a new server. In the look of the
@@ -146,7 +148,7 @@ export const DesktopStartView: React.FC = () => {
                             {entry.path ?? entry.url}
                           </span>
                         </span>
-                        {busy === entry.id && <LoaderCircle className="w-4 h-4 animate-spin text-muted shrink-0" />}
+                        {busy === entry.id && <Spinner size="md" tone="muted" />}
                       </button>
                       <ActionMenu
                         label={t('menu', { name: entry.name })}
@@ -189,7 +191,7 @@ export const DesktopStartView: React.FC = () => {
                           {f.path}
                         </span>
                       </span>
-                      {busy === f.path && <LoaderCircle className="w-4 h-4 animate-spin text-muted shrink-0" />}
+                      {busy === f.path && <Spinner size="md" tone="muted" />}
                     </button>
                   </li>
                 ))}
@@ -420,7 +422,7 @@ const FormButtons: React.FC<{ busy: boolean; disabled: boolean; label: string; o
         {t('cancel')}
       </button>
       <button type="submit" disabled={busy || disabled} className="flex-1 btn-primary h-11 sm:h-9 text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
-        {busy && <LoaderCircle className="w-3.5 h-3.5 animate-spin" />}
+        {busy && <Spinner />}
         <span>{label}</span>
       </button>
     </div>

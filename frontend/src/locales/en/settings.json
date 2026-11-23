@@ -459,7 +459,6 @@
   "profile": {
     "title": "Profile",
     "avatar": "Profile picture",
-    "loading": "Loading…",
     "upload": "Upload image",
     "removeAvatar": "Remove profile picture",
     "remove": "Remove",
@@ -1073,7 +1072,6 @@
       "off": "Off",
       "offHint": "Once it is on, a stolen password alone is no longer enough to sign in.",
       "demo": "Not available in the demo: all visitors share the accounts.",
-      "loading": "Loading…",
       "loadFailed": "The state of two-factor sign-in could not be loaded",
       "failed": "Action failed",
       "setUp": "Set up",
@@ -1246,7 +1244,6 @@
     "title": "Audit log",
     "intro": "Entries are kept for a year; passwords and IP addresses never appear in them.",
     "loadFailed": "The audit log could not be loaded",
-    "loading": "Loading …",
     "empty": "No entries yet.",
     "emptyFiltered": "No entries for this filter.",
     "more": "Load older entries",

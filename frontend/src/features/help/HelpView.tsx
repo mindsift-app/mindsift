@@ -11,7 +11,6 @@ import {
   UserCog,
   ArrowLeft,
   X,
-  LoaderCircle,
   CloudOff,
 } from 'lucide-react';
 import { useCapabilities, type Capability } from '../../lib/capabilities';
@@ -23,6 +22,7 @@ import { loadedHelpContent, loadHelpContent } from './content';
 import type { DocCard, HelpCategory, HelpContent } from './content/types';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { TourStartCard } from '../tour/TourStartCard';
+import { LoadingState } from '../../components/Spinner';
 
 // Cards about working together with other people: gone while sharing is off (sharing mode private, the
 // desktop app)
@@ -223,10 +223,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack, legal }) => {
               <span>{t('loadFailed')}</span>
             </>
           ) : (
-            <>
-              <LoaderCircle className="w-5 h-5 animate-spin text-accent" />
-              <span>{t('loading')}</span>
-            </>
+            <LoadingState label={t('loading')} />
           )}
         </div>
       )}

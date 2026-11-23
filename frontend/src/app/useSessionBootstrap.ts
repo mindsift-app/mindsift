@@ -8,6 +8,7 @@ import { voiceConfigFromStatus } from '../lib/voice';
 import i18n from '../i18n';
 import { useLatestRef } from '../lib/useLatestRef';
 import { setServerLinkPreviews } from '../lib/linkPreview';
+import { useToast } from '../components/Toast';
 import { setServerAudioSettings, setServerImageQuality, setServerImageSettings } from '../lib/media';
 import { OWN_ECHO_WINDOW_MS, createStatsScheduler, eventChangesDeck, eventChangesStats } from './realtimeCounters';
 import { createDemoResetWatch } from './demoResetWatch';
@@ -63,7 +64,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   // Demo mode: when the next reset happens (local clock), and a counter that remounts all views after it
   const [demoDeadline, setDemoDeadline] = useState<number | null>(null);
   const [dataEpoch, setDataEpoch] = useState(0);
-  const [demoNotice, setDemoNotice] = useState<string | null>(null);
+  // Short notices of the app itself (demo reset, shared items) in the shared stack (components/Toast.tsx)
+  const { toast: appNotice, showToast: showAppNotice, hideToast: hideAppNotice } = useToast();
   const lastDemoResetRef = useRef(0);
   const demoDeadlineRef = useRef<number | null>(null);
   const demoWatchRef = useRef<ReturnType<typeof createDemoResetWatch> | null>(null);
@@ -266,9 +268,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     setDataEpoch((n) => n + 1);
     refreshAll();
     if (!nextDeadlineKnown) demoWatchRef.current?.refresh();
-    setDemoNotice(i18n.t('app:demoReset'));
-    window.setTimeout(() => setDemoNotice(null), 4000);
-  }, [refreshAll]);
+    showAppNotice(i18n.t('app:demoReset'));
+  }, [refreshAll, showAppNotice]);
   const handleDemoResetRef = useLatestRef(handleDemoReset);
 
   // The next demo reset as the server names it. The deadline is set here as well, not only through the
@@ -382,8 +383,9 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     refreshStats,
     demoDeadline,
     dataEpoch,
-    demoNotice,
-    setDemoNotice,
+    appNotice,
+    showAppNotice,
+    hideAppNotice,
     handleDemoCountdownElapsed,
   };
 }

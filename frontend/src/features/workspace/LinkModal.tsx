@@ -6,7 +6,6 @@ import {
   Globe,
   Search,
   ExternalLink,
-  LoaderCircle,
   Plus,
   ArrowLeft,
   ListTree,
@@ -19,6 +18,8 @@ import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { useWorkspaceDocsSnapshot } from '../../lib/wikiLinkResolver';
 import { useCloseOnEscape } from '../../lib/useDismiss';
 import { DialogHeader } from '../../components/BottomSheet';
+import { LoadingState, Spinner } from '../../components/Spinner';
+import { EmptyState } from '../../components/EmptyState';
 
 export interface LinkModalProps {
   isOpen: boolean;
@@ -408,12 +409,9 @@ export const LinkModal: React.FC<LinkModalProps> = ({
             />
             <div ref={pickDoc ? listRef : undefined} className="space-y-0.5 max-h-64 overflow-y-auto pr-0.5">
               {pickBlocks === null ? (
-                <div className="p-4 text-xs text-muted flex items-center gap-2 justify-center">
-                  <LoaderCircle className="w-4 h-4 animate-spin text-accent" />
-                  <span>{t('link.loadingBlocks')}</span>
-                </div>
+                <LoadingState label={t('link.loadingBlocks')} />
               ) : pickableBlocks.length === 0 ? (
-                <div className="p-4 text-xs text-muted text-center">{t('link.noBlocks')}</div>
+                <EmptyState>{t('link.noBlocks')}</EmptyState>
               ) : (
                 pickableBlocks.map((b, i) => (
                   <button
@@ -448,10 +446,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
 
             <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
               {loading ? (
-                <div className="p-6 bg-canvas border border-border rounded-card text-xs text-muted flex items-center gap-2 justify-center text-center">
-                  <LoaderCircle className="w-4 h-4 animate-spin text-accent" />
-                  <span>{t('link.loadingNotes')}</span>
-                </div>
+                <LoadingState label={t('link.loadingNotes')} className="bg-canvas border border-border rounded-card" />
               ) : filteredDocs.length === 0 ? (
                 <div className="p-4 bg-canvas border border-border rounded-card text-xs text-muted flex items-center gap-2.5 justify-center text-center">
                   <Search className="w-4 h-4 text-faint shrink-0" />
@@ -518,7 +513,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               <>
                 <div className="flex items-center justify-between text-xs font-semibold text-muted uppercase tracking-wider px-0.5 pt-1">
                   <span>{t('link.blocks')}</span>
-                  {blockHitsLoading && <LoaderCircle className="w-3.5 h-3.5 animate-spin text-accent" />}
+                  {blockHitsLoading && <Spinner tone="accent" />}
                 </div>
                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
                   {blockHits.map((h, j) => {

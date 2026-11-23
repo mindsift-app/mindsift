@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { LoaderCircle, Square } from 'lucide-react';
+import { Square } from 'lucide-react';
 import { useVoiceInput } from '../../lib/useVoiceInput';
 import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
 import { useTranslation } from 'react-i18next';
 import { formatClock } from '../../lib/format';
+import { Spinner } from '../../components/Spinner';
 
 interface DictationBlockProps {
   onDone: (text: string) => void;
@@ -102,7 +103,7 @@ export const DictationBlock: React.FC<DictationBlockProps> = ({ onDone, onCancel
             <span className="text-status-err font-normal">{error}</span>
           ) : transcribing ? (
             <>
-              <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> {t('workspace:media.transcribing')}
+              <Spinner /> {t('workspace:media.transcribing')}
             </>
           ) : (
             <>

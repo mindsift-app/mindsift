@@ -56,7 +56,7 @@
     "pullBackForeignLinks_other": "{{count}} Links anderer Personen zeigen danach ins Leere – trotzdem zurückholen?",
     "pullBackAnyway": "Trotzdem zurückholen",
     "copyFailed": "Kopieren nicht möglich: {{link}}",
-    "loading": "Notiz wird geladen…",
+    "loading": "Notiz wird geladen …",
     "backToOverview": "Zurück zur Übersicht",
     "breadcrumb": "Breadcrumb Navigation",
     "backToMain": "Zurück zum Hauptdokument",
@@ -228,7 +228,7 @@
     "showAll": "Alle",
     "showAllTitle": "Auch erledigte To-Dos zeigen",
     "allDone": "Alles erledigt – keine offenen To-Dos.",
-    "loading": "To-Dos werden geladen…"
+    "loading": "To-Dos werden geladen …"
   },
   "emoji": {
     "suggested": "Zuletzt verwendet",
@@ -252,10 +252,10 @@
     "backToList": "Zurück zur Notizliste",
     "filterBlocks": "Punkte filtern…",
     "filterBlocksLabel": "Punkte filtern",
-    "loadingBlocks": "Punkte werden geladen…",
+    "loadingBlocks": "Punkte werden geladen …",
     "noBlocks": "Keine passenden Punkte.",
     "available": "Verfügbare Notizen",
-    "loadingNotes": "Notizen werden geladen…",
+    "loadingNotes": "Notizen werden geladen …",
     "noNotes": "Keine Notizen im Workspace vorhanden.",
     "pickBlockTitle": "Einen einzelnen Punkt dieser Notiz verlinken",
     "pickBlock": "Punkt dieser Notiz wählen",
@@ -345,7 +345,7 @@
   "emojiPicker": {
     "title": "Icon auswählen",
     "remove": "Icon entfernen",
-    "loading": "Emoji-Katalog wird geladen…",
+    "loading": "Emoji-Katalog wird geladen …",
     "search": "Emoji suchen…"
   },
   "media": {

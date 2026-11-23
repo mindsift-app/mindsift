@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, ImagePlus, Link as LinkIcon, LoaderCircle, X } from 'lucide-react';
+import { Camera, ImagePlus, Link as LinkIcon, X } from 'lucide-react';
 import { copyExternalImage, externalImagesAllowed, prepareImage, UploadedMedia, uploadMedia } from '../../lib/media';
 import { useTranslation } from 'react-i18next';
 import { errorMessage } from '../../lib/errorMessage';
+import { Spinner } from '../../components/Spinner';
 
 interface ImagePickerProps {
   docId: string;
@@ -106,7 +107,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
 
       {busy ? (
         <div className="flex items-center gap-2 text-xs text-muted py-3">
-          <LoaderCircle className="w-4 h-4 animate-spin text-accent" /> {t('workspace:media.uploading')}
+          <Spinner size="md" tone="accent" /> {t('workspace:media.uploading')}
         </div>
       ) : (
         <>

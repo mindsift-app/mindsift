@@ -1,9 +1,10 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LoaderCircle, Mic, MicOff } from 'lucide-react';
+import { Mic, MicOff } from 'lucide-react';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import { triggerHaptic } from '../lib/api';
 import { VoiceWave } from './VoiceWave';
+import { Spinner } from './Spinner';
 
 interface VoiceInputButtonProps {
   // The field's text; dictated words are appended to what was there when the recording started
@@ -53,7 +54,7 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ value, onCha
         }`}
       >
         {transcribing ? (
-          <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
+          <Spinner />
         ) : listening ? (
           <MicOff className="w-3.5 h-3.5" />
         ) : (

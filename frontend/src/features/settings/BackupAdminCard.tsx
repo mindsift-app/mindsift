@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Archive, Download, LoaderCircle, RotateCcw, Trash } from 'lucide-react';
+import { Archive, Download, RotateCcw, Trash } from 'lucide-react';
 import { BackupFile, BackupLocation, DeletedAccountBackups, SystemSettings } from '../../lib/types';
 import { api, isDesktopApp } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
@@ -21,6 +21,8 @@ import { BackupUploadRestore } from './BackupUploadRestore';
 import { useCapabilities } from '../../lib/capabilities';
 import { waitForReopen } from '../../lib/restoreReload';
 import { restoreWithKeyCheck } from './restoreKeyCheck';
+import { Spinner } from '../../components/Spinner';
+import { EmptyState } from '../../components/EmptyState';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
@@ -198,7 +200,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           disabled={running}
           className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center gap-1.5 disabled:opacity-50"
         >
-          {running ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5 text-accent" />}
+          {running ? <Spinner /> : <Archive className="w-3.5 h-3.5 text-accent" />}
           {running ? t('backups.running') : t('backups.runNow')}
         </button>
       </div>
@@ -228,13 +230,13 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
 
       {restoring ? (
         <p role="status" className="p-3 border border-border bg-panel text-xs text-main flex items-center gap-2">
-          <LoaderCircle className="w-3.5 h-3.5 animate-spin text-accent" />
+          <Spinner tone="accent" />
           {t('backups.full.restoring')}
         </p>
       ) : (
         <div className="border border-border divide-y divide-border bg-panel">
           {files.length === 0 ? (
-            <p className="p-3 text-[11px] text-faint">{t('backups.none')}</p>
+            <EmptyState>{t('backups.none')}</EmptyState>
           ) : (
             files.map((f) => (
               <div key={f.name} className="px-3 py-2 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">

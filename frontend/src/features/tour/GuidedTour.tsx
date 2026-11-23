@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, ArrowRight, LoaderCircle, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import type { ActiveTab } from '../../app/appTabs';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { TOUR_STEPS } from './tourSteps';
@@ -10,6 +10,7 @@ import { Box, CardPlacement, dockCard, placeCard, TOUR_MARGIN } from './tourLayo
 import { onTourStartRequest } from './tourEvents';
 import { TourContent, TourTitle } from './TourContent';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { Spinner } from '../../components/Spinner';
 
 // The guided tour: a card with a short text at the real controls, the rest of the page slightly dimmed and
 // the controls cut out of the dimming. It switches pages as it goes and returns to where it was started.
@@ -332,7 +333,7 @@ function TourOverlay({
 
       {searching && !showing && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden>
-          <LoaderCircle className="w-6 h-6 text-on-accent animate-spin" />
+          <Spinner size="xl" className="text-on-accent" />
         </div>
       )}
 

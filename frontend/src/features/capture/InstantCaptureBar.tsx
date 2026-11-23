@@ -14,7 +14,6 @@ import {
   ChevronDown,
   TriangleAlert,
   Flame,
-  LoaderCircle,
 } from 'lucide-react';
 import { PriorityLevel, SharedList, TaskList, Thought } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
@@ -26,6 +25,7 @@ import { DateField } from '../../components/DateField';
 import { NaturalDateChip, PhraseHighlight, applyNaturalDate, useNaturalDate } from '../../components/NaturalDateHint';
 import { useDismiss } from '../../lib/useDismiss';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { Spinner } from '../../components/Spinner';
 
 export type CaptureTarget = 'inbox' | 'task' | 'list_item' | 'document';
 
@@ -397,7 +397,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                   }`}
                 >
                   {isTranscribing ? (
-                    <LoaderCircle className="w-3 h-3 animate-spin" />
+                    <Spinner size="xs" />
                   ) : isListening ? (
                     <MicOff className="w-3 h-3" />
                   ) : (

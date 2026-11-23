@@ -15,6 +15,7 @@ import { CountBadge } from '../../../components/CountBadge';
 import { PickerPopover } from '../../../components/PickerPopover';
 import { useAdminSettings } from './useAdminSettings';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
+import { EmptyState } from '../../../components/EmptyState';
 
 // Administration → Organisationen (state in useAdminSettings). An organization opens on click: its
 // members with ✕ to take them out, a field to add someone, rename and delete.
@@ -78,7 +79,7 @@ export function OrganizationsSection({
       </form>
 
       {organizations.length === 0 ? (
-        <p className="text-muted">{t('orgs.empty')}</p>
+        <EmptyState framed>{t('orgs.empty')}</EmptyState>
       ) : (
         <div className="border border-border divide-y divide-border bg-canvas rounded-card overflow-hidden">
           {organizations.map((o) => {

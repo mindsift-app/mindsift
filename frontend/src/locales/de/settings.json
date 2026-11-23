@@ -459,7 +459,6 @@
   "profile": {
     "title": "Profil",
     "avatar": "Profilbild",
-    "loading": "Lädt…",
     "upload": "Bild hochladen",
     "removeAvatar": "Profilbild entfernen",
     "remove": "Entfernen",
@@ -894,7 +893,7 @@
   "sessions": {
     "loadFailed": "Sitzungen konnten nicht geladen werden",
     "endFailed": "Sitzung konnte nicht beendet werden",
-    "loading": "Lade Sitzungen…",
+    "loading": "Sitzungen werden geladen …",
     "thisDevice": "Dieses Gerät",
     "signOutDevice": "Dieses Gerät abmelden",
     "unknownDevice": "Unbekanntes Gerät",
@@ -1072,7 +1071,6 @@
       "off": "Aus",
       "offHint": "Ist sie eingeschaltet, reicht ein gestohlenes Passwort allein nicht mehr zur Anmeldung.",
       "demo": "In der Demo nicht verfügbar: alle Besucher teilen sich die Konten.",
-      "loading": "Lädt…",
       "loadFailed": "Der Stand der Zwei-Faktor-Anmeldung konnte nicht geladen werden",
       "failed": "Aktion fehlgeschlagen",
       "setUp": "Einrichten",
@@ -1245,7 +1243,6 @@
     "title": "Protokoll",
     "intro": "Einträge bleiben ein Jahr; Passwörter und IP-Adressen stehen nie darin.",
     "loadFailed": "Das Protokoll konnte nicht geladen werden",
-    "loading": "Lädt …",
     "empty": "Noch keine Einträge.",
     "emptyFiltered": "Keine Einträge für diesen Filter.",
     "more": "Ältere Einträge laden",

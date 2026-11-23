@@ -10,7 +10,6 @@ import {
   Download,
   Maximize2,
   FileText,
-  LoaderCircle,
   ArrowLeft,
   Lock,
   House,
@@ -127,6 +126,9 @@ import { useLatestRef } from '../../lib/useLatestRef';
 import { useDismiss } from '../../lib/useDismiss';
 import { saveBlob } from '../../lib/download';
 import { NOTE_TITLE_MAX, noteTitleLength } from '../../lib/noteTitle';
+import { ToastHost, useToast } from '../../components/Toast';
+import { LoadingState, Spinner } from '../../components/Spinner';
+import { EmptyState } from '../../components/EmptyState';
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   docId,
@@ -252,18 +254,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   useDismiss(actionsMenuRef, () => setShowActionsMenu(false), { active: showActionsMenu });
 
   // Short hint at the bottom of the editor (blocked actions, skipped undo), optionally with one action
-  const [notice, setNotice] = useState<string | null>(null);
-  const [noticeActions, setNoticeActions] = useState<{ label: string; run: () => void }[]>([]);
-  const noticeTimerRef = useRef<number | null>(null);
-  const showNotice = useCallback((message: string, actions: { label: string; run: () => void }[] = []) => {
-    setNotice(message);
-    setNoticeActions(actions);
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = window.setTimeout(() => {
-      setNotice(null);
-      setNoticeActions([]);
-    }, actions.length ? 8000 : 3500);
-  }, []);
+  const { toast: notice, showToast: showNotice, hideToast: hideNotice } = useToast();
 
   // Link to a single bullet: [[Titel#doc_id^blk_id]] into the clipboard
   const handleCopyBlockLink = useCallback(
@@ -334,9 +325,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       onDocCreated,
       onDocRemoved,
     });
-  useEffect(() => () => {
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
-  }, []);
 
   // A bullet held by the same person in another tab or on another device does not name them
   const handleLockedAction = useCallback(
@@ -354,7 +342,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const noteFull = engineState?.noteFull ?? 0;
   useEffect(() => {
     // A refusal of the server shows its notice once
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (noteFull > 0) showNotice(t('editor.noteFull', { max: formatNumber(MAX_NOTE_BLOCKS) }));
     // Only a new refusal shows the notice; a language switch (t) or a new showNotice must not repeat it
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -531,9 +518,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   if (showsLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-12 text-muted">
-        <LoaderCircle className="w-5 h-5 animate-spin mr-2 text-accent" />
-        <span className="text-xs">{t('editor.loading')}</span>
+      <div className="flex-1 flex items-center justify-center p-12">
+        <LoadingState label={t('editor.loading')} />
       </div>
     );
   }
@@ -996,7 +982,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               aria-label={t('editor.saveStatus')}
             >
               {engineState.status === 'saving' ? (
-                <LoaderCircle className="w-3.5 h-3.5 animate-spin text-accent" />
+                <Spinner tone="accent" />
               ) : engineState.status === 'offline' ? (
                 <CloudOff className="w-3.5 h-3.5 text-status-warn" />
               ) : engineState.status === 'error' ? (
@@ -1112,7 +1098,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             </div>
 
             {childBlocks.length === 0 ? (
-              <div className="py-8 text-center text-xs text-faint border border-dashed border-border rounded-card my-2">
+              <EmptyState framed className="my-2">
                 <p className="mb-2">{t('editor.noChildren')}</p>
                 {canEdit && (
                   <button
@@ -1134,7 +1120,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     <span>{t('editor.firstChild')}</span>
                   </button>
                 )}
-              </div>
+              </EmptyState>
             ) : (
               <OutlinerTree {...noteTreeProps} blocks={childBlocks} levelOffset={levelOffset} />
             )}
@@ -1270,33 +1256,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           bar on top of it (the note itself keeps its height, the keyboard only covers it) */}
       {keyboardOpen && keyboardInset > 0 && !embedded && <div aria-hidden style={{ height: keyboardInset + KEYBOARD_BAR_SPACE, flexShrink: 0 }} />}
 
-      {notice && (
-        <div
-          role="status"
-          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-1.5rem)] sm:w-auto sm:max-w-[90vw] flex flex-col sm:block pl-4 pr-1 pt-3 pb-1 sm:px-3 sm:py-2 rounded-card text-sm sm:text-xs text-main bg-panel-elevated border border-border shadow-panel"
-        >
-          {/* Phones: text on top (two lines at most), buttons below; desktop: one line */}
-          <span className="max-sm:pr-3 max-sm:line-clamp-2">{notice}</span>
-          {noticeActions.length > 0 && (
-            <span className="flex justify-end sm:inline">
-              {noticeActions.map((a) => (
-                <button
-                  key={a.label}
-                  type="button"
-                  onClick={() => {
-                    setNotice(null);
-                    setNoticeActions([]);
-                    a.run();
-                  }}
-                  className="h-11 px-3 sm:h-auto sm:px-0 sm:ml-3 font-semibold text-accent hover:underline"
-                >
-                  {a.label}
-                </button>
-              ))}
-            </span>
-          )}
-        </div>
-      )}
+      <ToastHost toast={notice} onClose={hideNotice} />
     </div>
     </NoteClientContext.Provider>
     </NoteSharedContext.Provider>

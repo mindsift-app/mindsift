@@ -38,7 +38,7 @@ import { WorkspaceTabBar } from './WorkspaceTabBar';
 import { canTakeBranch, useDocDragDrop } from './useDocDragDrop';
 import { useFocusMode } from './useFocusMode';
 import { useJournal } from './useJournal';
-import { useToast, WorkspaceToast } from './WorkspaceToast';
+import { ToastHost, useToast } from '../../components/Toast';
 import { FocusModeChrome } from './FocusModeChrome';
 import { useShareModal, WorkspaceShareModal } from './WorkspaceShareModal';
 import { FolderTree } from './FolderTree';
@@ -228,7 +228,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   // Merging notes: dialog (picker/confirmation) and a toast with undo afterwards
   const [mergeDialog, setMergeDialog] = useState<{ sourceId: string; targetId?: string } | null>(null);
-  const { toast, setToast, showToast } = useToast();
+  const { toast, showToast, hideToast } = useToast();
 
   // Rollup drilldown & View Mode
   const {
@@ -1242,7 +1242,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         />
       )}
 
-      <WorkspaceToast toast={toast} setToast={setToast} />
+      <ToastHost toast={toast} onClose={hideToast} />
 
       <WorkspaceShareModal
         share={share}

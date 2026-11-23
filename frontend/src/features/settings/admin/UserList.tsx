@@ -11,6 +11,7 @@ import { isPhoneWidth } from '../../../lib/breakpoints';
 import { MASKED, NO_AUTOFILL } from '../../../lib/noAutofill';
 import { useAdminSettings } from './useAdminSettings';
 import { isFiltered, matchesUser, OrgFilter, RoleFilter, sortUsers, USER_PAGE_SIZE, UserListFilter, UserSort } from './userListView';
+import { EmptyState } from '../../../components/EmptyState';
 
 type Admin = ReturnType<typeof useAdminSettings>;
 
@@ -175,7 +176,7 @@ export function UserList({ admin, currentUser, isServerAdmin }: { admin: Admin; 
       )}
 
       {visible.length === 0 ? (
-        <p className="p-3 border border-dashed border-border rounded-card text-muted text-xs">{t('users.list.noMatch')}</p>
+        <EmptyState framed>{t('users.list.noMatch')}</EmptyState>
       ) : (
         <div className="border border-border divide-y divide-border bg-canvas rounded-card overflow-hidden">
           {visible.slice(0, limit).map((u) => (

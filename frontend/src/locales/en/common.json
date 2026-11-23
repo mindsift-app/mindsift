@@ -39,7 +39,6 @@
     "source": "Source code",
     "thirdPartyLabel": "Third-party software",
     "thirdParty": "Licenses of the included libraries",
-    "thirdPartyLoading": "Loading …",
     "thirdPartyError": "The licenses could not be loaded.",
     "operator": "The operator of this instance is responsible for its legal notice and privacy policy; the links are in the account settings and on the sign-in page.",
     "changelog": "What changed (changelog)"
@@ -53,6 +52,7 @@
   "create": "Create",
   "add": "Add",
   "close": "Close",
+  "loading": "Loading…",
   "delete": "Delete",
   "palette": {
     "placeholder": "Search notes, tasks and lists…",

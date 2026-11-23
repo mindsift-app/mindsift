@@ -11,7 +11,7 @@ import { can } from '../../../lib/capabilities';
 import { useLatestRef } from '../../../lib/useLatestRef';
 import { useDismiss } from '../../../lib/useDismiss';
 import { NoteClientContext, NoteSharedContext } from './noteShared';
-import { useToast, WorkspaceToast } from '../WorkspaceToast';
+import { ToastHost, useToast } from '../../../components/Toast';
 import { IndentArrows, OVERLAY_ARROW_BUTTON, overlayArrowsClass } from '../IndentArrows';
 
 // The editor (with the live drawing) is a chunk of its own, loaded when a drawing is opened; the service
@@ -129,7 +129,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   const shared = useContext(NoteSharedContext);
   const noteClientId = useContext(NoteClientContext);
   // "Zeichnung verworfen · Rückgängig" after discarding a live session
-  const { toast, setToast, showToast } = useToast();
+  const { toast, showToast, hideToast } = useToast();
   const drawing = useMemo(() => parseDrawing(content), [content]);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
@@ -540,7 +540,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
         />
       )}
 
-      {toast && createPortal(<WorkspaceToast toast={toast} setToast={setToast} />, document.body)}
+      <ToastHost toast={toast} onClose={hideToast} />
 
       {editing && (
         <Suspense fallback={null}>

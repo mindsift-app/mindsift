@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import { CircleAlert, Check, LoaderCircle, Mic, RefreshCw, Square } from 'lucide-react';
+import { CircleAlert, Check, Mic, RefreshCw, Square } from 'lucide-react';
 import { api } from '../../lib/api';
 import { VoiceAdminStatus } from '../../lib/types';
 import { errorMessage } from '../../lib/errorMessage';
+import { Spinner } from '../../components/Spinner';
 
 const TEST_SECONDS = 6;
 
@@ -178,7 +179,7 @@ export const VoiceStatusCard: React.FC = () => {
               disabled={testing}
               className="btn-secondary h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
             >
-              {testing ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <Mic className="w-3.5 h-3.5" />}
+              {testing ? <Spinner /> : <Mic className="w-3.5 h-3.5" />}
               {testing ? t('app:capture.transcribing') : t('voiceStatus.test', { seconds: TEST_SECONDS })}
             </button>
           )}

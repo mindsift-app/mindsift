@@ -24,6 +24,7 @@ import { CountBadge } from '../../../components/CountBadge';
 import { NumberField } from '../../../components/NumberField';
 import { ShowMoreButton, UserList } from './UserList';
 import { USER_PAGE_SIZE } from './userListView';
+import { EmptyState } from '../../../components/EmptyState';
 
 // Administration → Users & invitations (state in useAdminSettings)
 
@@ -260,7 +261,7 @@ export function UsersSection({
           {t('users.invite.list')}
         </p>
         {invites.length === 0 ? (
-          <p className="p-3 border border-dashed border-border rounded-card text-muted text-xs">{t('users.invite.none')}</p>
+          <EmptyState framed>{t('users.invite.none')}</EmptyState>
         ) : (
           <div className="divide-y divide-border border border-border bg-panel rounded-card overflow-hidden">
             {invites.map((inv) => {
