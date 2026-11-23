@@ -77,6 +77,8 @@ MindSift builds several things itself that other projects take from a library, a
 
 ## Configuration
 
+Yes/no variables all go through one reader (`parseBool`, `envBool`, `envBoolPtr` in `internal/config/config.go`): `true`/`false`, `1`/`0`, `yes`/`no`, `on`/`off`, in any case. Whole numbers go through `envInt` with a range. Anything else is logged as a warning and the default applies; only the `OIDC_*` switches stop the start instead. `DB_MAX_CONNS` (tests only) is read by `storage.OpenStore` itself.
+
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `8080` | HTTP port |

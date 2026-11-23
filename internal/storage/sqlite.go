@@ -123,7 +123,8 @@ func newStore(driverName, dbPath string, opts ...StoreOption) (*Store, error) {
 
 	// DB_MAX_CONNS=1 is for tests: any code that needs a second connection while it holds one (a query
 	// inside a loop over open rows, s.db inside a transaction) then hangs at once instead of only when the
-	// pool runs dry under load and everything stops for good
+	// pool runs dry under load and everything stops for good. Read here and not in internal/config on
+	// purpose: the tests open their stores without a configuration.
 	maxConns := 8
 	if n, err := strconv.Atoi(os.Getenv("DB_MAX_CONNS")); err == nil && n > 0 {
 		maxConns = n
