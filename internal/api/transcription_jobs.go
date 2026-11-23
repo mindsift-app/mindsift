@@ -30,15 +30,16 @@ import (
 // attempt is tried again after a while (transcriptionRetryDelays); after the last one the job is failed,
 // with its recording, until the person tries again or discards it. When the Whisper server could not be
 // reached or had a problem of its own (not a time limit, not a recording it refused), the failed job is
-// also tried again by itself a few more times, hours apart (transcriptionLaterDelays), in case the server
-// is back by then. A failed job goes 30 days after its last attempt (storage.PurgeFailedTranscriptions,
+// also tried again by itself a few more times, 5 minutes and then hours apart (transcriptionLaterDelays),
+// in case the server is back by then. A failed job goes 30 days after its last attempt (storage.PurgeFailedTranscriptions,
 // with the hourly retention work): a note's recording stays in the note, an inbox recording goes with it.
 
 // transcriptionRetryDelays: the waits before the second and third attempt
 var transcriptionRetryDelays = []time.Duration{30 * time.Second, 2 * time.Minute}
 
 // transcriptionLaterDelays: the waits of a failed job before each of its later attempts by itself
-var transcriptionLaterDelays = []time.Duration{time.Hour, 6 * time.Hour, 24 * time.Hour}
+// (5 minutes for a Whisper server that was only restarting, then hours for one that was down longer)
+var transcriptionLaterDelays = []time.Duration{5 * time.Minute, time.Hour, 6 * time.Hour, 24 * time.Hour}
 
 // transcriptionPoll: how often the worker looks for due jobs without being woken (retries)
 const transcriptionPoll = 15 * time.Second
