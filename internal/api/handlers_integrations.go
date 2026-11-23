@@ -281,8 +281,9 @@ func (s *Server) ingestTask(w http.ResponseWriter, userID, content, priority, so
 
 var errListIDRequired = errors.New("Feld 'listId' ist für Listeneinträge erforderlich")
 
-// addListItem appends an item to a list the user may write to; the error is storage.ErrListReadOnly for
-// viewers and "not found" for lists the user cannot see.
+// addListItem appends an item to a list the user may write to and tells the list's viewers; the error is
+// storage.ErrListReadOnly for viewers and "not found" for lists the user cannot see. Shared by
+// POST /lists/{id}/items, the webhook and the MCP tool add_list_item.
 func (s *Server) addListItem(userID, listID, content, category, quantity string, actor *apiActor) (*domain.ListItem, error) {
 	if strings.TrimSpace(listID) == "" {
 		return nil, errListIDRequired

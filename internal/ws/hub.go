@@ -663,10 +663,17 @@ func (h *Hub) BroadcastSystem(event string) {
 // BroadcastToUsers sends one event to every connection of the given users (duplicates are ignored). The
 // event is encoded once for all of them, not once per user.
 func (h *Hub) BroadcastToUsers(userIDs []string, event string, payload any) {
+	h.BroadcastListToUsers(userIDs, "", event, payload)
+}
+
+// BroadcastListToUsers is BroadcastToUsers for an event about a list: the message carries its id as
+// BroadcastListEvent does (list_id), but goes to every connection of the users, not only to the list's
+// room (a list deleted or unshared leaves everyone's list overview, open or not).
+func (h *Hub) BroadcastListToUsers(userIDs []string, listID, event string, payload any) {
 	if len(userIDs) == 0 {
 		return
 	}
-	data, err := json.Marshal(domain.WSMessage{Event: event, Payload: payload, Timestamp: domain.NowISO()})
+	data, err := json.Marshal(domain.WSMessage{Event: event, ListID: listID, Payload: payload, Timestamp: domain.NowISO()})
 	if err != nil {
 		return
 	}

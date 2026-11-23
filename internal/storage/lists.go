@@ -268,6 +268,19 @@ func (s *Store) GetListByID(userID, listID string) (*domain.SharedList, error) {
 	return &l, nil
 }
 
+// GetListUserIDs returns every user who can see the list: owner, direct shares and members of shared teams.
+func (s *Store) GetListUserIDs(listID string) []string {
+	if listID == "" {
+		return []string{}
+	}
+	return s.queryUserIDs(
+		`SELECT user_id FROM lists WHERE id = ?
+		 UNION SELECT target_id FROM list_shares WHERE list_id = ? AND target_type = 'user'
+		 UNION SELECT user_id FROM team_members WHERE team_id IN (SELECT target_id FROM list_shares WHERE list_id = ? AND target_type = 'team')`,
+		listID, listID, listID,
+	)
+}
+
 // getListMembers returns the owner and everyone a list is shared with (directly or via a team).
 func (s *Store) getListMembers(listID, ownerID string) []domain.TaskListMember {
 	members := make([]domain.TaskListMember, 0)

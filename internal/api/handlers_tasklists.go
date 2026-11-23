@@ -55,18 +55,35 @@ func (s *Server) handleCreateTaskList(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
-	tl, err := s.store.CreateTaskList(userID, req.SpaceID, req.TeamID, req.Title, derefIcon(req.Icon), req.Color)
-	if err == nil && tl != nil && req.Icon != nil && *req.Icon == "" {
-		if err = s.store.ClearIcon("task_lists", tl.ID); err == nil {
-			tl.Icon = ""
-		}
-	}
+	tl, err := s.createTaskList(userID, req.SpaceID, req.TeamID, req.Title, req.Icon, req.Color)
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	tl.Columns = storage.LocalizeColumns(tl.Columns, w.Header().Get("Content-Language"))
 	writeJSON(w, http.StatusCreated, tl)
+}
+
+// createTaskList creates a task list (POST /task-lists, MCP create_task_list) and tells everyone who sees
+// it, the creator's other devices and, for a team's list, the team (TASK_LIST_CREATED). icon: nil = the
+// default, "" = none.
+func (s *Server) createTaskList(userID, spaceID, teamID, title string, icon *string, color string) (*domain.TaskList, error) {
+	tl, err := s.store.CreateTaskList(userID, spaceID, teamID, title, derefIcon(icon), color)
+	if err != nil {
+		return nil, err
+	}
+	if icon != nil && *icon == "" {
+		err = s.store.ClearIcon("task_lists", tl.ID)
+		if err == nil {
+			tl.Icon = ""
+		}
+	}
+	// Created either way (only the icon may be off): the other apps show it
+	s.broadcastTaskListChange(tl.ID, nil, eventTaskListCreated)
+	if err != nil {
+		return nil, err
+	}
+	return tl, nil
 }
 
 func (s *Server) handleUpdateTaskList(w http.ResponseWriter, r *http.Request) {

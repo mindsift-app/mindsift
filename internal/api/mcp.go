@@ -522,11 +522,10 @@ var mcpTools = []mcpTool{
 			if err := checkMCPIcon(a.Icon); err != nil {
 				return nil, err
 			}
-			tl, err := s.store.CreateTaskList(userID, "", "", a.Title, a.Icon, "")
+			tl, err := s.createTaskList(userID, "", "", a.Title, optionalIcon(a.Icon), "")
 			if err != nil {
 				return nil, err
 			}
-			s.broadcastTaskListChange(tl.ID, nil, eventTaskListCreated)
 			tl.IsOwner = true
 			return s.toTaskListView(*tl), nil
 		},
@@ -852,11 +851,10 @@ var mcpTools = []mcpTool{
 			if err := checkMCPIcon(a.Icon); err != nil {
 				return nil, err
 			}
-			l, err := s.store.CreateList(userID, a.Title, a.Icon, a.ListType)
+			l, err := s.createList(userID, a.Title, optionalIcon(a.Icon), a.ListType)
 			if err != nil {
 				return nil, err
 			}
-			s.wsHub.BroadcastToUser(userID, eventListCreated, l)
 			return s.toListView(*l), nil
 		},
 	},
@@ -946,16 +944,7 @@ var mcpTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			if err := s.store.EnsureListItemsWritable(userID, a.ListID, a.ItemID); err != nil {
-				return nil, err
-			}
-			item, err := s.store.UpdateListItem(a.ItemID, a.Content, a.Category, a.Quantity)
-			if err != nil {
-				return nil, err
-			}
-			s.recordListItemOrigin(item, actor, false)
-			s.wsHub.BroadcastListEvent(a.ListID, eventItemUpdated, item)
-			return item, nil
+			return s.updateListItem(userID, a.ListID, a.ItemID, a.Content, a.Category, a.Quantity, actor)
 		},
 	},
 	{
@@ -1275,6 +1264,14 @@ func checkMCPIcon(icon string) error {
 		return nil
 	}
 	return errors.New("'icon' muss ein einzelnes Emoji sein oder leer bleiben")
+}
+
+// optionalIcon: an agent's icon as the create helpers take it; empty is the default icon (nil), not none.
+func optionalIcon(icon string) *string {
+	if icon == "" {
+		return nil
+	}
+	return &icon
 }
 
 // isSingleEmoji reports whether s is one emoji, including skin tones, ZWJ sequences (👩‍💻), flags
