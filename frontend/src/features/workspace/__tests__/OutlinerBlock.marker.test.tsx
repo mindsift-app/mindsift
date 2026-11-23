@@ -1,12 +1,12 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
-import { OutlinerBlock } from '../OutlinerBlock';
+import { TestOutlinerBlock } from './TestOutlinerBlock';
 import { DocumentBlock } from '../../../lib/types';
 
 function renderBlock(block: DocumentBlock, hasChildren: boolean, listMarker?: string) {
   return render(
-    <OutlinerBlock
+    <TestOutlinerBlock
       docId="d"
       block={block}
       isLast

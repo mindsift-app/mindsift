@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, screen, waitFor, act } from '@testing-library/react';
 import { CodeBlockEditor, loadPrismLanguage, contentWithoutEmptyLastLine } from '../CodeBlockEditor';
-import { OutlinerBlock } from '../OutlinerBlock';
+import { TestOutlinerBlock } from './TestOutlinerBlock';
 import { DocumentBlock } from '../../../lib/types';
 import { OUTLINE_CLIPBOARD_TYPE } from '../../../lib/outlineMarkdown';
 
@@ -19,7 +19,7 @@ function makeCodeBlock(overrides: Partial<DocumentBlock> = {}): DocumentBlock {
 
 function renderOutlinerCodeBlock(
   initialBlock: DocumentBlock,
-  props: Partial<React.ComponentProps<typeof OutlinerBlock>> = {}
+  props: Partial<React.ComponentProps<typeof TestOutlinerBlock>> = {}
 ) {
   const updates: DocumentBlock[] = [];
   const indentCalls: Array<[string, 1 | -1]> = [];
@@ -27,7 +27,7 @@ function renderOutlinerCodeBlock(
   const Wrapper: React.FC = () => {
     const [blk, setBlk] = useState<DocumentBlock>(initialBlock);
     return (
-      <OutlinerBlock
+      <TestOutlinerBlock
         docId="doc-1"
         block={blk}
         isLast

@@ -5,7 +5,7 @@ import { renderInlineMarkdown } from '../../../lib/markdown';
 import { blocksToMarkdown } from '../../../lib/outlineMarkdown';
 import { ApiError } from '../../../lib/api/client';
 import { SecretChip, revealFailure } from '../SecretChip';
-import { OutlinerBlock } from '../OutlinerBlock';
+import { TestOutlinerBlock } from './TestOutlinerBlock';
 import type { DocumentBlock } from '../../../lib/types';
 import { api } from '../../../lib/api';
 
@@ -68,7 +68,7 @@ describe.each(['/hidden', '/secret', '/versteckt'])('%s', (command) => {
     const Wrapper = () => {
       const [blk, setBlk] = React.useState<DocumentBlock>({ id: 'b1', type: 'bullet', content: '', level: 0, position: 1 } as DocumentBlock);
       return (
-        <OutlinerBlock
+        <TestOutlinerBlock
           docId="doc1"
           block={blk}
           isLast

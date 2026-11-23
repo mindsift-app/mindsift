@@ -47,7 +47,6 @@ import { ImageBlock } from './ImageBlock';
 import { DrawingBlock } from './drawing/DrawingBlock';
 import { emptyDrawing, serializeDrawing } from '../../lib/drawing/model';
 import { AudioRecorderPicker } from './AudioRecorderPicker';
-import type { ConflictChoice } from '../../lib/docSync/engine';
 import { AudioBlock } from './AudioBlock';
 import { DictationBlock } from './DictationBlock';
 import { currentVoiceConfig } from '../../lib/voice';
@@ -61,7 +60,7 @@ import { useMentionInput } from '../../lib/useMentionInput';
 import { MentionMenu } from '../../components/MentionMenu';
 import { api } from '../../lib/api';
 import { safeHref } from '../../lib/safeUrl';
-import { isNoteLinkOnly, retargetWikiLinks, unlinkWikiLinks, WikiLink, WikiLinkClickHandler } from '../../lib/wikiLink';
+import { isNoteLinkOnly, retargetWikiLinks, unlinkWikiLinks, WikiLink } from '../../lib/wikiLink';
 import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
 import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
@@ -77,6 +76,7 @@ import { userColorStyles } from '../../lib/userColor';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { useOutlinerActions } from './OutlinerActionsContext';
 import { matchSlashQuery, removeSlashQuery, slashCommandFitsText } from '../../lib/slashCommand';
 
 export interface SlashCommand {
@@ -157,58 +157,17 @@ const OwnLockIcon: React.FC<{ on?: BlockLock['ownOn'] }> = ({ on }) => {
   );
 };
 
+// A bullet's own values; the handlers and the values of the whole tree come from OutlinerActionsContext
 export interface OutlinerBlockProps {
-  docId: string;
   block: DocumentBlock;
   isLast: boolean;
   maxAllowedLevel: number;
   hasChildren: boolean;
   isFocused: boolean;
   canEdit: boolean;
-  levelOffset?: number;
-  onZoomBlock?: (blockId: string) => void;
-  /** Turns this bullet and its children into a note of its own */
-  /** at: where the extract button was clicked, to ask there where the branch should go */
-  onExtractBlock?: (blockId: string, at?: { x: number; y: number; align?: 'left' | 'right' }) => void;
-  onInlineBlock?: (blockId: string) => void;
-  /** /vorlage: the bullet asks for a template, the picker opens at its text field (anchor) */
-  onTemplateCommand?: (blockId: string, anchor: HTMLElement | null) => void;
-  onUpdateBlock: (updated: DocumentBlock, immediate?: boolean) => void;
-  /** Runs a slash command's change (`apply`) so that one undo also takes back the typed "/command" */
-  onSlashCommand?: (blockId: string, textBefore: string, apply: () => void) => void;
-  onCreateBlockBelow: (afterBlockId: string, newContent?: string) => void;
-  /** Enter at the start of a bullet with text: a new empty bullet directly above it */
-  onCreateBlockAbove?: (beforeBlockId: string) => void;
-  onDeleteBlock: (blockId: string, deleteSubtree?: boolean) => void;
-  onMergeWithPrevious?: (blockId: string, content: string) => boolean;
-  onIndentBlock: (blockId: string, delta: 1 | -1) => void;
-  /** Ctrl/Cmd + click on the arrow: this bullet (as given) and all bullets below it fold the same way */
-  onToggleBranch?: (updated: DocumentBlock) => void;
-  onNavigateFocus: (blockId: string, direction: 'up' | 'down') => void;
-  onFocusBlock?: (blockId: string) => void;
-  onBlurBlock?: (blockId: string) => void;
-  /** Work in this block that does not change its text yet (drawing editor open), keeps its lease */
-  onBlockActivity?: (blockId: string) => void;
-  /** The focused field took over the block's text from elsewhere: the next edit builds on it */
-  onFieldShows?: (blockId: string, content: string) => void;
-  onOpenTask?: (taskId: string) => void;
-  onTagClick?: (tag: string) => void;
-  onWikiLinkClick?: WikiLinkClickHandler;
-  /** Copies a link to this bullet ([[Notiz#^id|…]]) */
-  onCopyBlockLink?: (blockId: string) => void;
-  // The bullet names itself by its ID (its index changes with every bullet added above it)
-  onDragStartBlock?: (blockId: string, e: React.DragEvent) => void;
-  onDragOverBlock?: (e: React.DragEvent, blockId: string) => void;
-  /** e: the drop, for text dragged onto a bullet without a text field (OutlinerTree, dropTextOnto) */
-  onDropBlock?: (blockId: string, e?: React.DragEvent) => void;
   /** A dragged bullet would land in front of this row, on this level (counted like the row's own indent) */
   dropIndent?: number | null;
   isTargeted?: boolean;
-  registerTextareaRef: (blockId: string, el: HTMLTextAreaElement | null) => void;
-  /** Returns the bullet the cursor ends up in (the last pasted line) */
-  onPasteMultiLines?: (blockId: string, textBefore: string, textAfter: string, rawLines: string[]) => string | void;
-  /** Uploaded pasted images become image bullets at this bullet (OutlinerTree.handlePasteImages) */
-  onPasteImages?: (anchorId: string, contents: string[], anchor?: DocumentBlock, focus?: boolean) => void;
   /** Number or letter of a numbered-list item ("1.", "b.", "iii.") */
   listMarker?: string;
   /** Another bullet on the same level follows: Enter in this empty bullet adds a bullet instead of outdenting */
@@ -216,13 +175,7 @@ export interface OutlinerBlockProps {
   /** How many indent guide lines the row shows (OutlinerTree.guideCounts); default: one per level */
   guides?: number;
   lockedBy?: BlockLock; // someone else is editing this block
-  /** A double-click on a drawing someone else is editing: tell the user why it does not open */
-  onLockedDrawing?: (lock: BlockLock) => void;
   originalLockedBy?: BlockLock; // a conflict copy: someone else is editing its original
-  canAppendBelow?: boolean; // the user may edit the note, so Enter in a locked block still adds one below
-  onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
-  onUndo?: () => void;
-  onRedo?: () => void;
   /** Part of a selection over several bullets (browsers without the CSS Highlight API tint the row) */
   inRangeSelection?: boolean;
 }
@@ -231,54 +184,56 @@ export interface OutlinerBlockProps {
 export { mapRenderedOffsetToRaw };
 
 const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
-  docId,
   block,
   hasChildren,
   isFocused,
   canEdit,
   maxAllowedLevel,
-  levelOffset = 0,
-  onZoomBlock,
-  onExtractBlock,
-  onInlineBlock,
-  onTemplateCommand,
-  onUpdateBlock,
-  onSlashCommand,
-  onCreateBlockBelow,
-  onCreateBlockAbove,
-  onDeleteBlock,
-  onMergeWithPrevious,
-  onIndentBlock,
-  onToggleBranch,
-  onNavigateFocus,
-  onFocusBlock,
-  onBlurBlock,
-  onBlockActivity,
-  onFieldShows,
-  onOpenTask,
-  onTagClick,
-  onWikiLinkClick,
-  onCopyBlockLink,
-  onDragStartBlock,
-  onDragOverBlock,
-  onDropBlock,
   dropIndent,
   isTargeted,
-  registerTextareaRef,
-  onPasteMultiLines,
-  onPasteImages,
   listMarker,
   siblingFollows = false,
   guides,
   lockedBy: heldBy,
-  onLockedDrawing,
   originalLockedBy,
-  canAppendBelow,
-  onResolveConflict,
-  onUndo,
-  onRedo,
   inRangeSelection,
 }) => {
+  const {
+    docId,
+    levelOffset,
+    canAppendBelow,
+    onZoomBlock,
+    onExtractBlock,
+    onInlineBlock,
+    onTemplateCommand,
+    onUpdateBlock,
+    onSlashCommand,
+    onCreateBlockBelow,
+    onCreateBlockAbove,
+    onDeleteBlock,
+    onMergeWithPrevious,
+    onIndentBlock,
+    onToggleBranch,
+    onNavigateFocus,
+    onFocusBlock,
+    onBlurBlock,
+    onBlockActivity,
+    onFieldShows,
+    onOpenTask,
+    onTagClick,
+    onWikiLinkClick,
+    onCopyBlockLink,
+    onDragStartBlock,
+    onDragOverBlock,
+    onDropBlock,
+    registerTextareaRef,
+    onPasteMultiLines,
+    onPasteImages,
+    onLockedDrawing,
+    onResolveConflict,
+    onUndo,
+    onRedo,
+  } = useOutlinerActions();
   const { t } = useTranslation('workspace');
   // A live drawing holds its bullet: the drawing itself shows who draws, and others may join or watch
   const liveDrawing = block.type === 'drawing' && heldBy?.live?.length ? heldBy.live : undefined;
@@ -2453,8 +2408,6 @@ function dimSecretRefs(text: string): React.ReactNode[] {
   return out;
 }
 
-// Memoized: a note renders only the bullets whose props changed (OutlinerTree keeps its handlers stable),
-// not all of them on every Enter or after every pause in typing
 // Pasted or dropped images on their way: the same look as the /image picker while it uploads
 export const PastingImagesNotice: React.FC<{ count: number }> = ({ count }) => {
   const { t } = useTranslation('workspace');
@@ -2468,4 +2421,6 @@ export const PastingImagesNotice: React.FC<{ count: number }> = ({ count }) => {
   );
 };
 
+// Memoized: a note renders only the bullets whose props changed (the handlers come from a context that keeps
+// its identity, OutlinerActionsContext), not all of them on every Enter or after every pause in typing
 export const OutlinerBlock = React.memo(OutlinerBlockView);
