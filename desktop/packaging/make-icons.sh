@@ -4,7 +4,8 @@
 # so a normal build needs no image tools; run this only when the artwork changes (podman).
 set -eu
 cd "$(dirname "$0")/../.."
-podman run --rm -v "$PWD":/src:Z -w /src docker.io/library/alpine:3.23 sh -c '
+. ci/images.env
+podman run --rm -v "$PWD":/src:Z -w /src "$ALPINE_IMAGE" sh -c '
   apk add --no-cache -q rsvg-convert imagemagick >/dev/null
   id=app.mindsift.MindSift
   out=desktop/packaging/linux/icons/hicolor

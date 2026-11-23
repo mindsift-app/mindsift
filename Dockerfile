@@ -6,7 +6,8 @@
 # Stage 1: Frontend Check & Build (Cached npm dependencies layer)
 # ==============================================================================
 # Node: the active LTS line, pinned to a release that was out for two weeks when it was chosen, or to a
-# security release (26.13.1). It only builds the frontend; nothing of it ends up in the image.
+# security release (26.13.1). It only builds the frontend; nothing of it ends up in the image. The FROM
+# lines name the images of ci/images.env (NODE_IMAGE, GO_IMAGE, ALPINE_IMAGE); ci/check-images.sh compares.
 FROM --platform=$BUILDPLATFORM node:26.13.1-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
@@ -29,7 +30,7 @@ RUN node /app/ci/third-party-licenses-npm.mjs . > /app/third-party-npm.txt
 # ==============================================================================
 # Stage 2: Go Backend Lint, Unit Tests & Binary Build (Cached Go module & sqlite layer)
 # ==============================================================================
-# Go: pinned like Node (1.27.4 is a security release); ci/local-checks.sh uses the same image
+# Go: pinned like Node (1.27.4 is a security release); ci/local-checks.sh uses the same image (GO_IMAGE)
 FROM --platform=$BUILDPLATFORM golang:1.27.4-alpine AS backend-builder
 WORKDIR /app
 RUN apk add --no-cache git ca-certificates
@@ -62,7 +63,8 @@ ARG SKIP_TESTS=0
 # go.mod and go.sum are used as committed.
 # The tests run with a single database connection: code that needs a second one while holding one hangs
 # here at once (and fails after the timeout) instead of deadlocking the pool under load.
-# -timeout 20m per package as in ci/local-checks.sh: internal/api alone takes minutes on a busy runner.
+# -timeout 20m per package: internal/api alone takes minutes on a busy runner (ci/local-checks.sh allows
+# 40m, as it runs beside its other parts and other builds on the developer's machine).
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     go mod verify && \
     if [ "$SKIP_TESTS" != "1" ]; then \
@@ -96,7 +98,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 # ==============================================================================
 # The only stage on the platform of the image: its RUN step needs emulation (QEMU) when that is not the
 # platform of the building machine.
-FROM alpine:3.24
+FROM alpine:3.24.4
 # The code state the image was built from (CI: decides whether a later build may skip the tests)
 ARG GIT_SHA=""
 ARG GIT_TREE=""
