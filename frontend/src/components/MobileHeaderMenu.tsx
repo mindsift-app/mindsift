@@ -11,9 +11,9 @@ interface MobileHeaderMenuProps {
   activeTabLabel: string;
 }
 
-// The phone's menu of the current view (⋯ in the header). It drops from right below the header instead of
-// coming from the bottom like a BottomSheet: it belongs to the button it opens from, and the header with the
-// view's name stays visible above it, as with the notification list. It closes like every popover
+// The phone's menu of the current view (the button with the view's name in the header). It drops from right
+// below the header instead of coming from the bottom like a BottomSheet: it belongs to the button it opens
+// from, and the header stays visible above it, as with the notification list. It closes like every popover
 // (lib/useDismiss.ts): a tap beside it (the dimmed page) only closes it, and so does Escape; the page behind
 // does not scroll.
 export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLabel }) => {
