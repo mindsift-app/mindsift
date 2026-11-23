@@ -8,6 +8,7 @@ import { getToken } from './lib/api';
 import { prefetchAuthStatus } from './app/useSessionBootstrap';
 import { MobileActionProvider } from './context/MobileActionContext';
 import { installDropGuard } from './lib/dropGuard';
+import { installShellActionGuard } from './lib/desktopShellActions';
 import { isDesktopStart } from './lib/desktopStart';
 // Inter ships with the app (no external font service); the variable font covers all weights
 import '@fontsource-variable/inter';
@@ -15,6 +16,8 @@ import './index.css';
 
 // A file or link dropped where nothing takes it must not replace the app (lib/dropGuard.ts)
 installDropGuard();
+// The desktop app's shell asks before reloading, switching or closing the page (lib/desktopShellActions.ts)
+installShellActionGuard();
 
 // A note shared by public link (/p/<token>) opens without the app around it and without login,
 // in the visitor's browser language

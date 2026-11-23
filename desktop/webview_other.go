@@ -10,7 +10,7 @@ func useWebviewDataDir(string) {}
 
 func setupPages(*application.WebviewWindow, string, string, string, func(string)) {}
 
-var rawMessages func(application.Window, string, *application.OriginInfo)
+func rawMessages(application.Window, string, *application.OriginInfo) {}
 
 func goBack(w application.Window)               { w.ExecJS("history.back()") }
 func goForward(w application.Window)            { w.ExecJS("history.forward()") }

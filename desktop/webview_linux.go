@@ -178,8 +178,9 @@ func setupPages(window *application.WebviewWindow, origin, scripts, marker strin
 	})
 }
 
-// rawMessages: Wails' RawMessageHandler; none on Linux, setupPages reads every page's address itself
-var rawMessages func(application.Window, string, *application.OriginInfo)
+// rawMessages: the page's messages besides the guard's answers (main.go); none on Linux, setupPages reads
+// every page's address itself
+func rawMessages(application.Window, string, *application.OriginInfo) {}
 
 // currentURI: the address of the window's page ("" without the webview); only on the main thread.
 func currentURI() string {

@@ -18,9 +18,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	_ "time/tzdata"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 
 	"github.com/mindsift-app/mindsift/desktop/internal/shell"
 	"github.com/mindsift-app/mindsift/internal/config"
@@ -69,6 +71,21 @@ func main() {
 	useWebviewDataDir(webviewDir)
 
 	var window *application.WebviewWindow
+	// Actions of the shell that would lose a recording under way ask the page first (shell/guard.go)
+	guard := &shell.Guard{
+		Ask: func(script string) {
+			if window != nil {
+				runInPage(window, script)
+			}
+		},
+		// The page asks the person: the window comes up for it (quitting from the tray)
+		Asking: func() {
+			if window != nil {
+				window.Show()
+				window.Focus()
+			}
+		},
+	}
 	app := application.New(application.Options{
 		Name:        "MindSift",
 		Description: "MindSift desktop",
@@ -85,8 +102,13 @@ func main() {
 		// The webview's storage (local storage, IndexedDB, cookies, service workers, caches) in the base
 		// folder, whatever the program's file is called; on Linux useWebviewDataDir below
 		Windows: application.WindowsOptions{WebviewUserDataPath: webviewDir},
-		// Windows: the note every page posts after its load, for the title (webview_windows.go); nil elsewhere
-		RawMessageHandler: rawMessages,
+		// The page's answers to guarded actions; on Windows also the note every page posts after its load, for
+		// the title (webview_windows.go; rawMessages does nothing elsewhere)
+		RawMessageHandler: func(w application.Window, message string, origin *application.OriginInfo) {
+			if !guard.Message(message) {
+				rawMessages(w, message, origin)
+			}
+		},
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "app.mindsift.MindSift",
 			OnSecondInstanceLaunch: func(application.SecondInstanceData) {
@@ -156,18 +178,20 @@ func main() {
 
 	// Every page the window shows, history included: the title follows the page, not only the opening
 	sh.Navigated = func(address string) {
+		guard.PageChanged()
 		if window != nil {
 			window.SetTitle(sh.TitleFor(address))
 		}
 	}
 
 	// "Instanz wechseln…": the start view, from the tray or with Ctrl+Shift+O (desktops without a tray);
-	// the app's profile menu goes there itself
+	// the app's profile menu goes there itself. Guarded (shell/guard.go), like reloading, closing and quitting.
 	showStart := func() {
-		window.SetURL(shell.StartPath)
 		window.Show()
 		window.Focus()
+		guard.Request("switch", func() { window.SetURL(shell.StartPath) })
 	}
+	guardedReload := func(w application.Window) { guard.Request("reload", func() { reload(w) }) }
 
 	startURL := sh.StartURL()
 	window = app.Window.NewWithOptions(application.WebviewWindowOptions{
@@ -184,8 +208,8 @@ func main() {
 		KeyBindings: map[string]func(application.Window){
 			"alt+left":     goBack,
 			"alt+right":    goForward,
-			"f5":           reload,
-			"ctrl+r":       reload,
+			"f5":           guardedReload,
+			"ctrl+r":       guardedReload,
 			"ctrl+shift+o": func(application.Window) { showStart() },
 		},
 	})
@@ -196,6 +220,21 @@ func main() {
 	// pages; on Linux also the drop target for files (filedrop_linux.go)
 	setupPages(window, windowOrigin(), windowScripts, shellMarker(windowOrigin()), sh.Navigated)
 
+	// The window's close button (closing the window quits the app): asks the page first, then closes for
+	// real. Never held once the app quits anyway (the tray's "Beenden" allowed, or Wails shutting down, e.g.
+	// on a signal): Wails closes the window itself then.
+	var closing atomic.Bool
+	window.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
+		if closing.Load() || app.Context().Err() != nil {
+			return
+		}
+		e.Cancel()
+		guard.Request("close", func() {
+			closing.Store(true)
+			window.Close()
+		})
+	})
+
 	tray := app.SystemTray.New()
 	tray.SetIcon(trayIcon)
 	tray.SetLabel("MindSift")
@@ -203,7 +242,12 @@ func main() {
 	menu.Add(shell.Text("open")).OnClick(func(*application.Context) { window.Show(); window.Focus() })
 	menu.Add(shell.Text("switch")).OnClick(func(*application.Context) { showStart() })
 	menu.AddSeparator()
-	menu.Add(shell.Text("quit")).OnClick(func(*application.Context) { app.Quit() })
+	menu.Add(shell.Text("quit")).OnClick(func(*application.Context) {
+		guard.Request("quit", func() {
+			closing.Store(true)
+			app.Quit()
+		})
+	})
 	tray.SetMenu(menu)
 
 	err = app.Run()

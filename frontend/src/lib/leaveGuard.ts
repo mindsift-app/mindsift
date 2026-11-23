@@ -53,8 +53,9 @@ export function guardLeave(go: () => void, options: LeaveOptions = {}): void {
 // A recording still running or not saved yet: reloading the page, closing the tab or going to another site
 // would lose it. The browser asks first then (its own beforeunload question, the only way to hold these;
 // allowed as an exception to "no browser dialogs"). Only while such a recording exists: the listener comes
-// and goes with it, so the page otherwise stays in the back/forward cache. Not in the desktop app: it has no
-// reload or tab of its own, and its web views would hold the window's close or the switch of instance.
+// and goes with it, so the page otherwise stays in the back/forward cache. Not in the desktop app: its web
+// views would hold the window's close or the switch of instance; its shell asks the page itself before
+// those (lib/desktopShellActions.ts), with the same hold.
 const inDesktopApp = () => isDesktopApp() || desktopShellStart() !== null;
 
 function onBeforeUnload(e: BeforeUnloadEvent) {
