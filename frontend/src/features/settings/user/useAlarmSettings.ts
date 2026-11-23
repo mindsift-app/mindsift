@@ -115,7 +115,7 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
       await removePushDevice(endpoint);
       await reloadPush();
     } catch (err) {
-      setAlarmMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.removeFailed') });
+      setAlarmMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:alarms.push.removeFailed')) });
     } finally {
       setPushBusy(false);
     }
@@ -134,7 +134,7 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
       await reloadPush();
       setAlarmMsg({ type: 'ok', text: on ? i18n.t('settings:alarms.push.on') : i18n.t('settings:alarms.push.off') });
     } catch (err) {
-      setAlarmMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.enableFailed') });
+      setAlarmMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:alarms.push.enableFailed')) });
     } finally {
       setPushBusy(false);
     }
@@ -146,7 +146,7 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
       const res = await api.testPush();
       setAlarmMsg({ type: 'ok', text: i18n.t('settings:alarms.push.testSent', { count: res.devices }) });
     } catch (err) {
-      setAlarmMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.testFailed') });
+      setAlarmMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:alarms.push.testFailed')) });
     } finally {
       setPushBusy(false);
     }

@@ -14,6 +14,7 @@ import { getCurrentUserId } from '../api/client';
 import { personName } from '../mentions';
 import { browserId, deviceKind } from './device';
 import i18n from '../../i18n';
+import { errorMessage } from '../errorMessage';
 
 export type EngineStatus = 'loading' | 'saved' | 'saving' | 'offline' | 'error';
 
@@ -932,7 +933,7 @@ export class DocSyncEngine {
       return;
     }
     this.status = 'offline';
-    this.errorMessage = err instanceof Error ? err.message : String(err);
+    this.errorMessage = errorMessage(err, String(err));
   }
 
   private channel(): SyncChannel {

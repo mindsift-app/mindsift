@@ -185,7 +185,7 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
       // A key never asks for the second factor itself: with one on, creating it does (withSecondFactor)
       created = await withSecondFactor((proof) => api.createAPIKey(newKeyName.trim() || t('api.defaultKeyName'), newKeyScopes, proof));
     } catch (err) {
-      if (!(err instanceof ApiError && err.code === 'mfa_cancelled')) showError(err instanceof Error ? err.message : String(err));
+      if (!(err instanceof ApiError && err.code === 'mfa_cancelled')) showError(errorMessage(err, i18n.t('common:errors.unknown')));
       return;
     }
     if (created.rawKey) {

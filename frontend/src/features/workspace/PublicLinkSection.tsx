@@ -6,6 +6,8 @@ import { PublicLinkState } from '../../lib/types';
 import { formatDateTime } from '../../lib/format';
 import { MASKED, NO_AUTOFILL } from '../../lib/noAutofill';
 import { SelectMenu } from '../../components/SelectMenu';
+import { errorMessage } from '../../lib/errorMessage';
+import i18n from '../../i18n';
 
 // Durations offered for a public link, in hours; the server's limit cuts the list (there is no "for good")
 const DURATIONS = [1, 24, 72, 168, 336];
@@ -40,7 +42,7 @@ export const PublicLinkSection: React.FC<{ docId: string }> = ({ docId }) => {
       setCreating(false);
       setPassword('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err, i18n.t('common:errors.unknown')));
     } finally {
       setBusy(false);
     }

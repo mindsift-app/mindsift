@@ -13,11 +13,12 @@ import {
   desktopShell,
   goTo,
 } from '../../lib/desktopShell';
+import { errorMessage } from '../../lib/errorMessage';
 
 type Form = null | 'local' | 'server';
 
 const toProblem = (e: unknown): DesktopProblem =>
-  e instanceof DesktopShellError ? e.problem : { code: 'failed', detail: e instanceof Error ? e.message : String(e) };
+  e instanceof DesktopShellError ? e.problem : { code: 'failed', detail: errorMessage(e, String(e)) };
 
 // The desktop app's start view (/__desktop/start, served by the shell itself): local instances and servers
 // used lately, instances found in the app's folder, a new instance, a new server. In the look of the

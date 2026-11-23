@@ -8,6 +8,8 @@ import { showError } from '../../components/ErrorNotice';
 import { FormSheet } from '../../components/FormSheet';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { isPublicView } from '../../lib/publicNote';
+import { errorMessage } from '../../lib/errorMessage';
+import i18n from '../../i18n';
 
 /** What a failed reveal means: the value was deleted, cannot be decrypted, or another error to show. */
 export function revealFailure(err: unknown): 'gone' | 'unreadable' | 'error' {
@@ -75,7 +77,7 @@ const RevealableSecret: React.FC<{ docId: string; secretId: string; canEdit: boo
     } catch (err) {
       const failed = revealFailure(err);
       setState(failed === 'error' ? 'hidden' : failed);
-      if (failed === 'error') showError(err instanceof Error ? err.message : String(err));
+      if (failed === 'error') showError(errorMessage(err, i18n.t('common:errors.unknown')));
     }
   };
 
@@ -120,7 +122,7 @@ const RevealableSecret: React.FC<{ docId: string; secretId: string; canEdit: boo
             show(editing);
             setEditing(null);
           } catch (err) {
-            showError(err instanceof Error ? err.message : String(err));
+            showError(errorMessage(err, i18n.t('common:errors.unknown')));
           } finally {
             setSaving(false);
           }
@@ -222,7 +224,7 @@ export const NewSecretSheet: React.FC<{ docId: string; onClose: () => void; onCr
           const { ref } = await api.createSecret(docId, value);
           onCreated(ref);
         } catch (err) {
-          showError(err instanceof Error ? err.message : String(err));
+          showError(errorMessage(err, i18n.t('common:errors.unknown')));
           setSaving(false);
         }
       }}
