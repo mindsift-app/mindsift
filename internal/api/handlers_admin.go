@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -840,7 +839,9 @@ func (s *Server) handleAdminTestSMTP(w http.ResponseWriter, r *http.Request) {
 		// A mail server to try before it is stored (setup wizard); left out, the configured one
 		SMTP *setupSMTP `json:"smtp"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return
+	}
 	send := s.sendMailContent
 	if req.SMTP != nil {
 		if err := req.SMTP.check(); err != nil {

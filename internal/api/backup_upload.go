@@ -270,7 +270,9 @@ func (s *Server) handleUploadRestore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req restoreRequest
-	_ = json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req)
+	if !decodeOptionalJSONLimit(w, r, 4096, &req) {
+		return
+	}
 	if req.Confirm != meta.Name {
 		writeErrorFrom(w, http.StatusBadRequest, errRestoreConfirm)
 		return

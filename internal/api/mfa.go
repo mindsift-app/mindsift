@@ -517,7 +517,9 @@ func (s *Server) handleTOTPSetup(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 		secondFactor
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return
+	}
 	user, ok := s.currentUser(w, r)
 	if !ok {
 		return
@@ -563,7 +565,9 @@ func (s *Server) handleTOTPConfirm(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Code string `json:"code"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return
+	}
 	user, ok := s.currentUser(w, r)
 	if !ok {
 		return
@@ -641,7 +645,9 @@ func (s *Server) handleTOTPDisable(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 		secondFactor
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return
+	}
 	user, ok := s.currentUser(w, r)
 	if !ok {
 		return
@@ -675,7 +681,9 @@ func (s *Server) handleNewRecoveryCodes(w http.ResponseWriter, r *http.Request) 
 		Password string `json:"password"`
 		secondFactor
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return
+	}
 	user, ok := s.currentUser(w, r)
 	if !ok {
 		return

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -85,7 +84,9 @@ func (s *Server) handleClearDoneTasks(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		TaskListID string `json:"taskListId"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return
+	}
 	deleted, err := s.store.ClearDoneTasks(userID, req.TaskListID)
 	if err != nil {
 		writeStoreError(w, http.StatusBadRequest, err)
@@ -141,7 +142,9 @@ func (s *Server) handleEmptyTaskTrash(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		TaskListID string `json:"taskListId"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return
+	}
 	ids, err := s.store.EmptyTaskTrash(auth.GetUserID(r.Context()), req.TaskListID)
 	if err != nil {
 		writeTaskTrashError(w, err)

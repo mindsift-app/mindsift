@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -115,7 +114,9 @@ type restoreRequest struct {
 func (s *Server) handleAdminRestoreBackup(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 	var req restoreRequest
-	_ = json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req)
+	if !decodeOptionalJSONLimit(w, r, 4096, &req) {
+		return
+	}
 	if req.Confirm != name {
 		writeErrorFrom(w, http.StatusBadRequest, errRestoreConfirm)
 		return

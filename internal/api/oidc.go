@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -476,7 +475,9 @@ func (s *Server) handleOIDCStart(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Return string `json:"return"`
 	}
-	_ = json.NewDecoder(http.MaxBytesReader(w, r.Body, 8192)).Decode(&req)
+	if !decodeOptionalJSONLimit(w, r, 8192, &req) {
+		return
+	}
 	if wait := s.loginGuard.throttle("oidc", clientIPFrom(r), limitOIDCPerIP); wait > 0 {
 		writeThrottled(w, wait)
 		return
@@ -499,7 +500,9 @@ func (s *Server) handleOIDCConfirm(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 		secondFactor
 	}
-	_ = json.NewDecoder(http.MaxBytesReader(w, r.Body, 65536)).Decode(&req)
+	if !decodeOptionalJSONLimit(w, r, 65536, &req) {
+		return
+	}
 	user, ok := s.currentUser(w, r)
 	if !ok {
 		return
