@@ -81,6 +81,10 @@ type TasksSession = {
 const DEFAULT_GROUP_ALL: GroupBy = 'list';
 const DEFAULT_GROUP_LIST: GroupBy = 'none';
 
+// The dialogs and sheets of the page (one open at a time): new task (phones), filter, new list, sharing a list,
+// a task's details, the board's columns
+type TasksModal = 'create' | 'filter' | 'newList' | 'shareList' | 'detail' | 'columns';
+
 // Title of a task created from a Kanban column until it gets its own
 // Placeholder title of a task created from the + button until it gets its own
 const newTaskTitle = () => i18n.t('tasks:detail.new');
@@ -167,22 +171,42 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
   const { setGroups, setPrimaryAction } = useMobileActions();
 
+  // The dialog or sheet open over the tasks: one at a time. Each has its show flag and setter as before;
+  // opening one replaces another, closing one leaves another alone.
+  const [openModal, setOpenModal] = useState<TasksModal | null>(null);
+  const modalSetters = useMemo(() => {
+    const setter = (m: TasksModal) => (show: boolean) => setOpenModal((cur) => (show ? m : cur === m ? null : cur));
+    return {
+      create: setter('create'),
+      filter: setter('filter'),
+      newList: setter('newList'),
+      shareList: setter('shareList'),
+      detail: setter('detail'),
+      columns: setter('columns'),
+    };
+  }, []);
+
   // Mobile task creation & filter modal state
-  const [showMobileCreateModal, setShowMobileCreateModal] = useState(false);
+  const showMobileCreateModal = openModal === 'create';
+  const setShowMobileCreateModal = modalSetters.create;
   const [mobileCreateListId, setMobileCreateListId] = useState<string>('');
-  const [showFilterModal, setShowFilterModal] = useState(false);
+  const showFilterModal = openModal === 'filter';
+  const setShowFilterModal = modalSetters.filter;
 
   // New TaskList modal state
-  const [showNewListModal, setShowNewListModal] = useState(false);
+  const showNewListModal = openModal === 'newList';
+  const setShowNewListModal = modalSetters.newList;
 
   // Share TaskList modal state
-  const [showShareListModal, setShowShareListModal] = useState(false);
+  const showShareListModal = openModal === 'shareList';
+  const setShowShareListModal = modalSetters.shareList;
   const [sharingTaskList, setSharingTaskList] = useState<TaskList | null>(null);
   const [renamingList, setRenamingList] = useState<TaskList | null>(null);
 
   // Detail modal state
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
+  const showDetailModal = openModal === 'detail';
+  const setShowDetailModal = modalSetters.detail;
   const [extraTask, setExtraTask] = useState<Thought | null>(null);
   // Every change to the tasks also reaches a task opened from outside the shown list (a link, the
   // search): it is not in `tasks`, so the detail dialog kept showing the old values of priority, status,
@@ -206,10 +230,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
         if (th) setExtraTask(th);
       }).catch(() => {});
     }
-  }, [initialSelectedTaskId, onInitialTaskShownRef]);
+  }, [initialSelectedTaskId, onInitialTaskShownRef, setShowDetailModal]);
 
   // Manage columns modal state
-  const [showManageColumnsModal, setShowManageColumnsModal] = useState(false);
+  const showManageColumnsModal = openModal === 'columns';
+  const setShowManageColumnsModal = modalSetters.columns;
   const [globalColumns, setGlobalColumns] = useState<KanbanColumn[]>(() => {
     try {
       const stored = localStorage.getItem('mindsift:kanban_columns');
@@ -723,6 +748,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
     });
     setPrimaryAction(menu.primaryAction);
     setGroups(menu.groups);
+  // handleOpenShareModal is left out as before: it is new on every render and only sets state and fetches
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     viewMode,
     selectedListId,
@@ -740,6 +767,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
     isSelectedListReadOnly,
     setPrimaryAction,
     setGroups,
+    setShowFilterModal,
+    setShowManageColumnsModal,
+    setShowMobileCreateModal,
+    setShowNewListModal,
   ]);
 
   const renderTaskProgressBar = (task: Thought) => {
