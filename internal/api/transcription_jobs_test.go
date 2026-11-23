@@ -444,11 +444,25 @@ func TestFailedTranscriptionsLaterAndCleanup(t *testing.T) {
 	if err := store.FailTranscription(note.ID, transcriptionErrFailed, time.Time{}, time.Time{}); err != nil {
 		t.Fatal(err)
 	}
+	// A waiting job nothing takes: speech recognition is not in server mode here (no STT_URL)
+	waiting, err := store.CreateInboxTranscription(userID, []storage.AudioPiece{{Mime: "audio/webm", Data: []byte("y")}})
+	if err != nil {
+		t.Fatal(err)
+	}
 	now = time.Now()
-	if jobs, err := store.PurgeFailedTranscriptions(now.Add(29 * 24 * time.Hour)); err != nil || len(jobs) != 0 {
+	if jobs, err := store.PurgeFailedTranscriptions(now.Add(29*24*time.Hour), false); err != nil || len(jobs) != 0 {
 		t.Fatalf("purged before 30 days: %v %v", jobs, err)
 	}
+	srv.cfg.Speech.URL = "http://whisper.invalid" // server mode: the worker would take the waiting job
 	srv.runFailedTranscriptionCleanup(now.Add(storage.FailedTranscriptionKeep + time.Minute))
+	if _, err := store.GetTranscription(waiting.ID); err != nil {
+		t.Fatal("waiting job removed although the worker takes it")
+	}
+	srv.cfg.Speech.URL = ""
+	srv.runFailedTranscriptionCleanup(now.Add(storage.FailedTranscriptionKeep + time.Minute))
+	if _, err := store.GetTranscription(waiting.ID); err == nil {
+		t.Fatal("waiting job nothing takes still there after 30 days")
+	}
 	if _, err := store.GetTranscription(note.ID); err == nil {
 		t.Fatal("failed job of a note still there after 30 days")
 	}

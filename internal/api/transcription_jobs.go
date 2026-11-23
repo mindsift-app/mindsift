@@ -33,6 +33,8 @@ import (
 // also tried again by itself a few more times, 5 minutes and then hours apart (transcriptionLaterDelays),
 // in case the server is back by then. A failed job goes 30 days after its last attempt (storage.PurgeFailedTranscriptions,
 // with the hourly retention work): a note's recording stays in the note, an inbox recording goes with it.
+// While speech recognition is not in server mode, waiting jobs (and failed ones with a later attempt
+// planned), which nothing would ever take, go the same way 30 days after they were queued or last tried.
 
 // transcriptionRetryDelays: the waits before the second and third attempt
 var transcriptionRetryDelays = []time.Duration{30 * time.Second, 2 * time.Minute}
@@ -201,9 +203,11 @@ func (s *Server) requeueLaterTranscriptions(now time.Time) {
 }
 
 // runFailedTranscriptionCleanup removes failed jobs past storage.FailedTranscriptionKeep (hourly, with the
-// other retention work): recordings of notes stay in the notes, inbox recordings go with their jobs.
+// other retention work): recordings of notes stay in the notes, inbox recordings go with their jobs. While
+// speech recognition is not in server mode the worker takes no jobs, so waiting ones and failed ones with
+// a later attempt planned go too once untouched that long; in server mode the worker gets to those.
 func (s *Server) runFailedTranscriptionCleanup(now time.Time) {
-	jobs, err := s.store.PurgeFailedTranscriptions(now)
+	jobs, err := s.store.PurgeFailedTranscriptions(now, s.voiceMode() != "server")
 	if err != nil {
 		slog.Warn("Removing old failed transcriptions failed", "error", err)
 	}
