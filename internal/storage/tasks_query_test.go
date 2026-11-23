@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -270,12 +271,25 @@ func TestVisibleTaskQueriesUseIndexes(t *testing.T) {
 		t.Logf("legacy GetTasks: %s", plan)
 	}
 	day := "2026-11-20"
+	queryTasks := func(q TaskQuery) struct {
+		sql  string
+		args []any
+	} {
+		sql, args := taskQuerySQL("id", light, q)
+		return struct {
+			sql  string
+			args []any
+		}{sql, args}
+	}
 	for name, q := range map[string]struct {
 		sql  string
 		args []any
 	}{
-		"GetTasks":                       {visibleTasksIDsSQL, visibleTaskArgs(light)},
-		"GetTasks of a list (unchanged)": {legacyGetTasksOfListSQL, userArgs(light, "tkl_o1")},
+		"QueryTasks (list_tasks)":         queryTasks(TaskQuery{Status: "open", DueUntil: day, DueFirst: true, Limit: 100}),
+		"QueryTasks of a list":            queryTasks(TaskQuery{TaskListID: "tkl_o1", Status: "done", Limit: 100}),
+		"QueryTasks (GET /tasks?due=...)": queryTasks(TaskQuery{DueOn: day}),
+		"GetTasks":                        {visibleTasksIDsSQL, visibleTaskArgs(light)},
+		"GetTasks of a list (unchanged)":  {legacyGetTasksOfListSQL, userArgs(light, "tkl_o1")},
 		"GetDashboardStats": {`SELECT COALESCE(SUM(is_completed = 0), 0) FROM thoughts
 			WHERE rowid IN (` + visibleTaskRowidsSQL + `) AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))`, visibleTaskArgs(light)},
 		"CalendarTasks": {`SELECT t.id FROM thoughts t WHERE t.rowid IN (` + visibleTaskRowidsSQL + `)
@@ -314,5 +328,94 @@ func BenchmarkVisibleTasks(b *testing.B) {
 				}
 			}
 		})
+	}
+}
+
+// legacyFilterTasks is how GET /tasks and MCP list_tasks narrowed GetTasks in Go before QueryTasks did it
+// in SQL: status, the due day (first ten characters) compared with op, tasks without due date left out
+// by a due condition, and for dueFirst a stable sort with due dates first, the earliest on top.
+func legacyFilterTasks(tasks []domain.Thought, status, op, day string, dueFirst bool, limit int) []string {
+	out := []domain.Thought{}
+	for _, t := range tasks {
+		if (status == "open" && t.IsCompleted) || (status == "done" && !t.IsCompleted) {
+			continue
+		}
+		if op != "" {
+			if t.DueDate == "" {
+				continue
+			}
+			d := t.DueDate[:min(10, len(t.DueDate))]
+			if (op == "=" && d != day) || (op == "<" && d >= day) || (op == "<=" && d > day) {
+				continue
+			}
+		}
+		out = append(out, t)
+	}
+	if dueFirst {
+		sort.SliceStable(out, func(i, j int) bool {
+			if (out[i].DueDate == "") != (out[j].DueDate == "") {
+				return out[i].DueDate != ""
+			}
+			return out[i].DueDate != "" && out[i].DueDate < out[j].DueDate
+		})
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return taskIDs(out)
+}
+
+// QueryTasks finds exactly the tasks, in exactly the order, that GetTasks filtered and sorted in Go gave:
+// every status, every kind of due condition (also due dates with a time, which count by their day), due
+// dates first or list order, with and without a limit, for all lists and for single ones.
+func TestQueryTasksMatchesFilteringInGo(t *testing.T) {
+	f := newTaskQueryFixture(t, 1500, 4, 300, true)
+	// Some due dates with a time, among them several on the same day and minute (order of equals)
+	if _, err := f.s.db.Exec(`UPDATE thoughts SET due_date = due_date || CASE rowid % 3 WHEN 0 THEN 'T09:30' ELSE 'T18:05' END
+		WHERE due_date != '' AND rowid % 4 = 0`); err != nil {
+		t.Fatal(err)
+	}
+	people := []string{f.a, f.b, f.otherUsers[1], "usr_nobody"}
+	lists := []string{"", f.lists[0], f.lists[7], f.foreignTL}
+	days := []string{"2026-11-01", "2026-11-20", "2026-12-31"}
+	checked := 0
+	for _, u := range people {
+		for _, l := range lists {
+			all, err := f.s.GetTasks(u, l)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, status := range []string{"", "all", "open", "done"} {
+				for _, c := range []struct{ op, day string }{{"", ""}, {"=", days[1]}, {"<", days[1]}, {"<=", days[0]}, {"<=", days[1]}, {"<=", days[2]}} {
+					for _, dueFirst := range []bool{false, true} {
+						for _, limit := range []int{0, 1, 100} {
+							q := TaskQuery{TaskListID: l, Status: status, DueFirst: dueFirst, Limit: limit}
+							switch c.op {
+							case "=":
+								q.DueOn = c.day
+							case "<":
+								q.DueBefore = c.day
+							case "<=":
+								q.DueUntil = c.day
+							}
+							got, err := f.s.QueryTasks(u, q)
+							if err != nil {
+								t.Fatal(err)
+							}
+							want := legacyFilterTasks(all, status, c.op, c.day, dueFirst, limit)
+							if !reflect.DeepEqual(taskIDs(got), want) {
+								t.Fatalf("%s %+v: %d tasks, filtering in Go %d (or another order)\n%v\n%v", u, q, len(got), len(want), taskIDs(got), want)
+							}
+							if len(want) > 0 {
+								checked++
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	if checked < 500 {
+		t.Fatalf("fixture too thin: %d non-empty cases", checked)
 	}
 }

@@ -90,20 +90,19 @@ func TestTimeZoneChangeAppliesAtOnce(t *testing.T) {
 	inUTC, inTokyo := func() { clock.Set(clock.Zone{Loc: time.UTC}) }, func() { clock.Set(clock.Zone{Loc: tokyo, Source: clock.SourceSetting}) }
 
 	// "today" of GET /tasks?due=today
-	tasks := []domain.Thought{{ID: "a", DueDate: "2026-11-13"}, {ID: "b", DueDate: "2026-11-14T10:00"}}
 	today := func() string {
-		got, err := filterTasks(tasks, "", "today", instant)
-		if err != nil || len(got) != 1 {
-			t.Fatalf("filterTasks: %v %v", got, err)
+		q, _, err := taskFilter("", "today", instant)
+		if err != nil {
+			t.Fatalf("taskFilter: %v", err)
 		}
-		return got[0].ID
+		return q.DueOn
 	}
 	inUTC()
-	if today() != "a" {
+	if today() != "2026-11-13" {
 		t.Fatal("UTC: the 13th is today")
 	}
 	inTokyo()
-	if today() != "b" {
+	if today() != "2026-11-14" {
 		t.Fatal("Tokyo: the 14th is today")
 	}
 

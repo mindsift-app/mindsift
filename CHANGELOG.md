@@ -17,6 +17,7 @@ Versions without a git tag were development states and were never published as a
 - The Flatpak of a release (the download on the release page and flatpak.mindsift.app) is now built from the release tag the way Flathub builds it: offline, with the frontend, the Go modules and the license file built from source inside the Flatpak SDK.
 - The page behind dialogs, sheets, the command palette and Quick Dump is now dimmed in the theme's own overlay colour instead of a fixed black, so light themes stay lighter.
 - All sheets from below on phones look and behave the same: a grip on top, a close button large enough to tap, the page behind does not scroll, and Escape closes them (Quick Dump, new task, task filter, profile, app install, calendar day, triage actions, a person in the administration).
+- Listing tasks through MCP (`list_tasks`) or with filters through `GET /tasks` now reads only the tasks asked for from the database, so it answers faster for people with many tasks; the results are the same.
 - Small forms opened next to a click (new folder, rename) flip above the click when there is no room below instead of running off the window.
 
 ### Fixed

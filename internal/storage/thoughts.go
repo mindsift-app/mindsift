@@ -288,31 +288,33 @@ func (s *Store) GetThoughts(userID, statusFilter string, limit int) ([]domain.Th
 }
 
 // GetTasks returns the tasks of one task list or, without one, every task the user can see (own tasks and
-// those of accessible lists, through visibleTaskRowidsSQL). rowid as the last key keeps equal tasks in one
-// order whichever plan SQLite picks (the order of a table scan, mostly the order they were added in).
+// those of accessible lists, through visibleTaskRowidsSQL).
 func (s *Store) GetTasks(userID string, taskListID string) ([]domain.Thought, error) {
-	var rows *sql.Rows
-	var err error
-	if taskListID != "" {
-		rows, err = s.db.Query(
-			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
-			 FROM thoughts
-			 WHERE (user_id = ? OR task_list_id IN (`+s.accessibleTaskListIDsQuery()+`))
-			   AND task_list_id = ?
-			   AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))
-			 ORDER BY is_completed ASC, sort_order ASC, created_at DESC, rowid`,
-			userID, userID, userID, userID, taskListID,
-		)
-	} else {
-		rows, err = s.db.Query(
-			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
-			 FROM thoughts
-			 WHERE rowid IN (`+visibleTaskRowidsSQL+`)
-			   AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))
-			 ORDER BY is_completed ASC, sort_order ASC, created_at DESC, rowid`,
-			visibleTaskArgs(userID)...,
-		)
-	}
+	return s.QueryTasks(userID, TaskQuery{TaskListID: taskListID})
+}
+
+// TaskQuery narrows QueryTasks; the zero value asks for every visible task in list order.
+type TaskQuery struct {
+	// TaskListID: only the tasks of this list
+	TaskListID string
+	// Status: "open" (not completed), "done", or "" / "all" for both
+	Status string
+	// Conditions on the due day (the first ten characters of due_date, YYYY-MM-DD): due on DueOn, before
+	// DueBefore, on or before DueUntil. Each one set leaves out tasks without a due date.
+	DueOn, DueBefore, DueUntil string
+	// DueFirst: tasks with a due date first, the earliest on top, then the rest; equal ones in list order
+	DueFirst bool
+	// Limit: at most this many tasks (0: all)
+	Limit int
+}
+
+// QueryTasks returns the tasks GetTasks would, narrowed and ordered in SQL as q says, so only the tasks
+// asked for are read with their assignees. List order: open before completed, then sort_order, newest
+// first; rowid as the last key keeps equal tasks in one order whichever plan SQLite picks (the order of a
+// table scan, mostly the order they were added in).
+func (s *Store) QueryTasks(userID string, q TaskQuery) ([]domain.Thought, error) {
+	query, args := taskQuerySQL(`id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns(""), userID, q)
+	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -331,6 +333,43 @@ func (s *Store) GetTasks(userID string, taskListID string) ([]domain.Thought, er
 	}
 	s.attachTaskAssignees(result)
 	return result, nil
+}
+
+// taskQuerySQL: the query of QueryTasks for the given columns, with its arguments.
+func taskQuerySQL(columns, userID string, q TaskQuery) (string, []any) {
+	var where string
+	var args []any
+	if q.TaskListID != "" {
+		// One list: its index (idx_thoughts_list_sort) narrows by itself
+		where = `task_list_id = ? AND (user_id = ? OR task_list_id IN (` + accessibleTaskListsSQL + `))`
+		args = append([]any{q.TaskListID}, visibleTaskArgs(userID)...)
+	} else {
+		where = `rowid IN (` + visibleTaskRowidsSQL + `)`
+		args = visibleTaskArgs(userID)
+	}
+	where += ` AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))`
+	switch q.Status {
+	case "open":
+		where += ` AND is_completed = 0`
+	case "done":
+		where += ` AND is_completed != 0`
+	}
+	for _, c := range []struct{ op, day string }{{"=", q.DueOn}, {"<", q.DueBefore}, {"<=", q.DueUntil}} {
+		if c.day != "" {
+			where += ` AND COALESCE(due_date, '') != '' AND substr(due_date, 1, 10) ` + c.op + ` ?`
+			args = append(args, c.day)
+		}
+	}
+	order := `is_completed ASC, sort_order ASC, created_at DESC, rowid`
+	if q.DueFirst {
+		order = `COALESCE(due_date, '') = '', COALESCE(due_date, ''), ` + order
+	}
+	query := `SELECT ` + columns + ` FROM thoughts WHERE ` + where + ` ORDER BY ` + order
+	if q.Limit > 0 {
+		query += ` LIMIT ?`
+		args = append(args, q.Limit)
+	}
+	return query, args
 }
 
 // UpdateThoughtTriage handles swipe left (discard), swipe right (keep), restore, and conversion to task/document/list_item

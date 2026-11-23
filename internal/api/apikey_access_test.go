@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -130,37 +131,61 @@ func TestMCPOtherMethodsAnswer405(t *testing.T) {
 	}
 }
 
-// The day filters count in the server's time zone, whatever the time of day.
+// The filters of GET /tasks: the day filters count in the server's time zone, whatever the time of day,
+// overdue takes open tasks only, and tasks without a due date drop out of every day filter.
 func TestFilterTasks(t *testing.T) {
+	_, store, token := setupTestServer(t)
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	now := time.Date(2026, 11, 1, 23, 30, 0, 0, clock.Location())
-	tasks := []domain.Thought{
-		{ID: "a", DueDate: "2026-11-01T09:00"},
-		{ID: "b", DueDate: "2026-10-30"},
-		{ID: "c", DueDate: "2026-10-29", IsCompleted: true},
-		{ID: "d", DueDate: "2026-11-02"},
-		{ID: "e"},
+	ids := map[string]string{}
+	for _, tc := range []struct {
+		name, due string
+		done      bool
+	}{{"a", "2026-11-01T09:00", false}, {"b", "2026-10-30", false}, {"c", "2026-10-29", true}, {"d", "2026-11-02", false}, {"e", "", false}} {
+		task, _, _, err := store.CreateTask(claims.UserID, tc.name, "", "", tc.due, "", "", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if tc.done {
+			done := true
+			if _, err := store.UpdateThoughtDetails(claims.UserID, task.ID, nil, &done, nil, nil, nil, nil, nil, nil, nil); err != nil {
+				t.Fatal(err)
+			}
+		}
+		ids[task.ID] = tc.name
 	}
-	ids := func(ts []domain.Thought) string {
+	names := func(ts []domain.Thought) string {
 		out := []string{}
 		for _, x := range ts {
-			out = append(out, x.ID)
+			if name, ok := ids[x.ID]; ok { // the account's sample tasks aside
+				out = append(out, name)
+			}
 		}
+		sort.Strings(out)
 		return strings.Join(out, ",")
 	}
 	for _, tc := range []struct{ status, due, want string }{
 		{"", "", "a,b,c,d,e"},
 		{"", "today", "a"},
 		{"", "overdue", "b"},
+		{"done", "overdue", ""},
 		{"open", "2026-11-01", "a,b"},
 		{"done", "", "c"},
 	} {
-		got, err := filterTasks(tasks, tc.status, tc.due, now)
-		if err != nil || ids(got) != tc.want {
-			t.Errorf("status=%q due=%q: got %s (%v), want %s", tc.status, tc.due, ids(got), err, tc.want)
+		q, none, err := taskFilter(tc.status, tc.due, now)
+		got := []domain.Thought{}
+		if err == nil && !none {
+			got, err = store.QueryTasks(claims.UserID, q)
+		}
+		if err != nil || names(got) != tc.want {
+			t.Errorf("status=%q due=%q: got %s (%v), want %s", tc.status, tc.due, names(got), err, tc.want)
 		}
 	}
-	if _, err := filterTasks(tasks, "offen", "", now); err == nil {
+	if _, _, err := taskFilter("offen", "", now); err == nil {
 		t.Error("unknown status should fail")
+	}
+	if _, _, err := taskFilter("", "morgen", now); err == nil {
+		t.Error("unknown due should fail")
 	}
 }
 

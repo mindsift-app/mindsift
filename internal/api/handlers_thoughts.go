@@ -208,57 +208,52 @@ func (s *Server) afterTriage(userID string, updated *domain.Thought, convertTo, 
 func (s *Server) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	q := r.URL.Query()
-	tasks, err := s.store.GetTasks(userID, q.Get("taskListId"))
-	if err != nil {
-		writeInternal(w, err)
-		return
-	}
-	tasks, err = filterTasks(tasks, q.Get("status"), q.Get("due"), time.Now())
+	filter, none, err := taskFilter(q.Get("status"), q.Get("due"), time.Now())
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
+		return
+	}
+	if none {
+		writeJSON(w, http.StatusOK, []domain.Thought{})
+		return
+	}
+	filter.TaskListID = q.Get("taskListId")
+	tasks, err := s.store.QueryTasks(userID, filter)
+	if err != nil {
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, tasks)
 }
 
-// filterTasks narrows GET /tasks for scripts and smart homes; without parameters nothing changes.
+// taskFilter narrows GET /tasks for scripts and smart homes; without parameters nothing changes.
 // status: open | done | all (default). due: today | overdue | YYYY-MM-DD (due on or before that day).
-// Days count in the server's time zone like due dates themselves (now is passed in for tests).
-func filterTasks(tasks []domain.Thought, status, due string, now time.Time) ([]domain.Thought, error) {
+// Days count in the server's time zone like due dates themselves (now is passed in for tests). none: the
+// combination matches no task (overdue only makes sense for open tasks, so done and overdue).
+func taskFilter(status, due string, now time.Time) (q storage.TaskQuery, none bool, err error) {
 	switch status {
 	case "", "all", "open", "done":
+		q.Status = status
 	default:
-		return nil, errors.New("status: open, done oder all")
+		return q, false, errors.New("status: open, done oder all")
 	}
 	today := clock.In(now).Format("2006-01-02")
-	var match func(day string) bool
 	switch due {
 	case "":
 	case "today":
-		match = func(day string) bool { return day == today }
+		q.DueOn = today
 	case "overdue":
-		match = func(day string) bool { return day < today }
+		if status == "done" {
+			return q, true, nil
+		}
+		q.Status, q.DueBefore = "open", today
 	default:
 		if _, err := time.Parse("2006-01-02", due); err != nil {
-			return nil, errors.New("due: today, overdue oder ein Datum JJJJ-MM-TT")
+			return q, false, errors.New("due: today, overdue oder ein Datum JJJJ-MM-TT")
 		}
-		match = func(day string) bool { return day <= due }
+		q.DueUntil = due
 	}
-	out := make([]domain.Thought, 0, len(tasks))
-	for _, t := range tasks {
-		if (status == "open" && t.IsCompleted) || (status == "done" && !t.IsCompleted) {
-			continue
-		}
-		// Overdue only makes sense for open tasks
-		if due == "overdue" && t.IsCompleted {
-			continue
-		}
-		if match != nil && (t.DueDate == "" || !match(t.DueDate[:min(10, len(t.DueDate))])) {
-			continue
-		}
-		out = append(out, t)
-	}
-	return out, nil
+	return q, false, nil
 }
 
 func (s *Server) handleReorderTasks(w http.ResponseWriter, r *http.Request) {
