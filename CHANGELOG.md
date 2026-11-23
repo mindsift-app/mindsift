@@ -33,6 +33,7 @@ Versions without a git tag were development states and were never published as a
 - Security: moving, merging or extracting bullets, adding pictures or hidden values and transcribing a recording in someone else's note answered "no write access" while a missing note answered "not found", which told whether the note exists. Both now give the same "not found"; "no write access" is left for notes shared with you for reading. Merging someone else's or a missing note into your own, or taking back the extraction of one, failed with an internal error that showed a database message; it is "not found" now too.
 - A repeating task ticked off while the phone was offline gets its next date from the day it was ticked, not from the day the phone came back online.
 - Notes made, renamed, moved or deleted on another device while the connection was down (phone asleep, network switch, server restart) now show in the note list as soon as the connection is back; before, the list stayed as it was until the page was reloaded.
+- The journal's calendar starts the week like the date fields and the task calendar: on Sunday in English (US), on Monday in German. Before, it always started on Monday.
 
 ## [0.99.2] - 2026-11-23
 

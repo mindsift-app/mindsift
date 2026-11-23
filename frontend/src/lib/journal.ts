@@ -44,19 +44,6 @@ export function shortDateLabel(date: string): string {
   });
 }
 
-/** Weeks of a month for a Monday-first grid; days outside the month are null. */
-export function monthGrid(year: number, month: number): (string | null)[][] {
-  const first = new Date(year, month, 1);
-  const offset = (first.getDay() + 6) % 7; // Monday = 0
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells: (string | null)[] = Array(offset).fill(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(localDay(new Date(year, month, d)));
-  while (cells.length % 7 !== 0) cells.push(null);
-  const weeks: (string | null)[][] = [];
-  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
-  return weeks;
-}
-
 // Workspace state for this browser tab: is the journal open, which regular note was open last
 const WORKSPACE_SESSION_KEY = 'mindsift_workspace_view';
 

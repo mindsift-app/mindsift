@@ -6,7 +6,7 @@ import { localDay } from '../../lib/due';
 import { formatDate, formatDateRange } from '../../lib/format';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { startElementDragGhost } from '../../lib/dragGhost';
-import { CalendarEntry, entriesByDay, isoWeek, monthGrid, moveDue, sameMonth, shiftDay, weekOf } from '../../lib/calendar';
+import { CalendarEntry, entriesByDay, isWeekend, isoWeek, monthGrid, moveDue, sameMonth, shiftDay, weekOf } from '../../lib/calendar';
 import { useKanbanTouchDrag } from './useKanbanTouchDrag';
 import { renderMentions } from '../../lib/markdown';
 import { BottomSheet } from '../../components/BottomSheet';
@@ -346,7 +346,6 @@ export function TaskCalendar({
       ? dayLabel(anchor, { month: 'long', year: 'numeric' })
       : `${t('calendar.weekNumber', { n: isoWeek(weeks[0][0]) })} · ${formatDateRange(`${weeks[0][0]}T12:00:00`, `${weeks[0][6]}T12:00:00`, { day: 'numeric', month: 'short' })}`;
   const weekdayNames = weeks[0].map((d) => dayLabel(d, { weekday: 'short' }));
-  const isWeekend = (day: string) => [0, 6].includes(new Date(`${day}T12:00:00`).getDay());
 
   // A compact entry: priority dot, time, title (greyed with ↻ for a coming date of a repeating task)
   // big: a row of its own (day panel, phones); wrap: the title may take up to three lines (week columns)

@@ -69,7 +69,8 @@ const addMonthsClamped = (day: string, months: number): string => {
   return localDay(new Date(first.getFullYear(), first.getMonth(), Math.min(d.getDate(), lastDay)));
 };
 
-const isWeekend = (day: string) => [0, 6].includes(parseDay(day).getDay());
+// Saturday or Sunday
+export const isWeekend = (day: string) => [0, 6].includes(parseDay(day).getDay());
 
 // The n-th date of a repeating task after day, counted from day like the server does (months keep the
 // day of the first date: 31 Jan -> 28 Feb -> 31 Mar; weekdays are Monday to Friday)
