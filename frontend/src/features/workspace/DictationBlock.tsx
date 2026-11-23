@@ -4,16 +4,11 @@ import { useVoiceInput } from '../../lib/useVoiceInput';
 import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
 import { useTranslation } from 'react-i18next';
+import { formatClock } from '../../lib/format';
 
 interface DictationBlockProps {
   onDone: (text: string) => void;
   onCancel: () => void;
-}
-
-function formatDuration(sec: number): string {
-  const m = String(Math.floor(sec / 60)).padStart(2, '0');
-  const s = String(sec % 60).padStart(2, '0');
-  return `${m}:${s}`;
 }
 
 // What an empty bullet turns into after /diktat: listening starts right away, the whole bullet is one
@@ -99,7 +94,7 @@ export const DictationBlock: React.FC<DictationBlockProps> = ({ onDone, onCancel
         {/* Live wave across the bottom bar */}
         <VoiceWave getLevel={voice.level} bars={32} className="absolute inset-x-0 inset-y-0 justify-between h-auto text-accent opacity-60" />
         <span className="relative z-10 px-2 py-0.5 rounded-pill bg-panel/70 text-muted text-[11px] font-mono tabular-nums backdrop-blur-xs">
-          {formatDuration(elapsedSec)}
+          {formatClock(elapsedSec, { padMinutes: true })}
         </span>
         {/* Floating stop label on top */}
         <span className="relative z-10 flex items-center gap-1.5 px-3 py-1 rounded-pill bg-panel/70 text-main text-xs font-semibold backdrop-blur-xs">

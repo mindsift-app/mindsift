@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Decides per CI run: build with tests, build without tests, or only retag an existing image.
-# Tests run before every push on the developer's machine (ci/local-checks.sh); the pipeline itself only
-# tests the branches listed in TEST_REFS (GitHub: refs/heads/main, the public release). The images carry
-# the git tree and commit as labels (io.mindsift.tree, org.opencontainers.image.revision).
+# The tests run on the developer's machine (targeted during the work, the full ci/local-checks.sh before a
+# release); the pipeline itself only tests the branches listed in TEST_REFS (GitHub: refs/heads/main, the
+# public release). The images carry the git tree and commit as labels (io.mindsift.tree,
+# org.opencontainers.image.revision).
 #   branch in TEST_REFS -> build and test
 #   other branches      -> build without tests, tag :dev, :latest or the branch name
 #   v*                  -> retag :latest when it was built from this commit, else build (tests skipped
@@ -10,6 +11,8 @@
 # Security scan (ci/trivy-scan.sh): always for tags; for branches only when Dockerfile, go.mod or
 # go.sum differ from the image last published under that tag (label io.mindsift.deps), since
 # everything else in the image does not change its known vulnerabilities.
+# Besides the plan it names the version of the image (image_version): the tag of a tag build (also when it
+# is only retagged), the release of main (app_version), else the package version with -dev.
 # Inputs (environment): REF, COMMIT (default HEAD), IMAGE, PKG_VERSION (default from package.json),
 # TEST_REFS (space separated refs whose builds run the tests, default none),
 # LABEL_CMD (prints a label of a remote image: LABEL_CMD <image> <label>; for tests)
@@ -20,7 +23,7 @@ COMMIT="${COMMIT:-HEAD}"
 IMAGE="${IMAGE:-}"
 PKG_VERSION="${PKG_VERSION:-}"
 if [ -z "${PKG_VERSION}" ] && [ -f frontend/package.json ]; then
-  PKG_VERSION="$(sed -nE 's/^  "version": "([^"]+)".*/\1/p' frontend/package.json | head -n1)"
+  PKG_VERSION="$(sh "$(dirname "$0")/version.sh" package "$PWD")"
 fi
 
 SHA="$(git rev-parse "${COMMIT}^{commit}")"
@@ -94,10 +97,14 @@ case "${REF}" in
     ;;
 esac
 
+IMAGE_VERSION="${APP_VERSION:-v${PKG_VERSION}-dev}"
+case "${REF}" in refs/tags/v*) IMAGE_VERSION="${REF#refs/tags/}" ;; esac
+
 {
   echo "action=${ACTION}"
   echo "skip_tests=${SKIP_TESTS}"
   echo "app_version=${APP_VERSION}"
+  echo "image_version=${IMAGE_VERSION}"
   echo "tags=${TAGS}"
   echo "source_image=${SOURCE_IMAGE}"
   echo "sha=${SHA}"

@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useLatestRef } from './useLatestRef';
+import { useDismiss } from './useDismiss';
 
 export interface PopoverPosition {
   left: number;
@@ -65,15 +66,8 @@ export function useAnchoredPopover<A extends HTMLElement>(wanted: number, popWid
     };
   }, [open, placeRef]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (!anchorRef.current?.contains(target) && !popRef.current?.contains(target)) setOpen(false);
-    };
-    document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
-  }, [open]);
+  // Escape stays with the field's own keys (a list or calendar closes, the dialog around it does not)
+  useDismiss([anchorRef, popRef], () => setOpen(false), { active: open, escape: false });
 
   return { open, setOpen, show, pos, anchorRef, popRef };
 }

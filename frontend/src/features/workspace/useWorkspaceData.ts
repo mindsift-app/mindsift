@@ -20,7 +20,7 @@ interface UseWorkspaceDataOptions {
 const isNoteOpen = (docId: string) => noteClientId(docId) !== undefined;
 
 /** The note list fetched again, over the one in memory (open notes keep their bullets, workspaceListing.ts). */
-export function freshDocList(fresh: Document[]): React.SetStateAction<Document[]> {
+function freshDocList(fresh: Document[]): React.SetStateAction<Document[]> {
   return (prev) => mergeDocList(prev, fresh, isNoteOpen);
 }
 

@@ -52,6 +52,18 @@ expect "tag on unknown code" refs/tags/v0.10.0 "build 0 1 v0.10.0 stable"
 expect "pre-release without stable" refs/tags/v0.11.0-rc.1 "retag 1 1 v0.11.0-rc.1" LATEST_SHA="$SHA"
 expect "feature branch" refs/heads/feat/x "build 1 1 feat-x"
 
+# The version of the image: the release, else the package version with -dev
+image_version() { # name, REF, expected image_version, env assignments…
+  local name="$1" ref="$2" want="$3" got
+  shift 3
+  got="$(env "$@" REF="$ref" IMAGE="$IMAGE" PKG_VERSION=0.10.0 LABEL_CMD="$MOCK" GITHUB_OUTPUT= "$PLAN" | sed -n 's/^image_version=//p')"
+  if [ "$got" = "$want" ]; then echo "OK   $name: $got"; else echo "FEHL $name: erwartet '$want', bekommen '$got'"; fails=$((fails + 1)); fi
+}
+image_version "image version of dev" refs/heads/dev v0.10.0-dev
+image_version "image version of main" refs/heads/main v0.10.0
+image_version "image version of a built tag" refs/tags/v0.10.0 v0.10.0
+image_version "image version of a retagged tag" refs/tags/v0.10.0 v0.10.0 LATEST_SHA="$SHA"
+
 if [ "$fails" -gt 0 ]; then
   echo "$fails FEHLGESCHLAGEN"
   exit 1

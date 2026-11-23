@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Funnel, Hash, X } from 'lucide-react';
+import { Funnel, Hash } from 'lucide-react';
+import { BottomSheet } from '../../components/BottomSheet';
 import { Thought } from '../../lib/types';
 import { GroupBy, TaskSort, ViewMode } from './taskViewTypes';
 
@@ -43,31 +44,8 @@ export function TasksFilterSheet({
   const { t } = useTranslation('tasks');
   if (!showFilterModal) return null;
   return (
-    <div
-      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={() => setShowFilterModal(false)}
-    >
-      <div
-        className="w-full max-h-[85vh] overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] animate-in slide-in-from-bottom duration-200 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between -mt-1 pb-2 border-b border-border">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
-              <Funnel className="w-4 h-4" />
-            </div>
-            <h3 className="text-sm font-semibold text-main">{t('filter.title')}</h3>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowFilterModal(false)}
-            aria-label={t('common:close')}
-            className="-mr-2 w-11 h-11 flex items-center justify-center text-faint hover:text-main rounded-btn transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+    <BottomSheet phoneOnly onClose={() => setShowFilterModal(false)} title={t('filter.title')} icon={<Funnel className="w-4 h-4" />}>
+      <div className="space-y-4">
         {/* Hashtag Filters */}
         <div className="space-y-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1">
@@ -187,6 +165,6 @@ export function TasksFilterSheet({
           </button>
         </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 }

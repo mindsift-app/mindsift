@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { useDismiss } from '../lib/useDismiss';
 import i18n from '../i18n';
 import { Bot, Webhook } from 'lucide-react';
 import { Origin } from '../lib/types';
@@ -65,14 +66,7 @@ export const OriginBadge: React.FC<OriginBadgeProps> = ({ origin, createdAt, siz
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: Event) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
-  }, [open]);
+  useDismiss(ref, () => setOpen(false), { active: open, escape: false });
 
   const via = origin?.createdVia || origin?.changedVia;
   if (!origin || !via) return null;

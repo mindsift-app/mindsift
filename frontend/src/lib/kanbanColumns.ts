@@ -23,7 +23,7 @@ export function ownColumnIn(task: Thought, cols: KanbanColumn[]): KanbanColumn |
 }
 
 // Board ID of a column: on the combined board the name (case aside), else the column's own ID
-export const columnNameId = (col: KanbanColumn) => `name:${col.name.trim().toLowerCase()}`;
+const columnNameId = (col: KanbanColumn) => `name:${col.name.trim().toLowerCase()}`;
 export const boardIdOfColumn = (col: KanbanColumn, combined: boolean) => (combined ? columnNameId(col) : col.id);
 
 // Board columns of "Alle Aufgaben": the columns of all lists joined by name, in the order and colour of the

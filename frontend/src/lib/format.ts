@@ -37,10 +37,18 @@ export const formatDateRange = (a: Date | string | number, b: Date | string | nu
   return f.formatRange ? f.formatRange(asDate(a), asDate(b)) : `${f.format(asDate(a))} – ${f.format(asDate(b))}`;
 };
 
-// Alphabetical order ignoring case and accents
 // 20000 → "20.000" in German, "20,000" in English
 export const formatNumber = (n: number) => n.toLocaleString(currentLocale());
 
+// A running time or countdown as "m:ss" (75 s → "1:15"), with padMinutes as "mm:ss" ("01:15"); parts of a
+// second are cut off, negative times read 0:00
+export const formatClock = (seconds: number, { padMinutes = false } = {}) => {
+  const s = Math.max(0, Math.floor(seconds));
+  const m = String(Math.floor(s / 60));
+  return `${padMinutes ? m.padStart(2, '0') : m}:${String(s % 60).padStart(2, '0')}`;
+};
+
+// Alphabetical order ignoring case and accents
 export const compareText = (a: string, b: string) => a.localeCompare(b, currentLocale(), { sensitivity: 'base' });
 
 // "vor 5 Minuten", "gestern" … for recent times; older than a week: the date

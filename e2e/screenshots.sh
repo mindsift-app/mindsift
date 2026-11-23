@@ -7,18 +7,14 @@
 # (desktop/packaging/flatpak/) refers to them; a release build points it at the tag's copies.
 # Requires podman (or docker via ENGINE=docker). Usage: e2e/screenshots.sh, other theme pair: SHOT_LIGHT=fjord SHOT_DARK=fjord-night
 set -euo pipefail
-ENGINE="${ENGINE:-podman}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# ENGINE, the images, free_port, wait_healthy and start_demo
+. "$ROOT/e2e/lib.sh"
 WORK="$(mktemp -d)"
 RUN_ID="$$-$RANDOM"
 NAME="mindsift-shots-$RUN_ID"
 IMAGE="mindsift-shots-image:$RUN_ID"
-PORT="${SHOTS_PORT:-}"
-if [ -z "$PORT" ]; then
-  for p in $(shuf -i 18100-18999 -n 50); do
-    if ! (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then PORT="$p"; break; fi
-  done
-fi
+PORT="${SHOTS_PORT:-$(free_port)}"
 cleanup() {
   "$ENGINE" rm -f "$NAME" >/dev/null 2>&1 || true
   "$ENGINE" rmi "$IMAGE" >/dev/null 2>&1 || true
@@ -31,20 +27,18 @@ echo "Building the image …"
 # Version in the header, e.g. APP_VERSION=v0.2 e2e/screenshots.sh; the image's tests are skipped (pictures
 # need none, ci/local-checks.sh runs them), SKIP_TESTS=0 runs them
 "$ENGINE" build -q --build-arg APP_VERSION="${APP_VERSION:-}" --build-arg SKIP_TESTS="${SKIP_TESTS:-1}" -t "$IMAGE" "$ROOT" >/dev/null
-# Straight to the app (not the entrypoint that hands /data to uid 1000): the test data stays the host
-# user's, so the script can remove it
-"$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true -e DEMO_RESET_MINUTES=0 \
-  -v "$WORK":/data:Z "$IMAGE" >/dev/null
-for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/dev/null && break; sleep 0.5; done
+# The English demo (the README shows it)
+start_demo "$NAME" "$IMAGE" "$PORT" -e DEMO_RESET_MINUTES=0 -v "$WORK":/data:Z
+wait_healthy "$PORT" "$NAME"
 
 echo "Taking screenshots …"
 "$ENGINE" run --rm --network host -e MINDSIFT_URL="http://localhost:$PORT" -e SHOTS_DIR=/shots \
   -e SHOT_LIGHT="${SHOT_LIGHT:-light}" -e SHOT_DARK="${SHOT_DARK:-dark}" -e LANG=en_US.UTF-8 -e TZ=Europe/Berlin \
-  -v "$ROOT/e2e":/e2e:Z -v "$WORK/png":/shots:Z -w /e2e mcr.microsoft.com/playwright:v1.65.0-noble \
+  -v "$ROOT/e2e":/e2e:Z -v "$WORK/png":/shots:Z -w /e2e "$PLAYWRIGHT_IMAGE" \
   sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node screenshots.mjs'
 
 echo "Converting to WebP …"
-"$ENGINE" run --rm -v "$WORK/png":/png:Z -v "$ROOT/screenshots":/shots:Z docker.io/library/alpine:3.24 sh -c '
+"$ENGINE" run --rm -v "$WORK/png":/png:Z -v "$ROOT/screenshots":/shots:Z "$ALPINE_IMAGE" sh -c '
   apk add -q libwebp-tools >/dev/null
   for f in /png/*.png; do
     name=$(basename "$f" .png)
@@ -55,7 +49,7 @@ echo "Converting to WebP …"
 
 echo "Store screenshots (PNG) …"
 mkdir -p "$ROOT/screenshots/store"
-"$ENGINE" run --rm -v "$WORK/png":/png:Z -v "$ROOT/screenshots/store":/store:Z docker.io/library/alpine:3.24 sh -c '
+"$ENGINE" run --rm -v "$WORK/png":/png:Z -v "$ROOT/screenshots/store":/store:Z "$ALPINE_IMAGE" sh -c '
   apk add -q imagemagick pngquant >/dev/null
   rm -f /store/*.png
   for f in /png/store-*.png; do

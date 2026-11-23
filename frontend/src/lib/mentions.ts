@@ -52,7 +52,7 @@ function loadNames() {
   }
 }
 
-export function mentionName(userId: string): string {
+function mentionName(userId: string): string {
   if (userId === 'hidden') return '…';
   return names.get(userId) || '?';
 }

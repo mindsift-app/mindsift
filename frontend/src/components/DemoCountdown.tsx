@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatClock } from '../lib/format';
 
 interface DemoCountdownProps {
   deadline: number; // ms timestamp of the next reset, in this browser's clock
@@ -10,10 +11,7 @@ interface DemoCountdownProps {
   compact?: boolean;
 }
 
-const fmt = (ms: number) => {
-  const total = Math.max(0, Math.round(ms / 1000));
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-};
+const fmt = (ms: number) => formatClock(Math.round(ms / 1000), { padMinutes: true });
 
 // "✨ Demo · Reset in MM:SS" in place of the version under the app name while the demo mode resets itself
 export const DemoCountdown: React.FC<DemoCountdownProps> = ({ deadline, minutes, className = '', onElapsed, compact = false }) => {

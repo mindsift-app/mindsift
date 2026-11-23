@@ -1,6 +1,6 @@
 // MindSift API client: REST areas in their own modules, put together
 // in rest.ts; realtime transport in realtime.ts. Imports from lib/api stay as they were.
-export { ApiError, authHeaders, lastLocalWriteAt } from './client';
+export { ApiError, authHeaders, lastLocalWriteAt, requestRaw, fetchHealth } from './client';
 export { getToken, getCurrentUserId, setToken, clearToken, triggerHaptic, setCurrentPeopleSearch, isPeopleSearchOn, getCurrentOidc, getDesktop, isDesktopApp } from './client';
 export { api } from './rest';
 export * from './realtime';

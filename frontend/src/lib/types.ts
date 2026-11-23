@@ -777,21 +777,6 @@ export interface BlockInfo {
   type: BlockType;
 }
 
-export interface DocBlocksPatchRequest {
-  upserted?: DocumentBlock[];
-  deletedIds?: string[];
-  blockOrder?: string[];
-}
-
-export interface DocBlocksPatchEvent {
-  docId: string;
-  updatedBy: string;
-  updatedAt: string;
-  upserted?: DocumentBlock[];
-  deletedIds?: string[];
-  blockOrder?: string[];
-}
-
 export interface DocShare {
   id: string;
   docId: string;

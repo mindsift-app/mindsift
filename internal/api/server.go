@@ -75,8 +75,9 @@ type Server struct {
 	notifyDiscordHook func(webhookURL, heading string, items []notifyItem) error
 	notifyWebhookHook func(webhookURL, heading string, items []notifyItem) error
 	notifyPushHook    func(userID string, msg pushMessage) error
-	alarmOutHook      func(channel, webhookURL string, payload map[string]any) error // tests: Discord and own webhook of alarms
+	webhookOutHook    func(channel, webhookURL string, payload map[string]any) error // tests: what postWebhook would send to Discord or an own webhook
 	pushHTTPClient    *http.Client                                                   // tests: reach a local push service
+	webhookHTTPClient *http.Client                                                   // tests: reach a local webhook target
 	push              pushKeys
 	// summaryRetries: the next attempt of a daily summary's failed channels (notify.go)
 	summaryRetries summaryRetries
@@ -1059,7 +1060,7 @@ func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		user, err := s.store.GetUserByID(userID)
-		if err != nil || user == nil || user.Role != "admin" {
+		if err != nil || user == nil || user.Role != domain.RoleAdmin {
 			writeError(w, http.StatusForbidden, "Server-Administrator-Rechte erforderlich")
 			return
 		}

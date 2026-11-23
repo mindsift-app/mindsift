@@ -51,11 +51,11 @@ export const THEME_FAMILIES: ThemeFamily[] = [
   family('suri', 'suri-light', 'suri'),
 ];
 
-export const THEME_STORAGE_KEY = 'mindsift_active_theme';
+const THEME_STORAGE_KEY = 'mindsift_active_theme';
 // CSS of the active custom theme, so it applies on boot before the API answers (no flash)
 const CUSTOM_CSS_CACHE_KEY = 'mindsift_custom_theme_css';
 const CUSTOM_STYLE_ID = 'mindsift-custom-theme';
-export const CUSTOM_THEME_PREFIX = 'custom:';
+const CUSTOM_THEME_PREFIX = 'custom:';
 
 export const AVAILABLE_THEMES: ThemeOption[] = [
   {

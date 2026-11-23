@@ -135,6 +135,17 @@ const (
 	RoleMember  = "member"
 )
 
+// Group roles (team_members.role): group admins manage the group's members and roles.
+const (
+	TeamRoleAdmin  = "admin"
+	TeamRoleMember = "member"
+)
+
+// ValidTeamRole reports whether role is one of the group roles.
+func ValidTeamRole(role string) bool {
+	return role == TeamRoleAdmin || role == TeamRoleMember
+}
+
 // ValidRole reports whether role is one of the server roles.
 func ValidRole(role string) bool {
 	return role == RoleAdmin || role == RoleManager || role == RoleMember
@@ -455,7 +466,7 @@ type TeamMember struct {
 	DisplayName string `json:"displayName"`
 	Email       string `json:"-"` // others' addresses are not shown (only names), see sharing-and-permissions.md
 	AvatarURL   string `json:"avatarUrl,omitempty"`
-	Role        string `json:"role"` // admin | member
+	Role        string `json:"role"` // TeamRoleAdmin | TeamRoleMember
 	JoinedAt    string `json:"joinedAt"`
 }
 

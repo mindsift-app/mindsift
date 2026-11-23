@@ -1,28 +1,20 @@
 name: MindSift CI & Docker Release (Gitea)
 
-# The private Gitea runs this for main only: images in its own registry, without tests (they run before
-# every push on the developer's machine, ci/local-checks.sh). dev goes to GitHub only, whose :dev image the
-# demo runs; nobody used a :dev image from here. The public images on
-# GitHub come from .github/workflows/build-and-publish.yaml with the same build plan (ci/build-plan.sh);
-# they are built for amd64 and arm64, the ones here for the platform of this runner only.
-
-# Image tags:
-#   push/merge main  -> :latest
-#   git tag v1.2.0   -> :v1.2.0 and :stable
-#   git tag v1.2.0-rc.1 (pre-release) -> :v1.2.0-rc.1 only, :stable stays
-# Only GitHub's main build tests again (ci/build-plan.sh, TEST_REFS); a tag on the commit of :latest only
-# retags it. The images carry commit and git tree as labels for this, so no extra tags end up in the
-# registry.
-# Trivy (ci/trivy-scan.sh) checks every tag before it is pushed, branches only when Dockerfile, go.mod or
-# go.sum changed.
+# The private Gitea runs this for main only: the image :latest in its own registry, without tests (they
+# run on the developer's machine: targeted checks for every push, the full ci/local-checks.sh before a
+# release). dev goes to GitHub only, whose :dev image the demo runs, and version tags are only pushed to
+# GitHub, so this builds no tags. The public images on GitHub come from
+# .github/workflows/build-and-publish.yaml with the same build plan (ci/build-plan.sh); they are built for
+# amd64 and arm64, the one here for the platform of this runner only.
+# Only GitHub's main build tests again (ci/build-plan.sh, TEST_REFS). The image carries commit, git tree
+# and dependencies as labels (the plan compares them with the image last published).
+# Trivy (ci/trivy-scan.sh) checks the image before it is pushed when Dockerfile, go.mod or go.sum changed.
 # The actions are the same releases as on GitHub, pinned to the same commits. They run on Node 24, which
 # the runner's job image (Gitea runner images, ubuntu-latest) ships.
 on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
 
 jobs:
   build-test-push:
@@ -52,31 +44,21 @@ jobs:
         id: plan
         run: REF="${GITHUB_REF:-}" COMMIT="${GITHUB_SHA:-HEAD}" IMAGE="${{ steps.prep.outputs.image }}" ci/build-plan.sh
 
-      - name: Build (with or without tests) or Retag, then Push
+      - name: Build (with or without tests), then Push
         run: |
           IMAGE="${{ steps.prep.outputs.image }}"
           TAGS="${{ steps.plan.outputs.tags }}"
           echo "ℹ️ ${{ steps.plan.outputs.reason }}"
-          if [ "${{ steps.plan.outputs.action }}" = "retag" ]; then
-            SOURCE="${{ steps.plan.outputs.source_image }}"
-            docker pull "${SOURCE}"
-            if [ "${{ steps.plan.outputs.scan }}" = "1" ]; then ci/trivy-scan.sh "${SOURCE}"; fi
-            for t in ${TAGS}; do
-              docker tag "${SOURCE}" "${IMAGE}:${t}"
-              docker push "${IMAGE}:${t}"
-            done
-          else
-            TAG_ARGS=""
-            for t in ${TAGS}; do TAG_ARGS="${TAG_ARGS} -t ${IMAGE}:${t}"; done
-            DOCKER_BUILDKIT=1 docker build --progress=plain \
-              --build-arg APP_VERSION="${{ steps.plan.outputs.app_version }}" \
-              --build-arg IMAGE_VERSION="${{ steps.plan.outputs.app_version }}" \
-              --build-arg SKIP_TESTS="${{ steps.plan.outputs.skip_tests }}" \
-              --build-arg GIT_SHA="${{ steps.plan.outputs.sha }}" \
-              --build-arg GIT_TREE="${{ steps.plan.outputs.tree }}" \
-              --build-arg GIT_DEPS="${{ steps.plan.outputs.deps }}" \
-              ${TAG_ARGS} .
-            # Security scan before anything is pushed (tags always, branches when the dependencies changed)
-            if [ "${{ steps.plan.outputs.scan }}" = "1" ]; then ci/trivy-scan.sh "${IMAGE}:${TAGS%% *}"; fi
-            for t in ${TAGS}; do docker push "${IMAGE}:${t}"; done
-          fi
+          TAG_ARGS=""
+          for t in ${TAGS}; do TAG_ARGS="${TAG_ARGS} -t ${IMAGE}:${t}"; done
+          DOCKER_BUILDKIT=1 docker build --progress=plain \
+            --build-arg APP_VERSION="${{ steps.plan.outputs.app_version }}" \
+            --build-arg IMAGE_VERSION="${{ steps.plan.outputs.image_version }}" \
+            --build-arg SKIP_TESTS="${{ steps.plan.outputs.skip_tests }}" \
+            --build-arg GIT_SHA="${{ steps.plan.outputs.sha }}" \
+            --build-arg GIT_TREE="${{ steps.plan.outputs.tree }}" \
+            --build-arg GIT_DEPS="${{ steps.plan.outputs.deps }}" \
+            ${TAG_ARGS} .
+          # Security scan before anything is pushed (when the dependencies changed)
+          if [ "${{ steps.plan.outputs.scan }}" = "1" ]; then ci/trivy-scan.sh "${IMAGE}:${TAGS%% *}"; fi
+          for t in ${TAGS}; do docker push "${IMAGE}:${t}"; done

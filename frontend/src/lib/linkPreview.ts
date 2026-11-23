@@ -5,7 +5,7 @@
 // can switch them off for the whole server (`linkPreviews` in /auth/status, or the answer
 // link_previews_off): then there are no cards and no switch on this device either.
 import { useEffect, useState } from 'react';
-import { authHeaders } from './api';
+import { requestRaw } from './api';
 import { isPublicView } from './publicNote';
 
 export interface LinkPreview {
@@ -50,7 +50,7 @@ export function loadLinkPreview(url: string): Promise<LinkPreview | null> {
   let p = cache.get(url);
   if (!p) {
     p = (async () => {
-      const res = await fetch(`/api/v1/link-preview?url=${encodeURIComponent(url)}`, { headers: authHeaders() });
+      const res = await requestRaw(`/api/v1/link-preview?url=${encodeURIComponent(url)}`);
       if (res.status === 404) {
         // Switched off on the server since the app started: no cards (and no switch) from now on
         const body = (await res.json().catch(() => null)) as { code?: string } | null;

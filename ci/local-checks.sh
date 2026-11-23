@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# The checks of the pipeline on this machine, before every push: the pipeline itself only tests GitHub's
-# main (ci/build-plan.sh, TEST_REFS). The steps of the test stage of the Dockerfile, in containers (no
-# local Node or Go needed): tsc, ESLint and Vitest for the frontend, go vet and go test with a single
-# database connection for the backend, plus the cases of the build plan. Only here, not in the image
-# build: gofmt and golangci-lint (settings in .golangci.yml, staticcheck among its linters).
-#   ci/local-checks.sh          frontend (with the size of the bundle), backend, golangci-lint, build plan,
-#                               Flatpak sources (desktop/packaging/flatpak/check-sources.sh) (in parallel)
-#   E2E=1 ci/local-checks.sh    additionally the browser tests (e2e/run.sh, a few minutes)
+# The full local check run, before a release (merge to GitHub main) or when asked for (AGENTS.md); during
+# the work only the parts a change touches run. The pipeline itself only tests GitHub's main
+# (ci/build-plan.sh, TEST_REFS). The steps of the test stage of the Dockerfile, in containers (no local Node
+# or Go needed): tsc, ESLint and Vitest for the frontend, go vet and go test with a single database
+# connection for the backend, plus the cases of the build plan. Only here, not in the image build: gofmt and
+# golangci-lint (settings in .golangci.yml, staticcheck among its linters) and the desktop app's Go module.
+#   ci/local-checks.sh            frontend (with the size of the bundle), backend, golangci-lint, desktop
+#                                 Go module, build plan with the image pins (ci/check-images.sh), Flatpak
+#                                 sources (desktop/packaging/flatpak/check-sources.sh) (in parallel)
+#   E2E=1 ci/local-checks.sh      additionally the browser tests (e2e/run.sh, a few minutes)
+#   RELEASE=1 ci/local-checks.sh  additionally the release files (ci/release-check.sh: versions, CHANGELOG,
+#                                 Flatpak manifest and metainfo name v<frontend/package.json version>)
 # Exits non-zero when anything fails; the log of each part is printed at the end.
 set -uo pipefail
 ENGINE="${ENGINE:-podman}"
@@ -16,15 +20,12 @@ LOGS="$(mktemp -d)"
 trap '[ "${KEEP_LOGS:-}" = 1 ] || rm -rf "$LOGS"' EXIT
 cd "$ROOT"
 
-# golangci-lint runs from its own image, pinned like the other images here
-GOLANGCI_LINT_IMAGE="docker.io/golangci/golangci-lint:v2.15.0-alpine"
-# Same Node and Go as the Dockerfile
-NODE_IMAGE="docker.io/library/node:26.13.1-alpine"
-GO_IMAGE="docker.io/library/golang:1.27.4-alpine"
+# The images (NODE_IMAGE and GO_IMAGE as in the Dockerfile, GOLANGCI_LINT_IMAGE), pinned in one place
+. ci/images.env
 
-# Upper bounds for the compressed size (gzip, kB) of the start chunk (index-*.js: shell and sign-in pages) and of
-# the app chunk (mainViews-*.js), a little above the build of 2026-11 (about 170 and 240 kB; the texts of every
-# language, German included, are chunks of their own). Going over them is not wrong as such, but should be a
+# Upper bounds for the compressed size (gzip, kB) of the start chunk (the index-*.js that index.html loads:
+# shell and sign-in pages) and of the app chunk (mainViews-*.js), a little above the build of 2026-11 (about
+# 170 and 240 kB; the texts of every language, German included, are chunks of their own). Going over them is not wrong as such, but should be a
 # decision: raise the bound, or load the new part on demand (Doku/architecture.md).
 # 2026-11-16: app chunk raised to 262 for the release's features (templates, pasted and dropped images, live
 # drawing, dates and quantities from text: 257.6 kB). Loading the administration on demand was tried: it
@@ -40,7 +41,14 @@ frontend() {
     -e MAX_START_KB="$MAX_START_KB" -e MAX_APP_KB="$MAX_APP_KB" "$NODE_IMAGE" \
     sh -c 'npm ci --no-audit --no-fund --loglevel=error && npx tsc --noEmit && npm run lint && npm run test:run &&
       npx vite build --outDir /tmp/dist --logLevel error && for chunk in index:$MAX_START_KB mainViews:$MAX_APP_KB; do
-        name=${chunk%%:*} max=${chunk#*:} file=$(ls /tmp/dist/assets/${chunk%%:*}-*.js)
+        name=${chunk%%:*} max=${chunk#*:}
+        if [ "$name" = index ]; then
+          set -- $(grep -o "<script[^>]*src=\"/assets/index-[^\"]*[.]js\"" /tmp/dist/index.html | sed "s|.*src=\"|/tmp/dist|; s|\"\$||")
+        else
+          set -- /tmp/dist/assets/$name-*.js
+        fi
+        [ $# = 1 ] && [ -f "$1" ] || { echo "bundle: expected one $name chunk in the build, found: $*"; exit 1; }
+        file=$1
         kb=$(( $(gzip -c "$file" | wc -c) / 1000 ))
         echo "bundle: $name $kb kB gzip (at most $max)"
         [ "$kb" -le "$max" ] || { echo "bundle: $name is larger than $max kB, see MAX_START_KB/MAX_APP_KB in ci/local-checks.sh"; exit 1; }
@@ -73,13 +81,22 @@ lint() {
   "$ENGINE" run --rm -v "$ROOT":/src:ro,z -v mindsift-go-cache:/go/pkg/mod -v mindsift-golangci-cache:/root/.cache -w /src \
     -e CGO_ENABLED=0 "$GOLANGCI_LINT_IMAGE" golangci-lint run ./cmd/... ./internal/...
 }
-plan() { bash ci/test-build-plan.sh; }
+# The desktop app's own Go module (desktop/go.mod): gofmt, go vet and go test, see ci/desktop-go-checks.sh
+desktop() {
+  "$ENGINE" run --rm -v "$ROOT":/src:ro,z -v mindsift-desktop-gomod:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \
+    "$GO_IMAGE" sh ci/desktop-go-checks.sh
+}
+plan() { bash ci/test-build-plan.sh && sh ci/check-images.sh && bash ci/test-release-check.sh; }
+# The release files of the version in frontend/package.json (RELEASE=1; no containers)
+release() { bash ci/release-check.sh "v$(sh ci/version.sh package)"; }
 # The Flatpak manifest's generated Go and npm sources, tag and metainfo fit the tree (no containers)
 flatpak() { sh desktop/packaging/flatpak/check-sources.sh && sh desktop/packaging/flatpak/test-check-sources.sh; }
 
 start=$(date +%s)
 pids=()
-for part in frontend backend lint plan flatpak; do
+parts="frontend backend lint desktop plan flatpak"
+[ "${RELEASE:-}" = 1 ] && parts="$parts release"
+for part in $parts; do
   "$part" >"$LOGS/$part.log" 2>&1 &
   pids+=("$!:$part")
 done
@@ -98,7 +115,7 @@ summary() {
   if [ "$1" = backend ]; then
     awk '/^time zone run:/ { tz = "TZ " } /^ok .*\/internal\/(api|storage)[[:space:]]/ { print tz $0 }' "$2"
   else
-    grep -E 'Tests +[0-9]+ passed|^bundle: |^ok |ALL CASES PASSED|test-check-sources: all passed|All checks passed|^0 issues' "$2" | tail -n 3
+    grep -E 'Tests +[0-9]+ passed|^bundle: |^ok |ALL CASES PASSED|test-check-sources: all passed|test-release-check: all passed|check-images: ok|release-check: ok|desktop-go-checks: ok|All checks passed|^0 issues' "$2" | tail -n 3
   fi
 }
 for log in "$LOGS"/*.log; do

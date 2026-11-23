@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, Repeat, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, Repeat } from 'lucide-react';
 import { TaskList, Thought } from '../../lib/types';
 import { localDay } from '../../lib/due';
 import { formatDate, formatDateRange } from '../../lib/format';
@@ -9,6 +9,7 @@ import { startElementDragGhost } from '../../lib/dragGhost';
 import { CalendarEntry, entriesByDay, isoWeek, monthGrid, moveDue, sameMonth, shiftDay, weekOf } from '../../lib/calendar';
 import { useKanbanTouchDrag } from './useKanbanTouchDrag';
 import { renderMentions } from '../../lib/markdown';
+import { BottomSheet } from '../../components/BottomSheet';
 import { CountBadge } from '../../components/CountBadge';
 import { SegmentedControl } from '../../components/SegmentedControl';
 
@@ -529,22 +530,13 @@ export function TaskCalendar({
         {unplannedBox}
         {touch.ghost}
         {openDay && (
-          <div className="fixed inset-0 z-50 flex items-end bg-overlay/60" onClick={() => setOpenDay(null)}>
-            <div
-              role="dialog"
-              aria-label={dayLabel(openDay, { weekday: 'long', day: 'numeric', month: 'long' })}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-h-[85vh] overflow-y-auto rounded-t-card bg-panel border-t border-border p-3 pb-[calc(1rem+env(safe-area-inset-bottom))] space-y-3"
-            >
-              <div className="flex items-center gap-2">
-                <h3 className="flex-1 text-sm font-semibold text-main capitalize">{dayLabel(openDay, { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
-                <button type="button" onClick={() => setOpenDay(null)} className="btn-icon h-11 w-11" aria-label={t('common:close')}>
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              {dayDetails(openDay)}
-            </div>
-          </div>
+          <BottomSheet
+            onClose={() => setOpenDay(null)}
+            title={<span className="capitalize">{dayLabel(openDay, { weekday: 'long', day: 'numeric', month: 'long' })}</span>}
+            label={dayLabel(openDay, { weekday: 'long', day: 'numeric', month: 'long' })}
+          >
+            {dayDetails(openDay)}
+          </BottomSheet>
         )}
       </div>
     );

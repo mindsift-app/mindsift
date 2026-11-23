@@ -7,7 +7,7 @@
 // part of the caption at worst. Recordings have no width.
 // So the reference travels with the normal note sync. Files are loaded with the login (fetch) and shown
 // as blob: URLs; on a public note page through its link (lib/publicNote.ts).
-import { authHeaders } from './api';
+import { requestRaw } from './api';
 import i18n from '../i18n';
 import { publicMediaRequest } from './publicNote';
 import { repairWebmBlob } from './webmDuration';
@@ -21,7 +21,7 @@ const WIDTH_RE = /^((?:[^\\]|\\.)*?)\|(\d{1,5})$/;
 /** Smallest width an image can be dragged to (px) */
 export const MIN_IMAGE_WIDTH = 48;
 /** Largest width stored; the note column limits what is shown anyway */
-export const MAX_IMAGE_WIDTH = 10000;
+const MAX_IMAGE_WIDTH = 10000;
 
 export interface MediaRef {
   id: string;
@@ -61,12 +61,14 @@ function loadMedia(id: string): Promise<{ blob: Blob; url: string }> {
   return loadAuthorized(`/api/v1/media/${encodeURIComponent(id)}`);
 }
 
-/** Any picture of the API (needs the login, so no plain <img src>), as Blob plus blob: URL. */
-export function loadAuthorized(path: string, headers: Record<string, string> = authHeaders()): Promise<{ blob: Blob; url: string }> {
+/** Any picture of the API (needs the login, so no plain <img src>), as Blob plus blob: URL. `headers`: a
+ *  shared note's own access (publicNote.ts) instead of the login; its 401 says nothing about a session. */
+export function loadAuthorized(path: string, headers?: Record<string, string>): Promise<{ blob: Blob; url: string }> {
   let p = loaded.get(path);
   if (!p) {
     p = (async () => {
-      const res = await fetch(path, { headers });
+      // A file never changes under its id: the browser's cache may keep it
+      const res = headers ? await fetch(path, { headers }) : await requestRaw(path, { cache: 'default' });
       if (!res.ok) throw new Error(res.status === 404 ? i18n.t('common:media.notFound') : `HTTP ${res.status}`);
       const blob = await res.blob();
       return { blob, url: URL.createObjectURL(blob) };
@@ -105,11 +107,6 @@ export function authorizedAudioURL(path: string): Promise<string> {
   return playableURL(path, () => loadAuthorized(path));
 }
 
-/** The file itself, e.g. to send a recording to the speech recognition. */
-export function mediaBlob(id: string): Promise<Blob> {
-  return loadMedia(id).then((m) => m.blob);
-}
-
 export interface UploadedMedia {
   id: string;
   kind: 'image' | 'audio';
@@ -119,10 +116,7 @@ export interface UploadedMedia {
 }
 
 async function mediaRequest(path: string, init: RequestInit): Promise<UploadedMedia> {
-  const res = await fetch(path, {
-    ...init,
-    headers: { ...(init.headers as Record<string, string>), ...authHeaders() },
-  });
+  const res = await requestRaw(path, init);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || i18n.t('common:errors.uploadFailed', { status: res.status }));
   return data as UploadedMedia;
@@ -147,9 +141,9 @@ export async function copyExternalImage(docId: string, url: string): Promise<Upl
   if (serverQuality === 'off') {
     return mediaRequest(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
   }
-  const res = await fetch(path, {
+  const res = await requestRaw(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url, download: true }),
   });
   if (!res.ok) {
@@ -177,7 +171,7 @@ export const IMAGE_QUALITY: Record<Exclude<ImageQuality, 'off'>, { webp: number;
 // The server's level, as /auth/status (or the administration's last save) said
 let serverQuality: ImageQuality = 'high';
 
-export function isImageQuality(v: unknown): v is ImageQuality {
+function isImageQuality(v: unknown): v is ImageQuality {
   return v === 'high' || v === 'medium' || v === 'low' || v === 'off';
 }
 

@@ -184,17 +184,25 @@ func (s *Server) handleTriageAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If converted to a list item, broadcast via WebSocket to the space
+	s.afterTriage(userID, updated, convertTo, targetListID)
+	writeJSON(w, http.StatusOK, updated)
+}
+
+// afterTriage tells everyone concerned about a triaged entry, the same for the app (REST) and agents
+// (MCP): the list an entry went into, the note one became, the task itself, and who gets told about a
+// new task.
+func (s *Server) afterTriage(userID string, updated *domain.Thought, convertTo, targetListID string) {
 	if convertTo == "list_item" && targetListID != "" {
 		if lst, err := s.store.GetListByID(userID, targetListID); err == nil && lst != nil {
 			s.broadcastListUpdated(lst)
 		}
 	}
-
+	if convertTo == "document" && updated.ConvertedRefID != "" {
+		s.broadcastDocToAuthorizedUsers(updated.ConvertedRefID, "DOC_CREATED")
+	}
 	s.assignCreator(userID, updated)
 	s.wsHub.BroadcastToUsers(s.taskAudience(updated), "TASK_UPDATED", updated)
 	s.notifyTaskAdded(userID, updated, nil)
-	writeJSON(w, http.StatusOK, updated)
 }
 
 func (s *Server) handleGetTasks(w http.ResponseWriter, r *http.Request) {

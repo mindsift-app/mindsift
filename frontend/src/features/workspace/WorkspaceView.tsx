@@ -186,7 +186,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     setRenameFolderPath(path);
     setNewFolderParentPath('');
     setNewFolderName(path.split('/').pop() || path);
-    setNewFolderCoords({ x: Math.min(at.x, window.innerWidth - 270), y: Math.min(at.y, window.innerHeight - 200) });
+    // FormSheet keeps the form inside the window
+    setNewFolderCoords(at);
     setShowNewFolderModal(true);
   };
 
@@ -195,10 +196,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     setNewFolderParentPath(parentPath);
     setNewFolderName('');
     if (e) {
-      setNewFolderCoords({
-        x: Math.min(e.clientX, window.innerWidth - 270),
-        y: Math.min(e.clientY, window.innerHeight - 200),
-      });
+      setNewFolderCoords({ x: e.clientX, y: e.clientY });
     } else {
       setNewFolderCoords({ x: 100, y: 150 });
     }

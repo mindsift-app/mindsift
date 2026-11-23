@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Brain, ExternalLink } from 'lucide-react';
 import { APP_VERSION } from '../version';
-import { authHeaders } from '../lib/api';
+import { requestRaw } from '../lib/api';
 import { ReadingModal } from './ReadingModal';
 
 // Project facts shown in "About MindSift"; change here when the repository or license changes
-export const PROJECT_REPO_URL = 'https://github.com/mindsift-app/mindsift';
+const PROJECT_REPO_URL = 'https://github.com/mindsift-app/mindsift';
 // What changed in each version, as released on main
-export const CHANGELOG_URL = `${PROJECT_REPO_URL}/blob/main/CHANGELOG.md`;
+const CHANGELOG_URL = `${PROJECT_REPO_URL}/blob/main/CHANGELOG.md`;
 // The licenses of the third-party software in this build, served by MindSift itself to signed-in people
 // only (internal/api/licenses.go): loaded with the session and shown here, not opened as a page
 export const THIRD_PARTY_LICENSES_URL = '/api/v1/third-party-licenses';
@@ -23,7 +23,7 @@ export const AboutModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const showLicenses = async () => {
     setLicenses({ state: 'loading' });
     try {
-      const res = await fetch(THIRD_PARTY_LICENSES_URL, { headers: authHeaders(), cache: 'no-store' });
+      const res = await requestRaw(THIRD_PARTY_LICENSES_URL);
       if (!res.ok) throw new Error(String(res.status));
       setLicenses({ state: 'done', text: await res.text() });
     } catch {

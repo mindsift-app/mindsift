@@ -5,9 +5,11 @@ name: MindSift CI & Docker Release
 #   push/merge main  -> :latest
 #   git tag v1.2.0   -> :v1.2.0 and :stable
 #   git tag v1.2.0-rc.1 (pre-release) -> :v1.2.0-rc.1 only, :stable stays
-# Same build plan as the private Gitea pipeline (ci/build-plan.sh). Every push is tested beforehand on the
-# developer's machine (ci/local-checks.sh); here only main, the public release, runs the tests once more
-# (TEST_REFS). A tag on the commit of :latest only retags it.
+# Same build plan as the private Gitea pipeline (ci/build-plan.sh). The tests run on the developer's
+# machine (targeted checks for every push, the full ci/local-checks.sh before a release); here only main,
+# the public release, runs the tests once more (TEST_REFS). A tag on the commit of :latest only retags it.
+# A tag is checked first (ci/release-check.sh: package.json, package-lock.json, README badge, CHANGELOG,
+# Flatpak manifest and metainfo name its version); nothing is built, pushed or retagged when it fails.
 # Trivy (ci/trivy-scan.sh) checks every tag before it is pushed, branches only when Dockerfile, go.mod or
 # go.sum changed; .github/workflows/security-scan.yaml checks :stable and :latest every week.
 # After the images of a tag, release.yaml creates its release page from the CHANGELOG and attaches the
@@ -39,6 +41,17 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Before anything of a tag is built or pushed: the release commit names the tag's version everywhere
+      # (ci/release-prepare.sh writes it)
+      - name: Release Check
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          if [ ! -x ci/release-check.sh ]; then
+            echo "::notice::${GITHUB_REF_NAME} is from before ci/release-check.sh, nothing to check"
+            exit 0
+          fi
+          ci/release-check.sh "${GITHUB_REF_NAME}"
 
       - name: Determine Image
         id: prep
@@ -72,11 +85,10 @@ jobs:
           echo "ℹ️ ${{ steps.plan.outputs.reason }}"
           TAG_ARGS=()
           for t in ${TAGS}; do TAG_ARGS+=(-t "${IMAGE}:${t}"); done
-          # Version of the image: the release, or the package version with -dev (dev builds have no APP_VERSION).
+          # Version of the image (ci/build-plan.sh): the tag or release, else the package version with -dev.
           # GitHub shows the description of a multi-platform image only from the index, so it goes there as
           # an annotation (the labels in the Dockerfile describe each platform's image).
-          IMAGE_VERSION="${{ steps.plan.outputs.app_version }}"
-          [ -n "${IMAGE_VERSION}" ] || IMAGE_VERSION="v$(jq -r .version frontend/package.json)-dev"
+          IMAGE_VERSION="${{ steps.plan.outputs.image_version }}"
           INDEX_ANNOTATIONS=(
             --annotation "index:org.opencontainers.image.description=Notes, tasks and a clear head, self-hosted: outliner notes, tasks with a Kanban board, shared lists, works offline."
             --annotation "index:org.opencontainers.image.version=${IMAGE_VERSION}"

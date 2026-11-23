@@ -435,7 +435,6 @@
     "languageIntro": "In welcher Sprache du ins Mikrofon sprichst.",
     "languageApp": "Wie die App-Sprache ({{name}})",
     "languageAuto": "Automatisch erkennen (mehrere Sprachen)",
-    "languageFixed": "Feste Sprache",
     "languageAutoHint": "Whisper erkennt die Sprache jeder Aufnahme; mit einer festen Sprache klappt es etwas zuverlässiger.",
     "languageAutoBrowser": "Der Browser kann das nicht und nimmt die App-Sprache."
   },
@@ -568,7 +567,6 @@
     "pending": "Wartet auf Freigabe",
     "registeredOn": "registriert am {{date}}",
     "registered": "Registrierte Benutzer ({{count}})",
-    "leaveOrg": "{{name}} verlässt „{{org}}“ und verliert dort alle Freigaben, Gruppen und Aufgaben-Zuweisungen.",
     "moveTo": "Nach „{{org}}“ verschieben",
     "lock": "Sperren",
     "activate": "Aktivieren",
@@ -820,7 +818,6 @@
     "addMember": "Person hinzufügen",
     "addMemberPlaceholder": "Name, @Benutzername oder E-Mail…",
     "addOrganization": "Organisation hinzufügen",
-    "addAnother": "+ weitere",
     "removeFromSelection": "{{org}} entfernen",
     "searchOrganization": "Organisation suchen…",
     "noMatch": "Keine passende Organisation",

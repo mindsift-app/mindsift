@@ -5,8 +5,7 @@ import i18n from '../i18n';
 import { errorMessage } from './errorMessage';
 import { useLatestRef } from './useLatestRef';
 import { SegmentedTranscription } from './voiceTranscription';
-import { useHoldReload } from './reloadHold';
-import { useLeaveGuard, useUnloadGuard } from './leaveGuard';
+import { useRecordingGuard } from './leaveGuard';
 
 export type VoiceState = 'idle' | 'listening' | 'transcribing';
 
@@ -53,12 +52,10 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   const chunkServer = serverChunked && (live || chunked);
   const [state, setState] = useState<VoiceState>('idle');
   const [pendingChunks, setPendingChunks] = useState(0);
-  // A recording or its transcription is under way: the app does not reload for a new version meanwhile
-  useHoldReload(state !== 'idle' || pendingChunks > 0);
-  // Leaving the view would lose it too, unless this input lives on (global capture) or hands it on
-  useLeaveGuard(guardsLeave && !onRecorded && (state !== 'idle' || pendingChunks > 0));
-  // Reloading or closing the page would lose it wherever it lives: the browser asks first
-  useUnloadGuard(state !== 'idle' || pendingChunks > 0);
+  // A recording or its transcription is under way: the app does not reload for a new version meanwhile, and
+  // reloading or closing the page lets the browser ask first. Leaving the view would lose it too, unless
+  // this input lives on (global capture) or hands it on
+  useRecordingGuard(state !== 'idle' || pendingChunks > 0, { leave: guardsLeave && !onRecorded });
   const maxSecondsRef = useRef(600);
   const recorderRef = useRef<VoiceRecorder | null>(null);
   const recognitionRef = useRef<BrowserRecognition | null>(null);

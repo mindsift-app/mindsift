@@ -76,6 +76,10 @@ jobs:
           # preinstalled toolchains are not needed here
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           df -h /
+          # The Flatpak of a release is built from its tag (REQUIRE_TAG in ci/release-desktop.sh): the tag
+          # itself, not only its commit, must be in the checkout
+          git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null \
+            || git fetch --no-tags --depth=1 origin "+refs/tags/${TAG}:refs/tags/${TAG}"
           ENGINE=docker COPY_MODE=1 ci/release-desktop.sh "${TAG}" binaries
           echo "built=true" >> "$GITHUB_OUTPUT"
 

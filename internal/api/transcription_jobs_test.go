@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -343,11 +344,15 @@ func TestTranscriptionDiscardAndRequeue(t *testing.T) {
 	}
 }
 
-// After the quick retries a failed job is tried again by itself hours later, but only when the Whisper
-// server was down or had a problem of its own; a time limit or a refused recording would fail again.
+// After the quick retries a failed job is tried again by itself after 5 minutes, 1, 6 and 24 hours, but
+// only when the Whisper server was down or had a problem of its own; a time limit or a refused recording
+// would fail again.
 func TestTranscriptionRetryTimes(t *testing.T) {
 	now := time.Date(2026, 3, 29, 1, 30, 0, 0, time.FixedZone("CET", 3600)) // the night the clocks change
 	down := errors.New("dial tcp: connection refused")
+	if want := []time.Duration{5 * time.Minute, time.Hour, 6 * time.Hour, 24 * time.Hour}; !slices.Equal(transcriptionLaterDelays, want) {
+		t.Fatalf("later attempts after %v, want %v", transcriptionLaterDelays, want)
+	}
 	cases := []struct {
 		attempt      int
 		err          error
@@ -361,7 +366,9 @@ func TestTranscriptionRetryTimes(t *testing.T) {
 		{3, &sttStatusError{Status: 429}, 0, transcriptionLaterDelays[0]},
 		{4, down, 0, transcriptionLaterDelays[1]},
 		{5, down, 0, transcriptionLaterDelays[2]},
-		{6, down, 0, 0},
+		{6, down, 0, transcriptionLaterDelays[3]},
+		{7, down, 0, 0},
+		{4, &sttStatusError{Status: 400}, 0, 0},
 		{3, context.DeadlineExceeded, 0, 0},
 		{3, &sttStatusError{Status: 400}, 0, 0},
 		{3, &sttStatusError{Status: 413}, 0, 0},
@@ -382,7 +389,7 @@ func TestTranscriptionRetryTimes(t *testing.T) {
 }
 
 // A failed job waiting for a later attempt stays failed until then and is queued again with its error;
-// failed jobs of notes go 30 days after their last attempt, a failed inbox recording stays.
+// failed jobs go 30 days after their last attempt, the recording of a note stays in the note.
 func TestFailedTranscriptionsLaterAndCleanup(t *testing.T) {
 	srv, store, token, userID, _ := jobServer(t)
 	docID, mediaID := noteWithRecording(t, srv, store, token, userID, "")
@@ -437,11 +444,11 @@ func TestFailedTranscriptionsLaterAndCleanup(t *testing.T) {
 	if _, err := store.GetMedia(mediaID); err != nil {
 		t.Fatalf("recording's file gone: %v", err)
 	}
-	if got, err := store.GetTranscription(inbox.ID); err != nil || got.Status != storage.TranscriptionFailed {
-		t.Fatalf("failed inbox recording removed: %v", err)
+	if _, err := store.GetTranscription(inbox.ID); err == nil {
+		t.Fatal("failed inbox recording still there after 30 days")
 	}
-	if pieces, _ := store.TranscriptionAudio(inbox.ID); len(pieces) != 1 {
-		t.Fatal("audio of the failed inbox recording removed")
+	if pieces, _ := store.TranscriptionAudio(inbox.ID); len(pieces) != 0 {
+		t.Fatal("audio of the failed inbox recording still there")
 	}
 }
 

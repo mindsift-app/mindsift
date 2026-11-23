@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { api, getToken, setToken, clearToken, buildWebSocketURL, buildSSEURL } from '../api';
+import { api, getToken, setToken, clearToken, buildWebSocketURL, buildSSEURL, requestRaw } from '../api';
 import { OfflineError } from '../offline';
 
 // Safety net for splitting lib/api.ts: the behaviour of request()
@@ -138,5 +138,44 @@ describe('realtime URLs', () => {
 
   it('builds SSE URLs with rooms', () => {
     expect(buildSSEURL('t', undefined, 'doc_1', ['lst_a', 'lst_b'])).toBe('/api/v1/events?ticket=t&docId=doc_1&rooms=lst_a%2Clst_b');
+  });
+});
+
+describe('requestRaw()', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    localStorage.clear();
+    clearToken();
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends a FormData upload with the login, keeps its own headers and takes a renewed token', async () => {
+    setToken('old');
+    fetchMock.mockResolvedValue(jsonResponse(200, { text: 'Hallo' }, { 'X-Session-Token': 'fresh' }));
+    const form = new FormData();
+    const res = await requestRaw('/api/v1/voice/transcribe', { method: 'POST', body: form, headers: { 'X-Chunk-SHA256': 'abc' } });
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.body).toBe(form);
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer old', 'X-Chunk-SHA256': 'abc' });
+    expect(init.headers['Content-Type']).toBeUndefined();
+    expect(await res.json()).toEqual({ text: 'Hallo' });
+    expect(getToken()).toBe('fresh');
+  });
+
+  it('on 401 forgets the token and tells the app, and hands back the answer', async () => {
+    setToken('stale');
+    const seen = vi.fn();
+    window.addEventListener('mindsift:unauthorized', seen);
+    fetchMock.mockResolvedValue(jsonResponse(401, { error: 'nope' }));
+    const res = await requestRaw('/api/v1/link-preview?url=x');
+    window.removeEventListener('mindsift:unauthorized', seen);
+    expect(res.status).toBe(401);
+    expect(getToken()).toBeNull();
+    expect(seen).toHaveBeenCalled();
   });
 });

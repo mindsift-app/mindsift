@@ -19,7 +19,9 @@ import (
 // schema_migrations; a failing step stops the start with its error instead of being ignored.
 // New schema changes are appended as new steps (next free id), never edited into old ones.
 // PRAGMA user_version mirrors the highest applied id. Ids 1 and 2 were used by earlier releases
-// (database wipes on start), so the first step here is 3.
+// (database wipes on start), so the first step here is 3. Ids 57, 58 and 64 were never used: no step
+// with them was ever committed; they were skipped while changes worked on in parallel took the next ids
+// (2026-11-15). Ids are never renumbered or reused, since databases record the ids they ran.
 
 type migration struct {
 	id   int
@@ -95,6 +97,7 @@ var migrations = []migration{
 	{70, "The daily summary remembers the channels that failed, to try them again", (*Store).migrateDailySummaryRetry},
 	{71, "Folders that only existed through their notes are kept as folders", (*Store).migrateKeepNoteFolders},
 	{72, "Transcriptions done by the server in the background", (*Store).migrateTranscriptions},
+	{73, "Duplicate index on the task list of tasks removed", (*Store).migrateDropTaskListIndex},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
@@ -403,13 +406,16 @@ func (s *Store) migrateOpenTodoIndex() error {
 	return err
 }
 
-// migrateSearchCoverIndex is migration 53: the note search (sqlNoteSearchHits) looks up every matched
-// bullet by its key in the index and reads deleted, document_id and id of it. With only
-// idx_blocks_fts_rowid that is one seek in the index and one in the table per match; the covering index
-// answers it from the index alone (search for a common word: 17.8 to 12.1 ms). idx_blocks_fts_rowid stays:
-// it keeps the key unique, and a key held twice would make the external-content index delete the text of
-// the wrong bullet. The extra index is written when a bullet is inserted, deleted or restored, not when
-// its text changes.
+// migrateDropTaskListIndex is migration 73: idx_thoughts_task_list (task_list_id) is the first column of
+// idx_thoughts_list_sort (task_list_id, sort_order, created_at), which answers every lookup by list the
+// same way (EXPLAIN QUERY PLAN: emptying a deleted list's tasks uses it as a covering index, the other
+// queries plan alike). The second index only cost a write per changed task. The baseline (step 3) still
+// creates it, so this step also removes it from new databases.
+func (s *Store) migrateDropTaskListIndex() error {
+	_, err := s.db.Exec(`DROP INDEX IF EXISTS idx_thoughts_task_list`)
+	return err
+}
+
 // migrateListItemDoneChangedAt is migration 56: list_items.done_changed_at holds when the checked state
 // last changed (doneTimeLayout, UTC), so a tick sent late by a phone that was offline does not undo a
 // change somebody made after it (SetListItemDone). Empty: never changed since the column exists.
@@ -496,6 +502,13 @@ func (s *Store) migrateTaskUpdatedAt() error {
 // sqlTaskUpdatedAt reads when the task t last changed (created_at until its first change).
 const sqlTaskUpdatedAt = `COALESCE(NULLIF(t.updated_at, ''), t.created_at)`
 
+// migrateSearchCoverIndex is migration 53: the note search (sqlNoteSearchHits) looks up every matched
+// bullet by its key in the index and reads deleted, document_id and id of it. With only
+// idx_blocks_fts_rowid that is one seek in the index and one in the table per match; the covering index
+// answers it from the index alone (search for a common word: 17.8 to 12.1 ms). idx_blocks_fts_rowid stays:
+// it keeps the key unique, and a key held twice would make the external-content index delete the text of
+// the wrong bullet. The extra index is written when a bullet is inserted, deleted or restored, not when
+// its text changes.
 func (s *Store) migrateSearchCoverIndex() error {
 	_, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_blocks_fts_cover ON blocks(fts_rowid, deleted, document_id, id)`)
 	return err

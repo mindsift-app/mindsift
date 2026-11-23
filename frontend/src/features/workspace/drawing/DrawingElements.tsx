@@ -122,7 +122,7 @@ const sameView = (a: ElementViewProps, b: ElementViewProps) =>
   dockedTo(b.el, a.byId, 'to') === dockedTo(b.el, b.byId, 'to');
 
 // Unchanged elements keep their object, so while one is dragged only it and the arrows docked to it draw again
-export const DrawingElementView = React.memo(function DrawingElementView({ el, byId, labelShift }: ElementViewProps) {
+const DrawingElementView = React.memo(function DrawingElementView({ el, byId, labelShift }: ElementViewProps) {
   switch (el.t) {
     case 'text':
       return <FreeText el={el} />;

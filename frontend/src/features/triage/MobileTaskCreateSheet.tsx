@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TriangleAlert, Calendar, SquareCheckBig, Flame, X } from 'lucide-react';
+import { TriangleAlert, Calendar, SquareCheckBig, Flame } from 'lucide-react';
 import { PriorityLevel, TaskList } from '../../lib/types';
 import { triggerHaptic } from '../../lib/api';
 import { useHoldReload } from '../../lib/reloadHold';
-import { guardLeave } from '../../lib/leaveGuard';
+import { BottomSheet } from '../../components/BottomSheet';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { DateField } from '../../components/DateField';
 import { SelectMenu } from '../../components/SelectMenu';
@@ -44,9 +44,6 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
 
   if (!open) return null;
 
-  // The backdrop, the X and "Abbrechen": a dictation still running in the field asks first (lib/leaveGuard.ts)
-  const close = () => guardLeave(onClose, { close: true });
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -59,31 +56,10 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
     }
   };
 
+  // The backdrop, the X and "Abbrechen": a dictation still running in the field asks first (lib/leaveGuard.ts)
   return (
-    <div
-      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={close}
-    >
-      <div
-        className="w-full max-h-[85vh] overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] animate-in slide-in-from-bottom duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
-              <SquareCheckBig className="w-4 h-4" />
-            </div>
-            <h3 className="text-sm font-semibold text-main">{t('create.title')}</h3>
-          </div>
-          <button
-            type="button"
-            onClick={close}
-            className="p-1.5 text-faint hover:text-main rounded-btn transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+    <BottomSheet phoneOnly guard onClose={onClose} title={t('create.title')} icon={<SquareCheckBig className="w-4 h-4" />}>
+      {(close) => (
         <form onSubmit={submit} className="space-y-3">
           <div>
             <label className="text-[11px] font-semibold text-muted block mb-1">{t('create.text')}</label>
@@ -195,7 +171,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      )}
+    </BottomSheet>
   );
 }

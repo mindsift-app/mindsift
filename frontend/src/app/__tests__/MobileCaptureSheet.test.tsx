@@ -54,7 +54,7 @@ describe('MobileCaptureSheet', () => {
     askChoice.mockResolvedValueOnce('confirm');
     // A tap on the dimmed page behind the sheet
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }).closest('.fixed') as HTMLElement);
+      fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }).closest('.modal-overlay') as HTMLElement);
     });
     expect(setShow).toHaveBeenCalledWith(false);
   });

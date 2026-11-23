@@ -20,7 +20,6 @@ export interface TableData {
 /** Line modes, stored in the block's `lang`: '' inner lines fading out towards the edge (default),
  *  'grid' every line and a frame, 'header' the line below the header and the column lines */
 export type TableLines = '' | 'grid' | 'header';
-export const TABLE_LINE_MODES: TableLines[] = ['', 'grid', 'header'];
 
 export function tableLines(lang?: string): TableLines {
   return lang === 'grid' || lang === 'header' ? lang : '';

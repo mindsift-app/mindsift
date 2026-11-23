@@ -42,14 +42,14 @@ const GROUP_LABELS: Record<string, () => string> = {
   docs: () => i18n.t('workspace:code.group.docs'),
 };
 
-export const CODE_LANGUAGE_GROUPS: CodeLanguageGroup[] = codeLanguages.groups.map((g) => ({
+const CODE_LANGUAGE_GROUPS: CodeLanguageGroup[] = codeLanguages.groups.map((g) => ({
   get label() {
     return GROUP_LABELS[g.key]();
   },
   options: g.options,
 }));
 
-export const CODE_LANGUAGES: CodeLanguageOption[] = CODE_LANGUAGE_GROUPS.flatMap((g) => g.options);
+const CODE_LANGUAGES: CodeLanguageOption[] = CODE_LANGUAGE_GROUPS.flatMap((g) => g.options);
 
 const KNOWN_OPTION_IDS = new Set<string>(CODE_LANGUAGES.map((l) => l.id));
 
@@ -156,7 +156,7 @@ const PRISM_DEPENDENCIES: Record<string, string[]> = {
 const inFlightGrammarLoads = new Map<string, Promise<boolean>>();
 
 // A name outside the list (a free label) has no grammar; a grammar's prerequisites load by their own key
-export function toPrismGrammarKey(lang?: string): string {
+function toPrismGrammarKey(lang?: string): string {
   if (!lang) return '';
   const resolved = resolveLanguageId(lang);
   if (!resolved) {
@@ -201,7 +201,7 @@ export async function loadPrismLanguage(lang?: string): Promise<boolean> {
   return task;
 }
 
-export function escapeHtml(raw: string): string {
+function escapeHtml(raw: string): string {
   return raw
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

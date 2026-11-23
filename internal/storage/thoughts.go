@@ -907,37 +907,6 @@ func (s *Store) UnlinkTaskFromDocBlock(userID, taskID string) error {
 	return err
 }
 
-func (s *Store) SyncTaskFromBlockCheck(userID, taskID string, checked bool) {
-	if taskID == "" {
-		return
-	}
-	doneInt := 0
-	if checked {
-		doneInt = 1
-	}
-	var column, raw string
-	if err := s.db.QueryRow(`SELECT t.kanban_status, COALESCE(tl.columns, '') FROM thoughts t LEFT JOIN task_lists tl ON tl.id = t.task_list_id
-		WHERE t.id = ? AND t.user_id = ?`, taskID, userID).Scan(&column, &raw); err != nil {
-		logDBErr(rowErr(err))
-		return
-	}
-	var cols []domain.KanbanColumn
-	if raw != "" {
-		_ = json.Unmarshal([]byte(raw), &cols)
-	}
-	kanban := statusColumn(cols, checked, column)
-	res, _ := s.db.Exec(`UPDATE thoughts SET is_completed = ?, kanban_status = ?, alarm_sent = CASE WHEN ? = 0 THEN 0 ELSE alarm_sent END,
-		 alarm_failures = CASE WHEN ? = 0 THEN 0 ELSE alarm_failures END
-		 WHERE id = ? AND user_id = ? AND is_completed != ?`, doneInt, kanban, doneInt, doneInt, taskID, userID, doneInt)
-	if res != nil {
-		if n, _ := res.RowsAffected(); n > 0 && checked {
-			s.spawnNextOccurrence(taskID)
-		} else if n > 0 {
-			s.dropUntouchedSuccessor(taskID)
-		}
-	}
-}
-
 // --- ALARMS ---
 
 type DueTaskAlarm struct {

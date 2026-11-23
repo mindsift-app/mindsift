@@ -43,7 +43,7 @@ export const SCOPES: ScopeInfo[] = [
   scope('inbox:write', 'inboxWrite', 'inbox', true),
 ];
 // "Change" works on ids that come from reading: switching it on switches the matching read right on too
-export const READ_FOR_WRITE: Partial<Record<ApiKeyScope, ApiKeyScope>> = {
+const READ_FOR_WRITE: Partial<Record<ApiKeyScope, ApiKeyScope>> = {
   'tasks:write': 'tasks:read',
   'lists:write': 'lists:read',
   'notes:write': 'notes:read',

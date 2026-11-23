@@ -7,7 +7,8 @@ import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
 import { useTranslation } from 'react-i18next';
 import { errorMessage } from '../../lib/errorMessage';
-import { useLeaveGuard, useUnloadGuard } from '../../lib/leaveGuard';
+import { formatClock } from '../../lib/format';
+import { useRecordingGuard } from '../../lib/leaveGuard';
 
 interface AudioRecorderPickerProps {
   docId: string;
@@ -16,11 +17,6 @@ interface AudioRecorderPickerProps {
 }
 
 const MAX_RECORDING_MS = 30 * 60 * 1000;
-
-function formatTime(ms: number): string {
-  const s = Math.floor(ms / 1000);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
 
 // Inline bubble an empty bullet turns into after /audio. Green button = start, red button = stop and
 // save; the live wave runs left of the red button. An existing audio file can be uploaded instead.
@@ -34,9 +30,9 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
   const tickRef = useRef<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
-  // A recording not saved yet: switching the note asks first, reloading the page lets the browser ask
-  useLeaveGuard(state !== 'ready');
-  useUnloadGuard(state !== 'ready');
+  // A recording not saved yet: switching the note asks first, reloading the page lets the browser ask, and
+  // the app does not reload by itself for a new version
+  useRecordingGuard(state !== 'ready');
 
   const stopTicking = () => {
     if (tickRef.current !== null) window.clearInterval(tickRef.current);
@@ -133,7 +129,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
       <div className="flex items-center gap-3">
         {state === 'recording' && (
           <>
-            <span className="text-xs font-mono text-main tabular-nums">{formatTime(elapsed)}</span>
+            <span className="text-xs font-mono text-main tabular-nums">{formatClock(elapsed / 1000)}</span>
             <VoiceWave getLevel={() => recorderRef.current?.level() ?? null} bars={11} className="h-6 text-status-err" />
           </>
         )}

@@ -13,14 +13,16 @@ ok() { echo "ok   $1"; }
 bad() { echo "FAIL $1" >&2; failures=$((failures + 1)); }
 
 # A tree with the files the scripts read; version 1.2.0 throughout
-mkdir -p "$T/frontend" "$T/$DIR"
+mkdir -p "$T/frontend" "$T/$DIR" "$T/ci"
 cp desktop/go.mod desktop/go.sum "$T/desktop/"
 cp frontend/package-lock.json "$T/frontend/"
-cp "$DIR/app.mindsift.MindSift.yml" "$DIR/app.mindsift.MindSift.metainfo.xml" "$DIR/check-sources.sh" "$DIR/set-release.sh" "$T/$DIR/"
+cp ci/version.sh ci/lock-version.sh "$T/ci/"
+cp "$DIR/app.mindsift.MindSift.yml" "$DIR/app.mindsift.MindSift.metainfo.xml" "$DIR/check-sources.sh" "$DIR/set-release.sh" \
+  "$DIR/sources-sha256.sh" "$T/$DIR/"
 printf '{\n  "name": "mindsift",\n  "version": "1.2.0"\n}\n' > "$T/frontend/package.json"
 printf '## [Unreleased]\n\n## [1.2.0] - 2026-12-01\n\n## [1.3.0-rc.1] - 2026-12-05\n' > "$T/CHANGELOG.md"
 for f in go.mod.yml modules.txt node-sources.json; do echo stand-in > "$T/$DIR/$f"; done
-(cd "$T" && sha256sum desktop/go.mod desktop/go.sum frontend/package-lock.json > "$DIR/sources.sha256")
+sh "$T/$DIR/sources-sha256.sh" "$T" > "$T/$DIR/sources.sha256"
 (cd "$T" && sh "$DIR/set-release.sh" v1.2.0 'Notes & tasks <faster> \ a|b.' >/dev/null 2>&1) || true
 
 # expect NAME pass|fail [TEXT]: check-sources.sh on the tree passes, or fails naming TEXT
@@ -48,6 +50,13 @@ cp "$T/go.sum.orig" "$T/desktop/go.sum"
 cp "$T/frontend/package-lock.json" "$T/lock.orig"
 echo " " >> "$T/frontend/package-lock.json"
 expect "a changed frontend/package-lock.json fails" fail update-sources.sh
+cp "$T/lock.orig" "$T/frontend/package-lock.json"
+sh "$T/ci/lock-version.sh" "$T/lock.orig" 7.8.9 > "$T/frontend/package-lock.json"
+expect "a new MindSift version alone in package-lock.json needs no new sources" pass
+cp "$T/lock.orig" "$T/frontend/package-lock.json"
+awk '/^    "node_modules\// && !done { print; getline; sub(/"version": "[^"]*"/, "\"version\": \"0.0.0-other\""); done = 1 } { print }' \
+  "$T/lock.orig" > "$T/frontend/package-lock.json"
+expect "another package's version in package-lock.json fails" fail update-sources.sh
 cp "$T/lock.orig" "$T/frontend/package-lock.json"
 rm "$T/$DIR/node-sources.json"
 expect "a missing node-sources.json fails" fail update-sources.sh

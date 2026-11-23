@@ -211,7 +211,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.store.CreateUser(req.Email, hash, req.DisplayName, "admin")
+	user, err := s.store.CreateUser(req.Email, hash, req.DisplayName, domain.RoleAdmin)
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
@@ -383,7 +383,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	// Without a display name the account shows its username (the store gives it)
 
 	count, _ := s.store.CountUsers()
-	role := "member"
+	role := domain.RoleMember
 	var validInvite *domain.UserInvite
 	pending := false // registered without invite while approval is needed
 	verify := false  // registered without invite while the address must be confirmed

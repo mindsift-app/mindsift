@@ -1,6 +1,7 @@
 import { Brain, Download, Share, Smartphone, X } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { usePwaInstall } from './usePwaInstall';
+import { BottomSheet } from '../components/BottomSheet';
 
 // Phones: the offer to install MindSift as an app, with the manual steps when the browser has no prompt
 export function PwaInstallSheet({
@@ -14,14 +15,12 @@ export function PwaInstallSheet({
   const { isStandaloneApp, deferredPwaPrompt, showPwaInstallModal, showManualPwaGuide, handleInstallWebApp, handleDismissPwaModal } = pwa;
   if (!showPwaInstallModal || isStandaloneApp) return null;
   return (
-    <div
-      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-black/65 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={handleDismissPwaModal}
+    <BottomSheet
+      phoneOnly
+      onClose={handleDismissPwaModal}
+      label={t('pwa.title', { name: instanceName || 'MindSift' })}
+      className="px-5 pt-7 pb-[calc(1.75rem+env(safe-area-inset-bottom))] space-y-4"
     >
-      <div
-        className="w-full bg-panel border-t border-border rounded-t-2xl shadow-panel p-5 pb-[calc(1.75rem+env(safe-area-inset-bottom))] space-y-4 animate-in slide-in-from-bottom duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-accent text-on-accent shadow-md flex items-center justify-center shrink-0">
@@ -39,7 +38,8 @@ export function PwaInstallSheet({
           <button
             type="button"
             onClick={handleDismissPwaModal}
-            className="p-1.5 text-faint hover:text-main rounded-btn cursor-pointer"
+            aria-label={t('common:close')}
+            className="-mr-2 -mt-2 w-11 h-11 flex items-center justify-center text-faint hover:text-main rounded-btn cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -108,7 +108,6 @@ export function PwaInstallSheet({
             </button>
           </div>
         )}
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

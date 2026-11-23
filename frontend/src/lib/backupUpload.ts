@@ -2,7 +2,7 @@
 // a body limit or a dropped connection does not break a file of several GB (internal/api/backup_upload.go).
 // A chunk carries its SHA-256 (X-Chunk-SHA256); the whole file's checksum is SHA-256 over the SHA-256 of
 // each 32 MiB block, which the server computes the same way before it restores.
-import { authHeaders } from './api/client';
+import { requestRaw } from './api/client';
 import { sha256, toHex } from './sha256';
 
 export const HASH_BLOCK = 32 * 1024 * 1024;
@@ -39,7 +39,7 @@ interface ResumeEntry {
   lastModified: number;
 }
 
-export class UploadError extends Error {
+class UploadError extends Error {
   constructor(
     message: string,
     readonly status: number,
@@ -50,7 +50,7 @@ export class UploadError extends Error {
 }
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<{ status: number; body: T }> {
-  const res = await fetch(path, { cache: 'no-store', ...init, headers: { ...authHeaders(), ...(init.headers as Record<string, string>) } });
+  const res = await requestRaw(path, init);
   let body: unknown = null;
   try {
     body = await res.json();

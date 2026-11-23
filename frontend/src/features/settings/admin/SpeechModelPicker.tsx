@@ -5,13 +5,11 @@ import { api } from '../../../lib/api';
 import { SpeechModelsInfo } from '../../../lib/types';
 import { errorMessage } from '../../../lib/errorMessage';
 import { askConfirm } from '../../../components/askConfirm';
+import { formatClock } from '../../../lib/format';
 
 const POLL_MS = 3000;
 
-function elapsed(since: string, now: number): string {
-  const s = Math.max(0, Math.floor((now - Date.parse(since)) / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
+const elapsed = (since: string, now: number) => formatClock((now - Date.parse(since)) / 1000);
 
 // Administration → Voice input & AI: the models of the Whisper server. Downloaded ones are chosen with a
 // click; the others are greyed out, a click lets the Whisper server download them and uses them once

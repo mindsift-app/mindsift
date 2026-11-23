@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { FilePlusCorner, Search } from 'lucide-react';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
+import { placeInViewport } from '../../lib/placeInViewport';
+import { useDismiss } from '../../lib/useDismiss';
 
 export interface ExtractTarget {
   id: string;
@@ -22,7 +24,6 @@ interface ExtractPopoverProps {
   onCancel: () => void;
 }
 
-const MARGIN = 8;
 const MAX_RESULTS = 8;
 
 // "In eigene Notiz auslagern" at the bullet: a new note (preselected, so click + Enter is the old one-step
@@ -51,13 +52,8 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, align = 'r
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const { width, height } = el.getBoundingClientRect();
-    let left = align === 'left' ? x : x - width + 12;
-    let top = y + MARGIN;
-    if (left < MARGIN) left = MARGIN;
-    if (left + width > window.innerWidth - MARGIN) left = window.innerWidth - width - MARGIN;
-    if (top + height > window.innerHeight - MARGIN) top = y - height - MARGIN;
-    setPos({ left, top: Math.max(MARGIN, top), ready: true });
+    const { left, top } = placeInViewport({ left: x, top: y }, el.getBoundingClientRect(), align === 'left' ? {} : { align: 'end', shift: -12 });
+    setPos({ left, top, ready: true });
     inputRef.current?.focus();
     // The bullet takes the focus back right after the click on its button; typing must go here
     const raf = requestAnimationFrame(() => inputRef.current?.focus());
@@ -68,13 +64,8 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, align = 'r
     };
   }, [x, y, align]);
 
-  useEffect(() => {
-    const onDown = (e: Event) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onCancel();
-    };
-    document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
-  }, [onCancel]);
+  // Escape is handled by the popover's own keys (the focus is in its search field)
+  useDismiss(ref, onCancel, { escape: false });
 
   // The pointer marks a row only once it really moves: opening the popover under a resting pointer must
   // not take the preselected "new note" away

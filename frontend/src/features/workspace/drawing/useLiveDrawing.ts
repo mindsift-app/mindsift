@@ -570,5 +570,3 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     },
   };
 }
-
-export type LiveDrawing = NonNullable<ReturnType<typeof useLiveDrawing>>;

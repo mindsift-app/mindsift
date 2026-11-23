@@ -15,7 +15,7 @@ export const WHISPER_LANGUAGES = [
 /** Whisper's code as a BCP 47 tag (Whisper writes Javanese as "jw"). */
 export const voiceLanguageTag = (code: string) => (code === 'jw' ? 'jv' : code);
 
-export function voiceLanguageName(code: string): string {
+function voiceLanguageName(code: string): string {
   try {
     const name = new Intl.DisplayNames([currentLocale()], { type: 'language' }).of(voiceLanguageTag(code));
     if (name && name !== code) return name.charAt(0).toLocaleUpperCase(currentLocale()) + name.slice(1);

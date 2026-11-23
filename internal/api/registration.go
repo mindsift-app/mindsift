@@ -263,11 +263,12 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email string `json:"email"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || !strings.Contains(req.Email, "@") {
+	err := json.NewDecoder(r.Body).Decode(&req)
+	email := domain.NormalizeEmail(req.Email)
+	if err != nil || !validEmail(email) {
 		writeError(w, http.StatusBadRequest, "Bitte eine gültige E-Mail-Adresse angeben")
 		return
 	}
-	email := domain.NormalizeEmail(req.Email)
 	if _, err := s.smtpSettings(); err != nil {
 		writeError(w, http.StatusBadRequest, "Für Einladungen per E-Mail muss ein Mail-Server eingerichtet sein")
 		return

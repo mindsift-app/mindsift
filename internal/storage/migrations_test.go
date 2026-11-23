@@ -52,6 +52,59 @@ func TestMigrationsRunOnceAndRepairOldDatabases(t *testing.T) {
 	}
 }
 
+// Migration 73 removes idx_thoughts_task_list, which idx_thoughts_list_sort covers, from new databases
+// and from older ones that had it; lookups by task list keep an index.
+func TestTaskListIndexDropped(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "index.db")
+	store, err := NewStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	has := func(name string) bool {
+		t.Helper()
+		var n int
+		if err := store.db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = ?`, name).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n == 1
+	}
+	if has("idx_thoughts_task_list") || !has("idx_thoughts_list_sort") {
+		t.Fatal("new database: want only idx_thoughts_list_sort")
+	}
+
+	// A database from before the step, with the index
+	if _, err := store.db.Exec(`CREATE INDEX idx_thoughts_task_list ON thoughts(task_list_id)`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.db.Exec(`DELETE FROM schema_migrations WHERE id = 73`); err != nil {
+		t.Fatal(err)
+	}
+	_ = store.Close()
+	if store, err = NewStore(path); err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	if has("idx_thoughts_task_list") {
+		t.Fatal("older database kept idx_thoughts_task_list")
+	}
+	var plan, detail string
+	var id, parent, notused int
+	rows, err := store.db.Query(`EXPLAIN QUERY PLAN UPDATE thoughts SET task_list_id = '' WHERE task_list_id = ?`, "tkl_x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		if err := rows.Scan(&id, &parent, &notused, &detail); err != nil {
+			t.Fatal(err)
+		}
+		plan += detail
+	}
+	_ = rows.Close()
+	if !strings.Contains(plan, "idx_thoughts_list_sort") {
+		t.Fatalf("lookup by task list without an index: %s", plan)
+	}
+}
+
 // withExtraMigration adds a step after the known ones for the rest of the test; it returns its id.
 func withExtraMigration(t *testing.T, run func(*Store) error) int {
 	t.Helper()

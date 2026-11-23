@@ -146,11 +146,6 @@ func (s *Store) DeleteAPIKey(userID, keyID string) error {
 	return err
 }
 
-func (s *Store) ValidateAPIKeyAndGetUser(rawKey string) (*domain.User, error) {
-	u, _, _, err := s.ValidateAPIKey(rawKey)
-	return u, err
-}
-
 // ValidateAPIKey returns the owner of a key, the key's scopes and its id.
 func (s *Store) ValidateAPIKey(rawKey string) (*domain.User, []string, string, error) {
 	hash := auth.HashAPIKey(strings.TrimSpace(rawKey))

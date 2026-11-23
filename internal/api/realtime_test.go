@@ -619,3 +619,41 @@ func TestFolderEventTypes(t *testing.T) {
 		t.Errorf("restore: %v", p)
 	}
 }
+
+// An inbox entry the app turns into a note shows up on the person's other devices: the REST triage
+// sends DOC_CREATED like the MCP tool (it used to send only TASK_UPDATED).
+func TestTriageToNoteSendsDocCreated(t *testing.T) {
+	_, store, ts, owner, token := startRealtimeServer(t)
+	th, err := store.CreateThought(owner.ID, "Idee für die Notiz", "normal", "manual", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stream := openSSE(t, ts, token)
+	r := doJSON(t, ts, http.MethodPatch, "/api/v1/triage/"+th.ID, token, map[string]string{"action": "keep", "convertTo": "document"})
+	if r.StatusCode != http.StatusOK {
+		t.Fatalf("triage: %d", r.StatusCode)
+	}
+	defer r.Body.Close()
+	var updated domain.Thought
+	if err := json.NewDecoder(r.Body).Decode(&updated); err != nil || updated.ConvertedRefID == "" {
+		t.Fatalf("triage answer: %v %+v", err, updated)
+	}
+	deadline := time.After(10 * time.Second)
+	for {
+		select {
+		case m, ok := <-stream.events:
+			if !ok {
+				t.Fatal("stream closed before DOC_CREATED")
+			}
+			if m.Event != "DOC_CREATED" {
+				continue
+			}
+			var d domain.Document
+			if json.Unmarshal(m.Payload, &d) == nil && d.ID == updated.ConvertedRefID {
+				return
+			}
+		case <-deadline:
+			t.Fatal("no DOC_CREATED for the new note")
+		}
+	}
+}

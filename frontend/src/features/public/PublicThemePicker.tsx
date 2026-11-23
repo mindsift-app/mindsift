@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useDismiss } from '../../lib/useDismiss';
 import { useTranslation } from 'react-i18next';
 import { Moon, Sun } from 'lucide-react';
 import { AVAILABLE_THEMES, THEME_FAMILIES, showThemeOnPage, systemIsDark } from '../../lib/theme';
@@ -56,12 +57,7 @@ export const PublicThemePicker: React.FC = () => {
     }
   }, [choice, dark]);
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [open]);
+  useDismiss(ref, () => setOpen(false), { active: open, escape: false, event: 'mousedown' });
 
   const dot = (familyId: string) => (
     <span className="block w-4 h-4 rounded-full ring-2 ring-border" style={{ background: accentOf(familyId, dark) }} />

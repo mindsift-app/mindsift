@@ -4,6 +4,9 @@
 #   APP_VERSION=v1.2.0 desktop/packaging/flatpak/build.sh
 #                                                       the tag v1.2.0 when it exists (as the release does),
 #                                                       else the working tree with that version
+#   REQUIRE_TAG=1 APP_VERSION=v1.2.0 …                  the tag or nothing: fails when the checkout has no
+#                                                       tag v1.2.0 (ci/release-desktop.sh sets it for
+#                                                       releases, whose bundle must be the tag's)
 #   FLATPAK_GPG_PRIVATE_KEY="$(cat key.asc)" …          the bundle gets the own Flatpak repository as its
 #                                                       origin (bundle.sh), so installs of it get updates
 #   CHECK_SCREENSHOTS=0 …                               a tag build without the screenshot check (tags
@@ -34,7 +37,8 @@ cd "$(dirname "$0")/../../.."
 ROOT="$PWD"
 ENGINE="${ENGINE:-podman}"
 COPY_MODE="${COPY_MODE:-0}"
-FLATPAK_IMAGE=docker.io/library/debian:trixie-20261027-slim
+. ci/images.env
+FLATPAK_IMAGE="$DEBIAN_IMAGE"
 APP_ID=app.mindsift.MindSift
 DIR=desktop/packaging/flatpak
 # GNOME 51 (released 2026-09) is a branch: its security rebuilds come along, as they do for every user of
@@ -47,11 +51,7 @@ GO_EXT_COMMIT=f9e1ac9f0c6f95e0df3a4a972a9b7d008715b336c9558098678045a24b81c102
 NODE_EXT_COMMIT=eb3f0d4736b50b678eb7ad130ee0cb553711872a9be175cb6d812208ea8f5ed5
 STAGE=desktop/out/flatpak
 OUT=desktop/out/mindsift-desktop-linux-amd64.flatpak
-APP_VERSION="${APP_VERSION:-v$(sed -n 's/.*"version": "\(.*\)".*/\1/p' frontend/package.json | head -1)-dev}"
-case "$APP_VERSION" in
-  v[0-9]*.[0-9]*.[0-9]*) ;;
-  *) echo "APP_VERSION must look like v1.2.3 or v1.2.3-suffix, not '$APP_VERSION'" >&2; exit 1 ;;
-esac
+APP_VERSION="$(sh ci/version.sh app "${APP_VERSION:-}")"
 
 rm -rf "$STAGE" && mkdir -p "$STAGE"
 cp "$DIR/$APP_ID.yml" "$DIR/go.mod.yml" "$DIR/modules.txt" "$DIR/node-sources.json" "$DIR/bundle.sh" "$STAGE/"
@@ -70,6 +70,9 @@ if git rev-parse -q --verify "refs/tags/$APP_VERSION" >/dev/null 2>&1; then
     echo "the manifest's commit $given is not the one of $APP_VERSION ($commit)" >&2; exit 1
   fi
   echo "flatpak: building tag $APP_VERSION ($commit) from the manifest's git source"
+elif [ "${REQUIRE_TAG:-0}" = 1 ]; then
+  echo "REQUIRE_TAG=1, but the checkout has no tag $APP_VERSION: a release's bundle is built from its tag only (git fetch origin tag $APP_VERSION)" >&2
+  exit 1
 else
   # The working tree's files that git knows or would add, deleted ones skipped; the screenshots are not
   # needed. The git source (type, url, tag, commit) becomes a dir source of them.
@@ -96,25 +99,10 @@ CHECK_SCREENSHOTS="${CHECK_SCREENSHOTS:-$TAG_BUILD}"
 $ENGINE volume create mindsift-flatpak >/dev/null 2>&1 || true
 $ENGINE volume create mindsift-flatpak-sources >/dev/null 2>&1 || true
 
-# run_in IMAGE WORKDIR CMD [options]: CMD in IMAGE with $STAGE at /stage (WORKDIR below it) and the cache
-# volumes mounted; in COPY_MODE the stage is copied in and back out.
+# The cache volumes; run_in (desktop/packaging/lib.sh) mounts $STAGE at /stage, in COPY_MODE it is copied
+# in and back out
 VOLUMES="-v mindsift-flatpak:/var/lib/flatpak -v mindsift-flatpak-sources:/state"
-run_in() {
-  image="$1"; workdir="$2"; cmd="$3"; opts="${4:-}"
-  if [ "$COPY_MODE" != "1" ]; then
-    $ENGINE run --rm $opts $VOLUMES -v "$ROOT/$STAGE":/stage:Z -w "/stage/$workdir" "$image" sh -c "$cmd"
-    return
-  fi
-  id="$($ENGINE create $opts $VOLUMES -w "/stage/$workdir" "$image" sh -c "$cmd")"
-  status=0
-  $ENGINE cp "$ROOT/$STAGE/." "$id:/stage" && $ENGINE start -a "$id" || status=$?
-  if [ "$status" = 0 ]; then
-    rm -rf "${ROOT:?}/$STAGE" && mkdir -p "$ROOT/$STAGE"
-    $ENGINE cp "$id:/stage/." "$ROOT/$STAGE" || status=$?
-  fi
-  $ENGINE rm -f "$id" >/dev/null
-  return "$status"
-}
+. desktop/packaging/lib.sh
 
 # Build the app and the bundle. flatpak-builder runs every step in bubblewrap, which needs namespaces and
 # mounts of its own (proc too): instead of --privileged only what that takes, SYS_ADMIN, NET_ADMIN (the
@@ -138,7 +126,8 @@ fi
 # none), as on Flathub.
 # (librsvg2-common: flatpak-builder runs appstreamcli compose in this container, which reads the SVG icon;
 # git and unzip: the git source and the Go module archives; gpg and gpg-agent: bundle.sh signs with the repository's key)
-run_in "$FLATPAK_IMAGE" . "set -e
+# shellcheck disable=SC2086 # (the options are lists of words)
+run_in "$FLATPAK_IMAGE" "$ROOT/$STAGE" /stage . . "set -e
   key=
   if [ -n \"\${FLATPAK_GPG_PRIVATE_KEY:-}\" ]; then
     key=\$(mktemp)
@@ -168,7 +157,7 @@ run_in "$FLATPAK_IMAGE" . "set -e
   fi
   sh bundle.sh /state/repo mindsift.flatpak \$key
   rm -f \$key
-  rm -rf src bundle.sh" "$SANDBOX_OPTS"
+  rm -rf src bundle.sh" $SANDBOX_OPTS $VOLUMES
 
 mv "$STAGE/mindsift.flatpak" "$OUT"
 rm -rf "$STAGE"

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Prepares the Flatpak files for a release, as one of the release steps (AGENTS.md) before the tag: a build
+# Prepares the Flatpak files for a release, before the tag (ci/release-prepare.sh runs it): a build
 # from the manifest's git source takes the manifest and the metainfo as they are in the tag, so both must
 # name the release already.
 #   - the manifest's git source moves to the tag; its commit line goes (it is unknown before tagging,
@@ -14,11 +14,8 @@ set -eu
 USAGE="usage: set-release.sh <version, e.g. v1.2.0> '<summary sentence>' [<date>]"
 VERSION="${1:?$USAGE}"
 SUMMARY="${2:?$USAGE}"
-case "$VERSION" in
-  v[0-9]*.[0-9]*.[0-9]*) ;;
-  *) echo "set-release: the version must look like v1.2.3, not '$VERSION'" >&2; exit 1 ;;
-esac
 cd "$(dirname "$0")/../../.."
+sh ci/version.sh check "$VERSION"
 DIR=desktop/packaging/flatpak
 MANIFEST="$DIR/app.mindsift.MindSift.yml"
 METAINFO="$DIR/app.mindsift.MindSift.metainfo.xml"

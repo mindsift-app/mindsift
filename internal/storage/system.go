@@ -45,14 +45,6 @@ func (s *Store) GetDashboardStats(userID string) (*domain.DashboardStats, error)
 	return st, nil
 }
 
-func (s *Store) SearchAll(userID, query string) ([]domain.Thought, []domain.Document, error) {
-	res, err := s.SearchGlobal(userID, query)
-	if err != nil {
-		return nil, nil, err
-	}
-	return res.Thoughts, res.Documents, nil
-}
-
 func (s *Store) ExportUserData(userID string) (*domain.FullExport, error) {
 	user, err := s.GetUserByID(userID)
 	if err != nil {

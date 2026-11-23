@@ -5,6 +5,7 @@ import { DocumentEditor } from '../DocumentEditor';
 import { api } from '../../../lib/api';
 import { Document } from '../../../lib/types';
 import { EngineState } from '../../../lib/docSync/engine';
+import { makeDoc as baseDoc } from '../../../test/fixtures';
 
 let currentListener: ((state: EngineState) => void) | null = null;
 const mockUndo = vi.fn(() => ({ ok: true }));
@@ -72,22 +73,9 @@ vi.mock('../../../lib/api', async (importOriginal) => {
   };
 });
 
-const makeDoc = (overrides: Partial<Document> = {}): Document => ({
-  id: 'doc_1',
-  userId: 'u1',
-  title: 'Test Notiz',
-  icon: '📝',
-  folderPath: '',
-  content: '',
-  blocks: [{ id: 'b1', documentId: 'doc_1', type: 'text', content: 'Hallo', level: 0, position: 1000 }],
-  tags: [],
-  isPinned: false,
-  isArchived: false,
-  isOwner: true,
-  createdAt: '2026-10-30T08:00:00Z',
-  updatedAt: '2026-10-30T08:00:00Z',
-  ...overrides,
-});
+
+const makeDoc = (overrides: Partial<Document> = {}) =>
+  baseDoc({ title: 'Test Notiz', blocks: [{ id: 'b1', documentId: 'doc_1', type: 'text', content: 'Hallo', level: 0, position: 1000 }], isOwner: true, ...overrides });
 
 describe('DocumentEditor header actions & status callback (Teil D)', () => {
   beforeEach(() => {

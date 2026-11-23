@@ -8,7 +8,10 @@
 set -euo pipefail
 
 IMAGE="${1:?usage: ci/trivy-scan.sh <image>}"
-TRIVY_IMAGE="${TRIVY_IMAGE:-docker.io/aquasec/trivy:0.76.1}"
+# The pinned Trivy of ci/images.env, unless TRIVY_IMAGE names another
+override="${TRIVY_IMAGE:-}"
+. "$(dirname "$0")/images.env"
+TRIVY_IMAGE="${override:-$TRIVY_IMAGE}"
 
 MOUNT=()
 if [ -n "${SARIF_DIR:-}" ]; then

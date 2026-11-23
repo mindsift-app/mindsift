@@ -16,8 +16,9 @@
 # the server writes to its log; read from there and passed on (setup.e2e.mjs). Its port: E2E_SETUP_PORT, else
 # E2E_PORT + 4, else a free one.
 set -euo pipefail
-ENGINE="${ENGINE:-podman}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# ENGINE, the images, free_port, wait_healthy, wait_http and start_demo
+. "$ROOT/e2e/lib.sh"
 WORK="$(mktemp -d)"
 PLAIN_WORK="$(mktemp -d)"
 RUN_ID="$$-$RANDOM"
@@ -40,13 +41,6 @@ if [ "${#METRICS_TOKEN}" -lt 16 ]; then
   echo "e2e/run.sh: METRICS_TOKEN has ${#METRICS_TOKEN} characters, the server needs at least 16 or /metrics stays off" >&2
   exit 1
 fi
-# A free port, none of the ones given
-free_port() {
-  for p in $(shuf -i 18100-18999 -n 50); do
-    case " $* " in *" $p "*) continue ;; esac
-    if ! (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then echo "$p"; return; fi
-  done
-}
 # A free port above 18000 (E2E_PORT overrides)
 PORT="${E2E_PORT:-}"
 if [ -z "$PORT" ]; then
@@ -85,8 +79,7 @@ echo "Building the image …"
 "$ENGINE" build -q --build-arg SKIP_TESTS="${E2E_SKIP_TESTS:-0}" -t "$IMAGE" "$ROOT" >/dev/null
 # Straight to the app (not the entrypoint that hands /data to uid 1000): the test data stays the host
 # user's, so the script can remove it
-"$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true -e DEFAULT_LANGUAGE=de -e METRICS_TOKEN="$METRICS_TOKEN" \
-  -v "$WORK":/data:Z "$IMAGE" >/dev/null
+start_demo "$NAME" "$IMAGE" "$PORT" -e DEFAULT_LANGUAGE=de -e METRICS_TOKEN="$METRICS_TOKEN" -v "$WORK":/data:Z
 "$ENGINE" run -d --entrypoint /app/mindsift --name "$PLAIN_NAME" --network host -e PORT="$PLAIN_PORT" -e DEFAULT_LANGUAGE=de \
   -e BASE_URL="http://localhost:$PLAIN_PORT" \
   -e ADMIN_USER=admin -e ADMIN_PASSWORD="$PLAIN_ADMIN_PASSWORD" -v "$PLAIN_WORK":/data:Z "$IMAGE" >/dev/null
@@ -95,7 +88,7 @@ sed -e "s/__DEX_PORT__/$DEX_PORT/g" -e "s/__OIDC_PORT__/$OIDC_PORT/g" -e "s/__CL
   "$ROOT/e2e/dex.yaml" >"$DEX_WORK/config.yaml"
 chmod 755 "$DEX_WORK" && chmod 644 "$DEX_WORK/config.yaml"
 "$ENGINE" run -d --name "$DEX_NAME" --network host -v "$DEX_WORK/config.yaml":/etc/dex/mindsift.yaml:ro,Z \
-  ghcr.io/dexidp/dex:v2.44.0 dex serve /etc/dex/mindsift.yaml >/dev/null
+  "$DEX_IMAGE" dex serve /etc/dex/mindsift.yaml >/dev/null
 "$ENGINE" run -d --entrypoint /app/mindsift --name "$OIDC_NAME" --network host -e PORT="$OIDC_PORT" -e DEFAULT_LANGUAGE=de \
   -e BASE_URL="http://localhost:$OIDC_PORT" -e ADMIN_USER=admin -e ADMIN_PASSWORD="$OIDC_ADMIN_PASSWORD" \
   -e OIDC_ISSUER="http://localhost:$DEX_PORT/dex" -e OIDC_CLIENT_ID=mindsift -e OIDC_CLIENT_SECRET="$OIDC_CLIENT_SECRET" \
@@ -103,10 +96,11 @@ chmod 755 "$DEX_WORK" && chmod 644 "$DEX_WORK/config.yaml"
 # Without ADMIN_USER: the setup wizard needs the code from the log
 "$ENGINE" run -d --entrypoint /app/mindsift --name "$SETUP_NAME" --network host -e PORT="$SETUP_PORT" -e DEFAULT_LANGUAGE=de \
   -v "$SETUP_WORK":/data:Z "$IMAGE" >/dev/null
-for port in "$PORT" "$PLAIN_PORT" "$OIDC_PORT" "$SETUP_PORT"; do
-  for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$port/api/v1/health" >/dev/null && break; sleep 0.5; done
-done
-for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$DEX_PORT/dex/.well-known/openid-configuration" >/dev/null && break; sleep 0.5; done
+wait_healthy "$PORT" "$NAME"
+wait_healthy "$PLAIN_PORT" "$PLAIN_NAME"
+wait_healthy "$OIDC_PORT" "$OIDC_NAME"
+wait_healthy "$SETUP_PORT" "$SETUP_NAME"
+wait_http "http://localhost:$DEX_PORT/dex/.well-known/openid-configuration" "Dex on port $DEX_PORT" "$DEX_NAME"
 
 # The code as an administrator finds it: in the container's log
 SETUP_CODE="$("$ENGINE" logs "$SETUP_NAME" 2>&1 | sed -n 's/.*Setup code: \([A-Z0-9]\{4\}-[A-Z0-9]\{4\}-[A-Z0-9]\{4\}\).*/\1/p' | tail -n1)"
@@ -122,5 +116,5 @@ echo "Starting the browser tests (port $PORT, without demo $PLAIN_PORT, OIDC $OI
   -e MINDSIFT_OIDC_URL="http://localhost:$OIDC_PORT" -e MINDSIFT_OIDC_ADMIN=admin -e MINDSIFT_OIDC_PASSWORD="$OIDC_ADMIN_PASSWORD" \
   -e MINDSIFT_SETUP_URL="http://localhost:$SETUP_PORT" -e MINDSIFT_SETUP_CODE="$SETUP_CODE" -e WHISPER_PORT="$WHISPER_PORT" \
   -v "$ROOT/e2e":/e2e:Z -w /e2e \
-  mcr.microsoft.com/playwright:v1.65.0-noble \
+  "$PLAYWRIGHT_IMAGE" \
   sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node caret.e2e.mjs && node paste-image.e2e.mjs && node audio.e2e.mjs && node drop-text.e2e.mjs && node secrets.e2e.mjs && node drawing-live.e2e.mjs && node table.e2e.mjs && node templates.e2e.mjs && node live.e2e.mjs && node linked-todos.e2e.mjs && node channels.e2e.mjs && node share-target.e2e.mjs && node offline.e2e.mjs && node lists-offline.e2e.mjs && node tasks-offline.e2e.mjs && node tour.e2e.mjs && node tour-offer.e2e.mjs && node mfa.e2e.mjs && node passkey.e2e.mjs && node oidc.e2e.mjs && node setup.e2e.mjs && node transcription.e2e.mjs && node backup.e2e.mjs'

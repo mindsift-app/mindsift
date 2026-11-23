@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
 // ErrLastAdmin protects the server from losing its last administrator.
@@ -164,7 +166,7 @@ func (s *Store) IsLastAdmin(userID string) bool {
 	var role string
 	if err := s.db.QueryRow(`SELECT role FROM users WHERE id = ?`, userID).Scan(&role); dbFailed(err) {
 		return true
-	} else if err != nil || role != "admin" {
+	} else if err != nil || role != domain.RoleAdmin {
 		return false
 	}
 	var others int

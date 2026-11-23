@@ -85,8 +85,8 @@ func TestDemoResetRepeatedlyDropsSearchIndexesFirst(t *testing.T) {
 		if u, err := store.GetUserByLogin("admin"); err != nil || u == nil {
 			t.Fatalf("round %d: demo admin missing: %v", i, err)
 		}
-		if res, _, err := store.SearchAll(DemoAdminID, "Suchbarer"); err != nil || len(res) != 0 {
-			t.Fatalf("round %d: search after reset: %d results, %v", i, len(res), err)
+		if res, err := store.SearchGlobal(DemoAdminID, "Suchbarer"); err != nil || len(res.Thoughts) != 0 {
+			t.Fatalf("round %d: search after reset: %+v, %v", i, res, err)
 		}
 	}
 	if !sawShadowFirst {
@@ -185,8 +185,8 @@ func TestDemoModeRecoversFromHalfResetDatabase(t *testing.T) {
 	if _, err := store.CreateThought(DemoAdminID, "Nach der Reparatur", "normal", "manual", ""); err != nil {
 		t.Fatal(err)
 	}
-	if res, _, err := store.SearchAll(DemoAdminID, "Reparatur"); err != nil || len(res) != 1 {
-		t.Fatalf("search after recovery: %d results, %v", len(res), err)
+	if res, err := store.SearchGlobal(DemoAdminID, "Reparatur"); err != nil || len(res.Thoughts) != 1 {
+		t.Fatalf("search after recovery: %+v, %v", res, err)
 	}
 }
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { DictationQueue, HandedOverError, type DictationItem } from '../dictationQueue';
+import { flush } from '../../../test/fixtures';
 
 // Which queue holds the update reload back, and whether it still does
 const holdReload = vi.hoisted(() => vi.fn());
@@ -17,7 +18,6 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-const flush = () => new Promise((r) => setTimeout(r, 0));
 
 function setup(save = vi.fn(async (text: string) => text)) {
   const changes: DictationItem[][] = [];

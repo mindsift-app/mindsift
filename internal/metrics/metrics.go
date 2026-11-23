@@ -7,7 +7,9 @@ package metrics
 import (
 	"fmt"
 	"io"
+	"maps"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -47,7 +49,7 @@ func (c *CounterVec) write(w io.Writer) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	header(w, c.name, c.help, "counter")
-	for _, key := range sortedKeys(c.values) {
+	for _, key := range slices.Sorted(maps.Keys(c.values)) {
 		fmt.Fprintf(w, "%s%s %s\n", c.name, labelText(c.labels, splitValues(key), "", ""), number(c.values[key]))
 	}
 }
@@ -201,15 +203,6 @@ func splitValues(key string) []string {
 		return nil
 	}
 	return strings.Split(key, sep)
-}
-
-func sortedKeys(m map[string]float64) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 func number(v float64) string {

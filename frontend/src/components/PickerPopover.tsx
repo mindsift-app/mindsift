@@ -2,6 +2,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { createPortal } from 'react-dom';
 import { Check, Search } from 'lucide-react';
 import { NO_AUTOFILL } from '../lib/noAutofill';
+import { placeInViewport } from '../lib/placeInViewport';
+import { useDismiss } from '../lib/useDismiss';
 
 export interface PickerItem {
   id: string;
@@ -28,7 +30,6 @@ interface PickerPopoverProps {
   maxResults?: number;
 }
 
-const MARGIN = 8;
 const MAX_RESULTS = 8;
 
 /** Small search-and-pick popover in the style of "In eigene Notiz umwandeln" (ExtractPopover): a search
@@ -62,13 +63,8 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const a = anchor.getBoundingClientRect();
-    const { width, height } = el.getBoundingClientRect();
-    let left = a.left;
-    let top = a.bottom + 4;
-    if (left + width > window.innerWidth - MARGIN) left = window.innerWidth - width - MARGIN;
-    if (top + height > window.innerHeight - MARGIN) top = a.top - height - 4;
-    setPos({ left: Math.max(MARGIN, left), top: Math.max(MARGIN, top), ready: true });
+    const { left, top } = placeInViewport(anchor.getBoundingClientRect(), el.getBoundingClientRect(), { gap: 4 });
+    setPos({ left, top, ready: true });
   }, [anchor]);
 
   // Only once it is visible: a hidden field cannot take the focus
@@ -76,13 +72,8 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({
     if (pos.ready) inputRef.current?.focus();
   }, [pos.ready]);
 
-  useEffect(() => {
-    const onDown = (e: Event) => {
-      if (ref.current && !ref.current.contains(e.target as Node) && !anchor.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
-  }, [anchor, onClose]);
+  // Escape is handled by the popover's own keys (the focus is in its search field)
+  useDismiss([ref, anchor], onClose, { escape: false });
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {

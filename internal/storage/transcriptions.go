@@ -17,9 +17,9 @@ import (
 // An inbox recording keeps its audio here (transcription_audio) until its entry exists, so nothing spoken
 // is lost when the Whisper server fails; a note's recording is its media file anyway.
 //
-// A failed job of a note goes after FailedTranscriptionKeep without another attempt (PurgeFailedTranscriptions,
-// hourly): the recording stays in the note and can be transcribed again any time. A failed inbox job is
-// kept, since it holds the only copy of what was spoken.
+// A failed job goes FailedTranscriptionKeep after its last attempt (PurgeFailedTranscriptions, hourly; one
+// with a later attempt planned only once that one failed too): a note's recording stays in the note and
+// can be transcribed again any time, a failed inbox job goes together with its audio.
 
 const (
 	TranscriptionNote  = "note"
@@ -30,7 +30,7 @@ const (
 	TranscriptionFailed  = "failed"
 )
 
-// FailedTranscriptionKeep: how long a failed job of a note stays after its last attempt.
+// FailedTranscriptionKeep: how long a failed job stays after its last attempt.
 const FailedTranscriptionKeep = 30 * 24 * time.Hour
 
 // ErrTranscriptionNotFound: no such job of this person.
@@ -295,27 +295,52 @@ func (s *Store) RequeueDueTranscriptions(now time.Time) ([]string, error) {
 	return out, nil
 }
 
-// PurgeFailedTranscriptions removes the failed jobs of notes whose last attempt is longer ago than
-// FailedTranscriptionKeep and returns them (the recordings stay in their notes). Failed inbox jobs are
-// left alone: their audio is the only copy of the recording.
+// PurgeFailedTranscriptions removes the failed jobs whose last attempt is longer ago than
+// FailedTranscriptionKeep, an inbox job together with its audio, and returns them (a note's recording
+// stays in its note). A job still waiting for a later attempt (next_at) is left alone until that attempt
+// failed too. Audio rows whose job is gone are removed as well.
 func (s *Store) PurgeFailedTranscriptions(now time.Time) ([]Transcription, error) {
-	jobs, err := s.queryTranscriptions(`WHERE t.status = ? AND t.kind = ? AND t.updated_at < ? ORDER BY t.created_at, t.id`,
-		TranscriptionFailed, TranscriptionNote, now.Add(-FailedTranscriptionKeep).UTC().Format(time.RFC3339))
+	jobs, err := s.queryTranscriptions(`WHERE t.status = ? AND t.next_at = '' AND t.updated_at < ? ORDER BY t.created_at, t.id`,
+		TranscriptionFailed, now.Add(-FailedTranscriptionKeep).UTC().Format(time.RFC3339))
 	if err != nil {
 		return nil, err
 	}
 	var out []Transcription
 	for _, j := range jobs {
-		// A note's job has no audio rows; the status check skips one tried again meanwhile
-		res, err := s.db.Exec(`DELETE FROM transcriptions WHERE id = ? AND status = ?`, j.ID, TranscriptionFailed)
+		gone, err := s.purgeFailedTranscription(j.ID)
 		if err != nil {
 			return out, err
 		}
-		if n, _ := res.RowsAffected(); n == 1 {
+		if gone {
 			out = append(out, j)
 		}
 	}
+	// Audio of jobs removed some other way, so no recording stays behind without its job
+	if _, err := s.db.Exec(`DELETE FROM transcription_audio WHERE job_id NOT IN (SELECT id FROM transcriptions)`); err != nil {
+		return out, err
+	}
 	return out, nil
+}
+
+// purgeFailedTranscription removes a failed job with its audio in one step; the checks skip a job tried
+// again meanwhile (false).
+func (s *Store) purgeFailedTranscription(id string) (bool, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	res, err := tx.Exec(`DELETE FROM transcriptions WHERE id = ? AND status = ? AND next_at = ''`, id, TranscriptionFailed)
+	if err != nil {
+		return false, err
+	}
+	if n, _ := res.RowsAffected(); n != 1 {
+		return false, nil
+	}
+	if _, err := tx.Exec(`DELETE FROM transcription_audio WHERE job_id = ?`, id); err != nil {
+		return false, err
+	}
+	return true, tx.Commit()
 }
 
 // FinishTranscription removes a job with its audio (done, or its recording is gone).

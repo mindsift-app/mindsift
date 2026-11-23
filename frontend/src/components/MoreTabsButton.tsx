@@ -1,4 +1,5 @@
 import React, { forwardRef, useEffect, useRef, useState } from 'react';
+import { useDismiss } from '../lib/useDismiss';
 import { useTranslation } from 'react-i18next';
 import { BellOff, Check, Ellipsis } from 'lucide-react';
 import { CountBadge } from './CountBadge';
@@ -36,21 +37,7 @@ export const MoreTabsButton = forwardRef<HTMLDivElement, MoreTabsButtonProps>(fu
   const hoverTimer = useRef<number | null>(null);
   const empty = items.length === 0;
 
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
+  useDismiss(boxRef, () => setOpen(false), { active: open, event: 'mousedown' });
   // A drag that ends anywhere closes a list it opened
   useEffect(() => {
     if (!dragActive) {

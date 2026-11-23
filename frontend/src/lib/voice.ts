@@ -130,7 +130,7 @@ export function canRecord(): boolean {
 }
 
 /** What this browser can actually do with the server's setting. */
-export function effectiveMode(mode: VoiceMode | undefined): EffectiveVoiceMode {
+function effectiveMode(mode: VoiceMode | undefined): EffectiveVoiceMode {
   if (mode === 'off') return 'off';
   if (mode === 'server') return canRecord() ? 'server' : 'unsupported';
   return browserRecognition() ? 'browser' : 'unsupported';

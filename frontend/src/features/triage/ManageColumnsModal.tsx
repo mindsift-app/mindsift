@@ -16,6 +16,10 @@ import { triggerHaptic } from '../../lib/api';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
+import { placeInViewport } from '../../lib/placeInViewport';
+
+// Width of the colour menu (its class w-44)
+const COLOR_MENU_WIDTH = 176;
 
 interface ManageColumnsModalProps {
   isOpen: boolean;
@@ -48,7 +52,7 @@ const columnColor = (id: string, cls: string) => ({
     return i18n.t(`tasks:colors.${id}`);
   },
 });
-export const COLUMN_COLORS: { id: string; readonly label: string; cls: string }[] = [
+const COLUMN_COLORS: { id: string; readonly label: string; cls: string }[] = [
   columnColor('gray', 'bg-faint'),
   columnColor('slate', 'bg-main'),
   columnColor('green', 'bg-status-ok'),
@@ -122,13 +126,9 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
     }
     const rect = trigger.getBoundingClientRect();
     const menuHeight = COLUMN_COLORS.length * 36 + 12;
-    const left = Math.min(rect.left, window.innerWidth - 200);
-    // Below the dot if there is room, else above it
-    setColorMenu(
-      rect.bottom + menuHeight + 8 < window.innerHeight
-        ? { id, left, top: rect.bottom + 4 }
-        : { id, left, bottom: window.innerHeight - rect.top + 4 }
-    );
+    // Below the dot if there is room, else above it (then held at its bottom edge: the height is a guess)
+    const { left, top, above } = placeInViewport(rect, { width: COLOR_MENU_WIDTH, height: menuHeight }, { gap: 4 });
+    setColorMenu(above ? { id, left, bottom: window.innerHeight - rect.top + 4 } : { id, left, top });
   };
 
   const handleMove = (index: number, direction: 'up' | 'down') => {

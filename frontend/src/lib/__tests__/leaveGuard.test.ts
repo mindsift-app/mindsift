@@ -3,11 +3,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const askChoice = vi.hoisted(() => vi.fn());
 vi.mock('../../components/askConfirm', () => ({ askChoice }));
 
-import { guardLeave, holdLeave, holdUnload, unloadHeld } from '../leaveGuard';
+import { guardLeave, holdLeave, holdRecording, holdUnload, leaveHeld, unloadHeld } from '../leaveGuard';
+import { reloadHeld } from '../reloadHold';
 import { setCurrentDesktop } from '../api/client';
 import type { DesktopInfo } from '../types';
+import { flush } from '../../test/fixtures';
 
-const flush = () => new Promise((r) => setTimeout(r, 0));
 
 describe('leaveGuard', () => {
   const dictation = {};
@@ -15,6 +16,7 @@ describe('leaveGuard', () => {
     askChoice.mockReset();
     holdLeave(dictation, false);
   });
+  afterEach(() => holdLeave(dictation, false));
 
   it('switches at once while nothing would be lost', () => {
     const go = vi.fn();
@@ -97,5 +99,22 @@ describe('unload guard', () => {
     setCurrentDesktop({} as DesktopInfo);
     holdUnload(recording, true);
     expect(unload().defaultPrevented).toBe(false);
+  });
+});
+
+describe('recording guard', () => {
+  const recording = {};
+  afterEach(() => holdRecording(recording, false));
+
+  it('holds leaving, unloading and the automatic reload together', () => {
+    holdRecording(recording, true);
+    expect([leaveHeld(), unloadHeld(), reloadHeld()]).toEqual([true, true, true]);
+    holdRecording(recording, false);
+    expect([leaveHeld(), unloadHeld(), reloadHeld()]).toEqual([false, false, false]);
+  });
+
+  it('without leave (an input that lives on) still holds unloading and the reload', () => {
+    holdRecording(recording, true, { leave: false });
+    expect([leaveHeld(), unloadHeld(), reloadHeld()]).toEqual([false, true, true]);
   });
 });

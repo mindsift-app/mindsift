@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, Ellipsis } from 'lucide-react';
+import { useDismiss } from '../lib/useDismiss';
 
 export interface ActionMenuItem {
   key: string;
@@ -47,21 +48,7 @@ export function ActionMenu({
     onOpenChange?.(open);
   }, [open, onOpenChange]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
+  useDismiss(boxRef, () => setOpen(false), { active: open, event: 'mousedown' });
 
   return (
     <div className="relative" ref={boxRef}>

@@ -210,7 +210,7 @@ The guided tour (`frontend/src/features/tour`), started with "Tour starten" on t
 
 ## oidc.e2e.mjs
 
-Sign-in through an OpenID Connect provider (`internal/api/oidc.go`, `frontend/src/lib/oidc.ts`) against a real [Dex](https://dexidp.io) (`ghcr.io/dexidp/dex:v2.44.0`, configuration `e2e/dex.yaml` with one client and one person, kept in memory). `run.sh` starts Dex and a third MindSift server that signs in through it with the password login switched off (`OIDC_PASSWORD_LOGIN=false`, first admin from `ADMIN_USER`), and removes both afterwards; their ports are `E2E_OIDC_PORT` and `E2E_DEX_PORT`, else `E2E_PORT` + 2 and + 3, else free ones. Desktop in Chromium and Firefox, the phone in Chromium:
+Sign-in through an OpenID Connect provider (`internal/api/oidc.go`, `frontend/src/lib/oidc.ts`) against a real [Dex](https://dexidp.io) (`DEX_IMAGE`, pinned in `ci/images.env`; configuration `e2e/dex.yaml` with one client and one person, kept in memory). `run.sh` starts Dex and a third MindSift server that signs in through it with the password login switched off (`OIDC_PASSWORD_LOGIN=false`, first admin from `ADMIN_USER`), and removes both afterwards; their ports are `E2E_OIDC_PORT` and `E2E_DEX_PORT`, else `E2E_PORT` + 2 and + 3, else free ones. Desktop in Chromium and Firefox, the phone in Chromium:
 
 - the login shows only "Mit Dex anmelden": no password form, no sign-up, no "forgot password"
 - the button leads to Dex; back in the app there is a new account from Dex (no password of its own, linked), MindSift asks no second factor, and the ticket has left the address bar

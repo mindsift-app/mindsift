@@ -11,7 +11,7 @@ import {
   ImportSummary,
   SearchResults,
   SearchFilter, DeletedAccountBackups, SecondFactorProof, CalendarFeedState, SnapshotStaged, SnapshotTakeOver } from '../types';
-import { authHeaders, ensureArray, request, downloadBlob } from './client';
+import { ensureArray, fetchHealth, request, requestRaw, downloadBlob } from './client';
 import i18n from '../../i18n';
 
 export const dataApi = {
@@ -138,11 +138,7 @@ export const dataApi = {
     if (preview) params.set('preview', '1');
     if (mode === 'restore') params.set('mode', 'restore');
     if (sections && sections.length > 0) params.set('sections', sections.join(','));
-    const res = await fetch(`/api/v1/import/${source}${params.toString() ? `?${params}` : ''}`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: form,
-    });
+    const res = await requestRaw(`/api/v1/import/${source}${params.toString() ? `?${params}` : ''}`, { method: 'POST', body: form });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || i18n.t('common:errors.importFailed', { status: res.status }));
     return data as ImportSummary;
@@ -167,7 +163,7 @@ export const dataApi = {
   async adminStageServerSnapshot(file: File): Promise<SnapshotStaged> {
     const form = new FormData();
     form.append('file', file);
-    const res = await fetch('/api/v1/admin/backups/server-snapshot', { method: 'POST', headers: authHeaders(), body: form });
+    const res = await requestRaw('/api/v1/admin/backups/server-snapshot', { method: 'POST', body: form });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || i18n.t('common:errors.importFailed', { status: res.status }));
     return { token: data.token, accounts: ensureArray(data.accounts) };
@@ -241,14 +237,7 @@ export const dataApi = {
 
   // The id of the server's current start (/health): it changes once a restore has reopened the data
   async serverBoot(): Promise<string | null> {
-    try {
-      const res = await fetch('/api/v1/health', { cache: 'no-store' });
-      if (!res.ok) return null;
-      const body = (await res.json()) as { boot?: string };
-      return body.boot ?? null;
-    } catch {
-      return null;
-    }
+    return (await fetchHealth())?.boot ?? null;
   },
 
   // Backups of accounts an admin deleted, kept for the backup retention period

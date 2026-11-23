@@ -717,17 +717,7 @@ var mcpWriteTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			if convertTo == "list_item" {
-				if lst, err := s.store.GetListByID(userID, a.ListID); err == nil && lst != nil {
-					s.broadcastListUpdated(lst)
-				}
-			}
-			if convertTo == "document" && updated.ConvertedRefID != "" {
-				s.broadcastDocToAuthorizedUsers(updated.ConvertedRefID, "DOC_CREATED")
-			}
-			s.assignCreator(userID, updated)
-			s.wsHub.BroadcastToUsers(s.taskAudience(updated), "TASK_UPDATED", updated)
-			s.notifyTaskAdded(userID, updated, nil)
+			s.afterTriage(userID, updated, convertTo, a.ListID)
 			out := map[string]any{"id": updated.ID, "status": fmt.Sprint(updated.Status), "convertedType": updated.ConvertedType}
 			if updated.ConvertedRefID != "" {
 				out["refId"] = updated.ConvertedRefID

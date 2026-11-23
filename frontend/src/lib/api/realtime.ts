@@ -80,15 +80,6 @@ export function getSSEId(): string | null {
   return activeSSEId;
 }
 
-export function onWebSocketStatus(callback: (connected: boolean) => void): () => void {
-  const wrapper = (connected: boolean) => callback(connected);
-  realtimeStatusListeners.push(wrapper);
-  callback(isRealtimeConnected());
-  return () => {
-    realtimeStatusListeners = realtimeStatusListeners.filter((fn) => fn !== wrapper);
-  };
-}
-
 export function onRealtimeStatus(callback: (connected: boolean, transport: RealtimeTransport) => void): () => void {
   realtimeStatusListeners.push(callback);
   callback(isRealtimeConnected(), activeTransport);
@@ -221,7 +212,7 @@ export function tryWebSocket(timeoutMs = 4000): Promise<boolean> {
   });
 }
 
-export async function connectSSE(rooms?: string[]): Promise<void> {
+async function connectSSE(rooms?: string[]): Promise<void> {
   if (rooms) {
     rooms.forEach((r) => globalSubscribedRooms.add(r));
   }

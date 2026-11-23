@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"net/url"
 	"os"
 	"path"
@@ -486,7 +487,7 @@ func PlanObsidianImport(r io.ReaderAt, size int64, fileName string) (*ImportPlan
 		plan.addZipDoc(n, importDoc{folder: folder, title: title, icon: fm.icon, hashtags: true}, fm.tags, body)
 	}
 	plan.reportUnusedMedia()
-	plan.Folders = sortedKeys(folders)
+	plan.Folders = folderList(folders)
 	if len(plan.Docs) == 0 {
 		return nil, errors.New("Im Archiv wurden keine Markdown-Notizen gefunden")
 	}
@@ -540,7 +541,7 @@ func PlanMindSiftArchiveImport(r io.ReaderAt, size int64) (*ImportPlan, error) {
 		}
 	}
 	plan.reportUnusedMedia()
-	plan.Folders = sortedKeys(folders)
+	plan.Folders = folderList(folders)
 	if len(plan.Docs)+len(plan.TaskLists)+len(plan.Lists) == 0 {
 		return nil, errors.New("Das Archiv enthält keine MindSift-Daten (Notizen, Aufgaben oder Listen)")
 	}
@@ -742,7 +743,7 @@ func planJSONBackup(open func() (io.ReadCloser, error), media map[string]*zip.Fi
 		plan.Lists = append(plan.Lists, il)
 	}
 	plan.Themes = exp.Themes
-	plan.Folders = sortedKeys(folders)
+	plan.Folders = folderList(folders)
 	return plan, nil
 }
 
@@ -1635,15 +1636,10 @@ func folderPathOf(p string) string {
 	return strings.Join(parts, "/")
 }
 
-func sortedKeys(m map[string]bool) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		if k != "" {
-			out = append(out, k)
-		}
-	}
-	sort.Strings(out)
-	return out
+// folderList: the folder paths of an import in order, without the top level ("").
+func folderList(folders map[string]bool) []string {
+	delete(folders, "")
+	return slices.Sorted(maps.Keys(folders))
 }
 
 // --- Images and recordings ----------------------------------------------------------------------------
@@ -1656,7 +1652,7 @@ var importMediaExt = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, 
 // reportUnusedMedia lists files no note shows (or that are no valid image/recording) as skipped in the
 // preview and drops them from the plan.
 func (p *ImportPlan) reportUnusedMedia() {
-	for _, k := range sortedKeys(keySet(p.Media)) {
+	for _, k := range slices.Sorted(maps.Keys(p.Media)) {
 		if p.usedMedia[k] {
 			continue
 		}
@@ -1894,14 +1890,6 @@ func (s *Store) checkImportSecrets(userID string, plan *ImportPlan) {
 			}
 		}
 	}
-}
-
-func keySet(m map[string]*zip.File) map[string]bool {
-	out := make(map[string]bool, len(m))
-	for k := range m {
-		out[k] = true
-	}
-	return out
 }
 
 func (p *ImportPlan) addMedia(name string, f *zip.File) {

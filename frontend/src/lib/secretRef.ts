@@ -4,7 +4,7 @@ import { messageText } from '../i18n';
 // value itself lives encrypted on the server (internal/storage/secrets.go) and is revealed on request.
 export const SECRET_REF_SOURCE = '\\{\\{secret:[A-Za-z0-9_]+\\}\\}';
 
-export const SECRET_MASK = '••••';
+const SECRET_MASK = '••••';
 
 export function secretRef(id: string): string {
   return `{{secret:${id}}}`;
