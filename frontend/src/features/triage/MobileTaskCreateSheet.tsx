@@ -58,7 +58,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
 
   // The backdrop, the X and "Abbrechen": a dictation still running in the field asks first (lib/leaveGuard.ts)
   return (
-    <BottomSheet phoneOnly guard onClose={onClose} title={t('create.title')} icon={<SquareCheckBig className="w-4 h-4" />}>
+    <BottomSheet phoneOnly dockToKeyboard guard onClose={onClose} title={t('create.title')} icon={<SquareCheckBig className="w-4 h-4" />}>
       {(close) => (
         <form onSubmit={submit} className="space-y-3">
           <div>
@@ -71,7 +71,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={voiceError || t('create.placeholder')}
-                className="w-full input-field pl-3 pr-11 py-2 text-sm"
+                className="w-full input-field h-11 pl-3 pr-11 text-base"
               />
               <VoiceInputButton
                 value={title}
@@ -125,7 +125,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
                       triggerHaptic(10);
                       setPriority(p);
                     }}
-                    className={`h-9 px-1 text-xs rounded-btn font-medium transition-colors border flex items-center justify-center gap-1 cursor-pointer ${
+                    className={`h-11 px-1 text-xs rounded-btn font-medium transition-colors border flex items-center justify-center gap-1 cursor-pointer ${
                       active
                         ? item.activeClass
                         : 'bg-canvas border-border text-muted hover:text-main'
@@ -154,18 +154,18 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
             />
           </div>
 
-          <div className="pt-2 flex justify-end gap-2">
+          <div className="pt-2 flex gap-2">
             <button
               type="button"
               onClick={close}
-              className="btn-ghost h-10 px-4 text-xs cursor-pointer"
+              className="btn-action flex-1 h-11 px-3 text-sm cursor-pointer"
             >
               {t('common:cancel')}
             </button>
             <button
               type="submit"
               disabled={!title.trim()}
-              className="btn-primary h-10 px-5 text-xs font-semibold disabled:opacity-40 cursor-pointer"
+              className="btn-primary flex-1 h-11 px-4 text-sm font-semibold disabled:opacity-40 cursor-pointer"
             >
               {t('create.submit')}
             </button>

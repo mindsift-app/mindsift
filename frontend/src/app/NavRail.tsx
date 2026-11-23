@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Brain,
@@ -17,6 +17,7 @@ import { ConnectionState } from '../lib/useConnectionState';
 import { DemoCountdown } from '../components/DemoCountdown';
 import { UserAvatar } from '../components/UserAvatar';
 import { RailItemContent } from '../components/RailItemContent';
+import { useDismiss } from '../lib/useDismiss';
 import { APP_VERSION } from '../version';
 import { ActiveTab } from './appTabs';
 import { useConnectionStatus } from './AppHeader';
@@ -109,22 +110,9 @@ export function NavRail({
   const railRef = useRef<HTMLElement | null>(null);
   const instanceName = authStatus.instanceName || 'MindSift';
 
-  // Expanded, it is an overlay: a click beside it or Escape folds it again (the click still reaches its target)
-  useEffect(() => {
-    if (!expanded) return;
-    const onDown = (e: MouseEvent) => {
-      if (railRef.current && !railRef.current.contains(e.target as Node)) setExpanded(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) setExpanded(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [expanded, setExpanded]);
+  // Expanded, it is an overlay: a click beside it or Escape (unless something inside took it) folds it again;
+  // the click still reaches its target
+  useDismiss(railRef, () => setExpanded(false), { active: expanded, escape: 'unhandled', event: 'mousedown' });
 
   const pageLabel: Record<string, string> = {
     triage: t('common:nav.triage'),

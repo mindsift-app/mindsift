@@ -8,6 +8,8 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+## [0.99.1] - 2026-11-23
+
 ### Changed
 - Desktop app (local instance): watching tasks is gone, since nobody else changes your tasks there: no "Watch" button in a task's details, no "Watched tasks" row in Settings → Alarms, no switch for your own changes, and no help text about it. Tasks watched earlier stay quiet. Servers and browsers are unchanged.
 - Settings → Account settings: the intro line under the title is gone; the sidebar names the sections anyway.
@@ -19,6 +21,7 @@ Versions without a git tag were development states and were never published as a
 - All sheets from below on phones look and behave the same: a grip on top, a close button large enough to tap, the page behind does not scroll, and Escape closes them (Quick Dump, new task, task filter, profile, app install, calendar day, triage actions, a person in the administration).
 - Listing tasks through MCP (`list_tasks`) or with filters through `GET /tasks` now reads only the tasks asked for from the database, so it answers faster for people with many tasks; the results are the same.
 - Small forms opened next to a click (new folder, rename) flip above the click when there is no room below instead of running off the window.
+- Phones: the Quick Dump and new-task sheets now sit right above the on-screen keyboard like the other small forms, so it no longer covers their lower fields, and their buttons are as large as elsewhere (44 px), with Cancel and Create side by side over the full width.
 
 ### Fixed
 - Sending an invite by e-mail now checks the address like everywhere else in the app: an incomplete one such as `anna@` is refused instead of binding a single-use invite to it.
@@ -31,6 +34,9 @@ Versions without a git tag were development states and were never published as a
 - A dictation or recording in progress is no longer lost by accident. Reloading the page, closing the tab or leaving the site while one is running or not yet saved now lets the browser ask first (not in the desktop app, which has no reload of its own). The browser's back and forward buttons, the mouse's back button and Android's back gesture ask too ("Switch anyway" / "Stay") and otherwise stay where you are, and closing the task dialog, the new-task sheet or the Quick Dump sheet on phones while dictating asks "Close anyway" first. Audio recordings in notes (`/audio`) are now covered as well, also when switching to another note.
 - Working only in notes, or with live updates by long polling, now keeps you signed in like the rest of the app does, and a session that ended there is cleared like everywhere else (the desktop app then signs in again by itself).
 - An audio recording in a note (`/audio`) is no longer cut off when the app reloads itself for a new server version: like a dictation, it now holds the automatic reload back until it is saved.
+- Desktop app: "Switch instance" in the profile menu now asks first ("Switch anyway" / "Stay") while a dictation or recording is under way, instead of throwing it away.
+- Triage: while the actions sheet of a card ("More options") or another dialog is open, the keyboard shortcuts (arrows, H, L, D, T, Space) no longer sort the card behind it.
+- A task whose database row had no value (NULL) for its due date, its link to a note or its triage time, which can only come from a manual database edit or an import by another tool, was missing from every task list. It is now shown like any other task, and a one-time database update at startup fills those empty values.
 
 ## [0.99.0] - 2026-11-22
 

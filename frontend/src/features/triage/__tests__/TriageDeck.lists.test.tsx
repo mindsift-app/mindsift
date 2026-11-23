@@ -192,4 +192,33 @@ describe('TriageDeck single-list shortcut', () => {
       expect(onDeckChange).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('leaves the card alone while the actions sheet is open', async () => {
+    const onDeckChange = vi.fn();
+    render(
+      <TriageDeck
+        deck={sampleDeck}
+        lists={[ownList]}
+        onDeckChange={onDeckChange}
+        onOpenDocument={vi.fn()}
+        onFocusCapture={vi.fn()}
+        discardedCount={0}
+        onOpenTrash={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTitle(/Weitere Optionen/));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    for (const key of ['ArrowLeft', 'ArrowRight', 'h', 'l', 'd', 't', ' ']) {
+      fireEvent.keyDown(window, { key });
+    }
+    expect(api.triageAction).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    // Escape closes the sheet, then the keys sort again
+    fireEvent.keyDown(window, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    await waitFor(() => expect(api.triageAction).toHaveBeenCalledWith('th_1', 'discard', expect.objectContaining({})));
+  });
 });

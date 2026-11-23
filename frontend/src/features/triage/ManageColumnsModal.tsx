@@ -17,6 +17,7 @@ import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
 import { placeInViewport } from '../../lib/placeInViewport';
+import { useDismiss } from '../../lib/useDismiss';
 
 // Width of the colour menu (its class w-44)
 const COLOR_MENU_WIDTH = 176;
@@ -100,23 +101,14 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
   const [colorMenu, setColorMenu] = useState<{ id: string; left: number; top?: number; bottom?: number } | null>(null);
   const colorMenuRef = useRef<HTMLDivElement>(null);
 
+  // The dot it opened from counts as inside, so a click on it closes the menu through the toggle below
+  const colorTriggerRef = useRef<HTMLElement | null>(null);
+  useDismiss([colorMenuRef, colorTriggerRef], () => setColorMenu(null), { active: !!colorMenu });
   useEffect(() => {
     if (!colorMenu) return;
-    const close = (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (colorMenuRef.current?.contains(target) || target.closest?.('[data-color-trigger]')) return;
-      setColorMenu(null);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setColorMenu(null);
     const dismiss = () => setColorMenu(null);
-    document.addEventListener('pointerdown', close);
-    document.addEventListener('keydown', onKey);
     window.addEventListener('resize', dismiss);
-    return () => {
-      document.removeEventListener('pointerdown', close);
-      document.removeEventListener('keydown', onKey);
-      window.removeEventListener('resize', dismiss);
-    };
+    return () => window.removeEventListener('resize', dismiss);
   }, [colorMenu]);
 
   const openColorMenu = (id: string, trigger: HTMLElement) => {
@@ -124,6 +116,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
       setColorMenu(null);
       return;
     }
+    colorTriggerRef.current = trigger;
     const rect = trigger.getBoundingClientRect();
     const menuHeight = COLUMN_COLORS.length * 36 + 12;
     // Below the dot if there is room, else above it (then held at its bottom edge: the height is a guess)
@@ -275,7 +268,6 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
 
                     <button
                       type="button"
-                      data-color-trigger
                       onClick={(e) => openColorMenu(col.id, e.currentTarget)}
                       className="w-7 h-7 flex items-center justify-center rounded-btn border border-border bg-panel hover:border-strong shrink-0"
                       title={t('columnsModal.color')}

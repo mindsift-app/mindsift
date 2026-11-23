@@ -24,6 +24,7 @@ import { useHoldReload } from '../../lib/reloadHold';
 import { VoiceWave } from '../../components/VoiceWave';
 import { DateField } from '../../components/DateField';
 import { NaturalDateChip, PhraseHighlight, applyNaturalDate, useNaturalDate } from '../../components/NaturalDateHint';
+import { useDismiss } from '../../lib/useDismiss';
 
 export type CaptureTarget = 'inbox' | 'task' | 'list_item' | 'document';
 
@@ -153,17 +154,8 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
   // A remembered task list that is gone (deleted, access removed) falls back to all tasks
   const selectedTaskList = writableTaskLists.find((l) => l.id === targetTaskListId);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (inlineOptions) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setShowOptions(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [inlineOptions]);
+  // Close dropdown on outside click (Escape in the field empties it, below)
+  useDismiss(containerRef, () => setShowOptions(false), { active: !inlineOptions, escape: false, event: 'mousedown' });
 
   // Escape in the field empties it (the bare "c" that opens the Quick Dump lives in app/useQuickDumpShortcut.ts)
   useEffect(() => {

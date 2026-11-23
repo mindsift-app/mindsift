@@ -1,8 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { setCapabilities } from '../../lib/capabilities';
 import { DESKTOP_CAPABILITIES } from '../../test/desktop';
 import type { User } from '../../lib/types';
+import { holdLeave } from '../../lib/leaveGuard';
+
+const askChoice = vi.hoisted(() => vi.fn());
+vi.mock('../../components/askConfirm', () => ({ askChoice }));
 
 let desktop = false;
 vi.mock('../../lib/api', () => ({
@@ -34,6 +38,7 @@ const pwa = { isStandaloneApp: true, setShowManualPwaGuide: vi.fn(), setShowPwaI
 describe('profile menus', () => {
   beforeEach(() => {
     openDesktopStart.mockClear();
+    askChoice.mockReset();
     props.handleLogout.mockClear();
   });
 
@@ -65,5 +70,27 @@ describe('profile menus', () => {
     expect(screen.queryByRole('button', { name: 'Abmelden' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Instanz wechseln' }));
     expect(openDesktopStart).toHaveBeenCalledTimes(2);
+  });
+
+  it('in the desktop app: "Switch instance" asks first while a dictation runs', async () => {
+    desktop = true;
+    setCapabilities(DESKTOP_CAPABILITIES);
+    const holder = {};
+    holdLeave(holder, true);
+    render(<ProfileDropdown {...props} setShowProfileMenu={vi.fn()} />);
+
+    askChoice.mockResolvedValueOnce('alt');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Instanz wechseln' }));
+    });
+    expect(askChoice).toHaveBeenCalledTimes(1);
+    expect(openDesktopStart).not.toHaveBeenCalled();
+
+    askChoice.mockResolvedValueOnce('confirm');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Instanz wechseln' }));
+    });
+    expect(openDesktopStart).toHaveBeenCalledTimes(1);
+    holdLeave(holder, false);
   });
 });

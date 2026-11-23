@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, X, Check } from 'lucide-react';
 import { User } from '../lib/types';
 import { UserAvatar } from '../components/UserAvatar';
 import { NO_AUTOFILL } from '../lib/noAutofill';
+import { useDismiss } from '../lib/useDismiss';
 import { api, isPeopleSearchOn } from '../lib/api';
 
 // Shared type-to-search for picking people (sharing, groups, task assignees). Nothing is listed until
@@ -45,16 +46,8 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Close dropdown on outside click (Escape is the field's own key)
+  useDismiss(containerRef, () => setIsOpen(false), { escape: false, event: 'mousedown' });
 
   // Filter users based on query and exclusions
   const filteredUsers = React.useMemo(() => {
