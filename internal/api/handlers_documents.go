@@ -199,6 +199,7 @@ func (s *Server) handleDeleteDocument(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, http.StatusInternalServerError, err)
 		return
 	}
+	s.dropLostNoteRooms(docID)
 	for _, uid := range authorizedUsers {
 		s.wsHub.BroadcastToUser(uid, eventDocDeleted, map[string]string{"id": docID})
 	}
@@ -310,6 +311,8 @@ func (s *Server) handleMoveDocument(w http.ResponseWriter, r *http.Request) {
 // announceNoteMoved tells everyone with the note that it changed folder: the folder it went into is kept
 // as a folder now (storage.MoveDocument), so their folder lists are fetched again.
 func (s *Server) announceNoteMoved(userID, docID string) {
+	// Out of a shared folder, the note may have lost people
+	s.dropLostNoteRooms(docID)
 	docUsers, _ := s.store.GetAuthorizedDocUsers(docID)
 	s.wsHub.BroadcastToUsers(append(docUsers, userID), eventFoldersUpdated, map[string]string{"type": folderEventNoteMoved, "docId": docID})
 }
@@ -384,11 +387,18 @@ func (s *Server) handleDeleteDocShare(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
 	targetUserID := chi.URLParam(r, "userId")
+	before, _ := s.store.GetAuthorizedDocUsers(docID)
+	before = append(before, targetUserID)
 	if err := s.store.DeleteDocShare(userID, docID, targetUserID); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.wsHub.BroadcastToUser(targetUserID, eventDocDeleted, map[string]string{"id": docID})
+	s.dropLostNoteRooms(docID)
+	// The target may be a group (its share's or the group's id): everyone who lost the note drops it
+	after, _ := s.store.GetAuthorizedDocUsers(docID)
+	for _, uid := range lostUsers(before, after) {
+		s.wsHub.BroadcastToUser(uid, eventDocDeleted, map[string]string{"id": docID})
+	}
 	s.broadcastDocToAuthorizedUsers(docID, eventDocUpdated)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }

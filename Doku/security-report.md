@@ -430,7 +430,7 @@ production or public host. Together the Go fuzzers ran about 83 million executio
   change it, not in the demo.
 - **Permissions:** every cross-account read and write is refused with the same 404 as for a missing object; a
   read-only share cannot write, add hidden values, set a public link, re-share or delete; revoking a share cuts access
-  at once; foreign block ids are rejected in sync; an id prefix gives no access; hidden values need rights on their
+  at once (on open realtime connections since 23 November, see History); foreign block ids are rejected in sync; an id prefix gives no access; hidden values need rights on their
   note of origin and never appear on public pages.
 - **Files in shared notes:** a file is readable for whoever may read a note that shows it. A bullet may only point to
   files its writer uploaded or may read; references to other files are dropped on every way in (`a4f32d3`). A copy
@@ -515,6 +515,12 @@ privately as described in [SECURITY.md](../SECURITY.md).
   features added since read for security (see "Since the penetration tests").
 - **16 November 2026:** fourth penetration test of the features added since the second re-test (see "Fourth run");
   no rated finding.
+- **23 November 2026:** found while reworking the realtime events: realtime rooms were checked only when a
+  connection joined them, so a connection open while its person lost access (share removed, out of a group, list or
+  note deleted, note moved out of a shared folder) kept receiving the list's entries (`ITEM_*`) and the note's live
+  drawing (`DRAW_*`) until it closed. Fixed: every such change rechecks the rooms concerned and takes the connection
+  out (`Hub.RecheckRooms*`, `internal/api/realtime_access.go`), a live drawing also leaves the session;
+  `TestLostAccessLeavesTheRealtimeRooms`, `TestTeamMembershipChangesAreLive`, `TestRecheckRoomsDropsLostAccess`.
 
 ## Finding index
 

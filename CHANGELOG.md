@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Added
+- When someone adds you to a group, you get a notification ("Anna added you to the group “Family”"), with the same settings and channels as a share. Being removed from a group tells you nothing.
+
 ### Changed
 - "New group" opens like the other small dialogs: a sheet above the keyboard on phones, a centred window on desktops.
 - Every form that sets a new password (first setup, reset link, the password the administration asks for, security settings) frames the repetition red and says so as soon as it differs from the new password.
@@ -19,6 +22,9 @@ Versions without a git tag were development states and were never published as a
 - Loading and empty states look the same everywhere: one spinner with a short text ("Wird geladen …", "Notizen werden geladen …") and one muted line when a list is empty.
 
 ### Fixed
+- Adding someone to a group, removing them or deleting the group now shows or removes the group's task lists, lists, notes and shared folders right away for the people concerned; before, they saw the change only after reloading.
+- Renaming a list or giving it a new icon now shows in the list overview of everyone who shares it, also when they have another list open.
+- Security: someone who lost access to a list or note (share removed, removed from a group, list or note deleted) kept receiving the list's new entries and the note's live drawing on a device that stayed connected, until it reconnected. They are now cut off at once, and a live drawing they were in is left.
 - A task list created for a group now shows up right away for the group's members and on your other devices; before, they saw it only after reloading (lists created by an AI agent already did).
 - Deleting a shared list, or taking someone off it, now removes it from the list overview of the others at once, even when they had another list open; before, it stayed there until they reloaded.
 - Someone @-mentioned in a new note (made from a template or by an AI agent, in a shared folder) is now told, as when a mention is added to an existing note. Before, they heard nothing, and a later edit of that bullet told them instead.

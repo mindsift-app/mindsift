@@ -97,6 +97,7 @@ func (s *Server) handleDeleteFolder(w http.ResponseWriter, r *http.Request) {
 	if deletedDocIDs == nil {
 		deletedDocIDs = []string{}
 	}
+	s.dropLostNoteRooms(deletedDocIDs...)
 	s.wsHub.BroadcastToUser(userID, eventFoldersUpdated, map[string]any{
 		"type": folderEventDeleted, "path": folderPath, "deletedDocIds": deletedDocIDs,
 	})
@@ -218,6 +219,8 @@ func (s *Server) handleRenameFolder(w http.ResponseWriter, r *http.Request) {
 // answerFolderMoved tells everyone with the moved notes and the person's other tabs and devices, and
 // answers with the folder's new path.
 func (s *Server) answerFolderMoved(w http.ResponseWriter, userID, eventType, sourcePath, newPath string, movedDocIDs []string) {
+	// Moved into or out of a shared folder, the notes may have lost people
+	s.dropLostNoteRooms(movedDocIDs...)
 	for _, id := range movedDocIDs {
 		s.broadcastDocToAuthorizedUsers(id, eventDocUpdated)
 	}
@@ -277,10 +280,12 @@ func (s *Server) handleDeleteSharedFolder(w http.ResponseWriter, r *http.Request
 	userID := auth.GetUserID(r.Context())
 	folderID := chi.URLParam(r, "id")
 	audience := s.store.GetSharedFolderUserIDs(folderID)
+	docIDs, _ := s.store.GetSharedFolderDocIDs(folderID)
 	if err := s.store.DeleteSharedFolder(userID, folderID); err != nil {
 		writeInternal(w, err)
 		return
 	}
+	s.dropLostNoteRooms(docIDs...)
 	s.wsHub.BroadcastToUsers(append(audience, userID), eventFoldersUpdated, map[string]string{"type": folderEventShared, "folderId": folderID})
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
@@ -373,6 +378,7 @@ func (s *Server) handleDeleteFolderShare(w http.ResponseWriter, r *http.Request)
 		writeInternal(w, err)
 		return
 	}
+	s.dropLostNoteRooms(docIDs...)
 	audienceAfter := s.store.GetSharedFolderUserIDs(folderID)
 	stillAllowed := make(map[string]bool, len(audienceAfter))
 	for _, uid := range audienceAfter {

@@ -94,3 +94,34 @@ func TestListDeleteAndUnshareReachTheOverview(t *testing.T) {
 		t.Error("someone who never saw the list got LIST_DELETED")
 	}
 }
+
+// Renaming a list reaches everyone who sees it, also without the list open (the overview shows titles
+// and icons of all lists).
+func TestListUpdatedReachesTheOverview(t *testing.T) {
+	_, store, ts, owner, ownerToken := startRealtimeServer(t)
+	member, memberToken := newTestUser(t, store, "mitglied@example.com")
+	_, outsiderToken := newTestUser(t, store, "fremd@example.com")
+	list, err := store.CreateList(owner.ID, "Einkauf", "🛒", "shopping")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AddListShare(owner.ID, list.ID, "user", member.ID, "editor"); err != nil {
+		t.Fatal(err)
+	}
+	memberStream := openSSE(t, ts, memberToken)
+	outsiderStream := openSSE(t, ts, outsiderToken)
+	if r := doJSON(t, ts, http.MethodPatch, "/api/v1/lists/"+list.ID, ownerToken, map[string]string{"title": "Wocheneinkauf"}); r.StatusCode != http.StatusOK {
+		t.Fatalf("rename: status %d", r.StatusCode)
+	}
+	msg := memberStream.waitFor(t, eventListUpdated, 10*time.Second)
+	if msg == nil {
+		t.Fatal("a member without the list open got no LIST_UPDATED")
+	}
+	var p struct{ Title string }
+	if json.Unmarshal(msg.Payload, &p); p.Title != "Wocheneinkauf" {
+		t.Errorf("LIST_UPDATED payload %s", msg.Payload)
+	}
+	if outsiderStream.waitFor(t, eventListUpdated, 500*time.Millisecond) != nil {
+		t.Error("someone without the list got LIST_UPDATED")
+	}
+}

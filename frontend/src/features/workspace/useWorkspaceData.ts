@@ -156,7 +156,9 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
               (s) => s.userId === currentUser.id || s.targetId === currentUser.id
             ) || false;
           const isFolderShared = Boolean(created.sharedFolderId || created.isSharedFolder);
-          if (!isOwner && !isShared && !isFolderShared) {
+          // Shared with a group of this person: the note carries their permission (sharedWith names the group)
+          const hasPermission = created.permission === 'read' || created.permission === 'write';
+          if (!isOwner && !isShared && !isFolderShared && !hasPermission) {
             return;
           }
         }

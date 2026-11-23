@@ -72,6 +72,7 @@ func (s *Server) handleAdminDeleteOrganization(w http.ResponseWriter, r *http.Re
 		writeInternal(w, err)
 		return
 	}
+	s.dropLostAllRooms()
 	if name != "" {
 		s.audit(r, storage.AuditOrgDeleted, auditOrgTarget(orgID, name), nil)
 	}
@@ -124,6 +125,8 @@ func (s *Server) handleAdminRemoveOrganizationMember(w http.ResponseWriter, r *h
 		writeInternal(w, err)
 		return
 	}
+	// Shares and group memberships across the organization went with it, for others as well
+	s.dropLostAllRooms()
 	s.auditOrgMember(r, storage.AuditOrgMemberRemoved, orgID, userID)
 	writeJSON(w, http.StatusOK, map[string]bool{"removed": true})
 }
@@ -443,6 +446,8 @@ func (s *Server) deleteAccount(userID string, u *domain.User, now time.Time) err
 	if err := s.store.DeleteUser(userID); err != nil {
 		return err
 	}
+	// The account's lists and notes are gone for everyone it shared them with
+	s.dropLostAllRooms()
 	if u != nil && !s.store.IsPendingRegistration(userID) {
 		s.keepUserBackups(u, now)
 	} else {
@@ -801,6 +806,7 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 			writeError(w, http.StatusInternalServerError, "Freigaben konnten nicht angepasst werden: "+clientMessage(err))
 			return
 		}
+		s.dropLostAllRooms()
 	}
 	saved, _ := s.store.GetSystemSettings()
 	if saved == nil {

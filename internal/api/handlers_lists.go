@@ -52,12 +52,16 @@ type listForEveryone struct {
 	CreatedAt string                  `json:"createdAt"`
 }
 
-// broadcastListUpdated sends LIST_UPDATED with what is the same for everyone who sees the list.
+// broadcastListUpdated sends LIST_UPDATED with what is the same for everyone who sees the list, to all
+// of them (broadcastListAudience), not only to its room: the list overview shows title and icon of every
+// list, also of the ones not open. The entries' own events (ITEM_*) stay with the room: the overview
+// shows no entries of a list not open, and sending them all to everyone would multiply the traffic of a
+// busy list for nothing.
 func (s *Server) broadcastListUpdated(l *domain.SharedList) {
 	if l == nil {
 		return
 	}
-	s.wsHub.BroadcastListEvent(l.ID, eventListUpdated, listForEveryone{
+	s.broadcastListAudience(l.ID, nil, eventListUpdated, listForEveryone{
 		ID: l.ID, UserID: l.UserID, OwnerName: l.OwnerName, Title: l.Title, Icon: l.Icon, ListType: l.ListType,
 		Items: l.Items, Shares: l.Shares, Members: l.Members, UpdatedAt: l.UpdatedAt, CreatedAt: l.CreatedAt,
 	})
@@ -105,7 +109,12 @@ func (s *Server) createList(userID, title string, icon *string, listType string)
 // broadcastListAudience sends a list event to everyone who could see the list before the change
 // (before, read before it) or sees it now, on all their connections: also the people who have the
 // list overview open but not this list (its room). Same message as BroadcastListEvent (with listId).
+// With before (a change that can take the list away), whoever lost it leaves its room first
+// (dropLostListRoom): the room's ITEM_* carry the entries.
 func (s *Server) broadcastListAudience(listID string, before []string, event string, payload any) {
+	if before != nil {
+		s.dropLostListRoom(listID)
+	}
 	s.wsHub.BroadcastListToUsers(append(before, s.store.GetListUserIDs(listID)...), listID, event, payload)
 }
 

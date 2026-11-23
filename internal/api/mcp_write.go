@@ -630,6 +630,7 @@ var mcpWriteTools = []mcpTool{
 			if err := s.store.DeleteDocument(userID, a.ID); err != nil {
 				return nil, err
 			}
+			s.dropLostNoteRooms(a.ID)
 			for _, uid := range audience {
 				s.wsHub.BroadcastToUser(uid, eventDocDeleted, map[string]string{"id": a.ID})
 			}

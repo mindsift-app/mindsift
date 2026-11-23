@@ -385,7 +385,7 @@ Duplicate operations (same `opId`) are not reapplied; the response returns the p
 |---|---|---|
 | GET/POST | `/teams` | Own groups; create (`name`, `description`, `organizationId`) – creator becomes group admin; the group belongs to one of the creator's organizations (`organizationId` required in `organizations` mode when the creator is in several, `400` otherwise); blocked in `private` mode |
 | PUT/DELETE | `/teams/{id}` | Group admin only |
-| POST | `/teams/{id}/members` | Add member (`userId` or `email`, `role`); only people the group admin may share with and, in `organizations` mode, members of the group's organization, otherwise `404` |
+| POST | `/teams/{id}/members` | Add member (`userId` or `email`, `role`); only people the group admin may share with and, in `organizations` mode, members of the group's organization, otherwise `404`. The person added gets a notification (kind `shared`); what is shared with the group appears for them live ([websocket.md](websocket.md)) |
 | PUT/DELETE | `/teams/{id}/members/{userId}` | Change role (`admin`/`member`); remove |
 
 ## Administration (`role = admin`, partly `manager`)

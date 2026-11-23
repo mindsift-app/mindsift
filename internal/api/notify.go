@@ -157,7 +157,7 @@ func (s *Server) userLanguages(userIDs []string) map[string]string {
 
 // Payload keys for the notification center
 const (
-	centerTarget  = "targetType" // task | note | list | tasklist | folder
+	centerTarget  = "targetType" // task | note | list | tasklist | folder | team
 	centerID      = "targetId"
 	centerBlock   = "blockId"
 	centerText    = "centerText"    // shorter text for the center (otherwise "text")
@@ -229,6 +229,25 @@ func (s *Server) notifyShared(actorID, targetType, targetID, what, objectID, tit
 			"text":       i18n.T(lang, sharedTexts[what], "name", s.actorName(lang, actorID), "title", title),
 			centerTarget: what,
 			centerID:     objectID,
+		}
+	})
+}
+
+const teamAddedText = "{name} hat dich zur Gruppe „{title}“ hinzugefügt"
+
+// notifyTeamAdded tells someone they were added to a group, as sharing tells them of a list (same kind,
+// so the same channels and settings); taking someone out tells nobody.
+func (s *Server) notifyTeamAdded(actorID, memberID, teamID string) {
+	team, err := s.store.GetTeamByID(teamID)
+	if err != nil || team == nil {
+		return
+	}
+	s.notify("shared", actorID, []string{memberID}, func(lang string) map[string]string {
+		return map[string]string{
+			"title":      team.Name,
+			"text":       i18n.T(lang, teamAddedText, "name", s.actorName(lang, actorID), "title", team.Name),
+			centerTarget: "team",
+			centerID:     teamID,
 		}
 	})
 }

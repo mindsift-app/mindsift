@@ -95,6 +95,23 @@ describe('useWorkspaceData', () => {
     expect(result.current.docs.map((d) => d.id)).toEqual(['c', 'a', 'b']);
   });
 
+  it('takes a note shared with a group of this person, and drops one that names nobody here', async () => {
+    const fixed = { setSelectedDocId: vi.fn(), autoSelectedDocRef: { current: false }, reloadTrash: vi.fn() };
+    const me = { id: 'usr_me' } as unknown as NonNullable<Parameters<typeof useWorkspaceData>[0]['currentUser']>;
+    const { result } = renderHook(() => useWorkspaceData({ ...fixed, currentUser: me }));
+    await waitFor(() => expect(result.current.docs).toHaveLength(2));
+    const viaGroup = listed('g', {
+      userId: 'usr_anna',
+      permission: 'read',
+      sharedWith: [{ targetType: 'team', targetId: 'team_1' }],
+    } as unknown as Partial<Document>);
+    act(() => lastHandler()({ event: 'DOC_CREATED', payload: viaGroup }));
+    await waitFor(() => expect(result.current.docs.map((d) => d.id)).toContain('g'));
+
+    act(() => lastHandler()({ event: 'DOC_CREATED', payload: listed('x', { userId: 'usr_anna' }) }));
+    expect(result.current.docs.map((d) => d.id)).not.toContain('x');
+  });
+
   it('fetches the folders when a note was made in a folder new here, not for a known one', async () => {
     vi.mocked(api.getFolders).mockResolvedValue(['Projekte']);
     const { result } = setup(false);
