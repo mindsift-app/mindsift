@@ -9,6 +9,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import i18n from '../i18n';
 import { api, getCurrentUserId } from './api';
 import type { TranscriptionDone, TranscriptionJob, WSMessage } from './types';
+import { formatDate, formatDateTime } from './format';
 
 const jobs = new Map<string, TranscriptionJob>();
 const listeners = new Set<() => void>();
@@ -176,6 +177,19 @@ export async function discardTranscription(id: string): Promise<void> {
 /** The text for a failed job's error code. */
 export function transcriptionError(job: Pick<TranscriptionJob, 'error'>): string {
   return job.error === 'timeout' ? i18n.t('common:voiceJobs.timeout') : i18n.t('common:voiceJobs.failed');
+}
+
+/**
+ * When the server tries a failed job again by itself ("Neuer Versuch um 14:35", another day with the day),
+ * or null when no later attempt is planned or its time has passed.
+ */
+export function transcriptionNextTry(job: Pick<TranscriptionJob, 'status' | 'nextAt'>, now: Date = new Date()): string | null {
+  if (job.status !== 'failed' || !job.nextAt) return null;
+  const at = new Date(job.nextAt);
+  if (Number.isNaN(at.getTime()) || at <= now) return null;
+  const time = formatDateTime(at, { hour: '2-digit', minute: '2-digit' });
+  if (at.toDateString() === now.toDateString()) return i18n.t('common:voiceJobs.nextTry', { time });
+  return i18n.t('common:voiceJobs.nextTryDay', { day: formatDate(at, { weekday: 'short' }), time });
 }
 
 // How often waitForTranscription asks the server, in case an event did not arrive

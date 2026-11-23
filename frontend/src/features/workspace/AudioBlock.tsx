@@ -4,7 +4,7 @@ import { mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { loadVoiceConfig } from '../../lib/voice';
 import { useTranslation } from 'react-i18next';
 import { errorMessage } from '../../lib/errorMessage';
-import { discardTranscription, startBlockTranscription, transcriptionError, useBlockTranscription, waitForTranscription } from '../../lib/transcriptionJobs';
+import { discardTranscription, startBlockTranscription, transcriptionError, transcriptionNextTry, useBlockTranscription, waitForTranscription } from '../../lib/transcriptionJobs';
 import { IndentArrows, OVERLAY_ARROW_BUTTON } from './IndentArrows';
 import { MediaCaption } from './MediaCaption';
 
@@ -82,6 +82,8 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
   const job = useBlockTranscription(docId, blockId, editable && !!mediaId);
   const transcribing = starting || job?.status === 'queued' || job?.status === 'running';
   const jobFailed = job?.status === 'failed';
+  // A failed job the server tries again by itself: when
+  const nextTry = job ? transcriptionNextTry(job) : null;
 
   useEffect(() => {
     // The caption field follows the stored caption (also from other devices)
@@ -248,6 +250,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
           )}
         </p>
       )}
+      {nextTry && <p className="text-xs text-muted">{nextTry}</p>}
     </div>
   );
 };

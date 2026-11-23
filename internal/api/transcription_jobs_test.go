@@ -412,6 +412,20 @@ func TestFailedTranscriptionsLaterAndCleanup(t *testing.T) {
 	if got, _ := store.GetTranscription(note.ID); got.Status != storage.TranscriptionFailed {
 		t.Fatalf("waiting for a later attempt: %s", got.Status)
 	}
+	// The app reads when the later attempt comes; a job without one has no nextAt
+	rec := sessionCall(srv.Router(), "GET", "/api/v1/voice/jobs", token, "", "")
+	var listed []map[string]any
+	_ = json.Unmarshal(rec.Body.Bytes(), &listed)
+	nextAt := map[string]any{}
+	for _, j := range listed {
+		nextAt[j["id"].(string)] = j["nextAt"]
+	}
+	if want := now.Add(time.Hour).UTC().Format(time.RFC3339); nextAt[note.ID] != want {
+		t.Fatalf("nextAt of the note's job = %v, want %s (%s)", nextAt[note.ID], want, rec.Body.String())
+	}
+	if v, ok := nextAt[inbox.ID]; !ok || v != nil {
+		t.Fatalf("inbox job without a later attempt: nextAt %v (%s)", v, rec.Body.String())
+	}
 	if ids, err := store.RequeueDueTranscriptions(now.Add(59 * time.Minute)); err != nil || len(ids) != 0 {
 		t.Fatalf("requeued before it is due: %v %v", ids, err)
 	}

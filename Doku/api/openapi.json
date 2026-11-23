@@ -5027,7 +5027,7 @@
     "/api/v1/voice/jobs": {
       "get": {
         "summary": "Own background transcriptions",
-        "description": "Waiting, running and failed transcription jobs of the signed-in person: [{id, kind (note|inbox), docId, blockId, mediaId, status (queued|running|failed), error (failed|timeout), attempts, pieces, createdAt, updatedAt}]. Done jobs are removed",
+        "description": "Waiting, running and failed transcription jobs of the signed-in person: [{id, kind (note|inbox), docId, blockId, mediaId, status (queued|running|failed), error (failed|timeout), attempts, nextAt (RFC 3339, only while an automatic attempt is planned; for a failed job its next later attempt), pieces, createdAt, updatedAt}]. Done jobs are removed",
         "tags": [
           "Account and General"
         ],

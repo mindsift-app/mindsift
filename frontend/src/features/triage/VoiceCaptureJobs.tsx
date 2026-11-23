@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Headphones, LoaderCircle, Mic, RotateCcw, Trash } from 'lucide-react';
 import type { TranscriptionJob } from '../../lib/types';
-import { discardTranscription, retryTranscription, transcriptionError, useInboxTranscriptions } from '../../lib/transcriptionJobs';
+import { discardTranscription, retryTranscription, transcriptionError, transcriptionNextTry, useInboxTranscriptions } from '../../lib/transcriptionJobs';
 import { authorizedAudioURL } from '../../lib/media';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
@@ -41,6 +41,7 @@ const JobRow: React.FC<{ job: TranscriptionJob }> = ({ job }) => {
   const [listen, setListen] = useState(false);
   const [busy, setBusy] = useState(false);
   const failed = job.status === 'failed';
+  const nextTry = transcriptionNextTry(job);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     try {
@@ -67,6 +68,7 @@ const JobRow: React.FC<{ job: TranscriptionJob }> = ({ job }) => {
               {failed ? transcriptionError(job) : t('voiceJobs.retrying')}
             </p>
           )}
+          {nextTry && <p className="text-xs text-muted">{nextTry}</p>}
         </div>
         {failed && (
           <div className="flex items-center gap-1 shrink-0">

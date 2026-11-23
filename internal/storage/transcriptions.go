@@ -46,11 +46,13 @@ type Transcription struct {
 	MediaID string `json:"mediaId,omitempty"`
 	// Caption: the recording's caption when the job was started; a different one at the end means someone
 	// wrote one meanwhile, and the text is added after it instead of replacing it
-	Caption   string `json:"-"`
-	Status    string `json:"status"`
-	Error     string `json:"error,omitempty"`
-	Attempts  int    `json:"attempts"`
-	NextAt    string `json:"-"`
+	Caption  string `json:"-"`
+	Status   string `json:"status"`
+	Error    string `json:"error,omitempty"`
+	Attempts int    `json:"attempts"`
+	// NextAt: when the job is tried again by itself (RFC 3339, UTC): a failed job's later attempt, or the
+	// retry a waiting job waits for; empty when none is planned
+	NextAt    string `json:"nextAt,omitempty"`
 	CreatedAt string `json:"createdAt"`
 	UpdatedAt string `json:"updatedAt"`
 	// Pieces: how many parts the recording of an inbox job has
