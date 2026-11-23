@@ -711,6 +711,8 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	s.removeUserBackups(user.ID)
+	// The account's lists and notes are gone for everyone it shared them with
+	s.dropLostAllRooms()
 	slog.Info("User deleted their account", "user_id", user.ID)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }

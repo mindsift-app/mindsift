@@ -152,3 +152,128 @@ func TestDeliveryListenerLearnsTheRecipients(t *testing.T) {
 		t.Fatalf("note room: %v", got["DOC_UPDATED"])
 	}
 }
+
+// Whoever loses access to a room is taken out of it on RecheckRooms (joined, URL and SSE rooms) and gets
+// none of its events any more; the others in the room and the person's other rooms stay.
+func TestRecheckRoomsDropsLostAccess(t *testing.T) {
+	hub := NewHub()
+	var mu sync.Mutex
+	allowed := map[string]bool{"anna|lst_1": true, "anna|doc:d1": true, "ben|lst_1": true}
+	hub.SetRoomAuthorizer(func(userID, roomID string) bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return allowed[userID+"|"+roomID]
+	})
+	anna := &Client{hub: hub, id: "ws_anna", userID: "anna", roomID: "lst_1", send: make(chan []byte, 10)}
+	hub.Register(anna)
+	hub.JoinRoom(anna, "doc:d1")
+	ben := &Client{hub: hub, id: "ws_ben", userID: "ben", send: make(chan []byte, 10)}
+	hub.Register(ben)
+	hub.JoinRoom(ben, "lst_1")
+	annaSSE := &SSEClient{id: "sse_anna", userID: "anna", send: make(chan []byte, 10), subscribedRooms: map[string]bool{"lst_1": true}}
+	hub.RegisterSSE(annaSSE)
+	drain := func(ch chan []byte) int {
+		n := 0
+		for {
+			select {
+			case <-ch:
+				n++
+			default:
+				return n
+			}
+		}
+	}
+	drain(anna.send)
+	drain(ben.send)
+	drain(annaSSE.send)
+
+	// Nothing lost: nobody leaves
+	if left := hub.RecheckRooms([]string{"anna", "ben"}); len(left) != 0 {
+		t.Fatalf("nothing changed, yet %v left", left)
+	}
+
+	mu.Lock()
+	delete(allowed, "anna|lst_1")
+	mu.Unlock()
+	left := hub.RecheckRooms([]string{"anna"})
+	if len(left) != 2 {
+		t.Fatalf("want anna's WebSocket and SSE connection out of lst_1, got %v", left)
+	}
+	for _, l := range left {
+		if l.UserID != "anna" || l.Room != "lst_1" {
+			t.Errorf("unexpected %v", l)
+		}
+	}
+
+	hub.BroadcastListEvent("lst_1", "ITEM_CREATED", map[string]string{"content": "geheim"})
+	hub.BroadcastDocEvent("d1", "DOC_SEQ", nil)
+	if n := drain(anna.send); n != 1 {
+		t.Errorf("anna's WebSocket: want only the note's event, got %d", n)
+	}
+	if n := drain(annaSSE.send); n != 0 {
+		t.Errorf("anna's SSE connection still gets the list's events (%d)", n)
+	}
+	if n := drain(ben.send); n != 1 {
+		t.Errorf("ben keeps the list: want 1 event, got %d", n)
+	}
+	if hub.JoinRoom(anna, "lst_1") {
+		t.Error("anna joined the list again without access")
+	}
+
+	// By room: everyone in it, nobody else
+	mu.Lock()
+	allowed = map[string]bool{"ben|lst_1": true}
+	mu.Unlock()
+	if left := hub.RecheckRoomsWhere(func(room string) bool { return room == "lst_1" }); len(left) != 0 {
+		t.Fatalf("ben keeps lst_1 and anna's note is not asked for, yet %v left", left)
+	}
+	// Everyone at once, and closing a connection after it left a room still works
+	mu.Lock()
+	allowed = map[string]bool{}
+	mu.Unlock()
+	if left := hub.RecheckAllRooms(); len(left) != 2 {
+		t.Fatalf("RecheckAllRooms: want anna's note and ben's list, got %v", left)
+	}
+	hub.Unregister(anna)
+	hub.UnregisterSSE(annaSSE)
+	hub.Unregister(ben)
+	hub.mu.RLock()
+	defer hub.mu.RUnlock()
+	if len(hub.rooms)+len(hub.sseRooms) != 0 {
+		t.Errorf("rooms left behind: %v %v", hub.rooms, hub.sseRooms)
+	}
+}
+
+// RecheckRooms runs while connections join, leave, broadcast and close: no deadlock and (under -race) no race.
+func TestRecheckRoomsConcurrent(t *testing.T) {
+	hub := NewHub()
+	hub.SetRoomAuthorizer(func(userID, roomID string) bool { return roomID != "lst_gone" })
+	var wg sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 50; j++ {
+				c := &Client{hub: hub, id: "ws", userID: "anna", roomID: "lst_gone", send: make(chan []byte, 10)}
+				hub.Register(c)
+				hub.JoinRoom(c, "lst_ok")
+				hub.BroadcastListEvent("lst_ok", "ITEM_CREATED", nil)
+				hub.Unregister(c)
+			}
+		}()
+	}
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 100; i++ {
+			hub.RecheckRooms([]string{"anna"})
+			hub.RecheckAllRooms()
+		}
+		close(done)
+	}()
+	wg.Wait()
+	select {
+	case <-done:
+	case <-time.After(30 * time.Second):
+		t.Fatal("RecheckRooms hangs")
+	}
+}

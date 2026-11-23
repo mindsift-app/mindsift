@@ -105,7 +105,12 @@ func (s *Server) createList(userID, title string, icon *string, listType string)
 // broadcastListAudience sends a list event to everyone who could see the list before the change
 // (before, read before it) or sees it now, on all their connections: also the people who have the
 // list overview open but not this list (its room). Same message as BroadcastListEvent (with listId).
+// With before (a change that can take the list away), whoever lost it leaves its room first
+// (dropLostListRoom): the room's ITEM_* carry the entries.
 func (s *Server) broadcastListAudience(listID string, before []string, event string, payload any) {
+	if before != nil {
+		s.dropLostListRoom(listID)
+	}
 	s.wsHub.BroadcastListToUsers(append(before, s.store.GetListUserIDs(listID)...), listID, event, payload)
 }
 

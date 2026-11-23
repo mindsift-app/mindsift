@@ -334,12 +334,13 @@ func (h *Hub) Register(c *Client) {
 		h.userRooms[c.userID][c] = true
 	}
 	onlineCount := len(h.allClients) + len(h.sseClients)
+	roomID := c.roomID // RecheckRooms may clear it once the lock is free
 	h.mu.Unlock()
 
 	h.enforceUserConnLimit(c.userID)
 
-	if c.roomID != "" {
-		h.Broadcast(c.roomID, "", EventUserPresence, map[string]any{
+	if roomID != "" {
+		h.Broadcast(roomID, "", EventUserPresence, map[string]any{
 			"onlineCount": onlineCount,
 		})
 	}
@@ -419,12 +420,13 @@ func (h *Hub) RegisterSSE(c *SSEClient) {
 		}
 	}
 	onlineCount := len(h.allClients) + len(h.sseClients)
+	roomID := c.roomID // RecheckRooms may clear it once the lock is free
 	h.mu.Unlock()
 
 	h.enforceUserConnLimit(c.userID)
 
-	if c.roomID != "" {
-		h.Broadcast(c.roomID, "", EventUserPresence, map[string]any{
+	if roomID != "" {
+		h.Broadcast(roomID, "", EventUserPresence, map[string]any{
 			"onlineCount": onlineCount,
 		})
 	}
@@ -768,6 +770,151 @@ func (h *Hub) LeaveRoom(c *Client, roomID string) {
 	}
 	if c.subscribedRooms != nil {
 		delete(c.subscribedRooms, roomID)
+	}
+}
+
+// RoomLeft is a connection RecheckRooms took out of a room.
+type RoomLeft struct {
+	ConnID, UserID, Room string
+}
+
+// RecheckRooms asks the room authorizer again for every room the given users' connections (WebSocket,
+// SSE, long poll) are in, and takes each connection out of the rooms its user may no longer receive.
+// Rooms are checked when they are joined only, so whoever loses access to a list or note (share removed,
+// left a group, list or note deleted) would otherwise keep receiving its entries and live drawing. Called
+// after such a change with everyone who may have lost something; returns what it took away, so the
+// caller can end what hangs on the room (a live drawing). The authorizer runs without holding h.mu.
+func (h *Hub) RecheckRooms(userIDs []string) []RoomLeft {
+	users := map[string]bool{}
+	for _, uid := range userIDs {
+		users[uid] = true
+	}
+	if len(users) == 0 {
+		return nil
+	}
+	return h.recheckRooms(func(userID, _ string) bool { return users[userID] })
+}
+
+// RecheckRoomsWhere is RecheckRooms for everyone in the rooms match picks (the rooms of a deleted or
+// unshared list or note, whoever is in them).
+func (h *Hub) RecheckRoomsWhere(match func(room string) bool) []RoomLeft {
+	return h.recheckRooms(func(_, room string) bool { return match(room) })
+}
+
+// RecheckAllRooms is RecheckRooms for every connection, after changes whose losers are not known one by
+// one (an organization or account removed, a stricter sharing mode).
+func (h *Hub) RecheckAllRooms() []RoomLeft {
+	return h.recheckRooms(func(string, string) bool { return true })
+}
+
+type userRoom struct{ user, room string }
+
+// recheckRooms checks the rooms pick chooses (by the connection's user and the room).
+func (h *Hub) recheckRooms(pick func(userID, room string) bool) []RoomLeft {
+	// What the connections are in now
+	pairs := map[userRoom]bool{}
+	add := func(userID string, rooms []string) {
+		if userID == "" || userID == "anonymous" {
+			return
+		}
+		for _, room := range rooms {
+			if pick(userID, room) {
+				pairs[userRoom{userID, room}] = true
+			}
+		}
+	}
+	h.mu.RLock()
+	authorize := h.authorizeRoom
+	for c := range h.allClients {
+		add(c.userID, c.roomsLocked())
+	}
+	for c := range h.sseClients {
+		add(c.userID, c.roomsLocked())
+	}
+	h.mu.RUnlock()
+	if len(pairs) == 0 {
+		return nil
+	}
+
+	// Asked without the lock (the authorizer reads the database), once per person and room
+	lost := map[userRoom]bool{}
+	for p := range pairs {
+		if authorize == nil || !authorize(p.user, p.room) {
+			lost[p] = true
+		}
+	}
+	if len(lost) == 0 {
+		return nil
+	}
+
+	// A connection of the same person that joined meanwhile goes as well; had the person regained access
+	// in between, the app joins again when it loads the list or note
+	var left []RoomLeft
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for c := range h.allClients {
+		for _, room := range c.roomsLocked() {
+			if lost[userRoom{c.userID, room}] {
+				h.leaveRoomLocked(c, room)
+				left = append(left, RoomLeft{ConnID: c.id, UserID: c.userID, Room: room})
+			}
+		}
+	}
+	for c := range h.sseClients {
+		for _, room := range c.roomsLocked() {
+			if lost[userRoom{c.userID, room}] {
+				h.leaveSSERoomLocked(c, room)
+				left = append(left, RoomLeft{ConnID: c.id, UserID: c.userID, Room: room})
+			}
+		}
+	}
+	return left
+}
+
+// roomsLocked lists the rooms of a WebSocket connection: the one of its URL and the joined ones (h.mu held).
+func (c *Client) roomsLocked() []string { return roomsOf(c.roomID, c.subscribedRooms) }
+
+// roomsLocked lists the rooms of an SSE or long-poll connection (h.mu held).
+func (c *SSEClient) roomsLocked() []string { return roomsOf(c.roomID, c.subscribedRooms) }
+
+func roomsOf(roomID string, subscribed map[string]bool) []string {
+	out := make([]string, 0, len(subscribed)+1)
+	if roomID != "" {
+		out = append(out, roomID)
+	}
+	for r := range subscribed {
+		if r != roomID {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// leaveRoomLocked takes a WebSocket connection out of a room, joined or the one of its URL (h.mu held).
+func (h *Hub) leaveRoomLocked(c *Client, roomID string) {
+	if room, ok := h.rooms[roomID]; ok {
+		delete(room, c)
+		if len(room) == 0 {
+			delete(h.rooms, roomID)
+		}
+	}
+	delete(c.subscribedRooms, roomID)
+	if c.roomID == roomID {
+		c.roomID = ""
+	}
+}
+
+// leaveSSERoomLocked is leaveRoomLocked for an SSE or long-poll connection (h.mu held).
+func (h *Hub) leaveSSERoomLocked(c *SSEClient, roomID string) {
+	if room, ok := h.sseRooms[roomID]; ok {
+		delete(room, c)
+		if len(room) == 0 {
+			delete(h.sseRooms, roomID)
+		}
+	}
+	delete(c.subscribedRooms, roomID)
+	if c.roomID == roomID {
+		c.roomID = ""
 	}
 }
 
