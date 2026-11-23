@@ -37,7 +37,7 @@ import { can } from '../../lib/capabilities';
 import { ConflictChoice, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
 import { formatNumber } from '../../lib/format';
 import { Presence } from '../../lib/docSync/transport';
-import { OutlinerTree, OutlinerTreeHandle, TemplateSource } from './OutlinerTree';
+import { OutlinerTree, OutlinerTreeHandle, OutlinerTreeProps, TemplateSource } from './OutlinerTree';
 import type { TemplateChoice } from './NoteTemplates';
 import type { BlockLock } from './OutlinerBlock';
 import { NoteClientContext, NoteSharedContext } from './drawing/noteShared';
@@ -850,6 +850,45 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     </div>
   );
 
+  // What the note's outliner trees share: the whole note, a zoomed branch and the branches of a hashtag page
+  const treeProps = {
+    docId,
+    canEdit,
+    onUpdateBlock: handleUpdateBlock,
+    onSlashCommand: handleSlashCommand,
+    onUpdateBlocks: handleUpdateBlocks,
+    onDeleteBlock: handleDeleteBlock,
+    onDeleteBlocks: handleDeleteBlocks,
+    onReplaceRange: handleReplaceRange,
+    onMoveBlock: handleMoveBlock,
+    onMoveSibling: handleMoveSibling,
+    onOpenTask,
+    onTagClick: onSelectTag,
+    onWikiLinkClick,
+    onCopyBlockLink: handleCopyBlockLink,
+    onFieldShows: (id: string, content: string) => engineRef.current?.fieldShows(id, content),
+    lockedBlocks,
+    onLockedAction: handleLockedAction,
+    onLockedDrawing: handleLockedDrawing,
+    onResolveConflict: handleResolveConflict,
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+  } satisfies Partial<OutlinerTreeProps>;
+  // ...and what the whole note and a zoomed branch have on top
+  const noteTreeProps = {
+    ...treeProps,
+    compact: inJournal,
+    onZoomBlock: setZoomedBlockId,
+    onExtractBlock: canEdit ? handleExtractRequest : undefined,
+    onInlineBlock: canEdit ? handleInlineBlock : undefined,
+    onCreateBlock: handleCreateBlock,
+    onInsertBlocks: handleInsertBlocks,
+    templateSource,
+    initialFocusedBlockId,
+    onFocusedBlockChange: (id: string | null) => engineRef.current?.focusBlock(id),
+    onBlockActivity: (id: string) => engineRef.current?.touchBlock(id),
+  } satisfies Partial<OutlinerTreeProps>;
+
   // The note scrolls on its own; at its end the scroll must not pass on to the page, where phones would show
   // and hide the address bar, resize the app (100dvh) and make the bars at the bottom flicker
   return (
@@ -1097,41 +1136,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 )}
               </div>
             ) : (
-              <OutlinerTree
-                compact={inJournal}
-                docId={docId}
-                blocks={childBlocks}
-                canEdit={canEdit}
-                levelOffset={levelOffset}
-                onZoomBlock={setZoomedBlockId}
-                onExtractBlock={canEdit ? handleExtractRequest : undefined}
-              onInlineBlock={canEdit ? handleInlineBlock : undefined}
-                onUpdateBlock={handleUpdateBlock}
-                onSlashCommand={handleSlashCommand}
-                onUpdateBlocks={handleUpdateBlocks}
-                onCreateBlock={handleCreateBlock}
-                onInsertBlocks={handleInsertBlocks}
-                templateSource={templateSource}
-                onDeleteBlock={handleDeleteBlock}
-                onDeleteBlocks={handleDeleteBlocks}
-                onReplaceRange={handleReplaceRange}
-                onMoveBlock={handleMoveBlock}
-                onMoveSibling={handleMoveSibling}
-                onOpenTask={onOpenTask}
-                onTagClick={onSelectTag}
-                onWikiLinkClick={onWikiLinkClick}
-                onCopyBlockLink={handleCopyBlockLink}
-                initialFocusedBlockId={initialFocusedBlockId}
-                onFocusedBlockChange={(id) => engineRef.current?.focusBlock(id)}
-                onBlockActivity={(id) => engineRef.current?.touchBlock(id)}
-                onFieldShows={(id, content) => engineRef.current?.fieldShows(id, content)}
-                lockedBlocks={lockedBlocks}
-                onLockedAction={handleLockedAction}
-                onLockedDrawing={handleLockedDrawing}
-                onResolveConflict={handleResolveConflict}
-                onUndo={handleUndo}
-                onRedo={handleRedo}
-              />
+              <OutlinerTree {...noteTreeProps} blocks={childBlocks} levelOffset={levelOffset} />
             )}
           </div>
         ) : (
@@ -1155,36 +1160,16 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 </button>
                 {tagGroups.map((group) => (
                   <OutlinerTree
+                    {...treeProps}
                     key={group[0].id}
                     compact
                     trailingArea={false}
-                    docId={docId}
                     blocks={group}
-                    canEdit={canEdit}
                     levelOffset={Math.min(...group.map((b) => Math.max(0, b.level || 0)))}
                     onZoomBlock={(id) => onOpenDocBlock?.(docId, id)}
-                    onUpdateBlock={handleUpdateBlock}
-                    onSlashCommand={handleSlashCommand}
-                    onUpdateBlocks={handleUpdateBlocks}
                     onCreateBlock={handleTagCreateBlock}
                     onInsertBlocks={handleTagInsertBlocks}
-                    onDeleteBlock={handleDeleteBlock}
-                    onDeleteBlocks={handleDeleteBlocks}
-                    onReplaceRange={handleReplaceRange}
-                    onMoveBlock={handleMoveBlock}
-                    onMoveSibling={handleMoveSibling}
-                    onOpenTask={onOpenTask}
-                    onTagClick={onSelectTag}
-                    onWikiLinkClick={onWikiLinkClick}
-                    onCopyBlockLink={handleCopyBlockLink}
                     onFocusedBlockChange={handleTagFocusChange}
-                    onFieldShows={(id, content) => engineRef.current?.fieldShows(id, content)}
-                    lockedBlocks={lockedBlocks}
-                    onLockedAction={handleLockedAction}
-                onLockedDrawing={handleLockedDrawing}
-                    onResolveConflict={handleResolveConflict}
-                    onUndo={handleUndo}
-                    onRedo={handleRedo}
                   />
                 ))}
               </div>
@@ -1268,41 +1253,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
             {/* Logseq Outliner Tree */}
             <OutlinerTree
-                compact={inJournal}
+              {...noteTreeProps}
               ref={outlinerTreeRef}
-              docId={docId}
               blocks={blocks}
-              canEdit={canEdit}
               levelOffset={0}
-              onZoomBlock={setZoomedBlockId}
-              onExtractBlock={canEdit ? handleExtractRequest : undefined}
-              onInlineBlock={canEdit ? handleInlineBlock : undefined}
-              onUpdateBlock={handleUpdateBlock}
-              onSlashCommand={handleSlashCommand}
-              onUpdateBlocks={handleUpdateBlocks}
-              onCreateBlock={handleCreateBlock}
-              onInsertBlocks={handleInsertBlocks}
-              templateSource={templateSource}
-              onDeleteBlock={handleDeleteBlock}
-              onDeleteBlocks={handleDeleteBlocks}
               onDeleteLastBlock={inJournal ? onEmptied : undefined}
-                onReplaceRange={handleReplaceRange}
-              onMoveBlock={handleMoveBlock}
-                onMoveSibling={handleMoveSibling}
-              onOpenTask={onOpenTask}
-              onTagClick={onSelectTag}
-              onWikiLinkClick={onWikiLinkClick}
-              onCopyBlockLink={handleCopyBlockLink}
-              initialFocusedBlockId={initialFocusedBlockId}
-              onFocusedBlockChange={(id) => engineRef.current?.focusBlock(id)}
-              onBlockActivity={(id) => engineRef.current?.touchBlock(id)}
-                onFieldShows={(id, content) => engineRef.current?.fieldShows(id, content)}
-              lockedBlocks={lockedBlocks}
-              onLockedAction={handleLockedAction}
-                onLockedDrawing={handleLockedDrawing}
-              onResolveConflict={handleResolveConflict}
-              onUndo={handleUndo}
-              onRedo={handleRedo}
             />
 
             {onOpenDocBlock && !inTrash && !embedded && <BacklinksSection docId={docId} title={title} onOpen={onOpenDocBlock} />}
