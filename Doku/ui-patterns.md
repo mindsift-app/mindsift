@@ -65,9 +65,19 @@ Component: [ToggleSwitch.tsx](../frontend/src/components/ToggleSwitch.tsx)
 - Text on the left (title, with a brief explanation in `text-muted` below), switch on the right.
 - Choosing **one** option out of multiple choices (import mode, corner radius, theme tracking) remains a button group with `role="radio"`.
 
+## Bottom Sheet (Phones)
+
+Component: [BottomSheet.tsx](../frontend/src/components/BottomSheet.tsx)
+
+- Every sheet from below uses it: Quick Dump (`MobileCaptureSheet`), new task (`MobileTaskCreateSheet`), the tasks' filter (`TasksFilterSheet`), the profile (`MobileProfileSheet`), the app install offer (`PwaInstallSheet`), a calendar day (`TaskCalendar`), the triage's actions (`TriageDeck`, a centred dialog from `sm` on) and a person in the administration (`UserList`); `FormSheet` sits on it too.
+- **Look:** the page is dimmed with the theme's `--bg-overlay` (class `modal-overlay`) and does not scroll (`useScrollLock`); the panel slides in, full width, rounded only at the top with a top border, a grip on top, at most 85 % of the height (scrolls inside). `title` and `icon` give the standard header (icon in an accent box, title, an X of 44 px); sheets with their own header leave them out.
+- **Closing:** the backdrop and Escape close it (an open menu inside takes Escape first by preventing its default). `guard` asks first while a dictation or recording would be lost (`lib/leaveGuard.ts`, "Trotzdem schließen" / "Bleiben"); its own "Abbrechen" gets the guarded close as the argument of `children`.
+- `phoneOnly` hides it from `sm` on (it then neither locks the page nor takes Escape there), `desktopClassName` makes it a dialog from `sm` on, `dockToKeyboard` puts it right above the on-screen keyboard (`useKeyboardInset`).
+- Dimming elsewhere (dialogs, the command palette, Quick Dump on desktops) also uses `modal-overlay` or `bg-overlay`, never a fixed black.
+
 ## Small Dialogs (Create, Rename)
 
-Component: [FormSheet.tsx](../frontend/src/components/FormSheet.tsx), keyboard inset handled via [useKeyboardInset.ts](../frontend/src/lib/useKeyboardInset.ts)
+Component: [FormSheet.tsx](../frontend/src/components/FormSheet.tsx) on `BottomSheet`, keyboard inset handled via [useKeyboardInset.ts](../frontend/src/lib/useKeyboardInset.ts)
 
 - **Mobile:** Full-width bottom sheet positioned directly above the virtual keyboard (inset calculated via `visualViewport`), grab handle on top, inputs and buttons at least 44 px high, text inputs at 16 px (to prevent iOS auto-zoom), Cancel/Create buttons side-by-side spanning full width.
 - **Desktop:** Centered window, or anchored next to click position via `anchor` (e.g., "New Folder" in explorer).

@@ -1,13 +1,13 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TriangleAlert, Calendar, Flame, Layers, LoaderCircle, Mic, MicOff, X } from 'lucide-react';
+import { TriangleAlert, Calendar, Flame, Layers, LoaderCircle, Mic, MicOff } from 'lucide-react';
 import { PriorityLevel } from '../lib/types';
 import { triggerHaptic } from '../lib/api';
 import { VoiceWave } from '../components/VoiceWave';
 import { useMobileCapture } from './useMobileCapture';
 import { DateField } from '../components/DateField';
 import { NaturalDateChip, PhraseHighlight } from '../components/NaturalDateHint';
-import { guardLeave } from '../lib/leaveGuard';
+import { BottomSheet } from '../components/BottomSheet';
 
 // Phones: the Quick Dump sheet (thought with voice input, priority, optional due date)
 export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof useMobileCapture> }) {
@@ -32,33 +32,15 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
   if (!showMobileCapture) return null;
   // The backdrop, the X and "Abbrechen": a dictation still running asks first, opening the sheet again would
   // throw it away (lib/leaveGuard.ts)
-  const close = () => guardLeave(() => setShowMobileCapture(false), { close: true, held: mobileVoice.state !== 'idle' });
   return (
-    <div
-      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-overlay backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={close}
+    <BottomSheet
+      phoneOnly
+      onClose={() => setShowMobileCapture(false)}
+      guard={{ held: mobileVoice.state !== 'idle' }}
+      title={t('capture.title')}
+      icon={<Layers className="w-4 h-4" />}
     >
-      <div
-        className="w-full max-h-[85vh] overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] animate-in slide-in-from-bottom duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
-              <Layers className="w-4 h-4" />
-            </div>
-            <h3 className="text-sm font-semibold text-main">{t('capture.title')}</h3>
-          </div>
-          <button
-            type="button"
-            onClick={close}
-            className="p-1.5 text-faint hover:text-main rounded-btn transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+      {(close) => (
         <form onSubmit={handleMobileCreateTriage} className="space-y-3">
           {/* Text Input with Voice Dictation */}
           <div>
@@ -209,7 +191,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      )}
+    </BottomSheet>
   );
 }

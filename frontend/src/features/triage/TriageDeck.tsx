@@ -29,6 +29,7 @@ import { api, triggerHaptic } from '../../lib/api';
 import { OriginBadge } from '../../components/OriginBadge';
 import { formatDateTime } from '../../lib/format';
 import { DateField } from '../../components/DateField';
+import { BottomSheet } from '../../components/BottomSheet';
 import { VoiceCaptureJobs } from './VoiceCaptureJobs';
 
 interface TriageDeckProps {
@@ -1023,14 +1024,12 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
 
       {/* LONG-PRESS / MORE OPTIONS ACTION SHEET (For Triage Card & Queue Items) */}
       {actionSheetCard && (
-        <div
-          className="fixed inset-0 m-0! modal-overlay z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150"
-          onClick={() => setActionSheetCard(null)}
+        <BottomSheet
+          onClose={() => setActionSheetCard(null)}
+          label={t('sheet.title')}
+          className="px-4 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] space-y-3"
+          desktopClassName="sm:p-4 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[calc(100%-2rem)] sm:max-w-md sm:border sm:rounded-2xl"
         >
-          <div
-            className="w-full sm:max-w-md bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-2xl shadow-panel p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-4 space-y-3 animate-in slide-in-from-bottom duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
             {/* Sheet Header with Preview */}
             <div className="flex items-start justify-between gap-3 pb-2.5 border-b border-border">
               <div className="min-w-0">
@@ -1044,7 +1043,8 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
               <button
                 type="button"
                 onClick={() => setActionSheetCard(null)}
-                className="p-1.5 text-faint hover:text-main rounded-btn cursor-pointer"
+                aria-label={t('common:close')}
+                className="-mr-2 -mt-2 w-11 h-11 sm:w-8 sm:h-8 sm:mr-0 sm:mt-0 flex items-center justify-center text-faint hover:text-main rounded-btn cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1260,8 +1260,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                 </button>
               </div>
             )}
-          </div>
-        </div>
+        </BottomSheet>
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AtSign, Ban, ChevronDown, ChevronRight, KeyRound, Mail, Search, ShieldCheck, ShieldOff, Trash, UserCheck, X } from 'lucide-react';
 import { User, UserRole } from '../../../lib/types';
 import { UserAvatar } from '../../../components/UserAvatar';
+import { BottomSheet } from '../../../components/BottomSheet';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { formatDate } from '../../../lib/format';
@@ -242,38 +243,24 @@ function UserRow({ u, open, orgNames, showNoOrg, onToggle }: { u: User; open: bo
   );
 }
 
-// Phone: the details of one person in a sheet from below (Escape and the backdrop close it)
+// Phone: the details of one person in a sheet from below (Escape and the backdrop close it; an open role
+// menu takes Escape first)
 function UserSheet({ u, onClose, children }: { u: User; onClose: () => void; children: React.ReactNode }) {
   const { t } = useTranslation('settings');
-  useEffect(() => {
-    // An open role menu takes Escape first (defaultPrevented) and the sheet stays
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !e.defaultPrevented && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
   return (
-    <div className="fixed inset-0 m-0! z-50 flex items-end justify-center modal-overlay" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={u.displayName}
-        className="w-full max-h-[85vh] overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] space-y-3 text-xs animate-in slide-in-from-bottom duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="w-10 h-1 bg-border rounded-full mx-auto" aria-hidden="true" />
-        <div className="flex items-center gap-2.5">
-          <UserAvatar user={u} size="md" showTitle={false} className="border" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-main truncate">{u.displayName}</p>
-            <p className="text-muted text-[11px] truncate">{[u.username, u.email].filter(Boolean).join(' · ')}</p>
-          </div>
-          <button type="button" onClick={onClose} className="w-11 h-11 -mr-2 flex items-center justify-center text-muted hover:text-main" title={t('common:close')} aria-label={t('common:close')}>
-            <X className="w-4 h-4" />
-          </button>
+    <BottomSheet onClose={onClose} label={u.displayName} className="px-4 pt-6 pb-[calc(1rem+env(safe-area-inset-bottom))] space-y-3 text-xs">
+      <div className="flex items-center gap-2.5">
+        <UserAvatar user={u} size="md" showTitle={false} className="border" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-main truncate">{u.displayName}</p>
+          <p className="text-muted text-[11px] truncate">{[u.username, u.email].filter(Boolean).join(' · ')}</p>
         </div>
-        {children}
+        <button type="button" onClick={onClose} className="w-11 h-11 -mr-2 flex items-center justify-center text-muted hover:text-main" title={t('common:close')} aria-label={t('common:close')}>
+          <X className="w-4 h-4" />
+        </button>
       </div>
-    </div>
+      {children}
+    </BottomSheet>
   );
 }
 

@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useKeyboardInset } from '../lib/useKeyboardInset';
+import { BottomSheet } from './BottomSheet';
 
 interface FormSheetProps {
   title: string;
@@ -18,9 +19,8 @@ interface FormSheetProps {
   wide?: boolean;
 }
 
-// Small create/rename dialogs. Phone: bottom sheet directly above the keyboard, full width, large
-// fields, square at the bottom with only a top border (like the other sheets: it docks to the keyboard
-// even with a rounded theme, whose panel-surface would round all corners). Desktop: centred dialog (or next to the click). Escape and the backdrop close it.
+// Small create/rename dialogs on BottomSheet. Phone: sheet directly above the keyboard, full width, large
+// fields. Desktop: centred dialog (or next to the click). Escape and the backdrop close it.
 export const FormSheet: React.FC<FormSheetProps> = ({
   title,
   icon,
@@ -34,12 +34,7 @@ export const FormSheet: React.FC<FormSheetProps> = ({
   busy = false,
 }) => {
   const { t } = useTranslation();
-  const { inset, visibleHeight } = useKeyboardInset();
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  const { inset } = useKeyboardInset();
 
   const desktopAnchor = anchor
     ? ({
@@ -53,51 +48,43 @@ export const FormSheet: React.FC<FormSheetProps> = ({
     : undefined;
 
   return (
-    <div className="fixed inset-0 m-0! z-50 modal-overlay" onClick={onClose}>
-      <form
-        onSubmit={onSubmit}
-        onClick={(e) => e.stopPropagation()}
-        style={
-          {
-            ...desktopAnchor,
-            '--kb-inset': `${inset}px`,
-            '--vv-max': visibleHeight ? `${visibleHeight - 16}px` : '85vh',
-          } as React.CSSProperties
-        }
-        className={`fixed inset-x-0 bottom-(--kb-inset) max-h-(--vv-max) panel-surface rounded-t-2xl rounded-b-none border-x-0 border-b-0 border-t border-border shadow-panel p-4 space-y-3 overflow-y-auto
-          sm:inset-x-auto sm:bottom-auto sm:max-h-[85vh] sm:w-full sm:rounded-card sm:border ${
-            anchor
-              ? `${wide ? 'sm:max-w-80' : 'sm:max-w-66'} sm:left-(--sheet-x) sm:top-(--sheet-y)`
-              : 'sm:max-w-sm sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2'
-          }`}
-      >
-        <div className="w-10 h-1 bg-border rounded-full mx-auto sm:hidden" aria-hidden="true" />
-        {/* The grip is hidden from sm on, but space-y still spaces the header from it */}
-        <div className="flex items-center justify-between gap-2 sm:mt-0!">
-          <h3 className="text-sm font-semibold text-main flex items-center gap-1.5 min-w-0">
-            {icon}
-            <span className="truncate">{title}</span>
-          </h3>
-          <button type="button" onClick={onClose} className="w-11 h-11 sm:w-7 sm:h-7 -mr-2 sm:mr-0 flex items-center justify-center text-muted hover:text-main" title={t('close')}>
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        {children}
-        <div className="flex gap-2 pt-1 sm:justify-end">
-          <button type="button" onClick={onClose} className="btn-action flex-1 sm:flex-none h-11 sm:h-8 px-3 text-sm sm:text-xs">
-            {t('common:cancel')}
-          </button>
-          <button
-            type="submit"
-            disabled={busy}
-            className={`${danger ? 'btn-danger' : 'btn-primary'} flex-1 sm:flex-none h-11 sm:h-8 px-4 text-sm sm:text-xs font-semibold disabled:opacity-50`}
-          >
-            {submitLabel ?? t('common:create')}
-          </button>
-        </div>
-        {/* keeps the buttons clear of the home indicator when no keyboard is open */}
-        <div className="sm:hidden" style={{ height: inset ? 0 : 'env(safe-area-inset-bottom, 0px)' }} />
-      </form>
-    </div>
+    <BottomSheet
+      onClose={onClose}
+      onSubmit={onSubmit}
+      label={title}
+      dockToKeyboard
+      style={desktopAnchor}
+      className="px-4 pt-6 pb-4 space-y-3"
+      desktopClassName={`sm:pt-4 sm:inset-x-auto sm:bottom-auto sm:max-h-[85vh] sm:w-full sm:rounded-card sm:border ${
+        anchor
+          ? `${wide ? 'sm:max-w-80' : 'sm:max-w-66'} sm:left-(--sheet-x) sm:top-(--sheet-y)`
+          : 'sm:max-w-sm sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-main flex items-center gap-1.5 min-w-0">
+          {icon}
+          <span className="truncate">{title}</span>
+        </h3>
+        <button type="button" onClick={onClose} className="w-11 h-11 sm:w-7 sm:h-7 -mr-2 sm:mr-0 flex items-center justify-center text-muted hover:text-main" title={t('close')}>
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      {children}
+      <div className="flex gap-2 pt-1 sm:justify-end">
+        <button type="button" onClick={onClose} className="btn-action flex-1 sm:flex-none h-11 sm:h-8 px-3 text-sm sm:text-xs">
+          {t('common:cancel')}
+        </button>
+        <button
+          type="submit"
+          disabled={busy}
+          className={`${danger ? 'btn-danger' : 'btn-primary'} flex-1 sm:flex-none h-11 sm:h-8 px-4 text-sm sm:text-xs font-semibold disabled:opacity-50`}
+        >
+          {submitLabel ?? t('common:create')}
+        </button>
+      </div>
+      {/* keeps the buttons clear of the home indicator when no keyboard is open */}
+      <div className="sm:hidden" style={{ height: inset ? 0 : 'env(safe-area-inset-bottom, 0px)' }} />
+    </BottomSheet>
   );
 };

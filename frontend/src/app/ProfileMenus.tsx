@@ -6,6 +6,7 @@ import { can } from '../lib/capabilities';
 import { ThemeId, ThemeOption } from '../lib/theme';
 import { UserAvatar } from '../components/UserAvatar';
 import { ThemeQuickPicker } from '../components/ThemeQuickPicker';
+import { BottomSheet } from '../components/BottomSheet';
 import { APP_VERSION } from '../version';
 import { openDesktopStart } from '../lib/desktopStart';
 import { openDesktopShellStart, useDesktopShellStart } from '../lib/useDesktopShellStart';
@@ -191,14 +192,8 @@ export function MobileProfileSheet({
   const shellStart = useDesktopShellStart();
   const { isStandaloneApp, setShowManualPwaGuide, setShowPwaInstallModal } = pwa;
   return (
-    <div
-      className="sm:hidden fixed inset-0 m-0! z-50 flex items-end justify-center bg-overlay backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={() => setShowMobileProfile(false)}
-    >
-      <div
-        className="w-full max-h-[85vh] overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] space-y-4 animate-in slide-in-from-bottom duration-200 divide-y divide-border"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <BottomSheet phoneOnly onClose={() => setShowMobileProfile(false)} label={user.displayName}>
+      <div className="space-y-4 divide-y divide-border">
         {/* User Info Header */}
         <div className="flex items-center justify-between pb-2">
           <div className="flex items-center gap-3">
@@ -218,7 +213,8 @@ export function MobileProfileSheet({
           <button
             type="button"
             onClick={() => setShowMobileProfile(false)}
-            className="p-1 text-faint hover:text-main rounded-btn transition-colors cursor-pointer"
+            aria-label={t('common:close')}
+            className="-mr-2 w-11 h-11 flex items-center justify-center text-faint hover:text-main rounded-btn transition-colors cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -371,6 +367,6 @@ export function MobileProfileSheet({
           MindSift {APP_VERSION}
         </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 }
