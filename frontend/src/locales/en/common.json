@@ -451,6 +451,10 @@
     "leave": "Switch anyway",
     "closeMessage": "The recording is not finished yet. Closing now loses it.",
     "close": "Close anyway",
+    "reloadMessage": "The recording is not finished yet. Reloading now loses it.",
+    "reload": "Reload anyway",
+    "quitMessage": "The recording is not finished yet. Quitting now loses it.",
+    "quit": "Quit anyway",
     "stay": "Stay"
   },
   "voiceJobs": {

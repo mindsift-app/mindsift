@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Fixed
+- Desktop app: "Switch instance…" in the tray, Ctrl+Shift+O, F5/Ctrl+R, the window's close button and "Quit" in the tray no longer throw away a recording or dictation still under way: the app asks first ("Reload anyway", "Quit anyway" … / "Stay"). If the page does not answer (for example a server with an older version), the action runs after a second as before, and repeating it a few seconds later while the question is still open runs it anyway.
+
 ## [0.99.1] - 2026-11-23
 
 ### Changed

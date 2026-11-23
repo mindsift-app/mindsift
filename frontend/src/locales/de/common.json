@@ -449,6 +449,10 @@
     "leave": "Trotzdem wechseln",
     "closeMessage": "Die Aufnahme ist noch nicht fertig. Beim Schließen geht sie verloren.",
     "close": "Trotzdem schließen",
+    "reloadMessage": "Die Aufnahme ist noch nicht fertig. Beim Neuladen geht sie verloren.",
+    "reload": "Trotzdem neu laden",
+    "quitMessage": "Die Aufnahme ist noch nicht fertig. Beim Beenden geht sie verloren.",
+    "quit": "Trotzdem beenden",
     "stay": "Bleiben"
   },
   "voiceJobs": {

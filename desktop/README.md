@@ -48,7 +48,8 @@ attached to every GitHub release with fixed names, see "Release" in ci/release-d
   this change on the server) offers "Instanz wechseln" on its sign-in page and next to sign-out in the
   profile menu; sign-out itself stays.
 - **Keys:** Alt+Left / Alt+Right (back, forward), F5 / Ctrl+R (reload the page) and Ctrl+Shift+O (start
-  view) work on every page, the shell's own and a server's.
+  view) work on every page, the shell's own and a server's. Reloading, switching, closing the window and
+  quitting ask the page first during a recording (see "Guarded actions of the shell").
 - **Cloud sync:** when the base folder lies in a synced folder (Nextcloud, ownCloud, Dropbox, OneDrive,
   Google Drive, iCloud, Syncthing, pCloud, MEGA …), the start view warns that syncing an open SQLite
   database can destroy it and recommends a server for several machines.
@@ -185,6 +186,49 @@ page on another origin set the window's title through a form posted to
 - **Stale session:** a session stored for a database that is gone (instance folder deleted, a new base
   folder in old storage) is refused with 401; `useSessionBootstrap` then signs the window in again instead
   of showing the sign-in page, also when the 401 arrives before the status said desktop.
+
+## Guarded actions of the shell
+
+Some actions of the shell itself unload the page behind its back and would lose a recording or dictation
+still under way: "Instanz wechseln…" in the tray and Ctrl+Shift+O, F5 / Ctrl+R, the window's close button
+and "Beenden" in the tray. The browser would ask through `beforeunload`, which the app keeps off in the
+window (it would hold the window's close and the switch of instance without a way out). Instead every such
+action goes through one entry point, `shell.Guard.Request(action, run)` (`internal/shell/guard.go`), which
+asks the page first:
+
+1. The shell runs a script in the page (Linux: WebKit directly, Windows: `ExecJS`) that fires
+   `mindsift:desktop-shell-action` with `{action, reply}`. `reply(answer)` posts
+   `mindsift:shell-action:<id>:<answer>` through the engine's message channel (WebKitGTK: Wails' `external`
+   handler, WebView2: `chrome.webview`), which reaches the app's `RawMessageHandler` from any page, a
+   server's too. The id is random per request.
+2. The frontend (`lib/desktopShellActions.ts`, installed in `main.tsx` on every page) answers `go` at once
+   when nothing holds the page (`unloadHeld()`, the same hold as `beforeunload` in the browser). While a
+   recording holds it, it answers `wait` (the shell brings the window up), asks ("Trotzdem neu laden",
+   "Trotzdem wechseln", "Trotzdem schließen", "Trotzdem beenden" / "Bleiben") and then answers `go` or
+   `stay`.
+3. **Never stuck:** without an answer within a second (page not loaded, busy or crashed, a server whose
+   older frontend has no listener) the action runs anyway. One question at a time: another guarded action
+   while a question is open is dropped within 3 seconds (a double press; under Xvfb Wails also calls a key
+   binding twice per press) and runs at once after that,
+   dropping the question, so a page that answers `wait` and never more (a broken or hostile server's page)
+   cannot hold the window. A question goes with its page (`PageChanged`, from `Navigated`); an action the
+   page has not answered yet still runs after the second.
+
+Any page may post an answer, but only the open request's id counts, and all an answer can do is run or
+drop an action the person started.
+
+**Closing and quitting:** the close button is held by a `WindowClosing` hook and closes for real (`closing`
+set, `window.Close()`) once the page agrees or did not answer; with the escape above nothing holds it for
+good. Quitting that does not go through the tray or the close button (Wails shutting down, e.g. on a
+signal) is never held: the hook lets every close through once the app's context is cancelled.
+**Not guarded:** Alt+Left / Alt+Right (back and forward stay inside the app, where `lib/navHistory.ts`
+asks itself; asking twice would show two questions), a second start of the app (it only brings the window
+up) and a click on a system notification (it opens the task inside the app).
+
+**A new action of the shell:** give it a name, call `guard.Request("<name>", run)` in `main.go` where the
+shell would have run it, and add its question to `QUESTIONS` in `lib/desktopShellActions.ts` with texts in
+`common:leaveGuard` in every language. Until then the frontend asks with the switch texts, and an older
+frontend does not answer, so the action runs after the second.
 
 ## System notifications
 

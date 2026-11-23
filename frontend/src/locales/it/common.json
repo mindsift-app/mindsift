@@ -451,6 +451,10 @@
     "leave": "Cambia comunque",
     "closeMessage": "La registrazione non è ancora finita. Chiudendo ora andrà persa.",
     "close": "Chiudi comunque",
+    "reloadMessage": "La registrazione non è ancora finita. Ricaricando ora andrà persa.",
+    "reload": "Ricarica comunque",
+    "quitMessage": "La registrazione non è ancora finita. Uscendo ora andrà persa.",
+    "quit": "Esci comunque",
     "stay": "Resta"
   },
   "voiceJobs": {

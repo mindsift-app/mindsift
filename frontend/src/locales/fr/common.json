@@ -451,6 +451,10 @@
     "leave": "Changer quand même",
     "closeMessage": "L’enregistrement n’est pas encore terminé. En fermant maintenant, il sera perdu.",
     "close": "Fermer quand même",
+    "reloadMessage": "L’enregistrement n’est pas encore terminé. En rechargeant maintenant, il sera perdu.",
+    "reload": "Recharger quand même",
+    "quitMessage": "L’enregistrement n’est pas encore terminé. En quittant maintenant, il sera perdu.",
+    "quit": "Quitter quand même",
     "stay": "Rester"
   },
   "voiceJobs": {

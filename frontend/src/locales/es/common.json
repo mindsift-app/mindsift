@@ -451,6 +451,10 @@
     "leave": "Cambiar de todos modos",
     "closeMessage": "La grabación aún no ha terminado. Si cierras ahora, se perderá.",
     "close": "Cerrar de todos modos",
+    "reloadMessage": "La grabación aún no ha terminado. Si recargas ahora, se perderá.",
+    "reload": "Recargar de todos modos",
+    "quitMessage": "La grabación aún no ha terminado. Si sales ahora, se perderá.",
+    "quit": "Salir de todos modos",
     "stay": "Quedarse"
   },
   "voiceJobs": {
