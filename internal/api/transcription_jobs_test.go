@@ -382,7 +382,7 @@ func TestTranscriptionRetryTimes(t *testing.T) {
 }
 
 // A failed job waiting for a later attempt stays failed until then and is queued again with its error;
-// failed jobs of notes go 30 days after their last attempt, a failed inbox recording stays.
+// failed jobs go 30 days after their last attempt, the recording of a note stays in the note.
 func TestFailedTranscriptionsLaterAndCleanup(t *testing.T) {
 	srv, store, token, userID, _ := jobServer(t)
 	docID, mediaID := noteWithRecording(t, srv, store, token, userID, "")
@@ -437,11 +437,11 @@ func TestFailedTranscriptionsLaterAndCleanup(t *testing.T) {
 	if _, err := store.GetMedia(mediaID); err != nil {
 		t.Fatalf("recording's file gone: %v", err)
 	}
-	if got, err := store.GetTranscription(inbox.ID); err != nil || got.Status != storage.TranscriptionFailed {
-		t.Fatalf("failed inbox recording removed: %v", err)
+	if _, err := store.GetTranscription(inbox.ID); err == nil {
+		t.Fatal("failed inbox recording still there after 30 days")
 	}
-	if pieces, _ := store.TranscriptionAudio(inbox.ID); len(pieces) != 1 {
-		t.Fatal("audio of the failed inbox recording removed")
+	if pieces, _ := store.TranscriptionAudio(inbox.ID); len(pieces) != 0 {
+		t.Fatal("audio of the failed inbox recording still there")
 	}
 }
 

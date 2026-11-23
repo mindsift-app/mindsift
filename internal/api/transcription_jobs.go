@@ -31,8 +31,8 @@ import (
 // with its recording, until the person tries again or discards it. When the Whisper server could not be
 // reached or had a problem of its own (not a time limit, not a recording it refused), the failed job is
 // also tried again by itself a few more times, hours apart (transcriptionLaterDelays), in case the server
-// is back by then. A failed job of a note goes after 30 days (storage.PurgeFailedTranscriptions, with the
-// hourly retention work); a failed inbox recording stays until the person decides.
+// is back by then. A failed job goes 30 days after its last attempt (storage.PurgeFailedTranscriptions,
+// with the hourly retention work): a note's recording stays in the note, an inbox recording goes with it.
 
 // transcriptionRetryDelays: the waits before the second and third attempt
 var transcriptionRetryDelays = []time.Duration{30 * time.Second, 2 * time.Minute}
@@ -199,8 +199,8 @@ func (s *Server) requeueLaterTranscriptions(now time.Time) {
 	}
 }
 
-// runFailedTranscriptionCleanup removes failed jobs of notes past storage.FailedTranscriptionKeep (hourly,
-// with the other retention work); their recordings stay in the notes.
+// runFailedTranscriptionCleanup removes failed jobs past storage.FailedTranscriptionKeep (hourly, with the
+// other retention work): recordings of notes stay in the notes, inbox recordings go with their jobs.
 func (s *Server) runFailedTranscriptionCleanup(now time.Time) {
 	jobs, err := s.store.PurgeFailedTranscriptions(now)
 	if err != nil {
