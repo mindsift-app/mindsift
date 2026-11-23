@@ -359,7 +359,7 @@ func TestMoveBranchToOtherNote(t *testing.T) {
 		t.Fatalf("move into the same note: %d", rec.Code)
 	}
 	_, strangerToken := newTestUser(t, store, "fremd3@example.com")
-	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/branches/move", strangerToken, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, ""); rec.Code != http.StatusForbidden {
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/branches/move", strangerToken, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, ""); rec.Code != http.StatusNotFound {
 		t.Fatalf("stranger must not move: %d", rec.Code)
 	}
 

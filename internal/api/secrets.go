@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -34,8 +33,7 @@ func readSecretValue(w http.ResponseWriter, r *http.Request) (string, bool) {
 	var req struct {
 		Value string `json:"value"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return "", false
 	}
 	if strings.TrimSpace(req.Value) == "" || len(req.Value) > storage.MaxSecretLength {
@@ -47,10 +45,9 @@ func readSecretValue(w http.ResponseWriter, r *http.Request) (string, bool) {
 
 // handleCreateSecret: POST /documents/{id}/secrets {value} → {id, ref}; needs write access.
 func (s *Server) handleCreateSecret(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
-	if !s.canEditDoc(userID, docID) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz")
+	userID, ok := s.requireDocEdit(w, r, docID)
+	if !ok {
 		return
 	}
 	value, ok := readSecretValue(w, r)
@@ -74,15 +71,13 @@ func (s *Server) handleCreateSecret(w http.ResponseWriter, r *http.Request) {
 // edit it). A value belongs to exactly one note: a bullet copied or moved into another note has a copy
 // of its own there (storage/secret_gate.go), so a reference to the value of another note reveals nothing.
 func (s *Server) secretFor(w http.ResponseWriter, r *http.Request, write bool) (*storage.NoteSecret, bool) {
-	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
-	role := s.store.DocRole(userID, docID)
-	if role == "" || (write && !storage.CanEditDoc(role)) {
-		if role == "" {
-			writeError(w, http.StatusNotFound, "Notiz nicht gefunden")
-		} else {
-			writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz")
+	if write {
+		if _, ok := s.requireDocEdit(w, r, docID); !ok {
+			return nil, false
 		}
+	} else if s.store.DocRole(auth.GetUserID(r.Context()), docID) == "" {
+		writeErrorFrom(w, http.StatusNotFound, storage.ErrDocNotFound)
 		return nil, false
 	}
 	sec, err := s.store.GetSecret(chi.URLParam(r, "secretId"))

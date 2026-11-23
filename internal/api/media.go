@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -158,11 +157,6 @@ func (s *Server) audioSettings() audioSettings {
 
 var detectMedia = blockfmt.DetectMedia
 
-func (s *Server) canEditDoc(userID, docID string) bool {
-	role := s.store.DocRole(userID, docID)
-	return role == "owner" || role == "editor"
-}
-
 // storeMedia checks limits and writes the file; size limits must have been applied while reading.
 func (s *Server) storeMedia(w http.ResponseWriter, userID, docID string, data []byte, declared, sourceURL string) (*storage.Media, bool) {
 	m, status, err := s.saveMedia(userID, docID, data, declared, sourceURL)
@@ -217,10 +211,9 @@ func mediaResponse(m *storage.Media) map[string]any {
 
 // handleUploadMedia: POST /documents/{id}/media (multipart, field "file")
 func (s *Server) handleUploadMedia(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
-	if !s.canEditDoc(userID, docID) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz")
+	userID, ok := s.requireDocEdit(w, r, docID)
+	if !ok {
 		return
 	}
 	allowLongTransfer(w)
@@ -259,10 +252,9 @@ func (s *Server) handleUploadMedia(w http.ResponseWriter, r *http.Request) {
 // "download": true the image is only handed to the app, which compresses it and uploads it like a
 // picture of its own (nothing is stored here).
 func (s *Server) handleFetchMedia(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
-	if !s.canEditDoc(userID, docID) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz")
+	userID, ok := s.requireDocEdit(w, r, docID)
+	if !ok {
 		return
 	}
 	if img := s.imageSettings(); !img.Enabled || !img.External {
@@ -273,7 +265,10 @@ func (s *Server) handleFetchMedia(w http.ResponseWriter, r *http.Request) {
 		URL      string `json:"url"`
 		Download bool   `json:"download"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.URL) == "" {
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if strings.TrimSpace(req.URL) == "" {
 		writeError(w, http.StatusBadRequest, "Bild-URL erforderlich")
 		return
 	}

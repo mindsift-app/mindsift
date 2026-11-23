@@ -72,8 +72,8 @@ func TestMediaUploadReadAndAccess(t *testing.T) {
 	if rec := sessionCall(router, "GET", up.URL, strangerToken, "", ""); rec.Code != http.StatusNotFound {
 		t.Fatalf("stranger read: want 404, got %d", rec.Code)
 	}
-	if rec := mediaUpload(t, router, strangerToken, doc.ID, img, "image/png"); rec.Code != http.StatusForbidden {
-		t.Fatalf("stranger upload: want 403, got %d", rec.Code)
+	if rec := mediaUpload(t, router, strangerToken, doc.ID, img, "image/png"); rec.Code != http.StatusNotFound {
+		t.Fatalf("stranger upload: want 404 (like a missing note), got %d", rec.Code)
 	}
 	// Only real images and recordings, within the limits
 	if rec := mediaUpload(t, router, token, doc.ID, []byte("<svg onload=alert(1)>"), "image/svg+xml"); rec.Code != http.StatusUnsupportedMediaType {

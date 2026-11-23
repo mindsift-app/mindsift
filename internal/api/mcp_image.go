@@ -75,7 +75,7 @@ func (s *Server) mcpAddNoteImage(ctx context.Context, userID string, actor *apiA
 	if err := decodeArgs(args, &a); err != nil {
 		return nil, err
 	}
-	if err := s.editableNote(userID, a.NoteID); err != nil {
+	if err := s.docWritable(userID, a.NoteID); err != nil {
 		return nil, err
 	}
 	a.Data, a.URL = strings.TrimSpace(a.Data), strings.TrimSpace(a.URL)

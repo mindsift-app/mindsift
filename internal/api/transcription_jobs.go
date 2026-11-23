@@ -388,12 +388,9 @@ func (s *Server) checkTranscriptionStart(w http.ResponseWriter, userID string) b
 // handleTranscribeBlock: POST /documents/{id}/blocks/{blockId}/transcribe queues the transcription of a
 // recording in the note; its text becomes the caption. 202 with the job.
 func (s *Server) handleTranscribeBlock(w http.ResponseWriter, r *http.Request) {
-	userID, docID, role := s.docAccess(w, r)
-	if role == "" {
-		return
-	}
-	if !storage.CanEditDoc(role) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz (nur Lesen oder im Papierkorb)")
+	docID := chi.URLParam(r, "id")
+	userID, ok := s.requireDocEdit(w, r, docID)
+	if !ok {
 		return
 	}
 	blockID := chi.URLParam(r, "blockId")
