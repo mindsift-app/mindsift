@@ -243,7 +243,7 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 	}
 	user.IsActive = true
 	s.store.ClearEmailVerification(userID) // the admin vouches for the account
-	s.audit(r, storage.AuditAccountApproved, auditUserTarget(user), nil)
+	s.audit(r, storage.AuditAccountApproved, storage.AuditUserTarget(user), nil)
 	link := s.appLink(r)
 	lang := s.userLanguage(user.ID)
 	s.background(func() {

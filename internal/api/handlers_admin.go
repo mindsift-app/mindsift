@@ -232,7 +232,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 	if names := s.organizationNames(u.OrganizationIDs); len(names) > 0 {
 		created["organizations"] = names
 	}
-	s.audit(r, storage.AuditAccountCreated, auditUserTarget(u), created)
+	s.audit(r, storage.AuditAccountCreated, storage.AuditUserTarget(u), created)
 	writeJSON(w, http.StatusCreated, staffUser{User: *u})
 }
 
@@ -358,7 +358,7 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 	if req.RevokeKeys {
 		keys, grants, feed, err := s.store.RevokeAPIAccess(targetUserID)
 		if err != nil {
-			s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), details)
+			s.audit(r, storage.AuditAccountPasswordReset, storage.AuditUserTarget(target), details)
 			writeInternal(w, err)
 			return
 		}
@@ -369,9 +369,9 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		}
 	}
 	if len(details) == 0 {
-		s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), nil)
+		s.audit(r, storage.AuditAccountPasswordReset, storage.AuditUserTarget(target), nil)
 	} else {
-		s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), details)
+		s.audit(r, storage.AuditAccountPasswordReset, storage.AuditUserTarget(target), details)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -401,7 +401,7 @@ func (s *Server) handleAdminResetMFA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Warn("Two-factor sign-in reset by an administrator", "user_id", target.ID, "by", callerID)
-	s.audit(r, storage.AuditAccountMFAReset, auditUserTarget(target), nil)
+	s.audit(r, storage.AuditAccountMFAReset, storage.AuditUserTarget(target), nil)
 	s.notifySecurityChange(target, securityChangeReset)
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
@@ -431,7 +431,7 @@ func (s *Server) handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 		if pending {
 			details = map[string]bool{"pendingRegistration": true}
 		}
-		s.audit(r, storage.AuditAccountDeleted, auditUserTarget(targetUser), details)
+		s.audit(r, storage.AuditAccountDeleted, storage.AuditUserTarget(targetUser), details)
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }

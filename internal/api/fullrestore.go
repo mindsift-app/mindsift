@@ -189,7 +189,7 @@ func (s *Server) restoreFrom(w http.ResponseWriter, r *http.Request, backup stri
 		return
 	}
 	actor := s.auditActor(r)
-	plan := storage.RestorePlan{Staging: token, Media: media, SecretsKey: withKey, Backup: backup, PreBackup: pre, ActorID: actor.ID, ActorName: auditName(actor), Uploaded: uploaded}
+	plan := storage.RestorePlan{Staging: token, Media: media, SecretsKey: withKey, Backup: backup, PreBackup: pre, ActorID: actor.ID, ActorName: storage.AuditName(actor), Uploaded: uploaded}
 	if err := storage.WriteRestorePlan(dbPath, plan); err != nil {
 		failed(http.StatusInternalServerError, err)
 		return

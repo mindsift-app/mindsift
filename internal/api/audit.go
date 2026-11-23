@@ -32,22 +32,6 @@ type auditChanges struct {
 	Changes []auditChange `json:"changes"`
 }
 
-// auditUserTarget: an account as the target of a row.
-func auditUserTarget(u *domain.User) storage.AuditEntry {
-	if u == nil {
-		return storage.AuditEntry{TargetKind: storage.AuditTargetUser}
-	}
-	return storage.AuditEntry{TargetKind: storage.AuditTargetUser, TargetID: u.ID, TargetName: auditName(u)}
-}
-
-// auditName: the username, else the display name (accounts from before usernames).
-func auditName(u *domain.User) string {
-	if u.Username != "" {
-		return u.Username
-	}
-	return u.DisplayName
-}
-
 // audit records a change made by the signed-in account of the request. target carries TargetKind,
 // TargetID and TargetName; a failure is logged, the change itself stands.
 func (s *Server) audit(r *http.Request, action string, target storage.AuditEntry, details any) {
@@ -70,7 +54,7 @@ func (s *Server) auditAs(actor *domain.User, action string, target storage.Audit
 	e := target
 	e.Action = action
 	e.ActorKind, e.Source = storage.AuditActorUser, storage.AuditSourceWeb
-	e.ActorID, e.ActorName = actor.ID, auditName(actor)
+	e.ActorID, e.ActorName = actor.ID, storage.AuditName(actor)
 	s.recordAudit(e, details)
 }
 
@@ -214,9 +198,9 @@ func auditInviteTarget(inv *domain.UserInvite) storage.AuditEntry {
 // with what it waits for (the address confirmed, the approval).
 func (s *Server) auditRegistration(user *domain.User, inv *domain.UserInvite, awaitingApproval, emailConfirmation bool) {
 	if inv != nil {
-		details := map[string]any{"account": auditName(user)}
+		details := map[string]any{"account": storage.AuditName(user)}
 		if by, _ := s.store.GetUserByID(inv.CreatedBy); by != nil {
-			details["invitedBy"] = auditName(by)
+			details["invitedBy"] = storage.AuditName(by)
 		}
 		if names := s.organizationNames(inv.OrganizationIDs); len(names) > 0 {
 			details["organizations"] = names
@@ -232,10 +216,10 @@ func (s *Server) auditRegistration(user *domain.User, inv *domain.UserInvite, aw
 		details["emailConfirmation"] = true
 	}
 	if len(details) == 0 {
-		s.auditAs(user, storage.AuditAccountRegistered, auditUserTarget(user), nil)
+		s.auditAs(user, storage.AuditAccountRegistered, storage.AuditUserTarget(user), nil)
 		return
 	}
-	s.auditAs(user, storage.AuditAccountRegistered, auditUserTarget(user), details)
+	s.auditAs(user, storage.AuditAccountRegistered, storage.AuditUserTarget(user), details)
 }
 
 // organizationName: "" when there is no such organization.
@@ -275,7 +259,7 @@ func (s *Server) auditOrgMember(r *http.Request, action, orgID, userID string) {
 	if u == nil {
 		return
 	}
-	s.audit(r, action, auditUserTarget(u), map[string]string{"organization": s.organizationName(orgID), "organizationId": orgID})
+	s.audit(r, action, storage.AuditUserTarget(u), map[string]string{"organization": s.organizationName(orgID), "organizationId": orgID})
 }
 
 // auditUserUpdate records what PATCH /admin/users/{id} changed: the role, enabled or disabled, and
@@ -284,7 +268,7 @@ func (s *Server) auditUserUpdate(r *http.Request, before, after *domain.User) {
 	if before == nil || after == nil {
 		return
 	}
-	target := auditUserTarget(after)
+	target := storage.AuditUserTarget(after)
 	if before.Role != after.Role {
 		s.audit(r, storage.AuditAccountRoleChanged, target, map[string]string{"from": before.Role, "to": after.Role})
 	}

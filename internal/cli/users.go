@@ -212,10 +212,6 @@ func (c *command) record(action string, target storage.AuditEntry, details any) 
 	}
 }
 
-func userTarget(u *domain.User) storage.AuditEntry {
-	return storage.AuditEntry{TargetKind: storage.AuditTargetUser, TargetID: u.ID, TargetName: u.Username}
-}
-
 func (c *command) usersCreate(args []string) error {
 	p, err := c.parseFlags(args, flagSpec{bools: []string{"admin", "password-stdin"}, values: []string{"email", "display-name", "password-file"}})
 	if err != nil {
@@ -288,7 +284,7 @@ func (c *command) usersCreate(args []string) error {
 			_, _ = fmt.Fprintln(c.env.Stderr, "Warning: marking the setup as unfinished failed:", err)
 		}
 	}
-	c.record(storage.AuditAccountCreated, userTarget(u), map[string]string{"role": role})
+	c.record(storage.AuditAccountCreated, storage.AuditUserTarget(u), map[string]string{"role": role})
 
 	if c.json {
 		res := map[string]any{"created": true, "user": c.info(u)}
@@ -356,7 +352,7 @@ func (c *command) usersDelete(args []string) error {
 	if err := api.NewAccountTools(cfg, c.store).DeleteAccount(u); err != nil {
 		return err
 	}
-	c.record(storage.AuditAccountDeleted, userTarget(u), content)
+	c.record(storage.AuditAccountDeleted, storage.AuditUserTarget(u), content)
 	if c.json {
 		c.writeJSON(map[string]any{"deleted": true, "user": c.info(u), "content": content})
 		return nil
@@ -405,10 +401,10 @@ func (c *command) resetPassword(args []string) error {
 	}
 	record := func() {
 		if len(details) == 0 {
-			c.record(storage.AuditAccountPasswordReset, userTarget(u), nil)
+			c.record(storage.AuditAccountPasswordReset, storage.AuditUserTarget(u), nil)
 			return
 		}
-		c.record(storage.AuditAccountPasswordReset, userTarget(u), details)
+		c.record(storage.AuditAccountPasswordReset, storage.AuditUserTarget(u), details)
 	}
 	var keys, grants int
 	var feed bool
@@ -505,7 +501,7 @@ func (c *command) makeAdmin(args []string) error {
 	if err != nil {
 		return err
 	}
-	c.record(storage.AuditAccountRoleChanged, userTarget(updated), map[string]string{"from": u.Role, "to": role})
+	c.record(storage.AuditAccountRoleChanged, storage.AuditUserTarget(updated), map[string]string{"from": u.Role, "to": role})
 	if c.json {
 		c.writeJSON(map[string]any{"changed": true, "user": c.info(updated)})
 		return nil

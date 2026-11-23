@@ -840,7 +840,7 @@ func (s *Server) createOIDCAccount(r *http.Request, id *oidcIdentity, address st
 		addressState = "waiting for confirmation"
 	}
 	slog.Info("Account created at the first sign-in through OIDC", "user_id", user.ID, "username", user.Username, "provider", s.oidcName(), "address", addressState)
-	s.auditBy(storage.AuditActorOIDC, storage.AuditSourceOIDC, storage.AuditAccountCreated, auditUserTarget(user),
+	s.auditBy(storage.AuditActorOIDC, storage.AuditSourceOIDC, storage.AuditAccountCreated, storage.AuditUserTarget(user),
 		map[string]string{"role": user.Role, "provider": s.oidcName()})
 	return user, nil
 }
@@ -885,7 +885,7 @@ func (s *Server) syncOIDCAdmin(user *domain.User, id *oidcIdentity) {
 		slog.Warn("Stays administrator although not in the provider's admin group: the last administrator is never taken back", "user_id", user.ID, "group", group)
 	}
 	if changed {
-		s.auditBy(storage.AuditActorOIDC, storage.AuditSourceOIDC, storage.AuditAccountRoleChanged, auditUserTarget(user),
+		s.auditBy(storage.AuditActorOIDC, storage.AuditSourceOIDC, storage.AuditAccountRoleChanged, storage.AuditUserTarget(user),
 			map[string]string{"from": before, "to": user.Role, "group": group})
 	}
 }

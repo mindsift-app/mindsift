@@ -428,7 +428,7 @@ func (s *Server) purgeUnconfirmedAccounts(now time.Time) {
 	}
 	slog.Info("Unconfirmed registrations deleted", "count", len(gone))
 	for i := range gone {
-		s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountUnconfirmedDeleted, auditUserTarget(&gone[i]), nil)
+		s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountUnconfirmedDeleted, storage.AuditUserTarget(&gone[i]), nil)
 	}
 }
 

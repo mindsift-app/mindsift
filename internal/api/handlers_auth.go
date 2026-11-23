@@ -220,7 +220,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		s.setupCode.clear()
 		slog.Info("First administrator created in the setup wizard; the setup code is no longer valid", "user_id", user.ID)
 	}
-	s.auditAs(user, storage.AuditAccountCreated, auditUserTarget(user), map[string]string{"role": user.Role})
+	s.auditAs(user, storage.AuditAccountCreated, storage.AuditUserTarget(user), map[string]string{"role": user.Role})
 	if err := s.applySetupChoices(r, user, req.setupChoices); err != nil {
 		writeError(w, http.StatusInternalServerError, "Einstellungen konnten nicht gespeichert werden: "+clientMessage(err))
 		return
