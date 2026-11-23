@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import {
-  X,
   Plus,
   Trash,
   ArrowUp,
@@ -18,6 +17,7 @@ import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
 import { placeInViewport } from '../../lib/placeInViewport';
 import { useCloseOnEscape, useDismiss } from '../../lib/useDismiss';
+import { DialogHeader } from '../../components/BottomSheet';
 
 // Width of the colour menu (its class w-44)
 const COLOR_MENU_WIDTH = 176;
@@ -214,25 +214,13 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
         className="w-full max-w-md panel-surface shadow-panel border border-border my-auto flex flex-col max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-panel">
-          <div className="flex items-center gap-2">
-            <Columns2 className="w-4 h-4 text-accent" />
-            <div>
-              <h3 className="text-sm font-semibold text-main">{t('columnsModal.title')}</h3>
-              {listTitle && (
-                <p className="text-[10px] text-muted truncate">{t('columnsModal.list', { title: listTitle })}</p>
-              )}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted hover:text-main p-1.5 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <DialogHeader
+          title={t('columnsModal.title')}
+          subtitle={listTitle ? t('columnsModal.list', { title: listTitle }) : undefined}
+          icon={<Columns2 className="w-4 h-4" />}
+          onClose={onClose}
+          className="px-4 py-2 bg-panel"
+        />
 
         {/* Content */}
         <div className="p-4 space-y-4 overflow-y-auto flex-1">

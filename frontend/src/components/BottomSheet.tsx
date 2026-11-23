@@ -49,6 +49,54 @@ interface BottomSheetProps {
   children: React.ReactNode | ((close: () => void) => React.ReactNode);
 }
 
+interface DialogHeaderProps {
+  title: React.ReactNode;
+  /** Shown in an accent box before the title */
+  icon?: React.ReactNode;
+  /** Small line above the title (what kind of thing it is, the title then names it) */
+  overline?: React.ReactNode;
+  /** Small line below the title */
+  subtitle?: React.ReactNode;
+  onClose: () => void;
+  /** Spacing and background of the row; default: as on top of a sheet's panel */
+  className?: string;
+}
+
+/**
+ * Header of a dialog or sheet (Doku/ui-patterns.md, "Dialog Header"): icon in an accent box, title, an X of
+ * 44 px on phones and 32 px from sm on, a line below. BottomSheet draws it for `title`; windows of their own
+ * (sharing, links, the Kanban columns) put it on top.
+ */
+export function DialogHeader({ title, icon, overline, subtitle, onClose, className = 'pb-2 mb-3' }: DialogHeaderProps) {
+  const { t } = useTranslation();
+  const twoLines = Boolean(overline || subtitle);
+  return (
+    <div className={`flex items-center justify-between gap-2 border-b border-border ${className}`}>
+      <div className="flex items-center gap-2 min-w-0">
+        {icon && (
+          <span className={`${twoLines ? 'w-8 h-8' : 'w-7 h-7'} rounded-btn bg-accent/15 text-accent flex items-center justify-center shrink-0`}>
+            {icon}
+          </span>
+        )}
+        <div className="min-w-0">
+          {overline && <p className="text-[11px] text-muted truncate">{overline}</p>}
+          <h3 className="text-sm font-semibold text-main truncate">{title}</h3>
+          {subtitle && <p className="text-[11px] text-muted truncate">{subtitle}</p>}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={t('close')}
+        title={t('close')}
+        className="-mr-2 w-11 h-11 sm:w-8 sm:h-8 sm:mr-0 flex items-center justify-center text-faint hover:text-main rounded-btn transition-colors cursor-pointer shrink-0"
+      >
+        <X className="w-5 h-5" />
+      </button>
+    </div>
+  );
+}
+
 /**
  * Sheet from the bottom of the screen (Doku/ui-patterns.md, "Bottom Sheet"): the page behind is dimmed with
  * the theme's overlay and does not scroll, a grip on top, the panel slides in. The backdrop and Escape close
@@ -72,7 +120,6 @@ export function BottomSheet({
   closeOnEscape = true,
   children,
 }: BottomSheetProps) {
-  const { t } = useTranslation();
   const { inset, visibleHeight } = useKeyboardInset();
   const close = () => {
     if (guard === undefined || guard === false) onClose();
@@ -103,23 +150,7 @@ export function BottomSheet({
         style={{ ...style, ...docked }}
         className={`fixed inset-x-0 ${dockToKeyboard ? 'bottom-(--kb-inset) max-h-(--vv-max)' : 'bottom-0 max-h-[85vh]'} overflow-y-auto bg-panel border-t border-border rounded-t-2xl shadow-panel animate-in slide-in-from-bottom duration-200 ${padding} ${desktopClassName ? `sm:slide-in-from-bottom-2 ${desktopClassName}` : ''}`}
       >
-        {title && (
-          <div className="flex items-center justify-between gap-2 pb-2 border-b border-border mb-3">
-            <h3 className="text-sm font-semibold text-main flex items-center gap-2 min-w-0">
-              {icon && <span className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center shrink-0">{icon}</span>}
-              <span className="truncate">{title}</span>
-            </h3>
-            <button
-              type="button"
-              onClick={close}
-              aria-label={t('close')}
-              title={t('close')}
-              className="-mr-2 w-11 h-11 sm:w-8 sm:h-8 sm:mr-0 flex items-center justify-center text-faint hover:text-main rounded-btn transition-colors cursor-pointer shrink-0"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        )}
+        {title && <DialogHeader title={title} icon={icon} onClose={close} />}
         {typeof children === 'function' ? children(close) : children}
         {/* Last and out of the flow, so the panel's own spacing (space-y-*) still starts with the first row */}
         <div className={`absolute m-0! top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-border rounded-full ${desktopClassName ? 'sm:hidden' : ''}`} aria-hidden="true" />
