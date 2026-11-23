@@ -8,6 +8,8 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+## [0.99.2] - 2026-11-23
+
 ### Changed
 - Escape now closes only what is on top: a menu or list inside a dialog first, then a dialog opened from another one, then the one below. Before, one Escape could close several at once (for example a task opened from a calendar day together with the day's sheet). The sharing dialog, "Manage columns" and "New group" now close on Escape too.
 - A tap or click beside an open menu, list or popover only closes it and no longer reaches what lies below (on phones, tapping beside the notification list could open a task). The expanded navigation rail and the people suggestions under a field keep passing the click on.
