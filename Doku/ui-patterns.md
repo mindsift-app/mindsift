@@ -179,7 +179,7 @@ Component: [NavRail.tsx](../frontend/src/app/NavRail.tsx), rows [RailItemContent
 Component: [QuickDumpWindow.tsx](../frontend/src/app/QuickDumpWindow.tsx) with the unchanged `InstantCaptureBar` (target, list, priority, due date, voice).
 
 - The `+` of the rail, the key **C** (bare, outside text fields; `useQuickDumpShortcut`) and every desktop "Quick Dump" action (the empty triage, the app icon shortcut) open the capture bar in a window at the top centre over everything, the page dimmed behind it like a spotlight search.
-- **After sending it stays open** for the next thought: a dump rarely comes alone, the bar confirms each entry and keeps the cursor. Escape (empties the field, as in the bar) or a click beside the window closes it; a target "note" closes it too, as the new note opens. The window stays mounted while closed, so the chosen target and a text left by a click beside it are there next time.
+- **After sending it stays open** for the next thought: a dump rarely comes alone, the bar confirms each entry and keeps the cursor. Escape (empties the field and closes the window in one press; open options take the first Escape, as the top layer of the Escape stack) or a click beside the window closes it; a target "note" closes it too, as the new note opens. The window stays mounted while closed, so the chosen target and a text left by a click beside it are there next time.
 - Phones keep their sheet from the `+` of the bottom bar (`MobileCaptureSheet`).
 
 ## Toolbars of the Views (Desktop)

@@ -25,6 +25,7 @@ import { VoiceWave } from '../../components/VoiceWave';
 import { DateField } from '../../components/DateField';
 import { NaturalDateChip, PhraseHighlight, applyNaturalDate, useNaturalDate } from '../../components/NaturalDateHint';
 import { useDismiss } from '../../lib/useDismiss';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 export type CaptureTarget = 'inbox' | 'task' | 'list_item' | 'document';
 
@@ -154,22 +155,34 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
   // A remembered task list that is gone (deleted, access removed) falls back to all tasks
   const selectedTaskList = writableTaskLists.find((l) => l.id === targetTaskListId);
 
-  // The options close on a press beside them or on Escape (Escape in the field also empties it, below)
-  useDismiss(containerRef, () => setShowOptions(false), { active: showOptions && !inlineOptions });
+  // The options close on a press beside them or on Escape, as a layer of the Escape stack (lib/useDismiss.ts)
+  const optionsLayer = showOptions && !inlineOptions;
+  useDismiss(containerRef, () => setShowOptions(false), { active: optionsLayer });
 
-  // Escape in the field empties it (the bare "c" that opens the Quick Dump lives in app/useQuickDumpShortcut.ts)
+  // Escape in the field empties it (the bare "c" that opens the Quick Dump lives in app/useQuickDumpShortcut.ts).
+  // An Escape that closes the options only does that: the capture phase notes the open options before the
+  // stack closes them, so the next Escape empties the field (and the Quick Dump window closes with it)
+  const optionsLayerRef = useLatestRef(optionsLayer);
   useEffect(() => {
+    let optionsOpenAt: KeyboardEvent | null = null;
+    const noteOptions = (e: KeyboardEvent) => {
+      optionsOpenAt = e.key === 'Escape' && optionsLayerRef.current ? e : null;
+    };
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && document.activeElement === inputRef.current) {
+      if (e.key === 'Escape' && e !== optionsOpenAt && document.activeElement === inputRef.current) {
         setContent('');
         setIsMultiline(false);
         setShowOptions(false);
         inputRef.current?.blur();
       }
     };
+    window.addEventListener('keydown', noteOptions, true);
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    return () => {
+      window.removeEventListener('keydown', noteOptions, true);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [optionsLayerRef]);
 
   const toggleVoiceDictation = () => {
     if (voice.state === 'idle') {

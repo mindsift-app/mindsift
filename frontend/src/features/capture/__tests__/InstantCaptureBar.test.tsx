@@ -63,6 +63,29 @@ describe('InstantCaptureBar', () => {
     expect(screen.queryByText('Homelab')).toBeNull();
   });
 
+  it('closes the options on the first Escape and empties the field only on the next', async () => {
+    await act(async () => {
+      render(<InstantCaptureBar onCaptured={() => {}} lists={lists} />);
+    });
+    const box = screen.getByPlaceholderText('Quick Dump…') as HTMLTextAreaElement;
+    await act(async () => {
+      box.focus();
+    });
+    fireEvent.change(box, { target: { value: 'Backup prüfen' } });
+    // The options open from the button; the focus stays in the field
+    fireEvent.click(screen.getByTitle(/Ziel wählen/));
+    expect(screen.getByRole('button', { name: /Direkt auf Liste/ })).toBeTruthy();
+
+    fireEvent.keyDown(box, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: /Direkt auf Liste/ })).toBeNull();
+    expect(box.value).toBe('Backup prüfen');
+    expect(document.activeElement).toBe(box);
+
+    fireEvent.keyDown(box, { key: 'Escape' });
+    expect(box.value).toBe('');
+    expect(document.activeElement).not.toBe(box);
+  });
+
   describe('dates in the text', () => {
     beforeEach(() => {
       // Wednesday 18.11.2026, 10:00
