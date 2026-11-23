@@ -20,6 +20,7 @@ Versions without a git tag were development states and were never published as a
 - Desktop app: taking over an account from a server's backup is now recorded in the audit log (Administration → Log), like the other changes to backups.
 - Notices at the bottom of the screen (Undo after deleting, errors, "Gespeichert", the offline notice, the confirmation of a new e-mail address, the hints after a dictation) now stack one above the other instead of covering each other, and all look the same. On phones, the confirmation of a new e-mail address now appears at the bottom like the other notices.
 - Loading and empty states look the same everywhere: one spinner with a short text ("Wird geladen …", "Notizen werden geladen …") and one muted line when a list is empty.
+- Settings → Data: replacing your data with one of your server backups now asks with the same red warning and tick box as an import, instead of a second click on the button, and afterwards shows what came back and the entries left out, like an import. The desktop app's take-over of a server account lists the entries left out too.
 
 ### Fixed
 - Adding someone to a group, removing them or deleting the group now shows or removes the group's task lists, lists, notes and shared folders right away for the people concerned; before, they saw the change only after reloading.
