@@ -21,7 +21,7 @@ fail() { echo "check-sources: $*" >&2; status=1; }
 for f in go.mod.yml modules.txt node-sources.json sources.sha256; do
   [ -s "$DIR/$f" ] || fail "$DIR/$f is missing: run $DIR/update-sources.sh"
 done
-if [ -s "$DIR/sources.sha256" ] && ! sha256sum -c --status "$DIR/sources.sha256" 2>/dev/null; then
+if [ -s "$DIR/sources.sha256" ] && ! sha256sum -c "$DIR/sources.sha256" >/dev/null 2>&1; then
   fail "the generated sources do not fit desktop/go.mod, desktop/go.sum or frontend/package-lock.json any more: run $DIR/update-sources.sh and commit the result"
 fi
 
