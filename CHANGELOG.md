@@ -17,6 +17,7 @@ Versions without a git tag were development states and were never published as a
 - The Flatpak of a release (the download on the release page and flatpak.mindsift.app) is now built from the release tag the way Flathub builds it: offline, with the frontend, the Go modules and the license file built from source inside the Flatpak SDK.
 
 ### Fixed
+- Sending an invite by e-mail now checks the address like everywhere else in the app: an incomplete one such as `anna@` is refused instead of binding a single-use invite to it.
 - An inbox entry turned into a note now shows up in the note list on your other devices and for people it is shared with right away, as it already did when an AI agent converted it; before, they saw it only after a reload.
 - A recording sent for transcription no longer stays at "Transcribing…" until a reload when the server finished or failed on it very quickly; the message that another attempt follows now shows reliably.
 - Slash commands now work anywhere in a bullet that already has text, not only at the end: typing `/code`, `/h2`, `/todo`, `/table` and the other block types at the start or in the middle of the text opens the menu and turns the whole bullet into that type. Only the typed command is removed, the rest of the text stays exactly as it was, the cursor stays where you typed, and Ctrl+Z undoes the change in one step. Dividers, pictures, voice notes and drawings still need an empty bullet.

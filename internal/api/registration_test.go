@@ -363,3 +363,43 @@ func TestRegisterCreateErrors(t *testing.T) {
 		t.Fatalf("failed write: want 500 without details, got %d %v", code, out)
 	}
 }
+
+// Sending an invite needs a real address (the same check as everywhere else, not only an "@"); a
+// refused one does not bind a single-use invite.
+func TestSendInviteChecksTheAddress(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	sys, _ := store.GetSystemSettings()
+	sys.SMTPHost = "smtp.example.com"
+	if err := store.UpdateSystemSettings(sys); err != nil {
+		t.Fatal(err)
+	}
+	var sentTo []string
+	srv.notifyEmailHook = func(to, subject, text, html string) error {
+		sentTo = append(sentTo, to)
+		return nil
+	}
+	owner, _ := store.EnsureDefaultUser()
+	inv, err := store.CreateUserInvite(owner.ID, "", nil, 7, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	router := srv.Router()
+	send := func(email string) int {
+		body, _ := json.Marshal(map[string]string{"email": email})
+		return sessionCall(router, "POST", "/api/v1/admin/invites/"+inv.ID+"/send", token, string(body), "").Code
+	}
+	for _, bad := range []string{"@", "anna@", "@example.com", "anna@example.com, ben@example.com", "Anna <anna@example.com>"} {
+		if code := send(bad); code != http.StatusBadRequest {
+			t.Errorf("%q: want 400, got %d", bad, code)
+		}
+	}
+	if got, _ := store.GetUserInviteByID(inv.ID); got == nil || got.Email != "" {
+		t.Fatalf("a refused address bound the invite: %+v", got)
+	}
+	if code := send(" Anna@Example.com "); code != http.StatusOK {
+		t.Fatalf("valid address: %d", code)
+	}
+	if len(sentTo) != 1 || sentTo[0] != "anna@example.com" {
+		t.Fatalf("sent to %v", sentTo)
+	}
+}
