@@ -56,10 +56,9 @@ const { engines, FakeEngine } = vi.hoisted(() => {
 
 vi.mock('../../../lib/docSync/engine', () => ({ DocSyncEngine: FakeEngine }));
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return { ...actual, api: { ...actual.api, getDocument: vi.fn() } };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, { getDocument: vi.fn() })
+);
 
 const blk = (id: string, content: string, type: BlockType = 'text'): DocumentBlock => ({ id, documentId: 'doc_1', type, content, level: 0, position: 1000 });
 const fetched: DocumentBlock[] = [blk('a', 'Vor dem Bild'), blk('b', 'Nach dem Bild')];

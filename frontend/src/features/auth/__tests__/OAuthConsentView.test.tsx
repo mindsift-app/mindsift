@@ -3,13 +3,12 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const getOAuthAuthorizeInfo = vi.fn();
 const answerOAuthAuthorize = vi.fn(async () => ({ redirect: 'https://claude.ai/cb?code=c' }));
-vi.mock('../../../lib/api', () => ({
-  api: {
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi({
     getOAuthAuthorizeInfo: (...args: unknown[]) => getOAuthAuthorizeInfo(...(args as [])),
     answerOAuthAuthorize: (...args: unknown[]) => answerOAuthAuthorize(...(args as [])),
-  },
-  triggerHaptic: vi.fn(),
-}));
+  })
+);
 
 import { OAuthConsentView } from '../OAuthConsentView';
 

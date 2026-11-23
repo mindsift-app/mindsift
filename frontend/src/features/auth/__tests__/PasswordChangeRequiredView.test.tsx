@@ -2,9 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const changeOwnPassword = vi.fn(async () => {});
-vi.mock('../../../lib/api', () => ({
-  api: { changeOwnPassword: (...a: unknown[]) => changeOwnPassword(...(a as [])) },
-}));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi({ changeOwnPassword: (...a: unknown[]) => changeOwnPassword(...(a as [])) }));
 
 import { PasswordChangeRequiredView } from '../PasswordChangeRequiredView';
 import { User } from '../../../lib/types';

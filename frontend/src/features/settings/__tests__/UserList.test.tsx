@@ -4,6 +4,7 @@ import { UserList } from '../admin/UserList';
 import { UsersSection } from '../admin/UsersSection';
 import { useAdminSettings } from '../admin/useAdminSettings';
 import { Organization, User } from '../../../lib/types';
+import { setViewportWidth } from '../../../test/viewport';
 
 type Admin = ReturnType<typeof useAdminSettings>;
 
@@ -198,18 +199,13 @@ describe('UserList', () => {
   });
 
   it('shows details in a sheet on phones', () => {
-    const width = window.innerWidth;
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 400 });
-    try {
-      render(<UserList admin={fakeAdmin([me, person(1)])} currentUser={me} isServerAdmin />);
-      fireEvent.click(screen.getByRole('button', { name: /Person 001/ }));
-      const sheet = screen.getByRole('dialog', { name: 'Person 001' });
-      expect(within(sheet).getByRole('button', { name: 'Sperren' })).toBeTruthy();
-      fireEvent.keyDown(window, { key: 'Escape' });
-      expect(screen.queryByRole('dialog')).toBeNull();
-    } finally {
-      Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
-    }
+    setViewportWidth(400);
+    render(<UserList admin={fakeAdmin([me, person(1)])} currentUser={me} isServerAdmin />);
+    fireEvent.click(screen.getByRole('button', { name: /Person 001/ }));
+    const sheet = screen.getByRole('dialog', { name: 'Person 001' });
+    expect(within(sheet).getByRole('button', { name: 'Sperren' })).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
 

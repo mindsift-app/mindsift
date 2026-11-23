@@ -6,10 +6,9 @@ import { TourOfferCard } from '../TourOfferCard';
 import { DEMO_TOUR_OFFERED_KEY, tourOfferPending } from '../tourOffer';
 import { onTourStartRequest, requestTourStart } from '../tourEvents';
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return { ...actual, api: { ...actual.api, updateSettings: vi.fn() } };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, { updateSettings: vi.fn() })
+);
 
 const anna = (tourOffered?: boolean) =>
   ({ id: 'usr_anna', email: 'anna@example.com', displayName: 'Anna', role: 'member', tourOffered }) as User;

@@ -5,10 +5,9 @@ import type { UpdateStatus, User } from '../../../lib/types';
 import { UpdateNoticeCard } from '../UpdateNoticeCard';
 import { UpdateStatusCard } from '../../settings/admin/UpdateStatusCard';
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return { ...actual, api: { ...actual.api, adminUpdateStatus: vi.fn(), adminDismissUpdate: vi.fn() } };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, { adminUpdateStatus: vi.fn(), adminDismissUpdate: vi.fn() })
+);
 
 const person = (role: 'admin' | 'member', tourOffered = true) =>
   ({ id: 'usr_anna', email: 'anna@example.com', displayName: 'Anna', role, tourOffered }) as User;

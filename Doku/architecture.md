@@ -294,7 +294,7 @@ Stage 3  alpine:3.24      binary only, ca-certificates, tzdata
 
 The displayed version (phone header, expanded desktop rail, profile menu, About dialog) is injected by build arg `APP_VERSION`: CI supplies the tag name on Git tags (`v0.6.0`), otherwise the app displays the version from `frontend/package.json` with `-dev` suffix (`v0.6.0-dev`). Implemented in `frontend/vite.config.ts` and `frontend/src/version.ts`.
 
-Tests run during the image build of GitHub `main` (frontend: `npm run test:run`, backend: `go test ./...` in the build stage, which has no `node_modules`; `TEST_REFS` in the workflow), and failures abort that build; other builds skip them, because they run on the developer's machine (targeted for every push, the full `ci/local-checks.sh` before a release). Frontend tests are located under `frontend/src/**/__tests__/` (Vitest + jsdom + Testing Library, setup in `frontend/src/test/setup.ts`).
+Tests run during the image build of GitHub `main` (frontend: `npm run test:run`, backend: `go test ./...` in the build stage, which has no `node_modules`; `TEST_REFS` in the workflow), and failures abort that build; other builds skip them, because they run on the developer's machine (targeted for every push, the full `ci/local-checks.sh` before a release). Frontend tests are located under `frontend/src/**/__tests__/` (Vitest + jsdom + Testing Library, setup in `frontend/src/test/setup.ts`). Shared helpers in `frontend/src/test/`: test data and `flush` (`fixtures.ts`), the window width for phone layouts (`viewport.ts`, reset after every test), realtime events (`realtime.ts`) and `lib/api` for `vi.mock` (`apiMock.ts`: `withApi` replaces some methods of the real module, `stubApi` stands in for it).
 
 ## Container User
 

@@ -2,14 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { useCallback, useRef, useState } from 'react';
 
-vi.mock('../../lib/api', () => ({
-  api: {
+vi.mock('../../lib/api', async () =>
+  (await import('../../test/apiMock')).stubApi({
     getTaskLists: vi.fn(async () => []),
     captureThought: vi.fn(async (content: string) => ({ id: 't1', content, status: 'inbox' })),
     getAuthStatus: vi.fn(async () => ({ voice: { mode: 'off' } })),
-  },
-  triggerHaptic: vi.fn(),
-}));
+  })
+);
 
 import { NavRail, NAV_RAIL_KEY } from '../NavRail';
 import { QuickDumpWindow } from '../QuickDumpWindow';

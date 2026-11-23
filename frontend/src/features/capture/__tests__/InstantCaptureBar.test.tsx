@@ -2,17 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const captureThought = vi.fn(async (content: string) => ({ id: 't1', content }));
-vi.mock('../../../lib/api', () => ({
-  api: {
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi({
     getTaskLists: vi.fn(async () => [
       { id: 'tkl_1', title: 'Homelab', icon: '🖥️', permission: 'owner' },
       { id: 'tkl_2', title: 'Fremd', icon: '🔒', permission: 'viewer' },
     ]),
     captureThought: (...args: unknown[]) => captureThought(...(args as [string])),
     getAuthStatus: vi.fn(async () => ({ voice: { mode: 'off' } })),
-  },
-  triggerHaptic: vi.fn(),
-}));
+  })
+);
 
 import { InstantCaptureBar } from '../InstantCaptureBar';
 import type { SharedList } from '../../../lib/types';

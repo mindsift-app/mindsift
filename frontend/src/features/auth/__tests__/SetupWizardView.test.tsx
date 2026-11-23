@@ -2,11 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const completeSetup = vi.fn(async (_payload: unknown) => ({ token: 't', user: { id: 'u' } }));
-vi.mock('../../../lib/api', () => ({
-  api: { completeSetup: (payload: unknown) => completeSetup(payload) },
-  ApiError: class extends Error {},
-  triggerHaptic: vi.fn(),
-}));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi({ completeSetup: (payload: unknown) => completeSetup(payload) }));
 
 import { SetupWizardView } from '../SetupWizardView';
 

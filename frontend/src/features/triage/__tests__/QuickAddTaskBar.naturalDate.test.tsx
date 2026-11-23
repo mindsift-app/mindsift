@@ -2,13 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const captureThought = vi.fn(async (content: string) => ({ id: 't1', content }));
-vi.mock('../../../lib/api', () => ({
-  api: {
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi({
     captureThought: (...args: unknown[]) => captureThought(...(args as [string])),
     getAuthStatus: vi.fn(async () => ({ voice: { mode: 'off' } })),
-  },
-  triggerHaptic: vi.fn(),
-}));
+  })
+);
 
 import { QuickAddTaskBar } from '../QuickAddTaskBar';
 import { MobileTaskCreateSheet } from '../MobileTaskCreateSheet';

@@ -6,14 +6,13 @@ const finishSetup = vi.fn(async (_payload: unknown) => {});
 const noMail = { smtpConfigured: false, smtpViaEnv: false, baseUrlSet: false, emailLinks: false, backupDir: '/data/backups' };
 const getSetupStatus = vi.fn(async (): Promise<Record<string, unknown>> => noMail);
 const adminTestSMTP = vi.fn(async (_to: string, _smtp?: unknown) => ({ status: 'ok' }));
-vi.mock('../../../lib/api', () => ({
-  api: {
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi({
     finishSetup: (payload: unknown) => finishSetup(payload),
     getSetupStatus: () => getSetupStatus(),
     adminTestSMTP: (to: string, smtp?: unknown) => adminTestSMTP(to, smtp),
-  },
-  triggerHaptic: vi.fn(),
-}));
+  })
+);
 
 import { FinishSetupView } from '../FinishSetupView';
 

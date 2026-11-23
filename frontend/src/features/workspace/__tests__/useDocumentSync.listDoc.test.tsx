@@ -22,10 +22,9 @@ vi.mock('../../../lib/docSync/engine', () => ({
   },
 }));
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return { ...actual, api: { ...actual.api, getDocument: vi.fn() } };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, { getDocument: vi.fn() })
+);
 
 describe('useDocumentSync with a note of the note list', () => {
   beforeEach(() => vi.clearAllMocks());

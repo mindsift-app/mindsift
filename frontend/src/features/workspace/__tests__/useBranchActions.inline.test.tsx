@@ -5,10 +5,9 @@ import { ConfirmHost } from '../../../components/askConfirm';
 import { useBranchActions } from '../useBranchActions';
 import type { DocumentBlock } from '../../../lib/types';
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return { ...actual, api: { ...actual.api, inlineNote: vi.fn() } };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, { inlineNote: vi.fn() })
+);
 
 const linkBlock: DocumentBlock = { id: 'blk_l', type: 'bullet', content: '[[Garten#doc_g]]', level: 0, position: 1 };
 

@@ -1,19 +1,18 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { BottomSheet } from '../BottomSheet';
 import { holdLeave } from '../../lib/leaveGuard';
+import { setViewportWidth } from '../../test/viewport';
 
 const askChoice = vi.hoisted(() => vi.fn());
 vi.mock('../askConfirm', () => ({ askChoice }));
 
-const width = (w: number) => Object.defineProperty(window, 'innerWidth', { configurable: true, value: w });
 
 describe('BottomSheet', () => {
   beforeEach(() => {
     askChoice.mockReset();
-    width(390);
+    setViewportWidth(390);
   });
-  afterEach(() => width(1024));
 
   it('the backdrop, Escape and the X close it; a click inside does not', () => {
     const onClose = vi.fn();
@@ -40,7 +39,7 @@ describe('BottomSheet', () => {
   });
 
   it('a phone-only sheet does not take Escape in a wide window', () => {
-    width(1280);
+    setViewportWidth(1280);
     const onClose = vi.fn();
     render(
       <BottomSheet phoneOnly onClose={onClose}>

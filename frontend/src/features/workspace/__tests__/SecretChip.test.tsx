@@ -9,10 +9,9 @@ import { TestOutlinerBlock } from './TestOutlinerBlock';
 import type { DocumentBlock } from '../../../lib/types';
 import { api } from '../../../lib/api';
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return { ...actual, api: { ...actual.api, revealSecret: vi.fn(), updateSecret: vi.fn(), createSecret: vi.fn() } };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, { revealSecret: vi.fn(), updateSecret: vi.fn(), createSecret: vi.fn() })
+);
 
 const text = 'Server: {{secret:secab12}} Port 22';
 

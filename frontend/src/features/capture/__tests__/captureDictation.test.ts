@@ -6,7 +6,7 @@ const api = vi.hoisted(() => ({
   getThought: vi.fn(),
   updateThought: vi.fn(),
 }));
-vi.mock('../../../lib/api', () => ({ api }));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi(api));
 
 import { captureDictation, undoDictationDate } from '../captureDictation';
 import { setTypedRecognition } from '../../../lib/typedRecognition';

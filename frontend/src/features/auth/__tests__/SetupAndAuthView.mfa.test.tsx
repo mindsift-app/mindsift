@@ -3,11 +3,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const login = vi.fn(async () => ({ mfaRequired: true, mfaToken: 'mfa_1', methods: ['totp', 'recovery'], expiresIn: 300 }));
 const loginMfa = vi.fn(async () => ({ token: 't', user: { id: 'u1' }, method: 'totp', recoveryCodesLeft: 10 }));
-vi.mock('../../../lib/api', () => ({
-  api: { login: (...a: unknown[]) => login(...(a as [])), loginMfa: (...a: unknown[]) => loginMfa(...(a as [])) },
-  ApiError: class extends Error {},
-  triggerHaptic: vi.fn(),
-}));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi({ login: (...a: unknown[]) => login(...(a as [])), loginMfa: (...a: unknown[]) => loginMfa(...(a as [])) }));
 
 import { SetupAndAuthView } from '../SetupAndAuthView';
 
