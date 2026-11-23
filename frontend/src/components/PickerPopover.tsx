@@ -4,6 +4,7 @@ import { Check, Search } from 'lucide-react';
 import { NO_AUTOFILL } from '../lib/noAutofill';
 import { placeInViewport } from '../lib/placeInViewport';
 import { useDismiss } from '../lib/useDismiss';
+import { EmptyState } from './EmptyState';
 
 export interface PickerItem {
   id: string;
@@ -144,7 +145,9 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({
           ))}
         </div>
       ) : (
-        <p className="px-2 py-1.5 text-faint border-t border-border">{empty}</p>
+        <EmptyState compact className="border-t border-border">
+          {empty}
+        </EmptyState>
       )}
     </div>,
     document.body

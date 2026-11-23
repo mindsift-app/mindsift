@@ -16,6 +16,7 @@ import { LOW_RECOVERY_CODES } from '../../auth/MfaStep';
 import { errorMessage } from '../../../lib/errorMessage';
 import { LoadingState } from '../../../components/Spinner';
 import { SettingsHeading } from '../../../components/SettingsCard';
+import { EmptyState } from '../../../components/EmptyState';
 
 type Flow =
   | { step: 'idle' }
@@ -387,7 +388,9 @@ export function TwoFactorCard({
                 )}
               </div>
               {status.trustedDevices.length === 0 ? (
-                <p className="text-[11px] text-faint">{t('security.twoFactor.trustedNone')}</p>
+                <EmptyState compact framed>
+                  {t('security.twoFactor.trustedNone')}
+                </EmptyState>
               ) : (
                 <ul className="divide-y divide-border rounded-card border border-border bg-canvas">
                   {status.trustedDevices.map((d) => {
