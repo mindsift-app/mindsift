@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { onRealtimeStatus } from './api';
+import { fetchHealth } from './api/client';
 
 // Grace period before a missing realtime connection counts as offline (app start, short reconnects)
 export const SERVER_OFFLINE_GRACE_MS = 4000;
@@ -11,14 +12,7 @@ export const SERVER_PROBE_INTERVAL_MS = 15000;
 // offline: no server at all
 export type ConnectionState = 'online' | 'limited' | 'offline';
 
-async function serverReachable(): Promise<boolean> {
-  try {
-    const res = await fetch('/api/v1/health', { cache: 'no-store' });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+const serverReachable = async (): Promise<boolean> => (await fetchHealth()) !== null;
 
 // Whether the server is reachable, judged by the app-wide realtime connection. Unlike navigator.onLine it
 // also notices a server that is down while the device still has network. Without device network it is

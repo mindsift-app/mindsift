@@ -128,25 +128,7 @@ export async function request<T>(path: string, { timeout = 'normal', ...options 
     window.clearTimeout(timeoutId);
   }
 
-  if (
-    res.status === 401 &&
-    !path.includes('/auth/login') &&
-    !path.includes('/auth/register') &&
-    !path.includes('/auth/setup') &&
-    !path.includes('/auth/status') &&
-    // A ticket that ran out is no sign-out of the session that sent it
-    !path.includes('/auth/oidc/') &&
-    // The stream reconnects when the server ends it after a new password, possibly before the answer with the
-    // fresh token is read: the next try uses that one (a session that really ended fails everywhere else)
-    !path.includes('/auth/stream-ticket')
-  ) {
-    clearToken();
-    window.dispatchEvent(new CustomEvent('mindsift:unauthorized'));
-  }
-
-  // Sliding session: the server hands out a fresh token once a day (or after a password change)
-  const renewed = res.headers.get('X-Session-Token');
-  if (renewed && res.ok) setToken(renewed);
+  noteSession(path, res);
 
   if (!res.ok) {
     let errMsg = `HTTP ${res.status}`;
@@ -170,6 +152,56 @@ export async function request<T>(path: string, { timeout = 'normal', ...options 
   const data = await res.json();
   if (cacheable) writeCached(userKey, path, data);
   return data;
+}
+
+// What every answer to a signed-in request says about the session: 401 ends it (the app shows the sign-in),
+// and once a day (or after a password change) the server hands out a fresh token (sliding session)
+function noteSession(path: string, res: Response): void {
+  if (
+    res.status === 401 &&
+    !path.includes('/auth/login') &&
+    !path.includes('/auth/register') &&
+    !path.includes('/auth/setup') &&
+    !path.includes('/auth/status') &&
+    // A ticket that ran out is no sign-out of the session that sent it
+    !path.includes('/auth/oidc/') &&
+    // The stream reconnects when the server ends it after a new password, possibly before the answer with the
+    // fresh token is read: the next try uses that one (a session that really ended fails everywhere else)
+    !path.includes('/auth/stream-ticket')
+  ) {
+    clearToken();
+    window.dispatchEvent(new CustomEvent('mindsift:unauthorized'));
+  }
+  const renewed = res.headers.get('X-Session-Token');
+  if (renewed && res.ok) setToken(renewed);
+}
+
+/**
+ * A signed-in request whose body or answer is no JSON for request(): FormData uploads, files, blobs, text.
+ * Sends the login and language like request() and handles the session the same way (401, fresh token), but
+ * has no timeout and no offline cache, and hands back the Response as it is: the caller reads it and decides
+ * what an error status means. Headers of `init` go first, the login last.
+ */
+export async function requestRaw(path: string, init: RequestInit = {}): Promise<Response> {
+  if ((init.method || 'GET').toUpperCase() !== 'GET') lastWriteAt = Date.now();
+  const res = await fetch(path, {
+    cache: 'no-store',
+    ...init,
+    headers: { ...(init.headers as Record<string, string>), ...authHeaders() },
+  });
+  noteSession(path, res);
+  return res;
+}
+
+/** The server's /health (no login): its answer, or null when it cannot be reached or is not healthy. */
+export async function fetchHealth(): Promise<{ boot?: string } | null> {
+  try {
+    const res = await fetch('/api/v1/health', { cache: 'no-store' });
+    if (!res.ok) return null;
+    return ((await res.json().catch(() => ({}))) as { boot?: string }) ?? {};
+  } catch {
+    return null;
+  }
 }
 
 // Sends a queued outbox entry with the current token (no timeout, no cache). A change that carries when it
@@ -211,7 +243,7 @@ export const isDesktopApp = () => currentDesktop !== null;
 
 // Authenticated binary download (archives); no JSON parsing and no request timeout
 export async function downloadBlob(path: string): Promise<Blob> {
-  const res = await fetch(path, { headers: authHeaders(), cache: 'no-store' });
+  const res = await requestRaw(path);
   if (!res.ok) throw new ApiError(i18n.t('common:errors.downloadFailed', { status: res.status }), res.status);
   return res.blob();
 }

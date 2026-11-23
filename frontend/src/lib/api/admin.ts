@@ -1,6 +1,6 @@
 // REST calls: Administration: users, invites, server settings, voice, organizations
 import { AuditPage, Organization, SetupInfo, SmtpForm, SpeechModelsInfo, SystemSettings, SharingMode, TranscriptionJob, UpdateStatus, User, UserInvite, VoiceAdminStatus } from '../types';
-import { authHeaders, ensureArray, request } from './client';
+import { ensureArray, request, requestRaw } from './client';
 import i18n from '../../i18n';
 
 // File name of a recording for the Whisper server, after its format
@@ -141,12 +141,7 @@ export const adminApi = {
   async transcribe(audio: Blob, signal?: AbortSignal): Promise<string> {
     const form = new FormData();
     form.append('file', audio, recordingName(audio));
-    const res = await fetch('/api/v1/voice/transcribe', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: form,
-      signal,
-    });
+    const res = await requestRaw('/api/v1/voice/transcribe', { method: 'POST', body: form, signal });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || i18n.t('common:errors.transcribeFailed', { status: res.status }));
     return data.text || '';
@@ -167,7 +162,7 @@ export const adminApi = {
     const form = new FormData();
     for (const p of parts) form.append('file', p.blob, recordingName(p.blob));
     form.append('texts', JSON.stringify(parts.map((p) => p.text)));
-    const res = await fetch('/api/v1/voice/captures', { method: 'POST', headers: authHeaders(), body: form });
+    const res = await requestRaw('/api/v1/voice/captures', { method: 'POST', body: form });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || i18n.t('common:errors.transcribeFailed', { status: res.status }));
     return data as TranscriptionJob;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Brain, ExternalLink } from 'lucide-react';
 import { APP_VERSION } from '../version';
-import { authHeaders } from '../lib/api';
+import { requestRaw } from '../lib/api';
 import { ReadingModal } from './ReadingModal';
 
 // Project facts shown in "About MindSift"; change here when the repository or license changes
@@ -23,7 +23,7 @@ export const AboutModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const showLicenses = async () => {
     setLicenses({ state: 'loading' });
     try {
-      const res = await fetch(THIRD_PARTY_LICENSES_URL, { headers: authHeaders(), cache: 'no-store' });
+      const res = await requestRaw(THIRD_PARTY_LICENSES_URL);
       if (!res.ok) throw new Error(String(res.status));
       setLicenses({ state: 'done', text: await res.text() });
     } catch {

@@ -20,7 +20,7 @@ function setDeviceOnline(value: boolean) {
 let serverAnswers = false;
 const fetchMock = vi.fn(async () => {
   if (!serverAnswers) throw new TypeError('Failed to fetch');
-  return { ok: true } as Response;
+  return { ok: true, json: async () => ({ status: 'ok' }) } as Response;
 });
 
 // Runs the timers and lets the health request settle
