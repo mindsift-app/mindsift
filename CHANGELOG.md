@@ -27,6 +27,7 @@ Versions without a git tag were development states and were never published as a
 - Settings → Data: replacing your data with one of your server backups now asks with the same red warning and tick box as an import, instead of a second click on the button, and afterwards shows what came back and the entries left out, like an import. The desktop app's take-over of a server account lists the entries left out too.
 
 ### Fixed
+- When the administration takes someone out of an organization, deletes an organization or an account, or makes the sharing mode stricter, the lists, task lists, notes, folders and groups that went with it disappear from the overviews of the people concerned within a few seconds; before, only after reloading.
 - Groups page: when someone else adds or removes a member, changes a role, renames or deletes a group, the page of the other members follows right away; before, they saw the change only after reloading.
 - The number of open entries of the other lists in the list overview now follows changes made by others within a few seconds; before, it stayed until the lists were reloaded. Opening such a list loads its current entries.
 - Security: someone drawing along in a live drawing whose share was changed to read-only could keep changing the drawing for a few seconds. Their changes are now refused within a second, and they are taken out of the session.

@@ -13,7 +13,7 @@ const msg = (event: string, payload: unknown): WSMessage => ({ event, payload, t
 
 describe('which events change the counters', () => {
   it('reacts to tasks, notes and lists', () => {
-    for (const e of ['TASK_UPDATED', 'TASK_CREATED', 'TASK_LIST_UPDATED', 'DOC_COUNTS', 'DOC_DELETED', 'ITEM_TOGGLED', 'ITEM_CREATED', 'LIST_SHARED']) {
+    for (const e of ['TASK_UPDATED', 'TASK_CREATED', 'TASK_LIST_UPDATED', 'DOC_COUNTS', 'DOC_DELETED', 'ITEM_TOGGLED', 'ITEM_CREATED', 'LIST_SHARED', 'LIST_COUNTS', 'ACCESS_CHANGED']) {
       expect(eventChangesStats(e)).toBe(true);
     }
   });

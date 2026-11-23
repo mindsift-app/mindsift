@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { lastLocalWriteAt } from './api';
 import { useLatestRef } from './useLatestRef';
-import { onRealtimeStatus } from './realtimeBus';
+import { onRealtimeMessage, onRealtimeStatus } from './realtimeBus';
 
 // Own change (a view asks for it, or the echo of a change this tab just sent): short debounce
 export const RELOAD_SOON_MS = 300;
@@ -115,7 +115,9 @@ export function createRealtimeReloader(
 }
 
 // The reloader of a view: load is the latest one passed (it may read the view's current state), the tab's
-// visibility and the realtime connection's status are followed while the view is mounted.
+// visibility and the realtime connection's status are followed while the view is mounted. ACCESS_CHANGED
+// (shares or group memberships removed by the administration, not sent one by one) reloads every view
+// that has one.
 export function useRealtimeReload(load: () => void, options: { reconnect?: boolean } = {}): RealtimeReloader {
   const loadRef = useLatestRef(load);
   // The reloader calls load from its timers only, never during render
@@ -125,10 +127,14 @@ export function useRealtimeReload(load: () => void, options: { reconnect?: boole
     const onVisible = () => reloader.visible();
     document.addEventListener('visibilitychange', onVisible);
     const offStatus = onRealtimeStatus((connected) => reloader.status(connected));
+    const offMessage = onRealtimeMessage((msg) => {
+      if (msg.event === 'ACCESS_CHANGED') reloader.request(false);
+    });
     return () => {
       reloader.cancel();
       document.removeEventListener('visibilitychange', onVisible);
       offStatus();
+      offMessage();
     };
   }, [reloader]);
   return reloader;

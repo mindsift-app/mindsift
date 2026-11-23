@@ -487,6 +487,23 @@ func (s *Store) RemoveOrganizationMemberImpact(orgID, userID string) (int64, err
 	return s.pruneSharingTx(tx, mode)
 }
 
+// OrganizationMemberIDs lists the members of an organization.
+func (s *Store) OrganizationMemberIDs(orgID string) []string {
+	rows, err := s.db.Query(`SELECT user_id FROM organization_members WHERE org_id = ?`, orgID)
+	if dbFailed(err) {
+		return nil
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var uid string
+		if !dbFailed(rows.Scan(&uid)) {
+			out = append(out, uid)
+		}
+	}
+	return out
+}
+
 // OrganizationIDsOf maps every user to their organizations, sorted by name.
 func (s *Store) OrganizationIDsOf() (map[string][]string, error) {
 	rows, err := s.db.Query(`SELECT m.user_id, m.org_id FROM organization_members m

@@ -23,6 +23,28 @@ func (s *Server) dropLostAllRooms() {
 	s.afterRoomsLeft(s.wsHub.RecheckAllRooms())
 }
 
+// tellAccessChanged sends ACCESS_CHANGED to these people, or to every connection with nil: shares or group
+// memberships went in a way that is not sent one by one (the administration removed someone from an
+// organization or deleted one, an account deleted, a stricter sharing mode; storage.PruneSharing removes
+// them in bulk). Their apps load their lists, task lists, notes, folders and groups again. nil is for the
+// changes whose people are not known without working out everyone's access (an account deleted, the
+// sharing mode); like dropLostAllRooms, these are rare. Without a hub (the command line) nobody is connected.
+func (s *Server) tellAccessChanged(userIDs []string) {
+	if userIDs == nil {
+		// Everyone's counters may have changed; the cache would hold the old ones for a few seconds
+		if s.stats != nil { // the command line's account tools have none
+			s.stats.clear()
+		}
+		if s.wsHub != nil {
+			s.wsHub.BroadcastSystem(eventAccessChanged)
+		}
+		return
+	}
+	if s.wsHub != nil {
+		s.wsHub.BroadcastToUsers(userIDs, eventAccessChanged, map[string]any{})
+	}
+}
+
 // dropLostListRoom rechecks everyone in a list's room (list deleted, a share removed).
 func (s *Server) dropLostListRoom(listID string) {
 	if listID == "" {

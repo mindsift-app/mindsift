@@ -40,6 +40,9 @@ const (
 	eventItemDeleted   = "ITEM_DELETED"
 	eventItemReordered = "ITEM_REORDERED"
 
+	// Shares or group memberships removed in bulk by the administration ({}): the app loads its data again
+	// (tellAccessChanged)
+	eventAccessChanged = "ACCESS_CHANGED"
 	// Groups: {id} to the members before and after a change (broadcastTeamUpdated); the app reloads its groups
 	eventTeamUpdated = "TEAM_UPDATED"
 

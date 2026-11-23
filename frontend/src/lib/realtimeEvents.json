@@ -1,5 +1,6 @@
 {
   "server": [
+    "ACCESS_CHANGED",
     "DEMO_RESET",
     "DOC_COUNTS",
     "DOC_CREATED",

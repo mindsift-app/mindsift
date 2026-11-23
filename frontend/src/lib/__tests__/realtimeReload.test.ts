@@ -8,7 +8,7 @@ import {
   createRealtimeReloader,
   useRealtimeReload,
 } from '../realtimeReload';
-import { emitRealtimeStatus } from '../realtimeBus';
+import { emitRealtimeMessage, emitRealtimeStatus } from '../realtimeBus';
 
 let hidden = false;
 beforeEach(() => {
@@ -134,5 +134,20 @@ describe('reloading because of realtime events', () => {
     unmount();
     vi.advanceTimersByTime(60_000);
     expect(latest).toHaveBeenCalledTimes(2);
+  });
+
+  it('the hook reloads on ACCESS_CHANGED (shares removed by the administration), in the shared rhythm', () => {
+    const load = vi.fn();
+    const { unmount } = renderHook(() => useRealtimeReload(load));
+    const ws = (event: string) => act(() => emitRealtimeMessage({ event, payload: {}, timestamp: '' }));
+    ws('TASK_UPDATED');
+    vi.advanceTimersByTime(RELOAD_SHARED_DELAY_MS);
+    expect(load).not.toHaveBeenCalled();
+    ws('ACCESS_CHANGED');
+    vi.advanceTimersByTime(RELOAD_SOON_MS);
+    expect(load).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(RELOAD_SHARED_DELAY_MS);
+    expect(load).toHaveBeenCalledTimes(1);
+    unmount();
   });
 });
