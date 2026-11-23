@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, CircleAlert, Download, LoaderCircle, Trash } from 'lucide-react';
+import { Check, CircleAlert, Download, Trash } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { SpeechModelsInfo } from '../../../lib/types';
 import { errorMessage } from '../../../lib/errorMessage';
 import { askConfirm } from '../../../components/askConfirm';
 import { formatClock } from '../../../lib/format';
+import { LoadingState, Spinner } from '../../../components/Spinner';
 
 const POLL_MS = 3000;
 
@@ -88,7 +89,7 @@ export function SpeechModelPicker({ locked, onChanged }: { locked: boolean; onCh
   };
 
   if (!info) {
-    return error ? <p className="text-status-err text-xs">{error}</p> : <LoaderCircle className="w-4 h-4 animate-spin text-muted" />;
+    return error ? <p className="text-status-err text-xs">{error}</p> : <LoadingState inline />;
   }
   const download = (id: string) => info.downloads.find((d) => d.model === id);
   return (
@@ -143,7 +144,7 @@ export function SpeechModelPicker({ locked, onChanged }: { locked: boolean; onCh
                     <Download className="w-3.5 h-3.5" /> {t('speech.download')}
                   </span>
                 )}
-                {d?.running && <LoaderCircle className="w-3.5 h-3.5 animate-spin shrink-0" />}
+                {d?.running && <Spinner />}
               </button>
               {deletable && (
                 <button
@@ -155,7 +156,7 @@ export function SpeechModelPicker({ locked, onChanged }: { locked: boolean; onCh
                   data-delete-model={m.id}
                   className="shrink-0 w-11 sm:w-9 flex items-center justify-center border-l border-border bg-panel text-muted enabled:hover:text-status-err enabled:hover:bg-panel-elevated disabled:opacity-50"
                 >
-                  {deleting === m.id ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <Trash className="w-3.5 h-3.5" />}
+                  {deleting === m.id ? <Spinner /> : <Trash className="w-3.5 h-3.5" />}
                 </button>
               )}
             </li>

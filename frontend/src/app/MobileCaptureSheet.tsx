@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TriangleAlert, Calendar, Flame, Layers, LoaderCircle, Mic, MicOff } from 'lucide-react';
+import { TriangleAlert, Calendar, Flame, Layers, Mic, MicOff } from 'lucide-react';
 import { PriorityLevel } from '../lib/types';
 import { triggerHaptic } from '../lib/api';
 import { VoiceWave } from '../components/VoiceWave';
@@ -8,6 +8,7 @@ import { useMobileCapture } from './useMobileCapture';
 import { DateField } from '../components/DateField';
 import { NaturalDateChip, PhraseHighlight } from '../components/NaturalDateHint';
 import { BottomSheet } from '../components/BottomSheet';
+import { Spinner } from '../components/Spinner';
 
 // Phones: the Quick Dump sheet (thought with voice input, priority, optional due date)
 export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof useMobileCapture> }) {
@@ -89,7 +90,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
                     title={mobileVoiceActive ? t('capture.stopRecording') : t('capture.voiceInput')}
                   >
                     {mobileVoice.state === 'transcribing' ? (
-                      <LoaderCircle className="w-4 h-4 animate-spin" />
+                      <Spinner size="md" />
                     ) : mobileVoiceActive ? (
                       <MicOff className="w-4 h-4" />
                     ) : (

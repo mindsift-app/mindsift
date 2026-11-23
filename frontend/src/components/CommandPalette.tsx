@@ -7,7 +7,6 @@ import {
   SquareCheckBig,
   ShoppingCart,
   X,
-  LoaderCircle,
   CornerDownLeft,
   Maximize2,
   Minimize2,
@@ -21,6 +20,7 @@ import { requestDocFocus } from '../lib/docFocusRequest';
 import { NO_AUTOFILL } from '../lib/noAutofill';
 import { SelectMenu, SelectMenuOption } from './SelectMenu';
 import { useCloseOnEscape } from '../lib/useDismiss';
+import { Spinner } from './Spinner';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -340,7 +340,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {/* One fixed slot for the spinner or the clear button, so the field keeps its width while typing */}
           <span className="w-6 h-6 shrink-0 flex items-center justify-center">
             {loading ? (
-              <LoaderCircle className="w-4 h-4 animate-spin text-accent" />
+              <Spinner size="md" tone="accent" />
             ) : query ? (
               <button
                 type="button"

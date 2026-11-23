@@ -1,13 +1,14 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import { FaceSlightlySmilingPlus, Trash, LoaderCircle } from 'lucide-react';
+import { FaceSlightlySmilingPlus, Trash } from 'lucide-react';
 import type { Categories, EmojiClickData, EmojiStyle, SuggestionMode, Theme } from 'emoji-picker-react';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { placeInViewport } from '../../lib/placeInViewport';
 import { useDismiss } from '../../lib/useDismiss';
 import { BottomSheet } from '../../components/BottomSheet';
+import { LoadingState } from '../../components/Spinner';
 
 // Size of the desktop popover (its classes use the same values through --pick-w / --pick-h)
 const PICKER_WIDTH = 300;
@@ -99,9 +100,8 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
       <Suspense
         fallback={
           // As high as the picker, so nothing moves when it arrives
-          <div className="flex flex-col items-center justify-center gap-2 text-xs text-muted" style={{ height: pickerHeight }}>
-            <LoaderCircle className="w-5 h-5 animate-spin text-accent" />
-            <span>{t('emojiPicker.loading')}</span>
+          <div className="flex items-center justify-center" style={{ height: pickerHeight }}>
+            <LoadingState label={t('emojiPicker.loading')} />
           </div>
         }
       >

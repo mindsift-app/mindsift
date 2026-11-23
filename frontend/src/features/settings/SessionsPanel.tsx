@@ -6,6 +6,7 @@ import { api } from '../../lib/api';
 import { Session } from '../../lib/types';
 import { formatDateTime } from '../../lib/format';
 import { errorMessage } from '../../lib/errorMessage';
+import { LoadingState } from '../../components/Spinner';
 
 // Rough device label from the user agent; good enough to tell one's own devices apart
 export function describeDevice(ua: string): { label: string; mobile: boolean } {
@@ -78,7 +79,7 @@ export function SessionsPanel() {
   };
 
   if (error) return <p className="text-[11px] text-status-err">{error}</p>;
-  if (!sessions) return <p className="text-[11px] text-muted">{t('sessions.loading')}</p>;
+  if (!sessions) return <LoadingState inline label={t('sessions.loading')} />;
 
   return (
     <ul className="divide-y divide-border rounded-card border border-border bg-canvas">

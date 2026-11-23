@@ -25,6 +25,7 @@ import { withSecondFactor } from './user/askSecondFactor';
 import { SelectMenu } from '../../components/SelectMenu';
 import { errorMessage } from '../../lib/errorMessage';
 import { DEFAULT_LOCAL_API_PORT, DesktopLocalAccess, localApiBase } from './DesktopLocalAccess';
+import { EmptyState } from '../../components/EmptyState';
 
 interface ApiKeysPanelProps {
   onIngested?: () => void;
@@ -344,7 +345,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
         {/* Active Keys List */}
         <div className="mt-3 border border-border divide-y divide-border">
           {keys.length === 0 ? (
-            <p className="text-xs text-faint px-3 py-2">{t('api.empty')}</p>
+            <EmptyState>{t('api.empty')}</EmptyState>
           ) : (
             keys.map((k) =>
               editKeyId === k.id ? (

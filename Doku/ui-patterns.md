@@ -166,6 +166,14 @@ Component: [Toast.tsx](../frontend/src/components/Toast.tsx): `Toast`, `useToast
 - **`useToast()`:** `showToast(text, actions)` shows a notice and replaces the one before (its "Undo" would otherwise point at the wrong step); it goes after 4 s, with an action after 8 s (`TOAST_MS`, `TOAST_ACTION_MS`). `hideToast()` ends it early; pressing an action ends it too. Render it with `<ToastHost toast={toast} onClose={hideToast} />`.
 - **Undo:** after moving items to the trash, "… in den Papierkorb verschoben · Rückgängig" (workspace, tasks, notes, drawings). In tasks, `Ctrl+Z` does the same; a new step hides the notice so "Undo" never targets the wrong step.
 
+## Loading and Empty States
+
+Components: [Spinner.tsx](../frontend/src/components/Spinner.tsx) (`Spinner`, `LoadingState`), [EmptyState.tsx](../frontend/src/components/EmptyState.tsx).
+
+- **`Spinner`** is the only turning circle (`LoaderCircle`, `animate-spin`): sizes `xs` 12 px, `sm` 14 px (default; buttons and small rows), `md` 16 px (lists, fields), `lg` 20 px, `xl` 24 px; `tone` `accent`, `muted` or the colour of the text around it. In a button it replaces the button's icon while the action runs. With `label` it announces itself to screen readers (when no text says what loads).
+- **`LoadingState`** stands where content will appear: spinner in the accent colour and a short muted text, centered with some room, or `inline` at the start of a row (settings cards). The text is "Wird geladen …" (`common:loading`) or names what loads: "Notizen werden geladen …", "Notiz wird geladen …". German puts a space before the "…"; no "Lade …" or "Lädt …".
+- **`EmptyState`**: "nothing here yet" as one short centered line in `text-xs text-muted`. Inside a framed list (rows with dividers) as a row of it; on its own with `framed` (dashed frame in the theme's corners), e.g. the trash, the audit log, users and invites. Larger empty screens with an icon and a title (no tasks, the to-do rollup, the help search) keep their own layout.
+
 ## Counters
 
 Component: [CountBadge.tsx](../frontend/src/components/CountBadge.tsx), CSS classes `count-badge*` in [index.css](../frontend/src/index.css). No other counter styles are used.

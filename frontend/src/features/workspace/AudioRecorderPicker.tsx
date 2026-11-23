@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { LoaderCircle, Mic, Square, Upload, X } from 'lucide-react';
+import { Mic, Square, Upload, X } from 'lucide-react';
 import { audioLimitMB, audioRecordingBitrate, audioUploadsAllowed, UploadedMedia, uploadMedia } from '../../lib/media';
 import { canRecord, VoiceRecorder } from '../../lib/voice';
 import { repairWebmBlob } from '../../lib/webmDuration';
@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { errorMessage } from '../../lib/errorMessage';
 import { formatClock } from '../../lib/format';
 import { useRecordingGuard } from '../../lib/leaveGuard';
+import { Spinner } from '../../components/Spinner';
 
 interface AudioRecorderPickerProps {
   docId: string;
@@ -136,7 +137,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
         {state === 'ready' && <span className="text-xs text-muted">{t('media.record')}</span>}
         {state === 'uploading' && (
           <span className="text-xs text-muted flex items-center gap-1.5">
-            <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> {t('workspace:media.saving')}
+            <Spinner /> {t('workspace:media.saving')}
           </span>
         )}
 

@@ -8,6 +8,7 @@ import { useProfileSettings } from './useProfileSettings';
 import { PendingEmailNote } from './PendingEmailNote';
 import { getCurrentOidc } from '../../../lib/api';
 import { can } from '../../../lib/capabilities';
+import { Spinner } from '../../../components/Spinner';
 
 // Kontoeinstellungen → Profil (state in useProfileSettings); password, two-factor sign-in and sessions
 // are in Sicherheit (SecuritySection)
@@ -71,8 +72,8 @@ export function ProfileSection({
                 className="border-2 shadow-md ring-2 ring-primary/20"
               />
               {isProcessingAvatar && (
-                <div className="absolute inset-0 bg-base-100/70 rounded-full flex items-center justify-center text-[10px] font-medium text-main">
-                  {t('profile.loading')}
+                <div className="absolute inset-0 bg-panel/70 rounded-full flex items-center justify-center">
+                  <Spinner size="lg" tone="accent" label={t('common:loading')} />
                 </div>
               )}
             </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { TriangleAlert, Check, Clock, FileText, Hash, LoaderCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { TriangleAlert, Check, Clock, FileText, Hash, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { PresenceAvatars } from './PresenceAvatars';
 import { CountBadge } from '../../components/CountBadge';
 import { SharedPill } from '../../components/SharedPill';
@@ -8,6 +8,7 @@ import { Document, TagSummary, User } from '../../lib/types';
 import { DocHeaderStatus, DocSaveStatus } from './DocumentEditor';
 import { WorkspaceSubView } from './workspaceTypes';
 import { useCapabilities } from '../../lib/capabilities';
+import { Spinner } from '../../components/Spinner';
 
 interface WorkspaceTabBarProps {
   subView: WorkspaceSubView;
@@ -232,7 +233,7 @@ export function WorkspaceTabBar({
               )}
               {docSaveStatus === 'saving' && (
                 <>
-                  <LoaderCircle className="w-3.5 h-3.5 animate-spin text-accent" />
+                  <Spinner tone="accent" />
                 </>
               )}
               {docSaveStatus === 'unsaved' && (

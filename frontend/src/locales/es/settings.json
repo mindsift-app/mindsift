@@ -563,7 +563,6 @@
   "profile": {
     "title": "Perfil",
     "avatar": "Foto de perfil",
-    "loading": "Cargando…",
     "upload": "Subir imagen",
     "removeAvatar": "Quitar foto de perfil",
     "remove": "Quitar",
@@ -1073,7 +1072,6 @@
       "off": "Desactivado",
       "offHint": "Una vez activado, una contraseña robada ya no basta para iniciar sesión.",
       "demo": "No disponible en la demo: todos los visitantes comparten las cuentas.",
-      "loading": "Cargando…",
       "loadFailed": "No se ha podido cargar el estado del inicio de sesión en dos pasos",
       "failed": "La acción ha fallado",
       "setUp": "Configurar",
@@ -1246,7 +1244,6 @@
     "title": "Registro de auditoría",
     "intro": "Las entradas se guardan un año; nunca contienen contraseñas ni direcciones IP.",
     "loadFailed": "No se pudo cargar el registro",
-    "loading": "Cargando …",
     "empty": "Todavía no hay entradas.",
     "emptyFiltered": "No hay entradas para este filtro.",
     "more": "Cargar entradas anteriores",

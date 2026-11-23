@@ -6,6 +6,7 @@ import { SelectMenu } from '../../components/SelectMenu';
 import { TaskList, Thought, TrashedTask } from '../../lib/types';
 import { GroupBy, TaskFilter, TaskSort } from './taskViewTypes';
 import { TaskGroup, tagFilterLabel } from './taskListing';
+import { LoadingState } from '../../components/Spinner';
 
 
 interface TaskListViewProps {
@@ -144,7 +145,7 @@ export function TaskListView({
       </div>
 
       {loading || (filter === 'discarded' && !taskTrash) ? (
-        <div className="p-6 text-center text-faint text-sm">{t('view.loading')}</div>
+        <LoadingState label={t('view.loading')} />
       ) : filter === 'discarded' ? (
         <TaskTrashList
           items={taskTrash ?? []}

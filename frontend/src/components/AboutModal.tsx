@@ -4,6 +4,7 @@ import { Brain, ExternalLink } from 'lucide-react';
 import { APP_VERSION } from '../version';
 import { requestRaw } from '../lib/api';
 import { ReadingModal } from './ReadingModal';
+import { LoadingState } from './Spinner';
 
 // Project facts shown in "About MindSift"; change here when the repository or license changes
 const PROJECT_REPO_URL = 'https://github.com/mindsift-app/mindsift';
@@ -35,7 +36,7 @@ export const AboutModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     // Closing the list goes back to About
     return (
       <ReadingModal title={t('about.thirdParty')} onClose={() => setLicenses(null)}>
-        {licenses.state === 'loading' && <p className="text-xs text-muted">{t('about.thirdPartyLoading')}</p>}
+        {licenses.state === 'loading' && <LoadingState inline />}
         {licenses.state === 'error' && <p className="text-xs text-muted">{t('about.thirdPartyError')}</p>}
         {licenses.state === 'done' && (
           <pre className="text-[11px] leading-snug text-muted whitespace-pre-wrap wrap-break-word font-mono">{licenses.text}</pre>

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Headphones, LoaderCircle, Mic, RotateCcw, Trash } from 'lucide-react';
+import { Headphones, Mic, RotateCcw, Trash } from 'lucide-react';
 import type { TranscriptionJob } from '../../lib/types';
 import { discardTranscription, retryTranscription, transcriptionError, transcriptionNextTry, useInboxTranscriptions } from '../../lib/transcriptionJobs';
 import { authorizedAudioURL } from '../../lib/media';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
+import { Spinner } from '../../components/Spinner';
 
 // The parts of a stored recording as players (to listen to one whose transcription failed)
 const JobAudio: React.FC<{ job: TranscriptionJob }> = ({ job }) => {
@@ -25,7 +26,7 @@ const JobAudio: React.FC<{ job: TranscriptionJob }> = ({ job }) => {
   }, [job.id, job.pieces]);
   const { t } = useTranslation('triage');
   if (failed) return <p className="text-xs text-status-err">{t('voiceJobs.audioFailed')}</p>;
-  if (!urls) return <LoaderCircle className="w-4 h-4 animate-spin text-muted" />;
+  if (!urls) return <Spinner size="md" tone="muted" />;
   return (
     <div className="space-y-1">
       {urls.map((u) => (
@@ -60,7 +61,7 @@ const JobRow: React.FC<{ job: TranscriptionJob }> = ({ job }) => {
   return (
     <li className="px-3 py-2.5 space-y-2" data-transcription={job.status}>
       <div className="flex items-center gap-2 min-w-0">
-        {failed ? <Mic className="w-4 h-4 text-status-err shrink-0" /> : <LoaderCircle className="w-4 h-4 animate-spin text-accent shrink-0" />}
+        {failed ? <Mic className="w-4 h-4 text-status-err shrink-0" /> : <Spinner size="md" tone="accent" />}
         <div className="flex-1 min-w-0">
           <p className="text-sm sm:text-xs font-medium text-main">{failed ? t('voiceJobs.failed') : t('voiceJobs.pending')}</p>
           {(failed || job.error) && (

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LoaderCircle, RotateCcw, Trash } from 'lucide-react';
+import { RotateCcw, Trash } from 'lucide-react';
 import { api, triggerHaptic } from '../../lib/api';
 import { formatDeletedAt } from '../../lib/due';
 import type { Thought } from '../../lib/types';
 import { ReadingModal } from '../../components/ReadingModal';
+import { LoadingState } from '../../components/Spinner';
+import { EmptyState } from '../../components/EmptyState';
 
 interface TriageTrashProps {
   onClose: () => void;
@@ -54,11 +56,9 @@ export const TriageTrash: React.FC<TriageTrashProps> = ({ onClose, onChanged }) 
   return (
     <ReadingModal title={t('trashTitle')} onClose={onClose}>
       {items === null ? (
-        <div className="py-6 flex justify-center text-muted">
-          <LoaderCircle className="w-5 h-5 animate-spin" />
-        </div>
+        <LoadingState />
       ) : items.length === 0 ? (
-        <p className="py-6 text-center text-muted">{t('trash.none')}</p>
+        <EmptyState framed>{t('trash.none')}</EmptyState>
       ) : (
         <div className="space-y-3">
           <div className="divide-y divide-border border border-border rounded-card overflow-hidden">

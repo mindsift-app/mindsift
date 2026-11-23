@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, useMemo } from 'react';
-import { SquareCheckBig, ExternalLink, LoaderCircle } from 'lucide-react';
+import { SquareCheckBig, ExternalLink } from 'lucide-react';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
 import { SecretChip, NewSecretSheet } from './SecretChip';
@@ -39,6 +39,7 @@ import { matchSlashQuery, removeSlashQuery } from '../../lib/slashCommand';
 import { bulletKeyAction } from './bulletKeys';
 import { SlashCommand, SlashMenu, slashCommandsFor } from './SlashMenu';
 import { actionBubble, bulletControls, ConflictNotice, LockBadge } from './OutlinerBlockParts';
+import { Spinner } from '../../components/Spinner';
 
 // How long the action bubble stays after the last mouse move over a bullet
 const BUBBLE_IDLE_MS = 1000;
@@ -1806,7 +1807,7 @@ export const PastingImagesNotice: React.FC<{ count: number }> = ({ count }) => {
       data-testid="pasting-images"
       className="my-1 flex items-center gap-2 px-3 py-3 rounded-card border-2 border-dashed border-border bg-panel text-xs text-muted select-none"
     >
-      <LoaderCircle className="w-4 h-4 animate-spin text-accent" /> {t('media.pastingImage', { count })}
+      <Spinner size="md" tone="accent" /> {t('media.pastingImage', { count })}
     </div>
   );
 };

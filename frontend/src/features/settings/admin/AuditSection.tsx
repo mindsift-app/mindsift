@@ -9,6 +9,8 @@ import { SelectMenu } from '../../../components/SelectMenu';
 import { compareText, formatDateTime } from '../../../lib/format';
 import { errorMessage } from '../../../lib/errorMessage';
 import { AUDIT_ACTIONS, actionLabel, actorLabel, detailLines, targetLabel } from './auditView';
+import { LoadingState } from '../../../components/Spinner';
+import { EmptyState } from '../../../components/EmptyState';
 
 // SelectMenu's small field, but filling its share of the row on phones (as in the user list)
 const FILTER_BUTTON = 'w-full sm:w-auto sm:max-w-[16rem] h-11 sm:h-8 input-field px-2 gap-1.5 text-sm sm:text-xs bg-panel';
@@ -131,7 +133,7 @@ export function AuditSection({ users }: { users: User[] }) {
       )}
 
       {!loading && !error && entries.length === 0 && (
-        <p className="text-muted py-6 text-center">{filtered ? t('audit.emptyFiltered') : t('audit.empty')}</p>
+        <EmptyState framed>{filtered ? t('audit.emptyFiltered') : t('audit.empty')}</EmptyState>
       )}
 
       {entries.length > 0 && (
@@ -208,7 +210,7 @@ export function AuditSection({ users }: { users: User[] }) {
           {t('audit.more')}
         </button>
       )}
-      {loading && <p className="text-muted text-[11px]">{t('audit.loading')}</p>}
+      {loading && <LoadingState inline />}
     </div>
   );
 }

@@ -16,6 +16,7 @@ Versions without a git tag were development states and were never published as a
 - Desktop app: `LOG_FORMAT=json` writes its log as JSON lines like the server's, and `MINDSIFT_DESKTOP_DEVTOOLS` takes the same yes/no values as the server's variables.
 - Desktop app: taking over an account from a server's backup is now recorded in the audit log (Administration → Log), like the other changes to backups.
 - Notices at the bottom of the screen (Undo after deleting, errors, "Gespeichert", the offline notice, the confirmation of a new e-mail address, the hints after a dictation) now stack one above the other instead of covering each other, and all look the same. On phones, the confirmation of a new e-mail address now appears at the bottom like the other notices.
+- Loading and empty states look the same everywhere: one spinner with a short text ("Wird geladen …", "Notizen werden geladen …") and one muted line when a list is empty.
 
 ### Fixed
 - A task list created for a group now shows up right away for the group's members and on your other devices; before, they saw it only after reloading (lists created by an AI agent already did).

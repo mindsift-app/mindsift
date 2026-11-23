@@ -6,6 +6,7 @@ import { api } from '../../lib/api';
 import { Document, MergeResult } from '../../lib/types';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { errorMessage } from '../../lib/errorMessage';
+import { EmptyState } from '../../components/EmptyState';
 
 interface MergeDialogProps {
   docs: Document[];
@@ -103,7 +104,7 @@ export const MergeDialog: React.FC<MergeDialogProps> = ({ docs, sourceId, target
                 </button>
               </li>
             ))}
-            {candidates.length === 0 && <li className="px-3 py-3 text-xs text-faint">{t('merge.none')}</li>}
+            {candidates.length === 0 && <li><EmptyState>{t('merge.none')}</EmptyState></li>}
           </ul>
         </div>
       )}

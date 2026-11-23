@@ -459,7 +459,6 @@
   "profile": {
     "title": "Profilo",
     "avatar": "Immagine del profilo",
-    "loading": "Caricamento in corso…",
     "upload": "Carica immagine",
     "removeAvatar": "Rimuovi immagine del profilo",
     "remove": "Rimuovi",
@@ -895,7 +894,7 @@
   "sessions": {
     "loadFailed": "Impossibile caricare le sessioni",
     "endFailed": "Impossibile terminare la sessione",
-    "loading": "Caricamento sessioni in corso…",
+    "loading": "Caricamento sessioni…",
     "thisDevice": "Questo dispositivo",
     "signOutDevice": "Disconnetti questo dispositivo",
     "unknownDevice": "Dispositivo sconosciuto",
@@ -1073,7 +1072,6 @@
       "off": "Disattivo",
       "offHint": "Una volta attivo, una password rubata da sola non basta più per accedere.",
       "demo": "Non disponibile nella demo: tutti i visitatori condividono gli account.",
-      "loading": "Caricamento…",
       "loadFailed": "Impossibile caricare lo stato dell'accesso a due fattori",
       "failed": "Azione non riuscita",
       "setUp": "Configura",
@@ -1246,7 +1244,6 @@
     "title": "Registro attività",
     "intro": "Le voci restano un anno; password e indirizzi IP non vi compaiono mai.",
     "loadFailed": "Impossibile caricare il registro",
-    "loading": "Caricamento …",
     "empty": "Ancora nessuna voce.",
     "emptyFiltered": "Nessuna voce per questo filtro.",
     "more": "Carica voci precedenti",

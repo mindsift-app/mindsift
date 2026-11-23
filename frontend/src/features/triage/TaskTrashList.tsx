@@ -2,6 +2,7 @@ import { RotateCcw, Trash } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TaskList, TrashedTask } from '../../lib/types';
 import { formatDeletedAt } from '../../lib/due';
+import { EmptyState } from '../../components/EmptyState';
 
 interface TaskTrashListProps {
   items: TrashedTask[];
@@ -21,7 +22,7 @@ export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: Ta
   return (
     <div className="panel-surface divide-y divide-border">
       {items.length === 0 ? (
-        <div className="px-4 py-6 text-center text-muted text-sm">{t('trash.empty')}</div>
+        <EmptyState>{t('trash.empty')}</EmptyState>
       ) : (
         items.map((item) => {
           const listOfItem = item.taskListId ? lists.find((l) => l.id === item.taskListId) : undefined;

@@ -10,7 +10,6 @@ import {
   Download,
   Maximize2,
   FileText,
-  LoaderCircle,
   ArrowLeft,
   Lock,
   House,
@@ -128,6 +127,8 @@ import { useDismiss } from '../../lib/useDismiss';
 import { saveBlob } from '../../lib/download';
 import { NOTE_TITLE_MAX, noteTitleLength } from '../../lib/noteTitle';
 import { ToastHost, useToast } from '../../components/Toast';
+import { LoadingState, Spinner } from '../../components/Spinner';
+import { EmptyState } from '../../components/EmptyState';
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   docId,
@@ -517,9 +518,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   if (showsLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-12 text-muted">
-        <LoaderCircle className="w-5 h-5 animate-spin mr-2 text-accent" />
-        <span className="text-xs">{t('editor.loading')}</span>
+      <div className="flex-1 flex items-center justify-center p-12">
+        <LoadingState label={t('editor.loading')} />
       </div>
     );
   }
@@ -982,7 +982,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               aria-label={t('editor.saveStatus')}
             >
               {engineState.status === 'saving' ? (
-                <LoaderCircle className="w-3.5 h-3.5 animate-spin text-accent" />
+                <Spinner tone="accent" />
               ) : engineState.status === 'offline' ? (
                 <CloudOff className="w-3.5 h-3.5 text-status-warn" />
               ) : engineState.status === 'error' ? (
@@ -1098,7 +1098,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             </div>
 
             {childBlocks.length === 0 ? (
-              <div className="py-8 text-center text-xs text-faint border border-dashed border-border rounded-card my-2">
+              <EmptyState framed className="my-2">
                 <p className="mb-2">{t('editor.noChildren')}</p>
                 {canEdit && (
                   <button
@@ -1120,7 +1120,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     <span>{t('editor.firstChild')}</span>
                   </button>
                 )}
-              </div>
+              </EmptyState>
             ) : (
               <OutlinerTree {...noteTreeProps} blocks={childBlocks} levelOffset={levelOffset} />
             )}

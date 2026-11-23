@@ -11,6 +11,7 @@ import { describeDevice } from '../SessionsPanel';
 import { RecoveryCodesPanel } from './RecoveryCodesPanel';
 import { passkeyProof, secondFactorOf, SecondFactorFields } from './SecondFactorFields';
 import { errorMessage } from '../../../lib/errorMessage';
+import { LoadingState } from '../../../components/Spinner';
 
 type Flow =
   | { step: 'idle' }
@@ -180,7 +181,7 @@ export function PasskeyCard({
       ) : loadError ? (
         <p className="text-[11px] text-status-err">{loadError}</p>
       ) : !status ? (
-        <p className="text-[11px] text-muted">{t('security.twoFactor.loading')}</p>
+        <LoadingState inline />
       ) : (
         <>
           {off && (

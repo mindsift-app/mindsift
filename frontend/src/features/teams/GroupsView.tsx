@@ -23,6 +23,7 @@ import { SelectMenu } from '../../components/SelectMenu';
 import { StatusMessage, StatusToast } from '../../components/StatusToast';
 import { errorMessage } from '../../lib/errorMessage';
 import { FormSheet } from '../../components/FormSheet';
+import { LoadingState } from '../../components/Spinner';
 
 interface GroupsViewProps {
   currentUser: User;
@@ -311,7 +312,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="p-8 text-center text-muted text-xs">{t('loading')}</div>
+        <LoadingState label={t('loading')} />
       ) : teams.length === 0 ? (
         <div className="p-10 bg-canvas border border-border rounded-card text-center space-y-3">
           <div className="w-12 h-12 rounded-full bg-panel-elevated text-muted mx-auto flex items-center justify-center">

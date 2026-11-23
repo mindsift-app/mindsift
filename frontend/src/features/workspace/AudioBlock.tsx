@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FileHeadphone, LoaderCircle, WandSparkles, X } from 'lucide-react';
+import { FileHeadphone, WandSparkles, X } from 'lucide-react';
 import { mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { loadVoiceConfig } from '../../lib/voice';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,7 @@ import { errorMessage } from '../../lib/errorMessage';
 import { discardTranscription, startBlockTranscription, transcriptionError, transcriptionNextTry, useBlockTranscription, waitForTranscription } from '../../lib/transcriptionJobs';
 import { IndentArrows, OVERLAY_ARROW_BUTTON } from './IndentArrows';
 import { MediaCaption } from './MediaCaption';
+import { Spinner } from '../../components/Spinner';
 
 // The recording that is playing: starting another one pauses it, so two never play over each other
 let playingAudio: HTMLAudioElement | null = null;
@@ -185,7 +186,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
               title={t('media.transcribeTitle')}
               className="btn-secondary rounded-full! h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40"
             >
-              {transcribing ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <WandSparkles className="w-3.5 h-3.5" />}
+              {transcribing ? <Spinner /> : <WandSparkles className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">{transcribing ? t('media.transcribing') : t('media.transcribe')}</span>
             </button>
           )}
@@ -212,7 +213,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
         </div>
       ) : (
         <div className="flex items-center h-12 px-4 rounded-full border border-border bg-panel w-64">
-          <LoaderCircle className="w-4 h-4 animate-spin text-muted" />
+          <Spinner size="md" tone="muted" />
         </div>
       )}
 

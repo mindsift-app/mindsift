@@ -31,7 +31,7 @@
     "organization": "Organisation",
     "organizationHint": "Die Mitglieder der Gruppe kommen aus dieser Organisation."
   },
-  "loading": "Lade Gruppen…",
+  "loading": "Gruppen werden geladen …",
   "empty": {
     "title": "Noch keine Gruppen vorhanden",
     "text": "Erstelle deine erste Gruppe, um Aufgaben, Einkaufslisten oder Dokumente gemeinsam mit anderen zu nutzen.",

@@ -14,6 +14,7 @@ import { RecoveryCodesPanel } from './RecoveryCodesPanel';
 import { passkeyProof, secondFactorOf, SecondFactorFields } from './SecondFactorFields';
 import { LOW_RECOVERY_CODES } from '../../auth/MfaStep';
 import { errorMessage } from '../../../lib/errorMessage';
+import { LoadingState } from '../../../components/Spinner';
 
 type Flow =
   | { step: 'idle' }
@@ -198,7 +199,7 @@ export function TwoFactorCard({
       ) : loadError ? (
         <p className="text-[11px] text-status-err">{loadError}</p>
       ) : !status ? (
-        <p className="text-[11px] text-muted">{t('security.twoFactor.loading')}</p>
+        <LoadingState inline />
       ) : (
         <>
           {done && (

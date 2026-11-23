@@ -5,6 +5,7 @@ import { LazyMount } from '../../components/LazyMount';
 import { Document } from '../../lib/types';
 import { WorkspaceSubView } from './workspaceTypes';
 import { useTranslation } from 'react-i18next';
+import { EmptyState } from '../../components/EmptyState';
 
 type EditorProps = React.ComponentProps<typeof DocumentEditor>;
 
@@ -104,7 +105,7 @@ export function TagDetailView({
         {/* Matched bullets: each note as a fixed heading with the live outliner of its branches below,
             edited right in the note (DocumentEditor variant "tag"); editors load when scrolled near */}
         {tagPageGroups.length === 0 ? (
-          <p className="py-8 text-center text-xs text-muted">{t('tags.noBlocks', { tag: selectedTag })}</p>
+          <EmptyState>{t('tags.noBlocks', { tag: selectedTag })}</EmptyState>
         ) : (
           <div className="space-y-2 -mx-2 sm:-mx-8">
             {tagPageGroups.map((docGroup) => (

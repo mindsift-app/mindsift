@@ -5,6 +5,7 @@ import { CountBadge } from '../../components/CountBadge';
 import { formatDeletedAt } from '../../lib/due';
 import { useTranslation } from 'react-i18next';
 import { errorMessage } from '../../lib/errorMessage';
+import { EmptyState } from '../../components/EmptyState';
 
 interface TrashViewProps {
   items: TrashedDocument[];
@@ -75,9 +76,7 @@ export const TrashView: React.FC<TrashViewProps> = ({ items, onOpen, onRestore, 
         {error && <p className="text-xs text-status-err">{error}</p>}
 
         {items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-faint border border-dashed border-border rounded-card">
-            {t('trash.empty')}
-          </div>
+          <EmptyState framed>{t('trash.empty')}</EmptyState>
         ) : (
           <ul className="space-y-2">
             {items.map((item) => (

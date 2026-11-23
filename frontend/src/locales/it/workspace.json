@@ -228,7 +228,7 @@
     "showAll": "Tutte",
     "showAllTitle": "Mostra anche le attività fatte",
     "allDone": "Tutto fatto: nessuna attività aperta.",
-    "loading": "Caricamento delle attività…"
+    "loading": "Caricamento attività…"
   },
   "emoji": {
     "suggested": "Recenti",
@@ -252,10 +252,10 @@
     "backToList": "Torna all'elenco delle note",
     "filterBlocks": "Filtra punti…",
     "filterBlocksLabel": "Filtra punti",
-    "loadingBlocks": "Caricamento punti in corso…",
+    "loadingBlocks": "Caricamento punti…",
     "noBlocks": "Nessun punto corrispondente.",
     "available": "Note disponibili",
-    "loadingNotes": "Caricamento note in corso…",
+    "loadingNotes": "Caricamento note…",
     "noNotes": "Nessuna nota presente nel Workspace.",
     "pickBlockTitle": "Collega un singolo punto di questa nota",
     "pickBlock": "Scegli punto di questa nota",
