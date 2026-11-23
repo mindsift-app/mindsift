@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"mime"
 	"mime/quotedprintable"
 	"net"
@@ -343,5 +344,45 @@ func sendMailOnce(cfg smtpSettings, to, subject, body, html string) error {
 		return &smtpStepError{"Nachricht annehmen", err}
 	}
 	_ = client.Quit()
+	return nil
+}
+
+// sendMailContent sends a mail in the common MindSift look (mailtemplate.go), as text and HTML.
+func (s *Server) sendMailContent(toEmail, subject string, c mailContent) error {
+	text, htmlBody := renderMail(c)
+	return s.sendEmailHTML(toEmail, subject, text, htmlBody)
+}
+
+// sendEmailHTML sends text plus an optional HTML version (multipart/alternative).
+func (s *Server) sendEmailHTML(toEmail, subject, bodyText, html string) error {
+	if s.cfg.DemoMode {
+		return errDemoOutgoing
+	}
+	cfg, err := s.smtpSettings()
+	if err != nil {
+		return err
+	}
+	return s.sendEmailHTMLWith(cfg, toEmail, subject, bodyText, html)
+}
+
+// sendEmailHTMLWith sends through the given mail server, e.g. one that is only being tried (SMTP test of
+// the setup wizard) and not stored yet.
+func (s *Server) sendEmailHTMLWith(cfg smtpSettings, toEmail, subject, bodyText, html string) error {
+	if s.cfg.DemoMode {
+		return errDemoOutgoing
+	}
+	if s.notifyEmailHook != nil { // tests
+		return s.notifyEmailHook(toEmail, subject, bodyText, html)
+	}
+	err := sendMail(cfg, toEmail, subject, bodyText, html)
+	s.metrics.mailSent(err)
+	if err != nil {
+		step := ""
+		if se, ok := err.(*smtpStepError); ok {
+			step = i18n.T("en", se.Step) // the log is English (Verbindung: connection)
+		}
+		slog.Warn("Sending email failed", "smtp_step", step, "host", cfg.Host, "port", cfg.Port, "to", toEmail, "error", err)
+		return err
+	}
 	return nil
 }

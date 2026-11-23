@@ -18,12 +18,6 @@ import (
 
 // --- MULTI-CHANNEL ALARM DISPATCHER (EMAIL, DISCORD, CUSTOM WEBHOOK, PUSH, DESKTOP) ---
 
-// sendMailContent sends a mail in the common MindSift look (mailtemplate.go), as text and HTML.
-func (s *Server) sendMailContent(toEmail, subject string, c mailContent) error {
-	text, htmlBody := renderMail(c)
-	return s.sendEmailHTML(toEmail, subject, text, htmlBody)
-}
-
 // Footers: why a mail came
 func mailFooterAlarms(lang string) string {
 	return i18n.T(lang, "Du bekommst diese E-Mail, weil du E-Mail-Benachrichtigungen eingeschaltet hast. Ändern kannst du das in MindSift unter Kontoeinstellungen → Alarme.")
@@ -84,40 +78,6 @@ func deliveryProblem(w http.ResponseWriter, err error) string {
 	}
 	slog.Warn("Test message not delivered", "error", err)
 	return tr(w, "Ziel nicht erreichbar")
-}
-
-// sendEmailHTML sends text plus an optional HTML version (multipart/alternative).
-func (s *Server) sendEmailHTML(toEmail, subject, bodyText, html string) error {
-	if s.cfg.DemoMode {
-		return errDemoOutgoing
-	}
-	cfg, err := s.smtpSettings()
-	if err != nil {
-		return err
-	}
-	return s.sendEmailHTMLWith(cfg, toEmail, subject, bodyText, html)
-}
-
-// sendEmailHTMLWith sends through the given mail server, e.g. one that is only being tried (SMTP test of
-// the setup wizard) and not stored yet.
-func (s *Server) sendEmailHTMLWith(cfg smtpSettings, toEmail, subject, bodyText, html string) error {
-	if s.cfg.DemoMode {
-		return errDemoOutgoing
-	}
-	if s.notifyEmailHook != nil { // tests
-		return s.notifyEmailHook(toEmail, subject, bodyText, html)
-	}
-	err := sendMail(cfg, toEmail, subject, bodyText, html)
-	s.metrics.mailSent(err)
-	if err != nil {
-		step := ""
-		if se, ok := err.(*smtpStepError); ok {
-			step = i18n.T("en", se.Step) // the log is English (Verbindung: connection)
-		}
-		slog.Warn("Sending email failed", "smtp_step", step, "host", cfg.Host, "port", cfg.Port, "to", toEmail, "error", err)
-		return err
-	}
-	return nil
 }
 
 func (s *Server) sendDiscordNotification(lang, webhookURL, title, description, dueDate, priority string) error {
