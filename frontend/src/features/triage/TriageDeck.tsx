@@ -396,6 +396,9 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
       ) {
         return;
       }
+      // The actions sheet or another window on top (as in useQuickDumpShortcut): the keys belong to it, they
+      // must not sort the card behind it. The sheet closes on Escape itself.
+      if (actionSheetCard || document.querySelector('[aria-modal="true"]:not([data-quick-dump])')) return;
 
       if (e.key === 'ArrowLeft' || e.key === 'h' || e.key === 'H') {
         e.preventDefault();
@@ -413,8 +416,6 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
       } else if (e.key === ' ') {
         e.preventDefault();
         handleSkipCard();
-      } else if (e.key === 'Escape' && actionSheetCard) {
-        setActionSheetCard(null);
       }
     };
 
