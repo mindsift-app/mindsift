@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { APP_BUILD } from '../version';
 import { flushBeforeReload, noteReloadAttempt, reloadAttempts, reloadPage, settleReload } from './appReload';
 import { reloadHeld } from './reloadHold';
+import { onRealtimeStatus } from './realtimeBus';
 
 // Short enough for a tab that stays in front behind a proxy, where a server restart can go unnoticed by
 // the realtime connection for a long time; version.json is a few bytes
@@ -208,7 +209,6 @@ export function useUpdateCheck(options: UpdateCheckOptions = {}) {
       lastInput = Date.now();
     };
     const onVisible = () => document.visibilityState === 'visible' && void check();
-    const onWsStatus = (e: WindowEventMap['mindsift:ws:status']) => e.detail?.connected && void check();
     const timer = window.setInterval(() => void check(), CHECK_EVERY_MS);
     const inputEvents = ['keydown', 'input', 'compositionupdate'] as const;
     inputEvents.forEach((name) => window.addEventListener(name, onInput, true));
@@ -216,7 +216,8 @@ export function useUpdateCheck(options: UpdateCheckOptions = {}) {
     window.addEventListener('focus', onVisible);
     window.addEventListener('online', onVisible);
     window.addEventListener('offline', step);
-    window.addEventListener('mindsift:ws:status', onWsStatus);
+    // The connection is back (server restarted, maybe with a new version)
+    const offStatus = onRealtimeStatus((connected) => connected && void check());
     void check();
     return () => {
       stopped = true;
@@ -227,7 +228,7 @@ export function useUpdateCheck(options: UpdateCheckOptions = {}) {
       window.removeEventListener('focus', onVisible);
       window.removeEventListener('online', onVisible);
       window.removeEventListener('offline', step);
-      window.removeEventListener('mindsift:ws:status', onWsStatus);
+      offStatus();
     };
   }, []);
 

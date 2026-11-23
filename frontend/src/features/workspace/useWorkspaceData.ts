@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DocTodo, Document, JournalDay, SharedFolder, TagSummary, User } from '../../lib/types';
-import { api, onWebSocketMessage } from '../../lib/api';
+import { api } from '../../lib/api';
 import { isJournalEnabled } from '../../lib/journal';
 import { noteClientId, onNoteClosed } from '../../lib/docSync/noteClients';
 import { refreshBlocks } from '../../lib/blockLookup';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { useRealtimeEvents } from '../../lib/useRealtimeEvents';
+import { useRealtimeReload } from '../../lib/realtimeReload';
 import { NoteCounts, countHashtags, hasBlocks, mergeDocList, withCounts, withListedNote, withoutBullets } from './workspaceListing';
 
 interface UseWorkspaceDataOptions {
@@ -143,110 +145,116 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
     if (todosShown) loadRollupTodos();
   }, [todosShown, loadRollupTodos]);
 
-  // Global WebSocket listener with strict isolation & deduplication
-  useEffect(() => {
-    const unsub = onWebSocketMessage((msg) => {
-      if (msg.event === 'DOC_CREATED' && msg.payload) {
-        const created = msg.payload as Document;
-        // Strict Privacy Check: Only add if created by or shared with current user
-        if (currentUser) {
-          const isOwner = created.userId === currentUser.id;
-          const isShared =
-            created.sharedWith?.some(
-              (s) => s.userId === currentUser.id || s.targetId === currentUser.id
-            ) || false;
-          const isFolderShared = Boolean(created.sharedFolderId || created.isSharedFolder);
-          // Shared with a group of this person: the note carries their permission (sharedWith names the group)
-          const hasPermission = created.permission === 'read' || created.permission === 'write';
-          if (!isOwner && !isShared && !isFolderShared && !hasPermission) {
-            return;
-          }
+  // Back after the connection dropped: the events of the gap are lost (notes made, changed or deleted on
+  // another device meanwhile), so the list, the folders and the trash are fetched once
+  useRealtimeReload(() => {
+    reloadDocList();
+    reloadFolders();
+    api.getSharedFolders().then(setSharedFolders).catch(() => {});
+    reloadTrash();
+  });
+
+  // Realtime events: what an event carries is applied, only what it cannot carry is fetched
+  useRealtimeEvents((msg) => {
+    if (msg.event === 'DOC_CREATED' && msg.payload) {
+      const created = msg.payload as Document;
+      // Strict Privacy Check: Only add if created by or shared with current user
+      if (currentUser) {
+        const isOwner = created.userId === currentUser.id;
+        const isShared =
+          created.sharedWith?.some(
+            (s) => s.userId === currentUser.id || s.targetId === currentUser.id
+          ) || false;
+        const isFolderShared = Boolean(created.sharedFolderId || created.isSharedFolder);
+        // Shared with a group of this person: the note carries their permission (sharedWith names the group)
+        const hasPermission = created.permission === 'read' || created.permission === 'write';
+        if (!isOwner && !isShared && !isFolderShared && !hasPermission) {
+          return;
         }
-        setDocs((prev) => (prev.some((d) => d.id === created.id) ? prev : [created, ...prev]));
-        // Made in a folder new here (an agent, another device): the server keeps that folder now, so the
-        // folders are fetched and it stays when its last note goes
-        if (created.folderPath && !foldersRef.current.includes(created.folderPath)) void reloadFolders();
-      } else if (msg.event === 'DOC_UPDATED' && msg.payload) {
-        // The note as the list has it (no bullets, with its counts): one note changes, the list is not fetched again
-        const updated = msg.payload as Document;
-        setDocs((prev) => prev.map((d) => (d.id === updated.id ? withListedNote(d, updated, isNoteOpen(d.id)) : d)));
-      } else if (msg.event === 'DOC_COUNTS' && msg.payload) {
-        // The counts of a note someone changed (open to-dos, hashtags); a note open here counts its bullets
-        const counts = msg.payload as NoteCounts;
-        setDocs((prev) =>
-          prev.some((d) => d.id === counts.id) ? prev.map((d) => (d.id === counts.id ? withCounts(d, counts) : d)) : prev
-        );
-      } else if (msg.event === 'DOC_DELETED') {
-        const delId = (msg.payload as { id?: string } | undefined)?.id;
-        if (!delId) return;
-        setDocs((prev) => prev.filter((d) => d.id !== delId));
-        setSelectedDocId((prev) => (prev === delId ? null : prev));
-        reloadTrash();
-      } else if (msg.event === 'WORKSPACE_FOLDERS_UPDATED') {
-        const ev = (msg.payload || {}) as FoldersEvent;
-        const loadFolders = reloadFolders;
-        const loadAll = () => {
-          loadFolders();
-          api.getSharedFolders().then(setSharedFolders).catch(() => {});
-          reloadDocList();
-          reloadTrash();
-        };
-        switch (ev.type) {
-          case 'created':
-            loadFolders();
-            return;
-          case 'moved':
-            // The notes moved came as DOC_UPDATED just before
-            loadFolders();
-            return;
-          case 'restored':
-            // The notes brought back came as DOC_CREATED just before; a folder may be back as well
-            loadFolders();
-            reloadTrash();
-            return;
-          case 'noteMoved':
-            // DOC_UPDATED (sent just before) brought the note, unless it is new here (moved into a folder
-            // shared with me)
-            if (ev.docId && docsRef.current.some((d) => d.id === ev.docId)) {
-              loadFolders();
-              reloadTrash();
-              return;
-            }
-            break;
-          case 'deleted': {
-            const path = ev.path;
-            // A deleted shared folder is no longer shared
-            api.getSharedFolders().then(setSharedFolders).catch(() => {});
-            const gone = new Set(ev.deletedDocIds || []);
-            if (!path) {
-              // Somebody else deleted a folder with notes I see (shared with me, of a shared folder): all of
-              // them in one event, the folders and the trash fetched once
-              if (gone.size === 0) break;
-              setDocs((prev) => prev.filter((d) => !gone.has(d.id)));
-              setSelectedDocId((prev) => (prev && gone.has(prev) ? null : prev));
-              loadFolders();
-              reloadTrash();
-              return;
-            }
-            // Other notes there (shared with me and placed there, or of a shared folder given back) moved
-            // or disappeared: those only the list knows
-            if (docsRef.current.some((d) => !gone.has(d.id) && inFolder(d.folderPath, path))) break;
-            if (gone.size > 0) {
-              setDocs((prev) => prev.filter((d) => !gone.has(d.id)));
-              setSelectedDocId((prev) => (prev && gone.has(prev) ? null : prev));
-            }
-            loadFolders();
-            reloadTrash();
-            return;
-          }
-        }
-        // A shared folder created, shared, given back or placed elsewhere: many notes may have another
-        // place or audience
-        loadAll();
       }
-    });
-    return unsub;
-  }, [currentUser, reloadTrash, setSelectedDocId, reloadDocList, reloadFolders, docsRef, foldersRef]);
+      setDocs((prev) => (prev.some((d) => d.id === created.id) ? prev : [created, ...prev]));
+      // Made in a folder new here (an agent, another device): the server keeps that folder now, so the
+      // folders are fetched and it stays when its last note goes
+      if (created.folderPath && !foldersRef.current.includes(created.folderPath)) void reloadFolders();
+    } else if (msg.event === 'DOC_UPDATED' && msg.payload) {
+      // The note as the list has it (no bullets, with its counts): one note changes, the list is not fetched again
+      const updated = msg.payload as Document;
+      setDocs((prev) => prev.map((d) => (d.id === updated.id ? withListedNote(d, updated, isNoteOpen(d.id)) : d)));
+    } else if (msg.event === 'DOC_COUNTS' && msg.payload) {
+      // The counts of a note someone changed (open to-dos, hashtags); a note open here counts its bullets
+      const counts = msg.payload as NoteCounts;
+      setDocs((prev) =>
+        prev.some((d) => d.id === counts.id) ? prev.map((d) => (d.id === counts.id ? withCounts(d, counts) : d)) : prev
+      );
+    } else if (msg.event === 'DOC_DELETED') {
+      const delId = (msg.payload as { id?: string } | undefined)?.id;
+      if (!delId) return;
+      setDocs((prev) => prev.filter((d) => d.id !== delId));
+      setSelectedDocId((prev) => (prev === delId ? null : prev));
+      reloadTrash();
+    } else if (msg.event === 'WORKSPACE_FOLDERS_UPDATED') {
+      const ev = (msg.payload || {}) as FoldersEvent;
+      const loadFolders = reloadFolders;
+      const loadAll = () => {
+        loadFolders();
+        api.getSharedFolders().then(setSharedFolders).catch(() => {});
+        reloadDocList();
+        reloadTrash();
+      };
+      switch (ev.type) {
+        case 'created':
+          loadFolders();
+          return;
+        case 'moved':
+          // The notes moved came as DOC_UPDATED just before
+          loadFolders();
+          return;
+        case 'restored':
+          // The notes brought back came as DOC_CREATED just before; a folder may be back as well
+          loadFolders();
+          reloadTrash();
+          return;
+        case 'noteMoved':
+          // DOC_UPDATED (sent just before) brought the note, unless it is new here (moved into a folder
+          // shared with me)
+          if (ev.docId && docsRef.current.some((d) => d.id === ev.docId)) {
+            loadFolders();
+            reloadTrash();
+            return;
+          }
+          break;
+        case 'deleted': {
+          const path = ev.path;
+          // A deleted shared folder is no longer shared
+          api.getSharedFolders().then(setSharedFolders).catch(() => {});
+          const gone = new Set(ev.deletedDocIds || []);
+          if (!path) {
+            // Somebody else deleted a folder with notes I see (shared with me, of a shared folder): all of
+            // them in one event, the folders and the trash fetched once
+            if (gone.size === 0) break;
+            setDocs((prev) => prev.filter((d) => !gone.has(d.id)));
+            setSelectedDocId((prev) => (prev && gone.has(prev) ? null : prev));
+            loadFolders();
+            reloadTrash();
+            return;
+          }
+          // Other notes there (shared with me and placed there, or of a shared folder given back) moved
+          // or disappeared: those only the list knows
+          if (docsRef.current.some((d) => !gone.has(d.id) && inFolder(d.folderPath, path))) break;
+          if (gone.size > 0) {
+            setDocs((prev) => prev.filter((d) => !gone.has(d.id)));
+            setSelectedDocId((prev) => (prev && gone.has(prev) ? null : prev));
+          }
+          loadFolders();
+          reloadTrash();
+          return;
+        }
+      }
+      // A shared folder created, shared, given back or placed elsewhere: many notes may have another
+      // place or audience
+      loadAll();
+    }
+  });
 
   return {
     docs,

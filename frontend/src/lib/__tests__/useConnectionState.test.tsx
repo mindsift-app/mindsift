@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 
 let statusListener: ((connected: boolean, transport?: string) => void) | null = null;
 let currentConnected = false;
-vi.mock('../api', () => ({
+vi.mock('../realtimeBus', () => ({
   onRealtimeStatus: (cb: (connected: boolean, transport?: string) => void) => {
     statusListener = cb;
     cb(currentConnected);

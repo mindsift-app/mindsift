@@ -22,10 +22,6 @@ interface Navigator {
 
 interface WindowEventMap {
   beforeinstallprompt: BeforeInstallPromptEvent;
-  // Every realtime message, for listeners outside lib/api/realtime.ts
-  'mindsift:ws': CustomEvent<import('./lib/types').WSMessage | undefined>;
-  // The realtime connection opened or dropped (lib/api/realtime.ts)
-  'mindsift:ws:status': CustomEvent<{ connected: boolean; transport: string } | undefined>;
   // The page reloads for a new version: editors hand over text still waiting in a typing pause (lib/appReload.ts)
   'mindsift:flush-edits': Event;
   // The desktop app set window.__msDesktopShell (after the page loaded)

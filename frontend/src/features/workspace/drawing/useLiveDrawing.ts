@@ -5,7 +5,8 @@
 // draws alone (mode null) and this hook sends nothing; its merge starts from the drawing as opened, so the
 // session gets what was drawn alone before as changes.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, getSSEId, isWebSocketConnected, onRealtimeStatus, onWebSocketMessage, sendWebSocketMessage } from '../../../lib/api';
+import { api, getSSEId, isWebSocketConnected, sendWebSocketMessage } from '../../../lib/api';
+import { onRealtimeMessage, onRealtimeStatus } from '../../../lib/realtimeBus';
 import { Applied, LiveMerge, WireElement, finalDrawing } from '../../../lib/drawing/live';
 import { Drawing } from '../../../lib/drawing/model';
 import type { LiveDrawingState } from '../../../lib/api/workspace';
@@ -330,7 +331,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     left.current = false;
     endedRef.current = false;
     lastSeq.current = 0;
-    const offMsg = onWebSocketMessage((msg) => {
+    const offMsg = onRealtimeMessage((msg) => {
       const p = msg?.payload as DrawWire | undefined;
       const o = optsRef.current;
       if (!o || !p || p.docId !== o.docId || p.blockId !== o.blockId || !msg.event?.startsWith('DRAW_')) return;
@@ -463,7 +464,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       }
       if (modeRef.current === 'draw') join();
       else watch();
-    });
+    }, { current: true });
     return () => {
       offMsg();
       offStatus();

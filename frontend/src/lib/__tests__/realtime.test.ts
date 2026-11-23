@@ -50,7 +50,10 @@ class FakeEventSource {
 
 async function loadApi() {
   vi.resetModules(); // fresh module state (transport flags) for every test
-  return import('../api');
+  const api = await import('../api');
+  // The listeners of the fresh modules (lib/realtimeBus.ts, where lib/api reports to)
+  const bus = await import('../realtimeBus');
+  return { ...api, onRealtimeStatus: bus.onRealtimeStatus, onRealtimeMessage: bus.onRealtimeMessage };
 }
 
 describe('realtime fallback', () => {
@@ -72,7 +75,7 @@ describe('realtime fallback', () => {
   it('a WebSocket that stays silent is replaced by SSE', async () => {
     const api = await loadApi();
     const states: string[] = [];
-    api.onRealtimeStatus((connected, transport) => states.push(`${connected}:${transport}`));
+    api.onRealtimeStatus((connected, transport) => states.push(`${connected}:${transport}`), { current: true });
     await api.connectWebSocket();
     FakeWebSocket.instances[0].open();
     expect(api.getRealtimeTransport()).toBe('ws');
@@ -211,7 +214,7 @@ describe('realtime fallback', () => {
     );
     const api = await loadApi();
     const seen: string[] = [];
-    api.onWebSocketMessage((m) => seen.push(m.event));
+    api.onRealtimeMessage((m) => seen.push(m.event));
     await api.connectWebSocket();
     await vi.advanceTimersByTimeAsync(100);
 

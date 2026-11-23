@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { onRealtimeStatus, RealtimeTransport } from '../lib/api';
+import { onRealtimeStatus, RealtimeTransport } from '../lib/realtimeBus';
 import { useCapabilities } from '../lib/capabilities';
 
 // Connection pill in the look of the notes' header (Doku/ui-patterns.md): whether changes of others
@@ -12,7 +12,7 @@ export const LivePill: React.FC = () => {
     connected: false,
     transport: 'none',
   });
-  useEffect(() => onRealtimeStatus((connected, transport) => setStatus({ connected, transport })), []);
+  useEffect(() => onRealtimeStatus((connected, transport) => setStatus({ connected, transport }), { current: true }), []);
   const { publicAddress } = useCapabilities();
   if (!publicAddress) return null;
 

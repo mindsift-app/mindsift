@@ -9,7 +9,6 @@ vi.mock('../../lib/api', () => ({
     getAuthStatus: vi.fn(async () => ({ voice: { mode: 'off' } })),
   },
   triggerHaptic: vi.fn(),
-  onRealtimeStatus: vi.fn(() => () => {}),
 }));
 
 import { NavRail, NAV_RAIL_KEY } from '../NavRail';

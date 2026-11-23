@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { api, onWebSocketMessage } from '../../../lib/api';
+import { api } from '../../../lib/api';
+import { emitRealtimeMessage } from '../../../lib/realtimeBus';
 import { Document, DocumentBlock } from '../../../lib/types';
 import { registerNoteClient } from '../../../lib/docSync/noteClients';
 import { useWorkspaceData } from '../useWorkspaceData';
+import { reconnect } from '../../../test/realtime';
 
 vi.mock('../../../lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/api')>();
@@ -18,18 +20,14 @@ vi.mock('../../../lib/api', async (importOriginal) => {
       getWorkspaceTags: vi.fn(),
       getJournal: vi.fn(),
     },
-    onWebSocketMessage: vi.fn(() => () => {}),
   };
 });
 
 const listed = (id: string, d: Partial<Document> = {}) =>
   ({ id, title: id, blocks: [], tags: [], content: '', folderPath: '', ...d }) as unknown as Document;
 
-type Handler = (msg: { event: string; payload?: unknown }) => void;
-const lastHandler = (): Handler => {
-  const calls = vi.mocked(onWebSocketMessage).mock.calls;
-  return calls[calls.length - 1][0] as unknown as Handler;
-};
+// The workspace's realtime listener (call inside act)
+const lastHandler = () => (msg: { event: string; payload?: unknown }) => emitRealtimeMessage({ payload: undefined, timestamp: '', ...msg });
 
 describe('useWorkspaceData', () => {
   beforeEach(() => {
@@ -61,6 +59,18 @@ describe('useWorkspaceData', () => {
     act(() => lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'shared', folderId: 'f1' } }));
     await waitFor(() => expect(api.getDocumentTodos).toHaveBeenCalledTimes(2));
     expect(api.getDocuments).toHaveBeenCalledTimes(2);
+  });
+
+  it('fetches notes, folders and trash again after the connection dropped (the events of the gap are lost)', async () => {
+    const { result } = setup(false);
+    await waitFor(() => expect(result.current.docs).toHaveLength(2));
+    // Meanwhile, on another device: b deleted, c made in a new folder
+    vi.mocked(api.getDocuments).mockResolvedValue([listed('a'), listed('c', { folderPath: 'Neu' })]);
+    vi.mocked(api.getFolders).mockResolvedValue(['Neu']);
+    reconnect();
+    await waitFor(() => expect(result.current.docs.map((d) => d.id)).toEqual(['a', 'c']));
+    await waitFor(() => expect(result.current.folders).toEqual(['Neu']));
+    expect(api.getSharedFolders).toHaveBeenCalledTimes(2);
   });
 
   it('does not fetch the whole list again when one known note moved to another folder', async () => {

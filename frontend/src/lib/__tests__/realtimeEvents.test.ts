@@ -28,6 +28,14 @@ describe('realtime events', () => {
     expect(empty).toEqual([]);
   });
 
+  // One way for events and the connection's status: lib/realtimeBus.ts (no window events beside it)
+  it('subscribes to realtime events only through lib/realtimeBus.ts', () => {
+    const elsewhere = Object.entries(sources)
+      .filter(([, code]) => code.includes("'mindsift:ws"))
+      .map(([file]) => file);
+    expect(elsewhere).toEqual([]);
+  });
+
   it('finds the events in the code', () => {
     expect(named.some((n) => n.name === 'TASK_CREATED')).toBe(true);
   });

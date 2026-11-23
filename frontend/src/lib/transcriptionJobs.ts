@@ -8,8 +8,9 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import i18n from '../i18n';
 import { api, getCurrentUserId } from './api';
-import type { TranscriptionDone, TranscriptionJob, WSMessage } from './types';
+import type { TranscriptionDone, TranscriptionJob } from './types';
 import { formatDate, formatDateTime } from './format';
+import { onRealtimeMessage, onRealtimeReconnect } from './realtimeBus';
 
 const jobs = new Map<string, TranscriptionJob>();
 const listeners = new Set<() => void>();
@@ -82,9 +83,8 @@ function loadInbox() {
 function install() {
   if (installed || typeof window === 'undefined') return;
   installed = true;
-  window.addEventListener('mindsift:ws', (e) => {
-    const msg = (e as CustomEvent<WSMessage | undefined>).detail;
-    if (msg?.event !== 'TRANSCRIPTION_UPDATED' && msg?.event !== 'TRANSCRIPTION_DONE') return;
+  onRealtimeMessage((msg) => {
+    if (msg.event !== 'TRANSCRIPTION_UPDATED' && msg.event !== 'TRANSCRIPTION_DONE') return;
     const payload = msg.payload as TranscriptionJob | TranscriptionDone | undefined;
     if (!payload?.id) return;
     lastEvent.set(payload.id, ++eventSeq);
@@ -92,8 +92,7 @@ function install() {
     else finish(payload as TranscriptionDone);
   });
   // Events of the time without a connection are lost: load what is on screen again
-  window.addEventListener('mindsift:ws:status', (e) => {
-    if (!(e as CustomEvent<{ connected?: boolean }>).detail?.connected) return;
+  onRealtimeReconnect(() => {
     watchedDocs.forEach((_, docId) => loadDoc(docId));
     if (watchedInbox > 0) loadInbox();
   });

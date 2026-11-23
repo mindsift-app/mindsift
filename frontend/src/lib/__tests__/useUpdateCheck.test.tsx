@@ -12,6 +12,7 @@ import { reloadAttempts } from '../appReload';
 import { UpdateReloadNotice } from '../../components/UpdateReloadNotice';
 import { reloadHeld, useHoldReload } from '../reloadHold';
 import { DictationQueue } from '../../features/capture/dictationQueue';
+import { emitRealtimeStatus } from '../realtimeBus';
 
 // One step of the hook's clock and a little more
 const TICK = 300;
@@ -75,7 +76,7 @@ describe('useUpdateCheck', () => {
     const { result } = start();
     await wait(0);
     act(() => {
-      window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected: true, transport: 'ws' } }));
+      emitRealtimeStatus(true, 'ws');
     });
     await wait(60_000);
     expect(fetchMock).toHaveBeenCalledTimes(2);
