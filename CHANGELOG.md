@@ -15,6 +15,7 @@ Versions without a git tag were development states and were never published as a
 - Phones: the emoji picker is a sheet from below like the other sheets (grip, title with the current icon, close button, "Remove icon" as a row at the bottom).
 - Notes: "Collapse all bullets" (note menu, Ctrl+Shift+↑) now collapses only the top level of what you see: the note's top-level bullets, or, zoomed in, the bullets right below the zoomed one. Deeper bullets keep their state, so zooming into a heading afterwards shows its sub-bullets as open or closed as before; collapse again there to fold that level. "Expand all bullets" still opens everything in the view at any depth.
 - A focused drawing in a note, a selected image and a recording held on the + follow the same order: Escape or a press beside a menu opened above them closes that menu first and leaves the drawing focused; Escape that closed a menu no longer also clears the notes marked in the explorer; and a field or list that takes Escape itself keeps a running recording going.
+- Notes: Escape with text selected across several bullets now only ends the selection; before, in focus mode it also left focus mode. The slash menu, like other menus, closes on a click beside it, and the click still places the cursor where it lands.
 - Quick Dump: with the options open, the first Escape in the field only closes the options; the next one empties the field (and closes the Quick Dump window) as before. Before, one Escape closed the options and emptied the text at once.
 
 ### Fixed

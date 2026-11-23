@@ -17,6 +17,7 @@ import type { ConflictChoice } from '../../lib/docSync/engine';
 import { templateBlocks } from '../../lib/noteTemplate';
 import { TemplateChoice, TemplatePicker } from './NoteTemplates';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { useDismiss } from '../../lib/useDismiss';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
 import { draggedFiles, droppedImages, insertImages, type PastedImages } from '../../lib/pasteImages';
@@ -1363,19 +1364,17 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
         deleteRangeSelRef.current(sel, e.key);
         return;
       }
-      if (!['Shift', 'Control', 'Meta', 'Alt'].includes(e.key)) clearRangeSel();
-    };
-    // A press outside the note ends the selection, so Ctrl+C there does not copy it
-    const onDown = (e: MouseEvent) => {
-      if (!treeRootRef.current?.contains(e.target as Node)) clearRangeSel();
+      // Escape is left to the layer (useDismiss below): cleared here, the render would take the layer off the stack
+      // before the Escape reaches it (a microtask between the listeners), and focus mode would end too
+      if (!['Shift', 'Control', 'Meta', 'Alt', 'Escape'].includes(e.key)) clearRangeSel();
     };
     window.addEventListener('keydown', onKey, true);
-    window.addEventListener('mousedown', onDown, true);
-    return () => {
-      window.removeEventListener('keydown', onKey, true);
-      window.removeEventListener('mousedown', onDown, true);
-    };
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [rangeSel, clearRangeSel]);
+  // The selection is a layer of the dismiss stack (Doku/ui-patterns.md): a press outside the note ends it, so
+  // Ctrl+C there does not copy it, and the press still reaches its target; Escape ends only the selection,
+  // not a dialog or focus mode below
+  useDismiss(treeRootRef, clearRangeSel, { active: rangeSel !== null, passThrough: true });
 
   // The browser's own selection over several bullets (e.g. started outside the note or on its title)
   // as a selection here, so copying it gives Markdown too instead of the rendered text
