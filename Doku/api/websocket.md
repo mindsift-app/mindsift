@@ -41,19 +41,24 @@ Client → Server: The server processes `{"event":"JOIN_ROOM","room":"<id>"}`, `
 | Room (`BroadcastRoom`, `Broadcast`) | Connections in the room |
 | Room, per connection (`BroadcastRoomEach`) | Connections in the room, each with its own message (the bundled pointers of a live drawing leave out the receiver's own) |
 | Multiple users (`BroadcastToUsers`) | All connections of a computed user group, e.g. owners and members of a task list |
+| Multiple users, about a list (`BroadcastListToUsers`) | As `BroadcastToUsers`, the message carrying the list's `list_id` like a room event (list deleted, shared, unshared) |
 
 Each WebSocket connection has a queue of up to 128 events; when it is full, further events for that connection are dropped (live drawing notices that by `seq`). The writer takes what is waiting in the queue in one go (up to 256 events): every event is still a WebSocket message of its own, but they go to the network in one write (one system call and usually one TCP packet instead of one each), which saves the server, the proxy in front and the network most of their per-message work when many small events go out at once.
 
 ## Events
 
+Every event has one name, a constant in [events.go](../../internal/api/events.go) (the hub's own in [ws/events.go](../../internal/ws/events.go)); handlers never spell it out. [frontend/src/lib/realtimeEvents.json](../../frontend/src/lib/realtimeEvents.json) lists the same names for the app: `server` the events the server sends, `client` the messages it takes. A Go test checks the constants against that list, a Vitest test checks that the app listens for and sends no other names. A new event therefore needs its constant, its line in the list and its row here. The payloads below stay as they are: older apps and the desktop app in server mode read them, so a payload only grows (new fields), it is not reshaped.
+
+Each operation sends its events from one place that REST and MCP share (e.g. `createTaskList`, `createList`, `addListItem`, `updateListItem`, `setListItemDone`, `afterDocCreated`, `afterTriage`), so both ways reach the same people.
+
 | Event | Trigger | Channel |
 |---|---|---|
-| `TASK_CREATED` | `POST /inbox`, webhook | Owner and list members |
+| `TASK_CREATED` | `POST /inbox`, webhook, MCP `create_task`, a task made from a note's bullet | Owner and list members |
 | `TASK_UPDATED` | `PATCH /thoughts/{id}`, triage | Owner and members of old and new list |
 | `TASK_DELETED` | `DELETE /thoughts/{id}` | Owner and list members |
 | `TASK_REORDERED` | Reordering tasks (payload: `taskListId`, `items[{id, sortOrder, kanbanStatus, isCompleted}]` as stored, `skipped`, `reload`, `userId`; only sent when something changed) | Members of all affected lists |
-| `TASK_LIST_UPDATED` / `TASK_LIST_DELETED` | Update, (un)share, or delete list; payload only `{id}`, clients reload their lists | Members before and after modification |
-| `DOC_CREATED`, `DOC_UPDATED`, `DOC_DELETED` | Create/update/delete note, note shares, note restored from the trash (`DOC_CREATED`). Payload of the first two: the note as each person's note list has it (`GET /documents`: no bullets, with `openTodos`, `tagCounts`, `tagOpenTodos`); `DOC_DELETED` only `{id}` (deleting a folder sends `WORKSPACE_FOLDERS_UPDATED` `deleted` instead). Pinning a note or marking it as a template (`PUT /documents/{id}` with only `isPinned`/`isTemplate`) sends `DOC_UPDATED` to the person's own sessions only, both are personal | Authorized users |
+| `TASK_LIST_CREATED` / `TASK_LIST_UPDATED` / `TASK_LIST_DELETED` | Create (`POST /task-lists`, MCP `create_task_list`; a team's list reaches the team), update, (un)share, mute (the person's own sessions only) or delete list; payload only `{id}`, clients reload their lists | Members before and after modification |
+| `DOC_CREATED`, `DOC_UPDATED`, `DOC_DELETED` | Create/update/delete note, note shares, note restored from the trash (`DOC_CREATED`). A new note (`POST /documents`, also from a template, MCP `create_note`, a bullet extracted into a note of its own) also records the @-mentions in its bullets and tells the people mentioned who can see it, as an edit does; extracted bullets were told in their first note and are only recorded. Payload of the first two: the note as each person's note list has it (`GET /documents`: no bullets, with `openTodos`, `tagCounts`, `tagOpenTodos`); `DOC_DELETED` only `{id}` (deleting a folder sends `WORKSPACE_FOLDERS_UPDATED` `deleted` instead). Pinning a note or marking it as a template (`PUT /documents/{id}` with only `isPinned`/`isTemplate`) sends `DOC_UPDATED` to the person's own sessions only, both are personal | Authorized users |
 | `DOC_COUNTS` | Bullets of a note changed (sync, a linked task ticked): `{id, openTodos, tagCounts, tagOpenTodos}`, the counts the note list shows, the same for everyone. Checked at most every 3 s per note (two grouped queries, [doc_counts.go](../../internal/api/doc_counts.go)) and sent only when they differ from the counts sent last (the first check after a server start always sends) | Authorized users |
 | `DOC_SEQ` | Note change, a lease changing hands (renewals do not count), or a new session (`docId`, `headSeq`); clients fetch data via `/docs/{id}/sync` | Room `doc:<id>` |
 | `TRANSCRIPTION_UPDATED` | A background transcription was queued, started, failed or is waiting for its retry (the job as `GET /voice/jobs`) | Its owner; for a recording in a note everyone with access to the note |
@@ -61,8 +66,12 @@ Each WebSocket connection has a queue of up to 128 events; when it is full, furt
 | `WORKSPACE_FOLDERS_UPDATED` | Folders/mounts modified; `type` says what changed (below) | User; for shared folders, owner and all collaborators |
 | `LIST_CREATED` | `POST /lists`, MCP `create_list`; payload the new list (shared with nobody yet) | The creator (their other devices) |
 | `LIST_UPDATED` | List renamed or new icon, inbox entry made into an entry; payload the list without what differs per person (`isOwner`, `role` left out): title, icon, type, entries, shares, members | List room |
-| `LIST_DELETED`, `LIST_SHARED`, `LIST_UNSHARED`, `LIST_CLEARED` | List administration | User or list room |
+| `LIST_DELETED`, `LIST_SHARED`, `LIST_UNSHARED` | List deleted (`{listId}`), shared (the share), a share removed (`{listId, shareId}`); the message carries `list_id` like the room's events | Everyone who saw the list before or sees it now, on all their connections, not only the list's room (`broadcastListAudience`): the list overview of someone without the list open drops or loads it as well |
+| `LIST_CLEARED` | Checked entries removed (`{listId, removed}`) | List room |
 | `NOTIFICATION` | A new entry in the notification center; payload the entry (`GET /notifications`) plus `replaces`: the ids of the entries it replaced (same group key, e.g. one entry per watched task), left out when none | The recipient |
+| `NOTIFICATIONS_READ`, `NOTIFICATIONS_CLEARED` | Entries marked read (`{ids}`, empty: all) or the notification center emptied (`{}`) | The person's own sessions |
+| `DRAW_*` | Live drawing (below) | Drawing room or the connection |
+| `PONG` | Answer to `PING` | Connection |
 | `ITEM_CREATED`, `ITEM_UPDATED`, `ITEM_TOGGLED`, `ITEM_DELETED`, `ITEM_REORDERED` | List items | List room |
 | `USER_PRESENCE` | Connection connected/disconnected (`onlineCount`) | Room |
 | `DEMO_RESET` | Periodic reset in demo mode; clients invalidate local caches and reload data | All active connections |
