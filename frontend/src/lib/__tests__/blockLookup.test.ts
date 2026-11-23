@@ -18,8 +18,8 @@ vi.mock('../api', () => ({
 }));
 
 import { blocksVersion, cachedBlock, clearBlockLookup, lookupBlock, refreshBlocks, requestBlock, subscribeBlocks } from '../blockLookup';
+import { flush } from '../../test/fixtures';
 
-const flush = () => new Promise((r) => setTimeout(r, 0));
 
 describe('bullets looked up for links', () => {
   beforeEach(() => {

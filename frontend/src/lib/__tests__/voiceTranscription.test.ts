@@ -4,10 +4,10 @@ const transcribe = vi.fn();
 vi.mock('../api', () => ({ api: { transcribe: (...a: unknown[]) => transcribe(...a) } }));
 
 import { SegmentedTranscription } from '../voiceTranscription';
+import { flush } from '../../test/fixtures';
 
 const blob = (name: string) => new Blob([name], { type: 'audio/webm' });
 const audio = (name: string) => Promise.resolve(blob(name));
-const flush = () => new Promise((r) => setTimeout(r, 0));
 
 beforeEach(() => {
   transcribe.mockReset();

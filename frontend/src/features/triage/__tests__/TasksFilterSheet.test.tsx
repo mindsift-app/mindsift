@@ -2,10 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TasksFilterSheet } from '../TasksFilterSheet';
 import { ActiveFilterBanner } from '../ActiveFilterBanner';
-import { Thought } from '../../../lib/types';
+import { makeTask } from '../../../test/fixtures';
 
-const task = (id: string, tags: string[]) => ({ id, tags }) as unknown as Thought;
-const tasks = [task('1', ['backup', 'garten']), task('2', ['backup']), task('3', ['einkauf'])];
+const tasks = [makeTask('1', { tags: ['backup', 'garten'] }), makeTask('2', { tags: ['backup'] }), makeTask('3', { tags: ['einkauf'] })];
 const noop = () => {};
 
 function sheet(selectedTags: string[], toggleTag = vi.fn(), clearTags = vi.fn()) {

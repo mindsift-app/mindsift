@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { KanbanColumn, TaskList, Thought } from '../../../lib/types';
 import { filterAndSortTasks, followTaskUpdate, groupTasks, tagFilterLabel, tasksWithTag, toggleTag } from '../taskListing';
+import { makeTask } from '../../../test/fixtures';
 
-const task = (id: string, t: Partial<Thought> = {}) =>
-  ({ id, content: id, isCompleted: false, priority: 'normal', createdAt: '2026-01-01T00:00:00Z', ...t }) as Thought;
 const ids = (list: Thought[]) => list.map((t) => t.id);
 const COLS: KanbanColumn[] = [
   { id: 'todo', name: 'Zu erledigen' },
@@ -14,7 +13,7 @@ const ctx = (lists: TaskList[] = [], now = new Date(2026, 5, 15, 12, 0)) => ({ l
 
 describe('task listing', () => {
   it('filters by state and hashtag', () => {
-    const tasks = [task('a', { tags: ['x'] }), task('b', { isCompleted: true, tags: ['x'] }), task('c')];
+    const tasks = [makeTask('a', { tags: ['x'] }), makeTask('b', { isCompleted: true, tags: ['x'] }), makeTask('c')];
     expect(ids(filterAndSortTasks(tasks, 'open', [], 'custom'))).toEqual(['a', 'c']);
     expect(ids(filterAndSortTasks(tasks, 'done', [], 'custom'))).toEqual(['b']);
     expect(ids(filterAndSortTasks(tasks, 'discarded', ['x'], 'custom'))).toEqual(['a', 'b']);
@@ -24,11 +23,11 @@ describe('task listing', () => {
 
   it('shows a task with at least one of several hashtags', () => {
     const tasks = [
-      task('a', { tags: ['garten'] }),
-      task('b', { tags: ['einkauf', 'garten'] }),
-      task('c', { tags: ['büro'] }),
-      task('d'),
-      task('e', { tags: ['einkauf'], isCompleted: true }),
+      makeTask('a', { tags: ['garten'] }),
+      makeTask('b', { tags: ['einkauf', 'garten'] }),
+      makeTask('c', { tags: ['büro'] }),
+      makeTask('d'),
+      makeTask('e', { tags: ['einkauf'], isCompleted: true }),
     ];
     expect(ids(tasksWithTag(tasks, ['garten', 'einkauf']))).toEqual(['a', 'b', 'e']);
     expect(ids(filterAndSortTasks(tasks, 'open', ['einkauf', 'büro'], 'alpha'))).toEqual(['b', 'c']);
@@ -50,9 +49,9 @@ describe('task listing', () => {
 
   it('sorts manually, by due date, priority, title and age', () => {
     const tasks = [
-      task('b', { sortOrder: 2, dueDate: '2026-06-20', priority: 'low', createdAt: '2026-01-02T00:00:00Z' }),
-      task('a', { sortOrder: 1, priority: 'urgent', createdAt: '2026-01-01T00:00:00Z' }),
-      task('c', { sortOrder: 1, dueDate: '2026-06-10', priority: 'high', createdAt: '2026-01-03T00:00:00Z' }),
+      makeTask('b', { sortOrder: 2, dueDate: '2026-06-20', priority: 'low', createdAt: '2026-01-02T00:00:00Z' }),
+      makeTask('a', { sortOrder: 1, priority: 'urgent', createdAt: '2026-01-01T00:00:00Z' }),
+      makeTask('c', { sortOrder: 1, dueDate: '2026-06-10', priority: 'high', createdAt: '2026-01-03T00:00:00Z' }),
     ];
     expect(ids(filterAndSortTasks(tasks, 'open', [], 'custom'))).toEqual(['c', 'a', 'b']); // tie: newest first
     expect(ids(filterAndSortTasks(tasks, 'open', [], 'due'))).toEqual(['c', 'b', 'a']); // without date last
@@ -63,7 +62,7 @@ describe('task listing', () => {
 
   it('groups by list in tab order, tasks without a list first', () => {
     const lists = [{ id: 'l1', title: 'Haus', icon: '🏡' }, { id: 'l2', title: 'Arbeit' }] as TaskList[];
-    const tasks = [task('a', { taskListId: 'l2' }), task('b'), task('c', { taskListId: 'l1' }), task('d', { taskListId: 'gone' })];
+    const tasks = [makeTask('a', { taskListId: 'l2' }), makeTask('b'), makeTask('c', { taskListId: 'l1' }), makeTask('d', { taskListId: 'gone' })];
     const groups = groupTasks(tasks, 'list', ctx(lists))!;
     expect(groups.map((g) => [g.title, ids(g.tasks)])).toEqual([
       ['Ohne Liste', ['b']],
@@ -74,7 +73,7 @@ describe('task listing', () => {
   });
 
   it('groups by hashtag (sorted, a task under each of its tags), by status and priority', () => {
-    const tasks = [task('a', { tags: ['zz', 'aa'] }), task('b'), task('c', { isCompleted: true, priority: 'urgent' })];
+    const tasks = [makeTask('a', { tags: ['zz', 'aa'] }), makeTask('b'), makeTask('c', { isCompleted: true, priority: 'urgent' })];
     expect(groupTasks(tasks, 'tag', ctx())!.map((g) => [g.title, ids(g.tasks)])).toEqual([
       ['#aa', ['a']],
       ['#zz', ['a']],
@@ -89,7 +88,7 @@ describe('task listing', () => {
   });
 
   it('groups by due date against the given time', () => {
-    const tasks = [task('over', { dueDate: '2026-06-10' }), task('today', { dueDate: '2026-06-15' }), task('soon', { dueDate: '2026-06-20' }), task('none')];
+    const tasks = [makeTask('over', { dueDate: '2026-06-10' }), makeTask('today', { dueDate: '2026-06-15' }), makeTask('soon', { dueDate: '2026-06-20' }), makeTask('none')];
     const groups = groupTasks(tasks, 'due', ctx([], new Date(2026, 5, 15, 12, 0)))!;
     expect(groups.map((g) => [g.key, ids(g.tasks)])).toEqual([
       ['due:overdue', ['over']],
@@ -106,14 +105,14 @@ describe('task opened from outside the list', () => {
     prev.map((t) => (t.id === taskId ? { ...t, ...changes } : t));
 
   it('gets the changes the dialog makes to it', () => {
-    const extra = task('x', { isWatching: false });
+    const extra = makeTask('x', { isWatching: false });
     expect(followTaskUpdate(extra, change('x', { isWatching: true }))?.isWatching).toBe(true);
   });
 
   it('gets a new list that holds it, and stays as it is otherwise', () => {
-    const extra = task('x', { priority: 'normal' });
-    expect(followTaskUpdate(extra, [task('a'), task('x', { priority: 'high' })])?.priority).toBe('high');
-    expect(followTaskUpdate(extra, [task('a')])).toBe(extra);
+    const extra = makeTask('x', { priority: 'normal' });
+    expect(followTaskUpdate(extra, [makeTask('a'), makeTask('x', { priority: 'high' })])?.priority).toBe('high');
+    expect(followTaskUpdate(extra, [makeTask('a')])).toBe(extra);
     expect(followTaskUpdate(extra, change('a', { priority: 'high' }))).toEqual(extra);
     expect(followTaskUpdate(null, change('x', { priority: 'high' }))).toBeNull();
   });

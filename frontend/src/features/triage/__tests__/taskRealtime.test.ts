@@ -4,6 +4,7 @@ import { Thought } from '../../../lib/types';
 import { isTaskThought, tasksAfterCreate, tasksAfterDelete, tasksAfterReorder, tasksAfterUpdate, useTaskRealtime } from '../useTaskRealtime';
 import { createMoveTracker } from '../taskMoves';
 import { RELOAD_SHARED_DELAY_MS } from '../../../lib/realtimeReload';
+import { makeTask } from '../../../test/fixtures';
 
 const mocks = vi.hoisted(() => ({ getTaskLists: vi.fn() }));
 vi.mock('../../../lib/api', async (original) => ({
@@ -12,8 +13,9 @@ vi.mock('../../../lib/api', async (original) => ({
   getCurrentUserId: () => 'usr_anna',
 }));
 
-const task = (id: string, t: Partial<Thought> = {}) => ({ id, content: id, status: 'kept', taskListId: 'l1', ...t }) as Thought;
 const ids = (list: Thought[]) => list.map((t) => t.id);
+
+const task = (id: string, t: Partial<Thought> = {}) => makeTask(id, { taskListId: 'l1', ...t });
 
 describe('task realtime updates', () => {
   it('counts kept and converted-to-task thoughts as tasks, not fresh Quick Dumps', () => {

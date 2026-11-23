@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { TagFilterRow } from '../TagFilterRow';
-import { Thought } from '../../../lib/types';
+import { makeTask } from '../../../test/fixtures';
 
-const task = (id: string, tags: string[]) => ({ id, tags }) as unknown as Thought;
-const tasks = [task('1', ['backup', 'garten']), task('2', ['backup']), task('3', ['einkauf'])];
+const tasks = [makeTask('1', { tags: ['backup', 'garten'] }), makeTask('2', { tags: ['backup'] }), makeTask('3', { tags: ['einkauf'] })];
 const tags = ['backup', 'garten', 'einkauf'];
 
 // jsdom lays nothing out: every chip 100 px wide, the row 280 px (room for "Alle" and about one more chip)

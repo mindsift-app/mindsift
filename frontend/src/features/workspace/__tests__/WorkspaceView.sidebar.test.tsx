@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { WorkspaceView } from '../WorkspaceView';
 import { api } from '../../../lib/api';
 import { Document } from '../../../lib/types';
+import { makeDoc } from '../../../test/fixtures';
 
 vi.mock('../DocumentEditor', () => ({
   DocumentEditor: () => <div data-testid="document-editor">DocumentEditor</div>,
@@ -26,20 +27,6 @@ vi.mock('../../../lib/api', async (importOriginal) => {
     onWebSocketMessage: vi.fn(() => () => {}),
     triggerHaptic: vi.fn(),
   };
-});
-
-const makeDoc = (overrides: Partial<Document> & { id: string; title: string }): Document => ({
-  userId: 'u1',
-  icon: '📝',
-  folderPath: '',
-  content: '',
-  blocks: [],
-  tags: [],
-  isPinned: false,
-  isArchived: false,
-  createdAt: '2026-10-29T10:00:00Z',
-  updatedAt: '2026-10-29T10:00:00Z',
-  ...overrides,
 });
 
 describe('WorkspaceView sidebar explorer', () => {

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { api } from '../../../lib/api';
-import { Document } from '../../../lib/types';
 import { useDocumentSync } from '../useDocumentSync';
+import { makeDoc } from '../../../test/fixtures';
 
 // An engine without a stored copy: it never gets ready here, the note comes from the server
 vi.mock('../../../lib/docSync/engine', () => ({
@@ -25,21 +25,6 @@ vi.mock('../../../lib/docSync/engine', () => ({
 vi.mock('../../../lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/api')>();
   return { ...actual, api: { ...actual.api, getDocument: vi.fn() } };
-});
-
-const makeDoc = (overrides: Partial<Document> = {}): Document => ({
-  id: 'doc_1',
-  userId: 'u1',
-  title: 'Liste',
-  icon: '',
-  content: '',
-  blocks: [],
-  tags: [],
-  isPinned: false,
-  isArchived: false,
-  createdAt: '2026-11-14T08:00:00Z',
-  updatedAt: '2026-11-14T08:00:00Z',
-  ...overrides,
 });
 
 describe('useDocumentSync with a note of the note list', () => {

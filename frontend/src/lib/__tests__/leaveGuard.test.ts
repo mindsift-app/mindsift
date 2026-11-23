@@ -7,8 +7,8 @@ import { guardLeave, holdLeave, holdRecording, holdUnload, leaveHeld, unloadHeld
 import { reloadHeld } from '../reloadHold';
 import { setCurrentDesktop } from '../api/client';
 import type { DesktopInfo } from '../types';
+import { flush } from '../../test/fixtures';
 
-const flush = () => new Promise((r) => setTimeout(r, 0));
 
 describe('leaveGuard', () => {
   const dictation = {};
