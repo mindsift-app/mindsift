@@ -57,7 +57,7 @@ export const PublicThemePicker: React.FC = () => {
     }
   }, [choice, dark]);
 
-  useDismiss(ref, () => setOpen(false), { active: open, escape: false, event: 'mousedown' });
+  useDismiss(ref, () => setOpen(false), { active: open });
 
   const dot = (familyId: string) => (
     <span className="block w-4 h-4 rounded-full ring-2 ring-border" style={{ background: accentOf(familyId, dark) }} />

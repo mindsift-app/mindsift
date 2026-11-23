@@ -48,7 +48,7 @@ export function ActionMenu({
     onOpenChange?.(open);
   }, [open, onOpenChange]);
 
-  useDismiss(boxRef, () => setOpen(false), { active: open, event: 'mousedown' });
+  useDismiss(boxRef, () => setOpen(false), { active: open });
 
   return (
     <div className="relative" ref={boxRef}>

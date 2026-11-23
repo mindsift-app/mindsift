@@ -72,8 +72,8 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({
     if (pos.ready) inputRef.current?.focus();
   }, [pos.ready]);
 
-  // Escape is handled by the popover's own keys (the focus is in its search field)
-  useDismiss([ref, anchor], onClose, { escape: false });
+  // Its search field takes Escape first (prevents the default); otherwise Escape closes it as the top layer
+  useDismiss([ref, anchor], onClose);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {

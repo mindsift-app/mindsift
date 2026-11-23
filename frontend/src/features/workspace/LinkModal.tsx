@@ -18,6 +18,7 @@ import { buildBlockLink, buildNoteLink } from '../../lib/wikiLink';
 import { SnippetRenderer } from '../../components/SnippetRenderer';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { useWorkspaceDocsSnapshot } from '../../lib/wikiLinkResolver';
+import { useCloseOnEscape } from '../../lib/useDismiss';
 
 export interface LinkModalProps {
   isOpen: boolean;
@@ -94,18 +95,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
     return () => clearTimeout(timer);
   }, [isOpen, tab]);
 
-  // Close on Escape
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  useCloseOnEscape(onClose, { active: isOpen });
 
   const filteredDocs = useMemo(() => {
     if (!search.trim()) return docs;

@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { SharedList, Thought } from '../lib/types';
 import { CaptureTarget, InstantCaptureBar } from '../features/capture/InstantCaptureBar';
+import { useCloseOnEscape } from '../lib/useDismiss';
 
 interface QuickDumpWindowProps {
   open: boolean;
@@ -19,15 +20,8 @@ interface QuickDumpWindowProps {
 export function QuickDumpWindow({ open, onClose, onCaptured, lists, focusTrigger }: QuickDumpWindowProps) {
   const { t } = useTranslation('app');
 
-  useEffect(() => {
-    if (!open) return;
-    // A calendar or menu inside the bar closes first (they prevent the default of their Escape)
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  // A calendar or menu inside the bar closes first (lib/useDismiss.ts)
+  useCloseOnEscape(onClose, { active: open });
 
   return (
     <div

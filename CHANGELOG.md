@@ -8,6 +8,10 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Changed
+- Escape now closes only what is on top: a menu or list inside a dialog first, then a dialog opened from another one, then the one below. Before, one Escape could close several at once (for example a task opened from a calendar day together with the day's sheet). The sharing dialog, "Manage columns" and "New group" now close on Escape too.
+- A tap or click beside an open menu, list or popover only closes it and no longer reaches what lies below (on phones, tapping beside the notification list could open a task). The expanded navigation rail and the people suggestions under a field keep passing the click on.
+
 ### Fixed
 - Dictations held on the + whose recording is already on the server no longer make the browser ask before the page is reloaded or closed; the server finishes them anyway. Recordings not yet uploaded still ask.
 - Desktop app: "Switch instance…" in the tray, Ctrl+Shift+O, F5/Ctrl+R, the window's close button and "Quit" in the tray no longer throw away a recording or dictation still under way: the app asks first ("Reload anyway", "Quit anyway" … / "Stay"). If the page does not answer (for example a server with an older version), the action runs after a second as before, and repeating it a few seconds later while the question is still open runs it anyway.

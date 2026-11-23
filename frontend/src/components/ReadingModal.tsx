@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
+import { useCloseOnEscape } from '../lib/useDismiss';
 
 interface ReadingModalProps {
   title: string;
@@ -11,11 +12,7 @@ interface ReadingModalProps {
 // Slim modal for reading text (legal notices, about); Escape or backdrop click closes it
 export const ReadingModal: React.FC<ReadingModalProps> = ({ title, onClose, children }) => {
   const { t } = useTranslation();
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useCloseOnEscape(onClose);
 
   return (
     <div

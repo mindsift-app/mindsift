@@ -66,7 +66,7 @@ export const OriginBadge: React.FC<OriginBadgeProps> = ({ origin, createdAt, siz
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
 
-  useDismiss(ref, () => setOpen(false), { active: open, escape: false });
+  useDismiss(ref, () => setOpen(false), { active: open });
 
   const via = origin?.createdVia || origin?.changedVia;
   if (!origin || !via) return null;

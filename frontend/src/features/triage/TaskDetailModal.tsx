@@ -44,6 +44,7 @@ import { useLatestRef } from '../../lib/useLatestRef';
 import { useHoldReload } from '../../lib/reloadHold';
 import { can } from '../../lib/capabilities';
 import { guardLeave } from '../../lib/leaveGuard';
+import { useCloseOnEscape } from '../../lib/useDismiss';
 
 interface TaskDetailModalProps {
   task: Thought | null;
@@ -249,28 +250,23 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   });
   useEffect(() => pushModal(() => backRef.current()), [backRef]);
 
-  // Handle escape key to close
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // A field that used Escape itself (a subtask being renamed, the mention list) keeps the dialog open
-      if (e.key === 'Escape' && !e.defaultPrevented) {
-        if (confirmUnsaved) {
-          setConfirmUnsaved(false);
-        } else if (notesDirty || titleDirty) {
-          setConfirmUnsaved(true);
-          setShaking(true);
-        } else if (isEditingNotes) {
-          setIsEditingNotes(false);
-        } else if (isEditingTitle) {
-          setIsEditingTitle(false);
-        } else {
-          guardLeave(onClose, { close: true });
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, isEditingNotes, isEditingTitle, notesDirty, titleDirty, confirmUnsaved]);
+  // Escape: steps back one at a time (the question, then an open field), then closes. A menu or popover
+  // opened in the dialog, or a field that used Escape itself (a subtask being renamed, the mention list),
+  // takes it first (lib/useDismiss.ts)
+  useCloseOnEscape(() => {
+    if (confirmUnsaved) {
+      setConfirmUnsaved(false);
+    } else if (notesDirty || titleDirty) {
+      setConfirmUnsaved(true);
+      setShaking(true);
+    } else if (isEditingNotes) {
+      setIsEditingNotes(false);
+    } else if (isEditingTitle) {
+      setIsEditingTitle(false);
+    } else {
+      guardLeave(onClose, { close: true });
+    }
+  });
 
   const handleTitleSubmit = async () => {
     const trimmed = titleDraft.trim();

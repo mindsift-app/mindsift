@@ -17,7 +17,7 @@ import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
 import { placeInViewport } from '../../lib/placeInViewport';
-import { useDismiss } from '../../lib/useDismiss';
+import { useCloseOnEscape, useDismiss } from '../../lib/useDismiss';
 
 // Width of the colour menu (its class w-44)
 const COLOR_MENU_WIDTH = 176;
@@ -89,6 +89,8 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
   listTitle,
 }) => {
   const { t } = useTranslation('tasks');
+  // Escape closes it without saving, like the X; the colour menu takes it first (lib/useDismiss.ts)
+  useCloseOnEscape(onClose);
   // The content only exists while the dialog is open: opening starts from the list's columns, and task
   // lists loaded again meanwhile (another device, a return to the tab) leave the edits alone
   const [columns, setColumns] = useState<KanbanColumn[]>(() => {

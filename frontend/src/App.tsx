@@ -464,8 +464,8 @@ export const App: React.FC = () => {
     processShares();
   }, [user, refreshAll, setDemoNotice]);
 
-  // Close profile dropdown on outside click
-  useDismiss(dropdownRef, () => setShowProfileMenu(false), { active: showProfileMenu, escape: false, event: 'mousedown' });
+  // Close profile dropdown on a press beside it or on Escape
+  useDismiss(dropdownRef, () => setShowProfileMenu(false), { active: showProfileMenu });
 
   const handleAuthenticated = async (loggedInUser: User) => {
     setUser(loggedInUser);

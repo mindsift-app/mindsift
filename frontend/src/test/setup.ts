@@ -4,6 +4,7 @@ import { cleanup } from '@testing-library/react';
 import { addTexts } from '../i18n';
 import de from '../locales/de';
 import { actAsServer } from './desktop';
+import { resetLayersForTests } from '../lib/useDismiss';
 
 addTexts('de', de);
 
@@ -40,6 +41,8 @@ if (typeof window !== 'undefined' && !window.PointerEvent) {
 
 afterEach(() => {
   cleanup();
+  // No popover, dialog or swallowed press is left over for the next test (lib/useDismiss.ts)
+  resetLayersForTests();
   // Every test starts on a server with everything on (lib/capabilities.ts)
   actAsServer();
 });

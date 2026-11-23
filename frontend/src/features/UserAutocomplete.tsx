@@ -46,9 +46,6 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Close dropdown on outside click (Escape is the field's own key)
-  useDismiss(containerRef, () => setIsOpen(false), { escape: false, event: 'mousedown' });
-
   // Filter users based on query and exclusions
   const filteredUsers = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -64,6 +61,9 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
       .slice(0, MAX_RESULTS);
   }, [users, query, excludeUserIds, allUsers]);
   const showResults = searchOn && isOpen && query.trim() !== '';
+  // The suggestions close on a press beside them, which still reaches its target (another field, a button),
+  // and on Escape before a dialog around them
+  useDismiss(containerRef, () => setIsOpen(false), { active: showResults, passThrough: true });
   // Others' addresses are not in the list (only names): a full address typed in is asked of the server
   const offerLookup = showResults && filteredUsers.length === 0 && query.includes('@');
 

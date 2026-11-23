@@ -20,6 +20,7 @@ import { SnippetRenderer } from './SnippetRenderer';
 import { requestDocFocus } from '../lib/docFocusRequest';
 import { NO_AUTOFILL } from '../lib/noAutofill';
 import { SelectMenu, SelectMenuOption } from './SelectMenu';
+import { useCloseOnEscape } from '../lib/useDismiss';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -225,17 +226,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     [onClose, onOpenDocument, onOpenTask, onOpenList]
   );
 
-  // Keyboard navigation: ↑, ↓, Enter, Escape; Tab and Strg+1–4 switch the kind
+  // Escape closes it as the top layer (lib/useDismiss.ts)
+  useCloseOnEscape(onClose, { active: isOpen });
+
+  // Keyboard navigation: ↑, ↓, Enter; Tab and Strg+1–4 switch the kind
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-
       if (e.key === 'Tab' && document.activeElement === inputRef.current) {
         e.preventDefault();
         setKind((cur) => {
@@ -269,7 +267,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, flatHits, selectedIndex, executeSelection, onClose]);
+  }, [isOpen, flatHits, selectedIndex, executeSelection]);
 
   // Tick a task or list item off (or open it again) without leaving the search
   const toggleDone = async (hit: SearchHit) => {

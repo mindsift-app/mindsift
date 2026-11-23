@@ -22,6 +22,7 @@ import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { SelectMenu } from '../../components/SelectMenu';
 import { StatusMessage, StatusToast } from '../../components/StatusToast';
 import { errorMessage } from '../../lib/errorMessage';
+import { useCloseOnEscape } from '../../lib/useDismiss';
 
 interface GroupsViewProps {
   currentUser: User;
@@ -37,6 +38,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
 
   // Create Group Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
+  useCloseOnEscape(() => setShowCreateModal(false), { active: showCreateModal });
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   // Whoever is in several organizations picks the group's one (its members come from there)
