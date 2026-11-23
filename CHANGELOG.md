@@ -12,6 +12,7 @@ Versions without a git tag were development states and were never published as a
 - Escape now closes only what is on top: a menu or list inside a dialog first, then a dialog opened from another one, then the one below. Before, one Escape could close several at once (for example a task opened from a calendar day together with the day's sheet). The sharing dialog, "Manage columns" and "New group" now close on Escape too.
 - A tap or click beside an open menu, list or popover only closes it and no longer reaches what lies below (on phones, tapping beside the notification list could open a task). The expanded navigation rail and the people suggestions under a field keep passing the click on.
 - Phones: the view's menu under the header closes like the other menus (a tap beside it only closes it, Escape too), the page behind it no longer scrolls, and its close button is large enough to tap.
+- Phones: the emoji picker is a sheet from below like the other sheets (grip, title with the current icon, close button, "Remove icon" as a row at the bottom).
 
 ### Fixed
 - Dictations held on the + whose recording is already on the server no longer make the browser ask before the page is reloaded or closed; the server finishes them anyway. Recordings not yet uploaded still ask.

@@ -69,7 +69,7 @@ Component: [ToggleSwitch.tsx](../frontend/src/components/ToggleSwitch.tsx)
 
 Component: [BottomSheet.tsx](../frontend/src/components/BottomSheet.tsx)
 
-- Every sheet from below uses it: Quick Dump (`MobileCaptureSheet`), new task (`MobileTaskCreateSheet`), the tasks' filter (`TasksFilterSheet`), the profile (`MobileProfileSheet`), the app install offer (`PwaInstallSheet`), a calendar day (`TaskCalendar`), the triage's actions (`TriageDeck`, a centred dialog from `sm` on) and a person in the administration (`UserList`); `FormSheet` sits on it too.
+- Every sheet from below uses it: Quick Dump (`MobileCaptureSheet`), new task (`MobileTaskCreateSheet`), the tasks' filter (`TasksFilterSheet`), the profile (`MobileProfileSheet`), the app install offer (`PwaInstallSheet`), a calendar day (`TaskCalendar`), the triage's actions (`TriageDeck`, a centred dialog from `sm` on), a person in the administration (`UserList`) and the emoji picker on phones (`EmojiPickerModal`, title with the current icon, "Remove icon" as its last row); `FormSheet` sits on it too.
 - **Look:** the page is dimmed with the theme's `--bg-overlay` (class `modal-overlay`) and does not scroll (`useScrollLock`); the panel slides in, full width, rounded only at the top with a top border, a grip on top, at most 85 % of the height (scrolls inside). `title` and `icon` give the standard header (icon in an accent box, title, an X of 44 px); sheets with their own header leave them out.
 - **Closing:** the backdrop and Escape close it, as a layer of the stack in `useDismiss.ts` (an open menu inside, or a dialog opened from it, takes Escape first). `guard` asks first while a dictation or recording would be lost (`lib/leaveGuard.ts`, "Trotzdem schließen" / "Bleiben"); its own "Abbrechen" gets the guarded close as the argument of `children`.
 - `phoneOnly` hides it from `sm` on (it then neither locks the page nor takes Escape there), `desktopClassName` makes it a dialog from `sm` on, `dockToKeyboard` puts it right above the on-screen keyboard (`useKeyboardInset`).
@@ -81,7 +81,7 @@ Component: [FormSheet.tsx](../frontend/src/components/FormSheet.tsx) on `BottomS
 
 - **Mobile:** Full-width bottom sheet positioned directly above the virtual keyboard (inset calculated via `visualViewport`), grab handle on top, inputs and buttons at least 44 px high, text inputs at 16 px (to prevent iOS auto-zoom), Cancel/Create buttons side-by-side spanning full width.
 - **Desktop:** Centered window, or anchored next to click position via `anchor` (e.g., "New Folder" in explorer).
-- Escape key and clicking the backdrop close the dialog. Used for new task lists, new shopping lists, new notes, and new folders; the emoji sheet uses the same keyboard inset logic.
+- Escape key and clicking the backdrop close the dialog. Used for new task lists, new shopping lists, new notes, and new folders.
 - **Icon field:** [EmojiIconButton.tsx](../frontend/src/components/EmojiIconButton.tsx) instead of a text field: displays the emoji (or a subtle "Select icon" when empty) and opens the same emoji picker as the note header, including "Remove". In the dialog, the picker renders above the page via a portal; Escape or a click beside it closes only the picker.
 
 ## Popovers and Menus: Place and Closing
