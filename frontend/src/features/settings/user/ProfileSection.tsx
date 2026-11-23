@@ -251,12 +251,7 @@ export function ProfileSection({
         <SettingRow
           plain
           title={t('profile.deleteData')}
-          hint={
-            <>
-              {t('profile.deleteDataHint')}
-              {accounts && ` ${t('profile.deleteDataSharedHint')}`}
-            </>
-          }
+          hint={t('profile.deleteDataHint')}
         >
           <button
             type="button"

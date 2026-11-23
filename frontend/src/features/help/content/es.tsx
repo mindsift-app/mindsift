@@ -825,6 +825,13 @@ const es: HelpContent = {
             <li>
               <strong className="text-main">Importar Obsidian:</strong> En <em>Ajustes de la cuenta → Exportar e importar</em>, MindSift acepta un vault en .zip. Las notas van a una carpeta propia con el nombre del vault, las subcarpetas se mantienen, las casillas siguen siendo casillas y las etiquetas del frontmatter se convierten en #hashtags. Las imágenes y audios incrustados se incluyen; otros adjuntos, como los PDF, no.
             </li>
+            <li>
+              <strong className="text-main">Eliminar tus datos o tu cuenta:</strong> En <em>Ajustes de la cuenta → Perfil</em>, «Eliminar todos mis datos» elimina tus notas, carpetas, tareas, pensamientos y listas; la cuenta y los ajustes se conservan.
+              <Only can="accounts">
+                {' '}
+                El contenido que otros compartieron contigo se mantiene. «Eliminar cuenta» elimina tu cuenta con todos los datos y cierra tu sesión. La última cuenta de administrador solo se puede eliminar cuando otra cuenta es administradora.
+              </Only>
+            </li>
             <Only can="restore">
               <li>
                 <strong className="text-main">Restaurarlo todo:</strong> los administradores restauran toda la instancia, con imágenes y grabaciones, en <em>Administración → Datos</em> con <em>Restaurar</em>; antes se guarda el estado actual. Para una mudanza, descarga una copia y cárgala en el nuevo servidor con <em>Subir copia</em>.
@@ -890,7 +897,7 @@ const es: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Quién puede compartir con quién:</strong> lo decide la administración del servidor: con todos, solo con personas con las que tienes al menos una <em>organización</em> en común, o con nadie (modo «Privado»: sin compartir ni grupos). Puedes pertenecer a varias organizaciones; las gestionan la administración y la gestión de usuarios. Si la búsqueda de personas está desactivada, al compartir introduces la dirección de correo o el nombre de usuario exactos. Quien trabaja contigo en algo aparece siempre allí con su nombre.
+              <strong className="text-main">Quién puede compartir con quién:</strong> lo decide la administración del servidor: con todos, solo con personas con las que tienes al menos una <em>organización</em> en común, o con nadie (modo «Privado»: sin compartir ni grupos). En el modo intermedio, quien no pertenece a ninguna organización no puede compartir con nadie. Puedes pertenecer a varias organizaciones; las gestionan la administración y la gestión de usuarios. Si la búsqueda de personas está desactivada, al compartir introduces la dirección de correo o el nombre de usuario exactos. Quien trabaja contigo en algo aparece siempre allí con su nombre.
             </li>
             <li>
               <strong className="text-main">Zona horaria del servidor:</strong> la administración del servidor la ajusta en <em>Administración → Instancia → Zona horaria</em>. Vale al instante para todos: vencimientos con hora, avisos, el resumen diario y la hora de las copias de seguridad.

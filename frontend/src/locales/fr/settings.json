@@ -471,12 +471,11 @@
     "currentPassword": "Mot de passe actuel (pour confirmer)",
     "danger": "Zone dangereuse",
     "deleteData": "Supprimer toutes mes données",
-    "deleteDataHint": "Supprime tes notes, dossiers, tâches, pensées et listes. Le compte et les paramètres sont conservés.",
-    "deleteDataSharedHint": "Le contenu partagé avec toi par d'autres personnes est conservé.",
+    "deleteDataHint": "Notes, dossiers, tâches, pensées et listes ; le compte et les paramètres sont conservés.",
     "deleteDataButton": "Supprimer les données",
     "deleteAccount": "Supprimer définitivement le compte",
-    "lastAdmin": "Le dernier administrateur du serveur ne peut pas être supprimé. Attribue d'abord le rôle d'administrateur à un autre compte.",
-    "deleteAccountHint": "Supprime ton compte ainsi que toutes ses données. Tu seras ensuite déconnecté.",
+    "lastAdmin": "Attribue d’abord le rôle d’administrateur à un autre compte.",
+    "deleteAccountHint": "Supprime ton compte avec toutes ses données et te déconnecte.",
     "deleteAccountButton": "Supprimer le compte",
     "confirmAccount": "Ton compte et toutes tes données seront supprimés définitivement. Cette action est irréversible.",
     "confirmData": "Toutes tes notes, dossiers, tâches, pensées et listes seront supprimés définitivement. Télécharge d'abord une sauvegarde si tu souhaites les conserver.",
@@ -614,7 +613,7 @@
     "email": "Adresse e-mail",
     "emailChanged": "L’adresse e-mail de {{name}} est maintenant {{email}}.",
     "emailRemoved": "{{name}} n’a plus d’adresse e-mail.",
-    "emailRemoveHint": "Sans adresse, {{name}} ne pourra plus réinitialiser son mot de passe par e-mail. La connexion avec nom d’utilisateur et mot de passe continue de fonctionner.",
+    "emailRemoveHint": "Sans adresse, {{name}} ne pourra plus réinitialiser son mot de passe par e-mail.",
     "mustChange": "À changer à la prochaine connexion",
     "mustChangeHint": "Après la connexion, la personne doit d’abord choisir son propre mot de passe.",
     "revokeKeys": "Révoquer les clés API, les accès IA et l’abonnement calendrier",
@@ -630,7 +629,7 @@
     },
     "organizations": {
       "title": "Au sein des organisations (recommandé)",
-      "text": "Partage uniquement avec les personnes avec qui on a au moins une organisation en commun. Qui n’appartient à aucune ne peut partager avec personne."
+      "text": "Uniquement avec les personnes d’une organisation commune."
     },
     "open": {
       "title": "Ouvert",

@@ -924,6 +924,13 @@ const de: HelpContent = {
             <li>
               <strong className="text-main">Obsidian importieren:</strong> Unter <em>Kontoeinstellungen → Export &amp; Import</em> nimmt MindSift einen Vault als .zip. Die Notizen kommen in einen eigenen Ordner mit dem Namen des Vaults, Unterordner bleiben erhalten, Checkboxen bleiben Checkboxen und Frontmatter-Tags werden zu #Hashtags. Eingebettete Bilder und Audiodateien kommen mit, andere Anhänge wie PDFs nicht.
             </li>
+            <li>
+              <strong className="text-main">Daten oder Konto löschen:</strong> Unter <em>Kontoeinstellungen → Profil</em> löscht „Alle eigenen Daten löschen“ deine Notizen, Ordner, Aufgaben, Gedanken und Listen; Konto und Einstellungen bleiben.
+              <Only can="accounts">
+                {' '}
+                Mit dir geteilte Inhalte anderer bleiben erhalten. „Konto löschen“ entfernt dein Konto mit allen Daten und meldet dich ab. Das letzte Administrator-Konto lässt sich erst löschen, wenn ein anderes Konto Administrator ist.
+              </Only>
+            </li>
             <Only can="restore">
               <li>
                 <strong className="text-main">Alles wiederherstellen:</strong> Admins stellen unter <em>Administration → Daten</em> mit <em>Wiederherstellen</em> die ganze Instanz samt Bildern und Aufnahmen wieder her; vorher wird der aktuelle Stand gesichert. Für einen Umzug ein Backup herunterladen und auf dem neuen Server unter <em>Backup hochladen</em> einspielen.
@@ -990,7 +997,7 @@ const de: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Wer mit wem teilen darf:</strong> Das legt der Server-Admin fest: mit allen, nur mit Personen, mit denen du mindestens eine <em>Organisation</em> gemeinsam hast, oder mit niemandem (Modus „Privat“: kein Teilen, keine Gruppen). Du kannst mehreren Organisationen angehören; sie verwalten Server-Admins und die Benutzerverwaltung. Ist die Personensuche abgeschaltet, gibst du beim Teilen die genaue E-Mail-Adresse oder den Benutzernamen ein. Wer mit dir an etwas arbeitet, siehst du dort immer mit Namen.
+              <strong className="text-main">Wer mit wem teilen darf:</strong> Das legt der Server-Admin fest: mit allen, nur mit Personen, mit denen du mindestens eine <em>Organisation</em> gemeinsam hast, oder mit niemandem (Modus „Privat“: kein Teilen, keine Gruppen). Wer keiner Organisation angehört, kann im mittleren Modus mit niemandem teilen. Du kannst mehreren Organisationen angehören; sie verwalten Server-Admins und die Benutzerverwaltung. Ist die Personensuche abgeschaltet, gibst du beim Teilen die genaue E-Mail-Adresse oder den Benutzernamen ein. Wer mit dir an etwas arbeitet, siehst du dort immer mit Namen.
             </li>
             <li>
               <strong className="text-main">Zeitzone des Servers:</strong> Server-Admins stellen sie unter <em>Administration → Instanz → Zeitzone</em> ein. Sie gilt sofort für alle: Fälligkeiten mit Uhrzeit, Alarme, die Tageszusammenfassung und die Backup-Zeit.

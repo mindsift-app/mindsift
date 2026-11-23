@@ -33,7 +33,7 @@ describe('SharingSection (Administration → Teilen)', () => {
     const button = screen.getByRole('button', { name: 'Wer mit wem teilen darf' });
     expect(button.textContent).toContain('Innerhalb der Organisationen (empfohlen)');
     expect(button.textContent).not.toContain('2.');
-    expect(screen.getByText(/mindestens eine Organisation gemeinsam/)).toBeTruthy();
+    expect(screen.getByText(/aus einer gemeinsamen Organisation/)).toBeTruthy();
     fireEvent.click(button);
     expect(screen.getAllByRole('option')).toHaveLength(3);
     fireEvent.click(screen.getByRole('option', { name: /^Offen/ }));

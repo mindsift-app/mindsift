@@ -471,12 +471,11 @@
     "currentPassword": "Password attuale (per conferma)",
     "danger": "Zona pericolosa",
     "deleteData": "Elimina tutti i miei dati",
-    "deleteDataHint": "Elimina le tue note, cartelle, attività, pensieri e liste. Account e impostazioni rimangono invariati.",
-    "deleteDataSharedHint": "I contenuti condivisi da altri vengono mantenuti.",
+    "deleteDataHint": "Note, cartelle, attività, pensieri e liste; account e impostazioni restano.",
     "deleteDataButton": "Elimina dati",
     "deleteAccount": "Elimina account definitivamente",
-    "lastAdmin": "L'ultimo amministratore del server non può essere eliminato. Rendi prima un altro account amministratore.",
-    "deleteAccountHint": "Elimina il tuo account con tutti i dati. Verrai disconnesso subito dopo.",
+    "lastAdmin": "Rendi prima un altro account amministratore.",
+    "deleteAccountHint": "Elimina il tuo account con tutti i dati e ti disconnette.",
     "deleteAccountButton": "Elimina account",
     "confirmAccount": "Il tuo account e tutti i tuoi dati saranno eliminati definitivamente. Questa azione non può essere annullata.",
     "confirmData": "Tutte le tue note, cartelle, attività, pensieri e liste saranno eliminati definitivamente. Scarica prima un backup se vuoi conservarli.",
@@ -614,7 +613,7 @@
     "email": "Indirizzo email",
     "emailChanged": "L’indirizzo email di {{name}} ora è {{email}}.",
     "emailRemoved": "{{name}} non ha più un indirizzo email.",
-    "emailRemoveHint": "Senza indirizzo, {{name}} non potrà più reimpostare la password via email. L’accesso con nome utente e password continua a funzionare.",
+    "emailRemoveHint": "Senza indirizzo, {{name}} non potrà più reimpostare la password via email.",
     "mustChange": "Da cambiare al prossimo accesso",
     "mustChangeHint": "Dopo l’accesso la persona deve prima scegliere una password propria.",
     "revokeKeys": "Revoca chiavi API, accessi IA e abbonamento al calendario",
@@ -630,7 +629,7 @@
     },
     "organizations": {
       "title": "All’interno delle organizzazioni (consigliato)",
-      "text": "Si condivide solo con persone con cui si ha almeno un’organizzazione in comune. Chi non ne fa parte non può condividere con nessuno."
+      "text": "Solo con persone di un’organizzazione in comune."
     },
     "open": {
       "title": "Aperto",

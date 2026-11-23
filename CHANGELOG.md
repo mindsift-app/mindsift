@@ -21,6 +21,7 @@ Versions without a git tag were development states and were never published as a
 - Notices at the bottom of the screen (Undo after deleting, errors, "Gespeichert", the offline notice, the confirmation of a new e-mail address, the hints after a dictation) now stack one above the other instead of covering each other, and all look the same. On phones, the confirmation of a new e-mail address now appears at the bottom like the other notices.
 - Loading and empty states look the same everywhere: one spinner with a short text ("Wird geladen …", "Notizen werden geladen …") and one muted line when a list is empty.
 - Settings and administration: every page uses the same cards and rows, with the same spacing, titles and short hints; the profile picture, the alarm channels and the downloads under Data now sit in cards like the rest.
+- Shorter hints in the settings: deleting your data or account, the sharing mode "within organizations" and removing someone's e-mail address now say it in one short sentence; the details are in the help (Offline, backups & password; Organizations, groups & sharing).
 - Settings → Data: replacing your data with one of your server backups now asks with the same red warning and tick box as an import, instead of a second click on the button, and afterwards shows what came back and the entries left out, like an import. The desktop app's take-over of a server account lists the entries left out too.
 
 ### Fixed

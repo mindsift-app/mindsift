@@ -471,12 +471,11 @@
     "currentPassword": "Current password (to confirm)",
     "danger": "Danger zone",
     "deleteData": "Delete all my data",
-    "deleteDataHint": "Deletes your notes, folders, tasks, thoughts and lists. Account and settings stay.",
-    "deleteDataSharedHint": "Content others shared with you is kept.",
+    "deleteDataHint": "Notes, folders, tasks, thoughts and lists; account and settings stay.",
     "deleteDataButton": "Delete data",
     "deleteAccount": "Delete account for good",
-    "lastAdmin": "The last server administrator cannot be deleted. Make another account an administrator first.",
-    "deleteAccountHint": "Deletes your account with all data. You are signed out afterwards.",
+    "lastAdmin": "Make another account an administrator first.",
+    "deleteAccountHint": "Deletes your account with all data and signs you out.",
     "deleteAccountButton": "Delete account",
     "confirmAccount": "Your account and all your data will be deleted for good. This cannot be undone.",
     "confirmData": "All your notes, folders, tasks, thoughts and lists will be deleted for good. Download a backup first if you want to keep them.",
@@ -614,7 +613,7 @@
     "email": "Email address",
     "emailChanged": "{{name}}'s email address is now {{email}}.",
     "emailRemoved": "{{name}} no longer has an email address.",
-    "emailRemoveHint": "Without an address, {{name}} can no longer reset the password by email. Signing in with username and password keeps working.",
+    "emailRemoveHint": "Without an address, {{name}} can no longer reset the password by email.",
     "mustChange": "Change at the next sign-in",
     "mustChangeHint": "After signing in, the person has to choose their own password first.",
     "revokeKeys": "Revoke API keys, AI access and the calendar subscription",
@@ -630,7 +629,7 @@
     },
     "organizations": {
       "title": "Within organizations (recommended)",
-      "text": "Sharing only with people one has at least one organization in common with. Whoever belongs to none can share with nobody."
+      "text": "Only with people from a shared organization."
     },
     "open": {
       "title": "Open",

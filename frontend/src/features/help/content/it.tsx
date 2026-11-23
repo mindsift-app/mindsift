@@ -744,6 +744,13 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Importare Obsidian:</strong> In <em>Impostazioni account → Esportazione e importazione</em>, MindSift accetta un vault in .zip. Le note finiscono in una cartella propria con il nome del vault, le sottocartelle restano, le caselle restano caselle e i tag del frontmatter diventano #hashtag. Immagini e file audio incorporati vengono inclusi, altri allegati come i PDF no.
             </li>
+            <li>
+              <strong className="text-main">Eliminare i tuoi dati o l’account:</strong> In <em>Impostazioni account → Profilo</em>, «Elimina tutti i miei dati» elimina note, cartelle, attività, pensieri e liste; account e impostazioni restano.
+              <Only can="accounts">
+                {' '}
+                I contenuti condivisi da altri con te vengono mantenuti. «Elimina account» elimina il tuo account con tutti i dati e ti disconnette. L’ultimo account amministratore si può eliminare solo quando un altro account è amministratore.
+              </Only>
+            </li>
             <Only can="restore">
               <li>
                 <strong className="text-main">Ripristinare tutto:</strong> gli admin ripristinano l’intera istanza con immagini e registrazioni in <em>Amministrazione → Dati</em> con <em>Ripristina</em>; prima viene salvato lo stato attuale. Per un trasloco, scarica un backup e caricalo sul nuovo server con <em>Carica backup</em>.
@@ -796,7 +803,7 @@ const it: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Chi può condividere con chi:</strong> lo decide l'amministratore del server: con tutti, solo con le persone con cui hai almeno un'<em>organizzazione</em> in comune, o con nessuno (modalità «Privato»: nessuna condivisione, nessun gruppo). Puoi appartenere a più organizzazioni; le gestiscono gli amministratori e la gestione utenti. Se la ricerca persone è disattivata, durante la condivisione inserisci l'indirizzo e-mail o il nome utente esatti. Chi lavora con te a qualcosa compare sempre lì con il nome.
+              <strong className="text-main">Chi può condividere con chi:</strong> lo decide l'amministratore del server: con tutti, solo con le persone con cui hai almeno un'<em>organizzazione</em> in comune, o con nessuno (modalità «Privato»: nessuna condivisione, nessun gruppo). Nella modalità intermedia, chi non fa parte di nessuna organizzazione non può condividere con nessuno. Puoi appartenere a più organizzazioni; le gestiscono gli amministratori e la gestione utenti. Se la ricerca persone è disattivata, durante la condivisione inserisci l'indirizzo e-mail o il nome utente esatti. Chi lavora con te a qualcosa compare sempre lì con il nome.
             </li>
             <li>
               <strong className="text-main">Fuso orario del server:</strong> l'amministratore del server lo imposta in <em>Amministrazione → Istanza → Fuso orario</em>. Vale subito per tutti: scadenze con orario, notifiche, riepilogo giornaliero e ora dei backup.
