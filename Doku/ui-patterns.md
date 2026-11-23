@@ -145,6 +145,7 @@ Components: [MfaStep.tsx](../frontend/src/features/auth/MfaStep.tsx) (sign-in), 
 Component: [ErrorNotice.tsx](../frontend/src/components/ErrorNotice.tsx), `showError(message)` from anywhere.
 
 - Red notice centered at the bottom (frame and text in `status-err`, warning icon), above the bottom navigation bar on mobile, with a short shake (none with reduced motion). Gone after 6 s or on a tap; the same error again shakes again.
+- It sits in the shared stack of the notices (see Notices at the Bottom), so it never covers an "Undo".
 
 ## Status Notice in the Settings
 
@@ -152,13 +153,18 @@ Component: [StatusToast.tsx](../frontend/src/components/StatusToast.tsx)
 
 - The answer to a save in the account settings, the administration and the groups page ("Gespeichert", an invite code, what went wrong) floats centered at the bottom (`bg-panel-elevated`, above the bottom navigation bar on mobile) instead of standing above the content, so the page does not move.
 - A confirmation (tick, `role="status"`) goes after 4 s, or when its section is left (it does not come back on return); an error (frame and text in `status-err`, `role="alert"`) stays until it is closed with its ×. Both can be closed; the live regions stay mounted, so screen readers announce each new message.
-- Every notice is rendered into one shared stack (a portal to a fixed element at the bottom), so several at once (e.g. "Gespeichert" and the desktop app's "file saved" from `DownloadNotice`) stand one above the other and never overlap. Use `StatusToast` for any new notice of this kind instead of positioning your own.
+- It is rendered into the shared stack of the notices (see Notices at the Bottom), so several at once (e.g. "Gespeichert" and the desktop app's "file saved" from `DownloadNotice`) stand one above the other and never overlap.
 - Settings that save as soon as they are changed (retention, voice input, language, calendar subscription, renaming or recolouring an own theme) answer with the same notice: a short "Gespeichert" (`settings:api.saved`) or the error. Retention, voice input and language share `useInstantSave` and `InstantSaveToast` ([InstantSave.tsx](../frontend/src/features/settings/user/InstantSave.tsx)). Exceptions: two-factor sign-in and passkeys keep their messages inside their own block; device settings under Darstellung (theme, corners, accent, link previews, journal) apply visibly and say nothing.
 
-## Notification with "Undo"
+## Notices at the Bottom (Toast)
 
-- Brief toast notification centered at the bottom (`role="status"`, surface `bg-panel-elevated`), placed above the bottom navigation bar on mobile; stays for 8–10 s when an action is present, otherwise 3–4 s.
-- After moving items to trash: "… moved to trash · Undo" (workspace and tasks). In tasks, `Ctrl+Z` does the same; performing a new action hides the previous notification so "Undo" never targets the wrong step.
+Component: [Toast.tsx](../frontend/src/components/Toast.tsx): `Toast`, `useToast()` with `ToastHost`, and the shared stack `toastStack()` / surface `toastSurface(tone)`.
+
+- **One stack:** every notice at the bottom of the screen is a portal into one fixed element, centered, above the bottom navigation bar on phones (`bottom-[calc(5.5rem+env(safe-area-inset-bottom))]`, `sm:bottom-6`, `z-70`). Several at once stand one above the other: an "Undo", an error (`ErrorNotice`), a status of the settings (`StatusToast`), the offline notice (`OfflineBanner`), the confirmation of a new e-mail address (`EmailConfirmToast`) and the offer after sharing from another app (`SharedImportToast`). Nothing positions its own notice at the bottom; new ones use `Toast` or render into `toastStack()`.
+- **Look:** `toastSurface(tone)`: `bg-panel-elevated`, the theme's card corners, `shadow-panel`, `text-xs`; the frame in `border` (`neutral`), `status-err` (`err`, text in red too) or `status-warn` (`warn`). Text on the left (two lines at most on phones), actions in the accent colour on the right, 44 px high on phones; `closable` adds an ×.
+- **Roles:** `role="status"` by default, `role="alert"` for errors.
+- **`useToast()`:** `showToast(text, actions)` shows a notice and replaces the one before (its "Undo" would otherwise point at the wrong step); it goes after 4 s, with an action after 8 s (`TOAST_MS`, `TOAST_ACTION_MS`). `hideToast()` ends it early; pressing an action ends it too. Render it with `<ToastHost toast={toast} onClose={hideToast} />`.
+- **Undo:** after moving items to the trash, "… in den Papierkorb verschoben · Rückgängig" (workspace, tasks, notes, drawings). In tasks, `Ctrl+Z` does the same; a new step hides the notice so "Undo" never targets the wrong step.
 
 ## Counters
 

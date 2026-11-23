@@ -48,6 +48,7 @@ import { LivePill } from '../../components/LivePill';
 import { useMobileActions } from '../../context/MobileActionContext';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
+import { ToastHost } from '../../components/Toast';
 import { errorMessage } from '../../lib/errorMessage';
 import { useLatestRef } from '../../lib/useLatestRef';
 
@@ -515,7 +516,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   // --- TASK ACTIONS ---
 
   // Undo with Ctrl/Cmd+Z and the notice below (useTaskUndo)
-  const { toast, pushUndo, orderSnapshot, showToast, undoLast } = useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefreshStats, moveTracker });
+  const { toast, hideToast, pushUndo, orderSnapshot, showToast } = useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefreshStats, moveTracker });
 
   // Task actions (useTaskActions)
   const {
@@ -1026,25 +1027,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
         />
       )}
 
-      {/* Short notice after deleting or undoing (same look as in the workspace) */}
-      {toast && (
-        <div
-          role="status"
-          className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-50 max-w-[calc(100vw-1.5rem)] px-3 py-2 rounded-card text-xs text-main bg-panel-elevated border border-border shadow-panel flex items-center gap-3"
-        >
-          <span>{toast.text}</span>
-          {toast.undo && (
-            <button
-              type="button"
-              onClick={() => void undoLast()}
-              className="font-semibold text-accent hover:underline min-h-[44px] sm:min-h-0 shrink-0"
-              title={t('view.undoTitle')}
-            >
-              {t('triage:undo')}
-            </button>
-          )}
-        </div>
-      )}
+      {/* Short notice after deleting or undoing (components/Toast.tsx) */}
+      <ToastHost toast={toast} onClose={hideToast} />
 
       {/* UNIFIED SHARE LIST MODAL */}
       <TaskListShareDialog

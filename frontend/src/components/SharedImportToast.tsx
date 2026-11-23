@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import i18n from '../i18n';
+import { toastStack } from './Toast';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, SquareCheckBig, Inbox, ShoppingCart, X } from 'lucide-react';
 import { api, triggerHaptic } from '../lib/api';
@@ -62,61 +64,64 @@ export const SharedImportToast: React.FC<SharedImportToastProps> = ({ thoughtIds
     <>
       {/* Tapping anywhere else closes it (transparent, the page stays visible) */}
       <div className="fixed inset-0 z-59" onClick={onClose} aria-hidden />
-      <div
-        role="status"
-        className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-60 w-[calc(100vw-1.5rem)] max-w-md panel-surface shadow-panel overflow-hidden p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t('close')}
-          className="absolute top-2 right-2 h-8 w-8 flex items-center justify-center rounded-btn text-faint hover:text-main"
+      {createPortal(
+        <div
+          role="status"
+          className="relative pointer-events-auto mt-2 w-[calc(100vw-1.5rem)] max-w-md panel-surface shadow-panel overflow-hidden p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
-          <X className="w-4 h-4" />
-        </button>
-        <div className="pr-8">
-          <p className="flex items-center gap-2 text-base font-semibold text-main">
-            <Inbox className="w-5 h-5 text-accent shrink-0" />
-            {t('sharedImport.queued', { count })}
-          </p>
-          <p className="text-xs text-muted mt-1">
-            {choosingList ? t('sharedImport.whichList') : t('sharedImport.elsewhere')}
-          </p>
-        </div>
-
-        {failed && <p className="text-xs text-status-err">{t('sharedImport.failed')}</p>}
-
-        {!choosingList ? (
-          <div className={`grid gap-2 ${writableLists.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            {writableLists.length > 0 && (
-              <button type="button" disabled={busy} onClick={toList} className={`${big} bg-canvas border border-border text-main`}>
-                <ShoppingCart className="w-4 h-4 text-accent" />
-                <span>{t('sharedImport.list')}</span>
-              </button>
-            )}
-            <button type="button" disabled={busy} onClick={() => convert('task')} className={`${big} bg-accent text-on-accent`}>
-              <SquareCheckBig className="w-4 h-4" />
-              <span>{t('sharedImport.task')}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('close')}
+            className="absolute top-2 right-2 h-8 w-8 flex items-center justify-center rounded-btn text-faint hover:text-main"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="pr-8">
+            <p className="flex items-center gap-2 text-base font-semibold text-main">
+              <Inbox className="w-5 h-5 text-accent shrink-0" />
+              {t('sharedImport.queued', { count })}
+            </p>
+            <p className="text-xs text-muted mt-1">
+              {choosingList ? t('sharedImport.whichList') : t('sharedImport.elsewhere')}
+            </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {writableLists.map((l) => (
-              <button
-                key={l.id}
-                type="button"
-                disabled={busy}
-                onClick={() => convert('list_item', l)}
-                className={`${big} bg-canvas border border-border text-main`}
-              >
-                <span>{l.icon}</span>
-                <span className="truncate">{l.title}</span>
+
+          {failed && <p className="text-xs text-status-err">{t('sharedImport.failed')}</p>}
+
+          {!choosingList ? (
+            <div className={`grid gap-2 ${writableLists.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {writableLists.length > 0 && (
+                <button type="button" disabled={busy} onClick={toList} className={`${big} bg-canvas border border-border text-main`}>
+                  <ShoppingCart className="w-4 h-4 text-accent" />
+                  <span>{t('sharedImport.list')}</span>
+                </button>
+              )}
+              <button type="button" disabled={busy} onClick={() => convert('task')} className={`${big} bg-accent text-on-accent`}>
+                <SquareCheckBig className="w-4 h-4" />
+                <span>{t('sharedImport.task')}</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {writableLists.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => convert('list_item', l)}
+                  className={`${big} bg-canvas border border-border text-main`}
+                >
+                  <span>{l.icon}</span>
+                  <span className="truncate">{l.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>,
+        toastStack()
+      )}
     </>
   );
 };

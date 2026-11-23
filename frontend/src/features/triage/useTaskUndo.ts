@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useToast } from '../../components/Toast';
 import i18n from '../../i18n';
 import { api, triggerHaptic } from '../../lib/api';
 import { Thought } from '../../lib/types';
@@ -29,27 +30,23 @@ export function useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefre
   // --- UNDO (Strg+Z / Cmd+Z): deleting, moving and ticking off, newest first; deleted tasks come back
   // from the task trash. Deleting also shows "Undo" for phones.
   const undoStackRef = useRef<UndoEntry[]>([]);
-  const [toast, setToast] = useState<{ text: string; undo: boolean } | null>(null);
+  const { toast, showToast: showNotice, hideToast } = useToast();
   const pushUndo = (entry: UndoEntry) => {
     undoStackRef.current = [...undoStackRef.current, entry].slice(-20);
-    setToast(null); // its "Undo" would now undo this newer step
+    hideToast(); // its "Undo" would now undo this newer step
   };
   const orderSnapshot = () =>
     tasks.map((t) => ({ id: t.id, sortOrder: t.sortOrder ?? 0, kanbanStatus: t.kanbanStatus, isCompleted: !!t.isCompleted }));
-  const toastTimerRef = useRef<number | null>(null);
-  const showToast = (text: string, undo = false) => {
-    setToast({ text, undo });
-    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => setToast(null), undo ? 8000 : 3000);
-  };
-  useEffect(() => () => {
-    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
-  }, []);
+  const showToast = (text: string, undo = false) =>
+    showNotice(
+      text,
+      undo ? [{ label: i18n.t('triage:undo'), title: i18n.t('tasks:view.undoTitle'), run: () => void undoLast() }] : []
+    );
 
   const undoLast = async () => {
     const entry = undoStackRef.current.pop();
     if (!entry) return;
-    setToast(null);
+    hideToast();
     triggerHaptic(10);
     // Undoing a move takes the places from the server's answer like the move did; the other steps load
     // the tasks again afterwards
@@ -115,5 +112,5 @@ export function useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefre
     return () => window.removeEventListener('keydown', onKey);
   }, [undoLastRef]);
 
-  return { toast, pushUndo, orderSnapshot, showToast, undoLast };
+  return { toast, hideToast, pushUndo, orderSnapshot, showToast, undoLast };
 }

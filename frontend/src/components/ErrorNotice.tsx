@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { TriangleAlert } from 'lucide-react';
+import { toastStack, toastSurface } from './Toast';
 
 const EVENT = 'mindsift:error-notice';
 
@@ -31,17 +33,17 @@ export const ErrorNoticeHost: React.FC = () => {
   }, []);
 
   if (!notice) return null;
-  return (
-    <div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-80 max-w-[calc(100vw-1.5rem)]">
-      <div
-        key={notice.key}
-        role="alert"
-        onClick={() => setNotice(null)}
-        className="notice-shake px-3 py-2 rounded-card text-xs font-medium text-status-err bg-panel-elevated border border-status-err/60 shadow-panel flex items-center gap-2 cursor-pointer"
-      >
-        <TriangleAlert className="w-3.5 h-3.5 shrink-0" />
-        <span>{notice.text}</span>
-      </div>
-    </div>
+  // In the shared stack of the notices (Toast.tsx), so it never covers an "Undo" or a status
+  return createPortal(
+    <div
+      key={notice.key}
+      role="alert"
+      onClick={() => setNotice(null)}
+      className={`notice-shake ${toastSurface('err')} px-3 py-2 flex items-center gap-2 cursor-pointer`}
+    >
+      <TriangleAlert className="w-3.5 h-3.5 shrink-0" />
+      <span>{notice.text}</span>
+    </div>,
+    toastStack()
   );
 };

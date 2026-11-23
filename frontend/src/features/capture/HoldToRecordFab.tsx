@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronUp, Lock, Plus, Square, X } from 'lucide-react';
 import { VoiceWave } from '../../components/VoiceWave';
 import { CountBadge } from '../../components/CountBadge';
+import { Toast } from '../../components/Toast';
 import { formatDue } from '../../lib/due';
 import { useHoldToDictate } from './useHoldToDictate';
 import type { DictationOutcome } from './captureDictation';
@@ -69,32 +70,19 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
         </div>
       )}
 
+      {/* After the recording: saving, saved (with a recognised date it can take it back) or failed, as a
+          notice in the shared stack (components/Toast.tsx) */}
       {!recording && status && (
-        <div
-          role="status"
-          aria-live="polite"
-          className={`${HINT_CLASS} text-xs text-main border-border ${
-            showFailed || showUndo ? 'rounded-card pl-3 pr-2 flex items-center gap-3' : 'px-4 py-2 rounded-pill font-medium pointer-events-none'
-          }`}
-        >
-          <span className={showFailed || showUndo ? 'py-2' : undefined}>{status}</span>
-          {showFailed && (
-            <button type="button" onClick={retryFailed} className="font-semibold text-accent hover:underline min-h-[44px] px-1 shrink-0 cursor-pointer">
-              {t('app:rail.dictateRetry')}
-            </button>
-          )}
-          {/* Saved with a recognised date: the hint names it and can take it back (same look as the tasks' undo) */}
-          {showUndo && (
-            <button
-              type="button"
-              onClick={() => void undoSaved()}
-              className="font-semibold text-accent hover:underline min-h-[44px] px-1 shrink-0 cursor-pointer"
-              title={t('app:rail.dictateUndoTitle')}
-            >
-              {t('undo')}
-            </button>
-          )}
-        </div>
+        <Toast
+          text={status}
+          actions={
+            showFailed
+              ? [{ label: t('app:rail.dictateRetry'), run: retryFailed }]
+              : showUndo
+              ? [{ label: t('undo'), title: t('app:rail.dictateUndoTitle'), run: () => void undoSaved() }]
+              : []
+          }
+        />
       )}
 
       <span className="relative -mt-6 inline-flex">

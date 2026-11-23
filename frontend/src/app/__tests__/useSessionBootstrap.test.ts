@@ -266,7 +266,7 @@ describe('demo reset countdown', () => {
     // The countdown runs again, and the data of the reset demo are loaded although no DEMO_RESET came
     expect(secondsLeft(result.current.demoDeadline)).toBe(1200);
     expect(mocks.getMe).toHaveBeenCalledTimes(1);
-    expect(result.current.demoNotice).toBe('Demo-Instanz wurde zurückgesetzt');
+    expect(result.current.appNotice?.text).toBe('Demo-Instanz wurde zurückgesetzt');
   });
 
   it('DEMO_RESET and the countdown reload the data once and the countdown starts over', async () => {
