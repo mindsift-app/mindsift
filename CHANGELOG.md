@@ -27,6 +27,7 @@ Versions without a git tag were development states and were never published as a
 - Settings → Data: replacing your data with one of your server backups now asks with the same red warning and tick box as an import, instead of a second click on the button, and afterwards shows what came back and the entries left out, like an import. The desktop app's take-over of a server account lists the entries left out too.
 
 ### Fixed
+- Security: someone drawing along in a live drawing whose share was changed to read-only could keep changing the drawing for a few seconds. Their changes are now refused within a second, and they are taken out of the session.
 - Adding someone to a group, removing them or deleting the group now shows or removes the group's task lists, lists, notes and shared folders right away for the people concerned; before, they saw the change only after reloading.
 - Renaming a list or giving it a new icon now shows in the list overview of everyone who shares it, also when they have another list open.
 - Security: someone who lost access to a list or note (share removed, removed from a group, list or note deleted) kept receiving the list's new entries and the note's live drawing on a device that stayed connected, until it reconnected. They are now cut off at once, and a live drawing they were in is left.
