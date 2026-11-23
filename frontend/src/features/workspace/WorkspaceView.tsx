@@ -47,7 +47,8 @@ import { useWorkspaceData } from './useWorkspaceData';
 import { useTrashActions } from './useTrashActions';
 import { buildWorkspaceMenu } from './workspaceMenu';
 import { buildFolderTree, collectFolderPaths, docsWithAllTags, filterFolderTree, folderAncestors, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata, withTodoToggled } from './workspaceListing';
-import { FolderDialogs, type NewNoteSheet } from './FolderDialogs';
+import { FolderDialogs } from './FolderDialogs';
+import { useFolderForm, useNewNoteForm, useTodoRollupView } from './useWorkspaceViewState';
 import { WorkspaceSubView } from './workspaceTypes';
 import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
@@ -75,15 +76,6 @@ interface WorkspaceViewProps {
   onOpenTask?: (taskId: string) => void;
   // Opens the global search (command palette); the notes sidebar has no search of its own
   onOpenSearch?: () => void;
-}
-
-// Room the new-note form needs below its point (title, template, buttons), so it does not run off the bottom
-const NEW_NOTE_SHEET_HEIGHT = 260;
-
-/** The point below an element (its middle) where an anchored form opens, kept clear of the window's bottom */
-function anchorBelow(el: HTMLElement): { x: number; y: number } {
-  const r = el.getBoundingClientRect();
-  return { x: r.left + r.width / 2, y: Math.max(8, Math.min(r.bottom, window.innerHeight - NEW_NOTE_SHEET_HEIGHT)) };
 }
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
@@ -175,33 +167,20 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     } catch {}
   }, [expandedFolders]);
 
-  const [showNewFolderModal, setShowNewFolderModal] = useState<boolean>(false);
-  const [newFolderCoords, setNewFolderCoords] = useState<{ x: number; y: number } | null>(null);
-  const [newFolderParentPath, setNewFolderParentPath] = useState<string>('');
-  const [newFolderName, setNewFolderName] = useState<string>('');
-  // The same form renames a folder: its path while it does (null for a new folder)
-  const [renameFolderPath, setRenameFolderPath] = useState<string | null>(null);
-
-  const handleOpenRenameFolder = (path: string, at: { x: number; y: number }) => {
-    setRenameFolderPath(path);
-    setNewFolderParentPath('');
-    setNewFolderName(path.split('/').pop() || path);
-    // FormSheet keeps the form inside the window
-    setNewFolderCoords(at);
-    setShowNewFolderModal(true);
-  };
-
-  const handleOpenNewFolder = (parentPath = '', e?: React.MouseEvent) => {
-    setRenameFolderPath(null);
-    setNewFolderParentPath(parentPath);
-    setNewFolderName('');
-    if (e) {
-      setNewFolderCoords({ x: e.clientX, y: e.clientY });
-    } else {
-      setNewFolderCoords({ x: 100, y: 150 });
-    }
-    setShowNewFolderModal(true);
-  };
+  // New folder or renaming one (FolderDialogs)
+  const {
+    showNewFolderModal,
+    setShowNewFolderModal,
+    newFolderCoords,
+    newFolderParentPath,
+    setNewFolderParentPath,
+    newFolderName,
+    setNewFolderName,
+    renameFolderPath,
+    setRenameFolderPath,
+    handleOpenRenameFolder,
+    handleOpenNewFolder,
+  } = useFolderForm();
   const [mobileShowDetail, setMobileShowDetail] = useState<boolean>(
     navStep ? Boolean(navStep.detail) : Boolean(initialDocId) || subView === 'journal'
   );
@@ -252,24 +231,18 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const { toast, setToast, showToast } = useToast();
 
   // Rollup drilldown & View Mode
-  const [todoFolderDrilldown, setTodoFolderDrilldown] = useState<string | null>(null);
-  const [todoGrouping, setTodoGrouping] = useState<'grouped' | 'list'>(() => {
-    const saved = localStorage.getItem('mindsift_todo_grouping');
-    return saved === 'list' ? 'list' : 'grouped';
-  });
-  const [todoShow, setTodoShowState] = useState<'open' | 'all'>(() =>
-    localStorage.getItem('mindsift_todo_show') === 'all' ? 'all' : 'open'
-  );
-  const setTodoShow = useCallback((s: 'open' | 'all') => {
-    setTodoShowState(s);
-    localStorage.setItem('mindsift_todo_show', s);
-  }, []);
-  const setTodoGroupingSaved = useCallback((g: 'grouped' | 'list') => {
-    setTodoGrouping(g);
-    localStorage.setItem('mindsift_todo_grouping', g);
-  }, []);
-  const [collapsedTodoFolders, setCollapsedTodoFolders] = useState<Set<string>>(new Set());
-  const [collapsedTodoNotes, setCollapsedTodoNotes] = useState<Set<string>>(new Set());
+  const {
+    todoFolderDrilldown,
+    setTodoFolderDrilldown,
+    todoGrouping,
+    setTodoGrouping,
+    todoShow,
+    setTodoShow,
+    collapsedTodoFolders,
+    setCollapsedTodoFolders,
+    collapsedTodoNotes,
+    setCollapsedTodoNotes,
+  } = useTodoRollupView();
 
   // Sharing a note or a shared folder
   const share = useShareModal();
@@ -351,29 +324,19 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     [onStatsChange, setDocs]
   );
 
-  // Phones: "+" asks for name and emoji first, so a stray tap does not leave an empty note behind.
-  // The desktop keeps creating at once.
-  const [newNoteSheet, setNewNoteSheet] = useState<NewNoteSheet | null>(null);
-  const [newNoteTitle, setNewNoteTitle] = useState('');
-  const [newNoteIcon, setNewNoteIcon] = useState('🗒️');
-  // '' = an empty note; otherwise the id of the template the note starts from
-  const [newNoteTemplate, setNewNoteTemplate] = useState('');
-  // With templates the desktop asks too (name, emoji, template); without, it creates at once as before
+  // New note: phones and the desktop with templates ask for name, emoji and template first (FolderDialogs)
   const hasTemplates = templates.length > 0;
-  const openNewNote = useCallback(
-    (folderPath = '', e?: React.MouseEvent) => {
-      if (!isPhoneWidth() && !hasTemplates) {
-        void handleCreateDocument(folderPath);
-        return;
-      }
-      setNewNoteTitle('');
-      setNewNoteIcon('🗒️');
-      setNewNoteTemplate('');
-      // On the desktop the form opens at the button that was clicked (centred without one, e.g. a shortcut)
-      setNewNoteSheet({ folderPath, anchor: e ? anchorBelow(e.currentTarget as HTMLElement) : null });
-    },
-    [handleCreateDocument, hasTemplates]
-  );
+  const {
+    newNoteSheet,
+    setNewNoteSheet,
+    newNoteTitle,
+    setNewNoteTitle,
+    newNoteIcon,
+    setNewNoteIcon,
+    newNoteTemplate,
+    setNewNoteTemplate,
+    openNewNote,
+  } = useNewNoteForm(handleCreateDocument, hasTemplates);
 
   // Links between notes, the journal and the trash leave the open note: they ask first while a dictation
   // into a text field would be lost (lib/leaveGuard.ts)
@@ -817,7 +780,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       setGroups([]);
       setPrimaryAction(undefined);
     };
-  }, [handleCreateDocument, openNewNote, setGroups, setPrimaryAction, trash.length, openTrash, subView, totalOpenTodos, tagsSummary.length]);
+  }, [handleCreateDocument, openNewNote, setShowNewFolderModal, setGroups, setPrimaryAction, trash.length, openTrash, subView, totalOpenTodos, tagsSummary.length]);
 
   // Real-time matched blocks and all nested children for the selected hashtag
   const activeTagGroups = useMemo(() => tagGroups(docs, selectedTag, tagDetails), [docs, selectedTag, tagDetails]);
@@ -1198,7 +1161,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             todoFolderDrilldown={todoFolderDrilldown}
             setTodoFolderDrilldown={setTodoFolderDrilldown}
             todoGrouping={todoGrouping}
-            setTodoGrouping={setTodoGroupingSaved}
+            setTodoGrouping={setTodoGrouping}
             todoShow={todoShow}
             setTodoShow={setTodoShow}
             hasDoneTodos={hasDoneTodos}

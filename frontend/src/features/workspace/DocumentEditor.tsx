@@ -249,7 +249,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   const { lockedBlocks } = useDocPresence(engineState, currentUser?.id, onHeaderStatusChange);
 
-  useDismiss(actionsMenuRef, () => setShowActionsMenu(false), { active: showActionsMenu, event: 'mousedown' });
+  useDismiss(actionsMenuRef, () => setShowActionsMenu(false), { active: showActionsMenu });
 
   // Short hint at the bottom of the editor (blocked actions, skipped undo), optionally with one action
   const [notice, setNotice] = useState<string | null>(null);
