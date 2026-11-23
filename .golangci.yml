@@ -1,5 +1,6 @@
 # golangci-lint (ci/local-checks.sh): the standard linters (errcheck, govet, ineffassign, staticcheck,
-# unused) over cmd/ and internal/. staticcheck runs only here, not as a step of its own.
+# unused) over cmd/ and internal/, and over the desktop module (desktop/, see ci/local-checks.sh).
+# staticcheck runs only here, not as a step of its own.
 version: "2"
 
 linters:
@@ -34,6 +35,7 @@ linters:
         - (*compress/gzip.Reader).Close
         - (*archive/zip.ReadCloser).Close
         - (*net/smtp.Client).Close
+        - (golang.org/x/sys/windows/registry.Key).Close
         - os.Remove
         # Streaming to an http.ResponseWriter (metrics, server-sent events): a client that went away is
         # noticed through the request context, not through the write

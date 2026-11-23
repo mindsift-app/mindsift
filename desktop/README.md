@@ -343,6 +343,9 @@ desktop/packaging/flatpak/update-sources.sh             # after changing go.mod,
   name of the script when the checksums differ, and when the manifest's tag is not `v<package.json>` or
   the metainfo has no entry for that version. A package that the desktop app newly imports from
   MindSift's own module changes `modules.txt` without changing `go.mod`: run the script then, too.
+  `check-sources.sh` notices that from the import lines: every package of the own module that the desktop
+  app reaches (its tests included, the own packages' tests not) and every other non-standard package
+  imported there has to be in `modules.txt`.
 - **Release:** a build from the git source takes manifest and metainfo as they are in the tag, so the
   release commit already names the release: `set-release.sh vX.Y.Z '<one sentence>'` (run by
   `ci/release-prepare.sh vX.Y.Z '<one sentence>'`, which writes the release commit's changes) moves

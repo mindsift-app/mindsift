@@ -102,6 +102,9 @@ var (
 	lastDownloadDir string
 )
 
+// errNoDownloadDialog: downloads before the save dialog is set up
+var errNoDownloadDialog = errors.New("no save dialog")
+
 // setupDownloads: where downloads wait until they are moved, and the save dialog; before the window loads
 // a page. Leftovers of a run that ended during a download are removed.
 func setupDownloads(base string, ask func(name, dir string) (string, error)) {

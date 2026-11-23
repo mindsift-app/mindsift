@@ -4,6 +4,8 @@
 #   - go.mod.yml, modules.txt and node-sources.json were generated from the desktop/go.mod, desktop/go.sum
 #     and frontend/package-lock.json of the tree (sources.sha256, written by update-sources.sh; MindSift's
 #     own version in the lockfile does not count, see sources-sha256.sh)
+#   - modules.txt lists every package the desktop app imports from MindSift's own module (directly or
+#     through its packages) and every other non-standard package imported there
 #   - the manifest's git source is the tag of frontend/package.json's version, and its commit (when given)
 #     the one that tag points to
 #   - the metainfo has a <release> entry for that version, and its screenshots are on main or that tag
@@ -24,6 +26,62 @@ for f in go.mod.yml modules.txt node-sources.json sources.sha256; do
 done
 if [ -s "$DIR/sources.sha256" ] && [ "$(sh "$DIR/sources-sha256.sh" "$ROOT" 2>&1)" != "$(cat "$DIR/sources.sha256")" ]; then
   fail "the generated sources do not fit desktop/go.mod, desktop/go.sum or frontend/package-lock.json any more: run $DIR/update-sources.sh and commit the result"
+fi
+
+# modules.txt is what the build vendors: the packages of MindSift's own module are copied in from the list
+# there (see the manifest), the others come from the module archives. desktop/go.mod does not change when the
+# app imports one more package of a module it already has, so the import lines are compared as well: those of
+# desktop/ with its tests (`go mod vendor` lists what the main module's tests need), then, package by
+# package, those of the own module's packages it reaches (without tests). Every package of the own module and
+# every other non-standard one (a dot in the first element) imported there has to be in modules.txt.
+own=github.com/mindsift-app/mindsift
+# go_imports FILE…: the import paths of Go files (single imports and import blocks, up to the first declaration)
+go_imports() {
+  awk 'FNR == 1 { block = 0; done = 0 }
+    done { next }
+    /^(func|type|var|const)[ (]/ { done = 1; next }
+    /^import \(/ { block = 1; next }
+    block && /^\)/ { block = 0; next }
+    (block || /^import /) && match($0, /"[^"]+"/) { print substr($0, RSTART + 1, RLENGTH - 2) }' "$@"
+}
+if [ -s "$DIR/modules.txt" ]; then
+  W="$(mktemp -d)"
+  trap 'rm -rf "$W"' EXIT
+  find desktop \( -name vendor -o -name node_modules -o -name testdata -o -name out \) -prune -o -name '*.go' -print >"$W/files"
+  if [ ! -s "$W/files" ]; then
+    fail "no Go files in desktop/ to compare with modules.txt"
+  else
+    # shellcheck disable=SC2046 # file names without spaces
+    go_imports $(cat "$W/files") | sort -u >"$W/imports"
+    # (each pattern file for grep -f starts with a line no path matches: BusyBox grep takes an empty one as
+    # matching everything)
+    echo "#" >"$W/seen"
+    # the own module's packages reached so far, until no new one comes up
+    while :; do
+      grep "^$own/" "$W/imports" | grep -v "^$own/desktop\(/\|\$\)" | sort -u >"$W/own"
+      grep -vxF -f "$W/seen" "$W/own" >"$W/new" || true
+      [ -s "$W/new" ] || break
+      cat "$W/new" >>"$W/seen"
+      while read -r pkg; do
+        dir="${pkg#"$own"/}"
+        files=""
+        [ ! -d "$dir" ] || files="$(find "$dir" -maxdepth 1 -name '*.go' ! -name '*_test.go')"
+        if [ -z "$files" ]; then
+          fail "$pkg is imported, but $dir has no Go files"
+          continue
+        fi
+        # shellcheck disable=SC2086 # file names without spaces
+        go_imports $files >>"$W/imports"
+      done <"$W/new"
+      sort -u -o "$W/imports" "$W/imports"
+    done
+    { echo "#"; sed -n "\|^# $own |,\|^# |{\|^$own/|p}" "$DIR/modules.txt"; } >"$W/own-listed"
+    missing="$(grep -vxF -f "$W/own-listed" "$W/own" || true)"
+    [ -z "$missing" ] || fail "the desktop app imports packages of MindSift's own module that modules.txt does not list: $(echo "$missing" | tr '\n' ' ')- run $DIR/update-sources.sh and commit the result"
+    { echo "#"; grep -v '^#' "$DIR/modules.txt"; } >"$W/listed"
+    missing="$(grep -v -e "^$own/" -e "^$own\$" "$W/imports" | grep '^[^/]*\.' | grep -vxF -f "$W/listed" || true)"
+    [ -z "$missing" ] || fail "the desktop app imports packages that modules.txt does not list: $(echo "$missing" | tr '\n' ' ')- run $DIR/update-sources.sh and commit the result"
+  fi
 fi
 
 version="$(sh ci/version.sh package "$ROOT")"
