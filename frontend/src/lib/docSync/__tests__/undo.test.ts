@@ -245,6 +245,78 @@ describe('undo/redo', () => {
   });
 });
 
+describe('undo of a slash command', () => {
+  const types = (e: DocSyncEngine) => flat(e).map((b) => b.type);
+
+  it('takes back the command and the typed "/code" in one step, redo brings the code block back', async () => {
+    const server = new Server([['a', 'Einkaufen']]);
+    const e = await engineFor(server);
+    clock += 2000;
+    edit(e, (b) => [{ ...b[0], content: 'Einkaufen /co' }]);
+    clock += 300;
+    edit(e, (b) => [{ ...b[0], content: 'Einkaufen /code' }]);
+    clock += 300;
+    e.slashCommand('a', 'Einkaufen ', () => edit(e, (b) => [{ ...b[0], content: 'Einkaufen ', type: 'code' }]));
+    expect(types(e)).toEqual(['code']);
+
+    expect(e.undo().ok).toBe(true);
+    expect(texts(e)).toEqual(['Einkaufen ']);
+    expect(types(e)).not.toContain('code');
+    expect(e.undo().ok).toBe(true);
+    expect(texts(e)).toEqual(['Einkaufen']);
+
+    expect(e.redo().ok).toBe(true);
+    expect(e.redo().ok).toBe(true);
+    expect(texts(e)).toEqual(['Einkaufen ']);
+    expect(types(e)).toEqual(['code']);
+  });
+
+  it('typing before the slash in the same burst stays one step of its own', async () => {
+    const server = new Server([['a', '']]);
+    const e = await engineFor(server);
+    edit(e, (b) => [{ ...b[0], content: 'Hallo' }]);
+    clock += 300;
+    edit(e, (b) => [{ ...b[0], content: 'Hallo /h1' }]);
+    clock += 300;
+    e.slashCommand('a', 'Hallo ', () => edit(e, (b) => [{ ...b[0], content: 'Hallo ', type: 'h1' }]));
+
+    e.undo();
+    expect(texts(e)).toEqual(['Hallo ']);
+    expect(types(e)).not.toContain('h1');
+    e.undo();
+    expect(texts(e)).toEqual(['']);
+    expect(e.getState().canUndo).toBe(false);
+  });
+
+  it('goes straight back when the typed command reached the engine only with the command itself', async () => {
+    const server = new Server([['a', 'Notiz']]);
+    const e = await engineFor(server);
+    // The field's debounce had not sent "/todo" yet
+    e.slashCommand('a', 'Notiz', () => edit(e, (b) => [{ ...b[0], content: 'Notiz', type: 'todo' }]));
+    e.undo();
+    expect(texts(e)).toEqual(['Notiz']);
+    expect(types(e)).not.toContain('todo');
+    expect(e.getState().canUndo).toBe(false);
+  });
+
+  it('a command that only removes the typed text (a dialog follows) leaves no step for the typing', async () => {
+    const server = new Server([['a', 'Siehe']]);
+    const e = await engineFor(server);
+    clock += 2000;
+    edit(e, (b) => [{ ...b[0], content: 'Siehe /link' }]);
+    clock += 300;
+    e.slashCommand('a', 'Siehe ', () => edit(e, (b) => [{ ...b[0], content: 'Siehe ' }]));
+    clock += 5000;
+    edit(e, (b) => [{ ...b[0], content: 'Siehe [Start](https://example.org)' }]);
+
+    e.undo();
+    expect(texts(e)).toEqual(['Siehe ']);
+    e.undo();
+    expect(texts(e)).toEqual(['Siehe']);
+    expect(e.getState().canUndo).toBe(false);
+  });
+});
+
 describe('conflict copies', () => {
   async function withConflict() {
     const server = new Server([['a', 'Start']]);

@@ -389,6 +389,16 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     [showNotice, engineRef]
   );
 
+  // A slash command and the typed "/command" are one undo step
+  const handleSlashCommand = useCallback(
+    (blockId: string, textBefore: string, apply: () => void) => {
+      const engine = engineRef.current;
+      if (engine) engine.slashCommand(blockId, textBefore, apply);
+      else apply();
+    },
+    [engineRef]
+  );
+
   const {
     hasCollapsed,
     canCollapse,
@@ -1118,6 +1128,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 onExtractBlock={canEdit ? handleExtractRequest : undefined}
               onInlineBlock={canEdit ? handleInlineBlock : undefined}
                 onUpdateBlock={handleUpdateBlock}
+                onSlashCommand={handleSlashCommand}
                 onUpdateBlocks={handleUpdateBlocks}
                 onCreateBlock={handleCreateBlock}
                 onInsertBlocks={handleInsertBlocks}
@@ -1174,6 +1185,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     levelOffset={Math.min(...group.map((b) => Math.max(0, b.level || 0)))}
                     onZoomBlock={(id) => onOpenDocBlock?.(docId, id)}
                     onUpdateBlock={handleUpdateBlock}
+                    onSlashCommand={handleSlashCommand}
                     onUpdateBlocks={handleUpdateBlocks}
                     onCreateBlock={handleTagCreateBlock}
                     onInsertBlocks={handleTagInsertBlocks}
@@ -1287,6 +1299,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               onExtractBlock={canEdit ? handleExtractRequest : undefined}
               onInlineBlock={canEdit ? handleInlineBlock : undefined}
               onUpdateBlock={handleUpdateBlock}
+              onSlashCommand={handleSlashCommand}
               onUpdateBlocks={handleUpdateBlocks}
               onCreateBlock={handleCreateBlock}
               onInsertBlocks={handleInsertBlocks}

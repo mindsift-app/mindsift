@@ -60,6 +60,8 @@ export interface OutlinerTreeProps {
   onExtractBlock?: (blockId: string, at?: { x: number; y: number; align?: 'left' | 'right' }) => void;
   onInlineBlock?: (blockId: string) => void;
   onUpdateBlock: (updated: DocumentBlock, immediate?: boolean) => void;
+  /** A slash command changes a bullet in `apply`: one undo takes it back with the typed "/command" */
+  onSlashCommand?: (blockId: string, textBefore: string, apply: () => void) => void;
   onUpdateBlocks?: (updated: DocumentBlock[]) => void;
   /** before: the new bullet goes directly above the given one (Enter at the start of a bullet) */
   onCreateBlock: (newBlock: DocumentBlock, afterBlockId?: string, placement?: 'after' | 'before') => void;
@@ -151,6 +153,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   onExtractBlock,
   onInlineBlock,
   onUpdateBlock,
+  onSlashCommand,
   onUpdateBlocks,
   onCreateBlock,
   onInsertBlocks,
@@ -1449,6 +1452,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const stableExtractBlock = useLatestCallback(onExtractBlock ?? noop);
   const stableInlineBlock = useLatestCallback(onInlineBlock ?? noop);
   const stableUpdateBlock = useLatestCallback(onUpdateBlock);
+  const stableSlashCommand = useLatestCallback(onSlashCommand ?? ((_id: string, _text: string, apply: () => void) => apply()));
   const stableCreateBlockBelow = useLatestCallback(handleCreateBlockBelow);
   const stableCreateBlockAbove = useLatestCallback(handleCreateBlockAbove);
   const stablePasteMultiLines = useLatestCallback(handlePasteMultiLines);
@@ -1637,6 +1641,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onInlineBlock={onInlineBlock ? stableInlineBlock : undefined}
           onTemplateCommand={offersTemplates ? handleTemplateCommand : undefined}
           onUpdateBlock={stableUpdateBlock}
+          onSlashCommand={onSlashCommand ? stableSlashCommand : undefined}
           onCreateBlockBelow={stableCreateBlockBelow}
           onCreateBlockAbove={stableCreateBlockAbove}
           onPasteMultiLines={stablePasteMultiLines}
