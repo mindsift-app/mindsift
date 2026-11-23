@@ -54,7 +54,7 @@ func newAlarmBench(srv *Server) *alarmBench {
 	b := &alarmBench{fail: map[string]error{}}
 	srv.notifyEmailHook = func(to, subject, text, html string) error { return b.record("email", to, subject, text) }
 	srv.notifyPushHook = func(userID string, msg pushMessage) error { return b.record("push", userID, msg.Title, msg.Body) }
-	srv.alarmOutHook = func(channel, url string, payload map[string]any) error {
+	srv.webhookOutHook = func(channel, url string, payload map[string]any) error {
 		text := ""
 		if channel == "webhook" {
 			text, _ = payload["title"].(string)

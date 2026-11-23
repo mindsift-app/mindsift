@@ -1,10 +1,7 @@
 package api
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -876,33 +873,17 @@ func (s *Server) sendNotifyWebhook(webhookURL, heading string, items []notifyIte
 
 // sendWebhookDigest posts the bundle as JSON: {"event":"digest","heading":…,"items":[{kind,title,text}],…}.
 func (s *Server) sendWebhookDigest(webhookURL, heading string, items []notifyItem) error {
-	if s.cfg.DemoMode {
-		return errDemoOutgoing
-	}
-	allowPrivate := s.allowPrivateWebhooks()
-	if err := validateWebhookURL(webhookURL, false, allowPrivate); err != nil {
-		return err
-	}
 	list := make([]map[string]string, 0, len(items))
 	for _, it := range items {
 		list = append(list, map[string]string{"kind": it.kind, "title": it.title, "text": it.text})
 	}
-	body, _ := json.Marshal(map[string]any{
+	return s.postWebhook("webhook", webhookURL, map[string]any{
 		"event":     "digest",
 		"heading":   heading,
 		"items":     list,
 		"link":      s.notifyLink(),
 		"timestamp": domain.NowISO(),
 	})
-	resp, err := guardedClient(allowPrivate).Post(webhookURL, "application/json", bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("HTTP Status %d", resp.StatusCode)
-	}
-	return nil
 }
 
 func (s *Server) notifyLink() string {
@@ -914,13 +895,6 @@ func (s *Server) notifyLink() string {
 
 // sendDiscordDigest posts one embed with a line per item (at most 10).
 func (s *Server) sendDiscordDigest(lang, webhookURL, heading string, items []notifyItem) error {
-	if s.cfg.DemoMode {
-		return errDemoOutgoing
-	}
-	allowPrivate := s.allowPrivateWebhooks()
-	if err := validateWebhookURL(webhookURL, true, allowPrivate); err != nil {
-		return err
-	}
 	lines := make([]string, 0, 11)
 	for i, it := range items {
 		if i == 10 {
@@ -929,22 +903,13 @@ func (s *Server) sendDiscordDigest(lang, webhookURL, heading string, items []not
 		}
 		lines = append(lines, "• "+it.text)
 	}
-	body, _ := json.Marshal(map[string]any{
+	return s.postWebhook("discord", webhookURL, map[string]any{
 		"embeds": []map[string]any{{
 			"title":       "MindSift: " + heading,
 			"description": strings.Join(lines, "\n"),
 			"color":       2450411,
 		}},
 	})
-	resp, err := guardedClient(allowPrivate).Post(webhookURL, "application/json", bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("HTTP Status %d", resp.StatusCode)
-	}
-	return nil
 }
 
 // digestMail: what happened since the last mail (shares, completed shared tasks, watched tasks).

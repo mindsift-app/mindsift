@@ -121,15 +121,7 @@ func (s *Server) sendEmailHTMLWith(cfg smtpSettings, toEmail, subject, bodyText,
 }
 
 func (s *Server) sendDiscordNotification(lang, webhookURL, title, description, dueDate, priority string) error {
-	if s.cfg.DemoMode {
-		return errDemoOutgoing
-	}
-	allowPrivate := s.allowPrivateWebhooks()
-	if err := validateWebhookURL(webhookURL, true, allowPrivate); err != nil {
-		return err
-	}
-	httpClient := guardedClient(allowPrivate)
-	payload := map[string]any{
+	return s.postWebhook("discord", webhookURL, map[string]any{
 		"content": "⏰ **" + i18n.T(lang, "MindSift Aufgaben-Alarm") + "**",
 		"embeds": []map[string]any{
 			{
@@ -141,35 +133,11 @@ func (s *Server) sendDiscordNotification(lang, webhookURL, title, description, d
 				},
 			},
 		},
-	}
-	if s.alarmOutHook != nil { // tests
-		return s.alarmOutHook("discord", webhookURL, payload)
-	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	resp, err := httpClient.Post(webhookURL, "application/json", bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
-		return i18n.NewError("HTTP-Status {status}", "status", strconv.Itoa(resp.StatusCode))
-	}
-	return nil
+	})
 }
 
 // sendCustomWebhookNotification posts an alarm to the person's own webhook; extra adds fields (nil: none).
 func (s *Server) sendCustomWebhookNotification(webhookURL, event, title, notes, dueDate, priority string, extra map[string]any) error {
-	if s.cfg.DemoMode {
-		return errDemoOutgoing
-	}
-	allowPrivate := s.allowPrivateWebhooks()
-	if err := validateWebhookURL(webhookURL, false, allowPrivate); err != nil {
-		return err
-	}
-	httpClient := guardedClient(allowPrivate)
 	payload := map[string]any{
 		"event":     event,
 		"title":     title,
@@ -181,14 +149,33 @@ func (s *Server) sendCustomWebhookNotification(webhookURL, event, title, notes, 
 	for k, v := range extra {
 		payload[k] = v
 	}
-	if s.alarmOutHook != nil { // tests
-		return s.alarmOutHook("webhook", webhookURL, payload)
+	return s.postWebhook("webhook", webhookURL, payload)
+}
+
+// postWebhook posts payload as JSON to a person's Discord webhook (channel "discord") or own webhook
+// ("webhook"), for alarms and bundled notifications alike: nothing in the demo, only to an address
+// validateWebhookURL allows, through the guarded client. A status of 400 or more is an error people may
+// be shown (the test message in the settings).
+func (s *Server) postWebhook(channel, webhookURL string, payload map[string]any) error {
+	if s.cfg.DemoMode {
+		return errDemoOutgoing
+	}
+	allowPrivate := s.allowPrivateWebhooks()
+	if err := validateWebhookURL(webhookURL, channel == "discord", allowPrivate); err != nil {
+		return err
+	}
+	if s.webhookOutHook != nil { // tests
+		return s.webhookOutHook(channel, webhookURL, payload)
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
-	resp, err := httpClient.Post(webhookURL, "application/json", bytes.NewReader(body))
+	client := s.webhookHTTPClient
+	if client == nil {
+		client = guardedClient(allowPrivate)
+	}
+	resp, err := client.Post(webhookURL, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
