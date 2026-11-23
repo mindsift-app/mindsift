@@ -21,7 +21,28 @@ cp "$DIR/app.mindsift.MindSift.yml" "$DIR/app.mindsift.MindSift.metainfo.xml" "$
   "$DIR/sources-sha256.sh" "$T/$DIR/"
 printf '{\n  "name": "mindsift",\n  "version": "1.2.0"\n}\n' > "$T/frontend/package.json"
 printf '## [Unreleased]\n\n## [1.2.0] - 2026-12-01\n\n## [1.3.0-rc.1] - 2026-12-05\n' > "$T/CHANGELOG.md"
-for f in go.mod.yml modules.txt node-sources.json; do echo stand-in > "$T/$DIR/$f"; done
+for f in go.mod.yml node-sources.json; do echo stand-in > "$T/$DIR/$f"; done
+# The desktop app and the packages of the own module it reaches, with a modules.txt that lists them: desktop
+# imports internal/a (its test also internal/t), a imports internal/b (a's test internal/c, which the build
+# does not need), and b a package of chi
+own=github.com/mindsift-app/mindsift
+mkdir -p "$T/desktop/internal/shell" "$T/internal/a" "$T/internal/b" "$T/internal/c" "$T/internal/t"
+printf 'package main\n\nimport (\n\t"fmt"\n\n\tx "%s/internal/a"\n\t"%s/desktop/internal/shell"\n)\n\nfunc main() { fmt.Println(x.A, shell.S) }\n' \
+  "$own" "$own" > "$T/desktop/main.go"
+printf 'package main\n\nimport "testing"\nimport _ "%s/internal/t"\n\nfunc TestMain(m *testing.M) {}\n' "$own" > "$T/desktop/main_test.go"
+printf 'package shell\n\nconst S = 1\n' > "$T/desktop/internal/shell/shell.go"
+printf 'package a\n\nimport "%s/internal/b"\n\nvar A = b.B\n' "$own" > "$T/internal/a/a.go"
+printf 'package a\n\nimport _ "%s/internal/c"\n' "$own" > "$T/internal/a/a_test.go"
+printf 'package b\n\nimport (\n\t"net/http"\n\n\t"github.com/go-chi/chi/v5"\n)\n\nvar B = chi.NewRouter\nvar _ http.Handler\n' > "$T/internal/b/b.go"
+printf 'package t\n' > "$T/internal/t/t.go"
+printf 'package c\n' > "$T/internal/c/c.go"
+{
+  printf '# github.com/go-chi/chi/v5 v5.5.0\n## explicit; go 1.24\ngithub.com/go-chi/chi/v5\n'
+  printf '# %s v0.0.0 => ../\n## explicit; go 1.27\n' "$own"
+  for p in a b t; do echo "$own/internal/$p"; done
+  printf '# %s => ../\n' "$own"
+} > "$T/$DIR/modules.txt"
+cp "$T/$DIR/modules.txt" "$T/modules.orig"
 sh "$T/$DIR/sources-sha256.sh" "$T" > "$T/$DIR/sources.sha256"
 (cd "$T" && sh "$DIR/set-release.sh" v1.2.0 'Notes & tasks <faster> \ a|b.' >/dev/null 2>&1) || true
 
@@ -62,6 +83,19 @@ rm "$T/$DIR/node-sources.json"
 expect "a missing node-sources.json fails" fail update-sources.sh
 echo stand-in > "$T/$DIR/node-sources.json"
 expect "restored, the tree passes again" pass
+
+# Imports the build would not find in the vendor folder (desktop/go.mod unchanged)
+grep -vx "$own/internal/b" "$T/modules.orig" > "$T/$DIR/modules.txt"
+expect "an own package reached through another one but missing in modules.txt fails" fail "$own/internal/b"
+grep -vx "$own/internal/t" "$T/modules.orig" > "$T/$DIR/modules.txt"
+expect "an own package imported by desktop's tests but missing in modules.txt fails" fail "$own/internal/t"
+grep -vx 'github.com/go-chi/chi/v5' "$T/modules.orig" > "$T/$DIR/modules.txt"
+expect "another module's package imported by an own package but missing in modules.txt fails" fail github.com/go-chi/chi/v5
+cp "$T/modules.orig" "$T/$DIR/modules.txt"
+printf 'package b\n\nimport "%s/internal/gone"\n' "$own" > "$T/internal/b/b2.go"
+expect "an import of an own package that is not there fails" fail "$own/internal/gone"
+rm "$T/internal/b/b2.go"
+expect "an own package needed only by another one's tests may be missing" pass
 
 sed -i 's/"version": "1.2.0"/"version": "1.3.0-rc.1"/' "$T/frontend/package.json"
 expect "a new version without set-release.sh fails" fail set-release.sh

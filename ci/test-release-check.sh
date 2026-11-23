@@ -23,6 +23,8 @@ cp desktop/go.mod desktop/go.sum "$T/desktop/"
 cp "$DIR/app.mindsift.MindSift.yml" "$DIR/app.mindsift.MindSift.metainfo.xml" "$DIR/check-sources.sh" "$DIR/set-release.sh" \
   "$DIR/sources-sha256.sh" "$T/$DIR/"
 for f in go.mod.yml modules.txt node-sources.json; do echo stand-in > "$T/$DIR/$f"; done
+# a desktop app that imports nothing modules.txt would have to list
+printf 'package main\n\nimport "fmt"\n\nfunc main() { fmt.Println() }\n' > "$T/desktop/main.go"
 printf '{\n  "name": "mindsift-frontend",\n  "version": "1.2.0",\n  "private": true\n}\n' > "$T/frontend/package.json"
 sh ci/lock-version.sh frontend/package-lock.json 1.2.0 > "$T/frontend/package-lock.json"
 printf '# MindSift\n\n[![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)\n[![Version](https://img.shields.io/badge/Version-v1.2.0-16a34a?style=flat-square)](CHANGELOG.md)\n' > "$T/README.md"
