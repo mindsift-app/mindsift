@@ -13,6 +13,7 @@ Versions without a git tag were development states and were never published as a
 - A tap or click beside an open menu, list or popover only closes it and no longer reaches what lies below (on phones, tapping beside the notification list could open a task). The expanded navigation rail and the people suggestions under a field keep passing the click on.
 - Phones: the view's menu under the header closes like the other menus (a tap beside it only closes it, Escape too), the page behind it no longer scrolls, and its close button is large enough to tap.
 - Phones: the emoji picker is a sheet from below like the other sheets (grip, title with the current icon, close button, "Remove icon" as a row at the bottom).
+- Notes: "Collapse all bullets" (note menu, Ctrl+Shift+↑) now collapses only the top level of what you see: the note's top-level bullets, or, zoomed in, the bullets right below the zoomed one. Deeper bullets keep their state, so zooming into a heading afterwards shows its sub-bullets as open or closed as before; collapse again there to fold that level. "Expand all bullets" still opens everything in the view at any depth.
 
 ### Fixed
 - Dictations held on the + whose recording is already on the server no longer make the browser ask before the page is reloaded or closed; the server finishes them anyway. Recordings not yet uploaded still ask.

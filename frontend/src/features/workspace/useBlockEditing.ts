@@ -2,7 +2,7 @@ import React, { useCallback, useEffect } from 'react';
 import { DocumentBlock } from '../../lib/types';
 import { insertBelow, moveBranch, moveSibling, unitStart, type BranchDrop } from '../../lib/outlineList';
 import type { OutlinerTreeHandle } from './OutlinerTree';
-import { getZoomedSubtree } from './zoom';
+import { canCollapseView, canExpandView, setViewCollapsed, viewTopAncestor } from './collapseAll';
 import { ensureNonEmptyBlocks } from './useDocumentSync';
 import { useLatestRef } from '../../lib/useLatestRef';
 
@@ -32,35 +32,26 @@ export function useBlockEditing({
   applyLocalBlocks: (update: DocumentBlock[] | ((prev: DocumentBlock[]) => DocumentBlock[])) => void;
 }) {
   // "Expand / collapse all bullets" (note menu, Ctrl+Shift+ArrowDown / ArrowUp) in what is shown, i.e. only
-  // inside the zoomed branch. One edit, so a single Strg+Z takes it back.
-  const lvl = (b?: DocumentBlock) => Math.max(0, b?.level || 0);
-  const hasCollapsed = childBlocks.some((b) => b.collapsed);
-  const canCollapse = childBlocks.some((b, i) => !b.collapsed && lvl(childBlocks[i + 1]) > lvl(b) && i + 1 < childBlocks.length);
+  // inside the zoomed branch; collapsing folds only its top level (collapseAll.ts). One edit, so a single
+  // Strg+Z takes it back.
+  const hasCollapsed = canExpandView(childBlocks);
+  const canCollapse = canCollapseView(childBlocks);
   const handleSetAllCollapsed = useCallback(
     (collapse: boolean) => {
       if (!canEdit) return;
-      const scope = new Set(getZoomedSubtree(currentBlocksRef.current, zoomedBlockId).childBlocks.map((b) => b.id));
       // The bullet holding the cursor may disappear when collapsing: the cursor goes to its top-level bullet
       const focusedId = (document.activeElement as HTMLElement | null)?.closest('[data-outline-block]')?.getAttribute('data-outline-block');
       let changed = false;
       applyLocalBlocks((prev) => {
-        const next = prev.map((b, i) => {
-          if (!scope.has(b.id)) return b;
-          const want = collapse && i + 1 < prev.length && lvl(prev[i + 1]) > lvl(b);
-          if (!!b.collapsed === want) return b;
-          changed = true;
-          return { ...b, collapsed: want };
-        });
-        return changed ? next : prev;
+        const next = setViewCollapsed(prev, zoomedBlockId, collapse);
+        changed = next !== prev;
+        return next;
       });
       if (!collapse || !changed || !focusedId) return;
-      const all = currentBlocksRef.current;
-      let i = all.findIndex((b) => b.id === focusedId);
-      const top = Math.min(...childBlocks.map((b) => lvl(b)));
-      while (i > 0 && lvl(all[i]) > top && scope.has(all[i - 1].id)) i--;
-      if (i >= 0 && all[i]) window.setTimeout(() => outlinerTreeRef.current?.focusBlock(all[i].id), 0);
+      const target = viewTopAncestor(currentBlocksRef.current, zoomedBlockId, focusedId);
+      if (target) window.setTimeout(() => outlinerTreeRef.current?.focusBlock(target), 0);
     },
-    [canEdit, applyLocalBlocks, zoomedBlockId, childBlocks, currentBlocksRef, outlinerTreeRef]
+    [canEdit, applyLocalBlocks, zoomedBlockId, currentBlocksRef, outlinerTreeRef]
   );
   const setAllCollapsedRef = useLatestRef(handleSetAllCollapsed);
   useEffect(() => {
