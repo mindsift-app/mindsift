@@ -51,7 +51,11 @@ var (
 	errRestoreKeyMismatch = errors.New("Verschlüsselte Werte der Sicherung (z. B. SMTP-Passwort, versteckte Werte) lassen sich mit dem Schlüssel dieses Servers nicht öffnen; trotzdem wiederherstellen?")
 )
 
-// restoreMu: one restore at a time
+// restoreMu: one restore at a time. It belongs to the process, not to the Server, on purpose: a process runs
+// one server at a time (cmd/server; the desktop app closes the open instance before it opens another,
+// desktop/internal/shell/local.go), and the lock is held across the restart, from the old server until the
+// new one is open, which a field of the old server could not cover. Tests that restore do not run in
+// parallel (testmain_test.go).
 var restoreMu sync.Mutex
 
 // SetRestarter: the runner's function that closes this server and its store and opens them again (through
