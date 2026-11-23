@@ -34,6 +34,7 @@ Versions without a git tag were development states and were never published as a
 - An audio recording in a note (`/audio`) is no longer cut off when the app reloads itself for a new server version: like a dictation, it now holds the automatic reload back until it is saved.
 - Desktop app: "Switch instance" in the profile menu now asks first ("Switch anyway" / "Stay") while a dictation or recording is under way, instead of throwing it away.
 - Triage: while the actions sheet of a card ("More options") or another dialog is open, the keyboard shortcuts (arrows, H, L, D, T, Space) no longer sort the card behind it.
+- A task whose database row had no value (NULL) for its due date, its link to a note or its triage time, which can only come from a manual database edit or an import by another tool, was missing from every task list. It is now shown like any other task, and a one-time database update at startup fills those empty values.
 
 ## [0.99.0] - 2026-11-22
 

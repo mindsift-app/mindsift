@@ -176,16 +176,21 @@ func scanThought(rows interface {
 	var tagsStr, subtasksStr, statusStr, remindersStr string
 	var isCompleted, alarmSent, sortOrder int
 	var origin originDest
+	// The four columns declared without NOT NULL: a row from outside the app (an import, a hand-made
+	// INSERT) may hold NULL there, and a plain string would fail the whole row, so the task vanished
+	var convertedType, convertedRefID, dueDate, triagedAt sql.NullString
 	err := rows.Scan(
 		&t.ID, &t.UserID, &t.Content, &tagsStr, &t.Priority, &t.Source,
-		&statusStr, &isCompleted, &t.ConvertedType, &t.ConvertedRefID,
-		&t.DueDate, &t.TaskListID, &t.KanbanStatus, &t.Notes, &alarmSent,
-		&t.CreatedAt, &t.TriagedAt, &subtasksStr, &sortOrder, &t.Recurrence, &remindersStr,
+		&statusStr, &isCompleted, &convertedType, &convertedRefID,
+		&dueDate, &t.TaskListID, &t.KanbanStatus, &t.Notes, &alarmSent,
+		&t.CreatedAt, &triagedAt, &subtasksStr, &sortOrder, &t.Recurrence, &remindersStr,
 		&origin.createdVia, &origin.createdKey, &origin.changedVia, &origin.changedKey, &origin.changedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
+	t.ConvertedType, t.ConvertedRefID = convertedType.String, convertedRefID.String
+	t.DueDate, t.TriagedAt = dueDate.String, triagedAt.String
 	t.SortOrder = sortOrder
 	t.Reminders = domain.ParseReminders(remindersStr)
 	t.Origin = origin.result()
@@ -794,7 +799,7 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 	var completed int
 	if err := tx.QueryRow(
 		`UPDATE thoughts SET `+strings.Join(sets, ", ")+` WHERE id = ?
-		 RETURNING content, tags, is_completed, due_date, priority, task_list_id, kanban_status, notes, subtasks`,
+		 RETURNING content, tags, is_completed, COALESCE(due_date, ''), priority, task_list_id, kanban_status, notes, subtasks`,
 		append(args, thought.ID)...,
 	).Scan(&thought.Content, &tagsStr, &completed, &thought.DueDate, &thought.Priority, &thought.TaskListID, &thought.KanbanStatus, &thought.Notes, &subtasksStr); err != nil {
 		return nil, nil, err // sql.ErrNoRows: deleted meanwhile

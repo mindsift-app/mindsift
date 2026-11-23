@@ -98,6 +98,7 @@ var migrations = []migration{
 	{71, "Folders that only existed through their notes are kept as folders", (*Store).migrateKeepNoteFolders},
 	{72, "Transcriptions done by the server in the background", (*Store).migrateTranscriptions},
 	{73, "Duplicate index on the task list of tasks removed", (*Store).migrateDropTaskListIndex},
+	{74, "Tasks without a due date, link or triage time hold '' instead of NULL", (*Store).migrateThoughtNulls},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
@@ -413,6 +414,19 @@ func (s *Store) migrateOpenTodoIndex() error {
 // creates it, so this step also removes it from new databases.
 func (s *Store) migrateDropTaskListIndex() error {
 	_, err := s.db.Exec(`DROP INDEX IF EXISTS idx_thoughts_task_list`)
+	return err
+}
+
+// migrateThoughtNulls is migration 74: due_date, converted_type, converted_ref_id and triaged_at of
+// thoughts are declared without NOT NULL (the baseline's CREATE TABLE; SQLite cannot add the constraint
+// without rebuilding the table with its triggers and search index). The app always writes an empty string
+// there, but a row from outside it (import, hand-made INSERT) may hold NULL, which scanThought did not
+// read: the task was missing from every list. The step turns those NULLs into empty strings; scanThought
+// reads NULL as empty too, for rows that arrive later.
+func (s *Store) migrateThoughtNulls() error {
+	_, err := s.db.Exec(`UPDATE thoughts SET due_date = COALESCE(due_date, ''), converted_type = COALESCE(converted_type, ''),
+		converted_ref_id = COALESCE(converted_ref_id, ''), triaged_at = COALESCE(triaged_at, '')
+		WHERE due_date IS NULL OR converted_type IS NULL OR converted_ref_id IS NULL OR triaged_at IS NULL`)
 	return err
 }
 
