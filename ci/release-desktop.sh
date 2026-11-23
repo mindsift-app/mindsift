@@ -18,14 +18,13 @@
 # Usage: ci/release-desktop.sh <version, e.g. v1.2.0> <dir>
 # Optional: ENGINE (default docker), COPY_MODE (default 1, see desktop/build.sh), FLATPAK_GPG_PRIVATE_KEY
 # (the signing key of the own Flatpak repository, see desktop/packaging/flatpak/bundle.sh). Needs GNU tar.
+# A release (no "-") needs the tag <version> in the checkout: its Flatpak is built from the tag's git
+# source, never from the working tree (REQUIRE_TAG=1 for desktop/packaging/flatpak/build.sh).
 set -euo pipefail
 
 VERSION="${1:?usage: ci/release-desktop.sh <version> <dir>}"
 OUT="${2:?usage: ci/release-desktop.sh <version> <dir>}"
-case "${VERSION}" in
-  v[0-9]*.[0-9]*.[0-9]*) ;;
-  *) echo "release-desktop: the version must look like v1.2.3, not '${VERSION}'" >&2; exit 1 ;;
-esac
+sh "$(dirname "$0")/version.sh" check "${VERSION}"
 export ENGINE="${ENGINE:-docker}" COPY_MODE="${COPY_MODE:-1}" APP_VERSION="${VERSION}"
 # A pre-release never goes into the repository, whose stable branch only carries releases: an install of
 # its bundle would be newer than the repository's commit, and flatpak update would fail with "Update is
@@ -37,6 +36,7 @@ case "${VERSION}" in
     fi
     unset FLATPAK_GPG_PRIVATE_KEY
     ;;
+  *) export REQUIRE_TAG=1 ;;
 esac
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 D="${ROOT}/desktop/out"

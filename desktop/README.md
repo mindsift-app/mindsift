@@ -250,7 +250,9 @@ normal server neither). Details in [Doku/architecture.md](../Doku/architecture.m
 
 It is a module of its own (`desktop/go.mod`, replacing the main module with `../`), so Wails stays out of
 the server's dependencies. `desktop/internal/shell` needs no window and is tested without GTK:
-`go test ./internal/...` in `desktop/`.
+`go test ./internal/...` in `desktop/`. `ci/desktop-go-checks.sh` (part of `ci/local-checks.sh` and the
+pull request checks) runs gofmt, `go vet` and `go test` over the whole module without cgo, with Wails'
+`purego` build tag in place of cgo; only the three cgo files (GTK and WebKit calls) are left to the builds.
 
 ## Build
 
@@ -291,13 +293,15 @@ UI.
 desktop/packaging/flatpak/build.sh     # -> desktop/out/mindsift-desktop-linux-amd64.flatpak
 flatpak install --user desktop/out/mindsift-desktop-linux-amd64.flatpak && flatpak run app.mindsift.MindSift
 APP_VERSION=v1.2.0 desktop/packaging/flatpak/build.sh   # the tag v1.2.0, as the release builds it
+                                                        # (REQUIRE_TAG=1: fail without the tag)
 desktop/packaging/flatpak/update-sources.sh             # after changing go.mod, go.sum or package-lock.json
 ```
 
 - **Files** in `packaging/flatpak/`: the manifest `app.mindsift.MindSift.yml` (each permission explained
   there), the AppStream metainfo, the generated sources `go.mod.yml`, `modules.txt` and
   `node-sources.json` with `sources.sha256`, and the scripts `build.sh`, `bundle.sh` (makes the bundle,
-  see below), `update-sources.sh`, `check-sources.sh` (with `test-check-sources.sh`) and `set-release.sh`.
+  see below), `update-sources.sh`, `check-sources.sh` (with `test-check-sources.sh`), `sources-sha256.sh`
+  and `set-release.sh`.
   The desktop file and the icons are those of `packaging/linux/`.
 - **Runtime:** `org.gnome.Platform//51` (GTK 4, WebKitGTK 6.0). The binary is built inside
   `org.gnome.Sdk//51` with `org.freedesktop.Sdk.Extension.golang//26.08` and the frontend with
@@ -332,13 +336,16 @@ desktop/packaging/flatpak/update-sources.sh             # after changing go.mod,
   in the Go image, on a copy of the Go sources) and `node-sources.json` (flatpak-node-generator, pinned to a
   commit of flatpak-builder-tools, in a Python image, its PyPI packages as of a fixed date: 14-day rule) and
   writes `sources.sha256` with the checksums of `desktop/go.mod`, `desktop/go.sum` and
-  `frontend/package-lock.json`. Run it after every change of those files and commit the result.
+  `frontend/package-lock.json` (`sources-sha256.sh`; the lockfile without MindSift's own version, so a
+  release that only raises the version needs no new sources). Run it after every other change of those
+  files and commit the result.
   `check-sources.sh` (in `ci/local-checks.sh` and at the start of `ci/release-desktop.sh`) fails with the
   name of the script when the checksums differ, and when the manifest's tag is not `v<package.json>` or
   the metainfo has no entry for that version. A package that the desktop app newly imports from
   MindSift's own module changes `modules.txt` without changing `go.mod`: run the script then, too.
 - **Release:** a build from the git source takes manifest and metainfo as they are in the tag, so the
-  release commit already names the release: `set-release.sh vX.Y.Z '<one sentence>'` (release step 1 in AGENTS.md) moves
+  release commit already names the release: `set-release.sh vX.Y.Z '<one sentence>'` (run by
+  `ci/release-prepare.sh vX.Y.Z '<one sentence>'`, which writes the release commit's changes) moves
   the manifest's tag and drops its commit (unknown before tagging; `build.sh` pins it), adds the
   `<release>` entry (the sentence as its description, the date of the CHANGELOG section, `development`
   for pre-releases) and points the

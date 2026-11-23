@@ -7,6 +7,8 @@
 #   node-sources.json         from frontend/package-lock.json (flatpak-node-generator: every package as a
 #                             file of the npm cache in flatpak-node/, for `npm ci --offline`)
 #   sources.sha256            the checksums of those three inputs, which check-sources.sh compares
+#                             (sources-sha256.sh; the lockfile without MindSift's own version, which a
+#                             release changes without changing the npm packages)
 # Run it after every change of desktop/go.mod, desktop/go.sum or frontend/package-lock.json and commit the
 # result; check-sources.sh (in ci/local-checks.sh and the release build) fails until then.
 #   desktop/packaging/flatpak/update-sources.sh
@@ -20,8 +22,8 @@ cd "$(dirname "$0")/../../.."
 ROOT="$PWD"
 OUT=desktop/packaging/flatpak
 ENGINE="${ENGINE:-podman}"
-GO_IMAGE=docker.io/library/golang:1.27.4-alpine
-PYTHON_IMAGE=docker.io/library/python:3.14.9-alpine3.24
+# GO_IMAGE and PYTHON_IMAGE
+. ci/images.env
 FLATPAK_GO_MOD=github.com/dennwc/flatpak-go-mod@v0.1.0
 NODE_GENERATOR="https://github.com/flatpak/flatpak-builder-tools/archive/9d86d336a39b9af38b86f114b6ce5820fe260f91.tar.gz#subdirectory=node"
 PYPI_BEFORE=2026-11-09T00:00:00Z
@@ -51,5 +53,5 @@ $ENGINE run --rm -v "$ROOT/frontend/package-lock.json":/in/package-lock.json:ro,
   flatpak-node-generator npm /in/package-lock.json -o /out/node-sources.json"
 
 cp "$WORK/go.mod.yml" "$WORK/modules.txt" "$WORK/node-sources.json" "$OUT/"
-sha256sum desktop/go.mod desktop/go.sum frontend/package-lock.json > "$OUT/sources.sha256"
+sh "$OUT/sources-sha256.sh" > "$OUT/sources.sha256"
 ls -l "$OUT/go.mod.yml" "$OUT/modules.txt" "$OUT/node-sources.json" "$OUT/sources.sha256"
