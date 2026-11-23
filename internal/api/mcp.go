@@ -205,7 +205,7 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 		}
 		tool, ok := mcpToolByName(p.Name)
 		if !ok {
-			writeRPC(w, req.ID, nil, &jsonrpcError{rpcInvalidParams, "Unbekanntes Tool: " + p.Name})
+			writeRPC(w, req.ID, nil, &jsonrpcError{rpcInvalidParams, i18n.T("en", "Unbekanntes Tool: {name}", "name", p.Name)})
 			return
 		}
 		if !mcpToolAllowed(scopes, isKey, tool) {
@@ -232,7 +232,7 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 		}
 		writeRPC(w, req.ID, toolResult(result), nil)
 	default:
-		writeRPC(w, req.ID, nil, &jsonrpcError{rpcMethodNotFound, "Methode nicht unterstützt: " + req.Method})
+		writeRPC(w, req.ID, nil, &jsonrpcError{rpcMethodNotFound, i18n.T("en", "Methode nicht unterstützt: {method}", "method", req.Method)})
 	}
 }
 

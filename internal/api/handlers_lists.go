@@ -279,8 +279,10 @@ func (s *Server) setListItemDoneAt(userID, listID, itemID string, done bool, at 
 	if err := s.store.EnsureListItemsWritable(userID, listID, itemID); err != nil {
 		return nil, err
 	}
+	// The name is stored with the item for everyone who sees the list (in nobody's language); without
+	// one the app shows none
 	user, _ := s.store.GetUserByID(userID)
-	userName := "Mitglied"
+	userName := ""
 	if user != nil {
 		userName = user.DisplayName
 	}
