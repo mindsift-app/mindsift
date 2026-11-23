@@ -45,12 +45,17 @@ describe('serverDictation (hold the + with the own Whisper server)', () => {
     jobs.startInboxTranscription.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ id: 'trs_2' });
     jobs.waitForTranscription.mockRejectedValueOnce(new Error('Spracherkennung fehlgeschlagen'));
     const source = serverDictation(recording());
+    const uploaded = vi.fn();
+    void source.uploaded!.then(uploaded);
 
     const offline = await source.text().catch((e: Error) => e);
     expect(offline).not.toBeInstanceOf(HandedOverError);
     expect((offline as Error).message).toBe('offline');
+    // Not on the server yet: leaving the page would lose it (dictationQueue.ts)
+    expect(uploaded).not.toHaveBeenCalled();
 
     const failed = await source.text().catch((e: Error) => e);
+    expect(uploaded).toHaveBeenCalled();
     expect(jobs.startInboxTranscription).toHaveBeenCalledTimes(2);
     expect(failed).toBeInstanceOf(HandedOverError);
     expect((failed as Error).message).toBe('Spracherkennung fehlgeschlagen – die Aufnahme wartet im Quick Dump.');

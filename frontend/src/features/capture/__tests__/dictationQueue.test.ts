@@ -6,6 +6,10 @@ import { flush } from '../../../test/fixtures';
 const holdReload = vi.hoisted(() => vi.fn());
 vi.mock('../../../lib/reloadHold', () => ({ holdReload }));
 const holds = (holder: object) => holdReload.mock.calls.filter((c) => c[0] === holder).pop()?.[1] ?? false;
+// ... and whether the browser asks before the page is closed
+const holdUnload = vi.hoisted(() => vi.fn());
+vi.mock('../../../lib/leaveGuard', () => ({ holdUnload }));
+const asksOnLeave = (holder: object) => holdUnload.mock.calls.filter((c) => c[0] === holder).pop()?.[1] ?? false;
 
 // A transcription the test answers by hand
 function deferred() {
@@ -125,6 +129,30 @@ describe('DictationQueue', () => {
     second.resolve('Milch kaufen');
     await flush();
     expect(holds(queue)).toBe(false);
+  });
+
+  it('asks before the page closes only for recordings not yet on the server', async () => {
+    const { queue } = setup();
+    const onServer = deferred();
+    let uploaded!: () => void;
+    queue.add({ text: () => onServer.promise, uploaded: new Promise<void>((res) => (uploaded = res)) });
+    // Still uploading: closing the page would lose it
+    expect(asksOnLeave(queue)).toBe(true);
+    uploaded();
+    await flush();
+    // On the server, which finishes it by itself: no question, though it is still being transcribed
+    expect(queue.items()).toEqual([{ id: 1, state: 'transcribing' }]);
+    expect(asksOnLeave(queue)).toBe(false);
+    // A recording only in the page (the browser's own recognition) asks again, failed ones too
+    const local = deferred();
+    queue.add({ text: () => local.promise });
+    expect(asksOnLeave(queue)).toBe(true);
+    local.reject(new Error('Zeitüberschreitung'));
+    await flush();
+    expect(asksOnLeave(queue)).toBe(true);
+    onServer.resolve('Milch kaufen');
+    await flush();
+    expect(asksOnLeave(queue)).toBe(true);
   });
 
   it('offers no way to throw a failed item away', () => {

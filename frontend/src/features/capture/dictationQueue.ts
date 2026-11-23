@@ -24,6 +24,11 @@ export interface DictationSource<R = unknown> {
   retry?: () => Promise<string>;
   /** Saves the text instead of the queue's save (the server saved it already, serverDictation.ts). */
   save?: (text: string) => Promise<R> | R;
+  /**
+   * Resolves once the recording is safe on the server, which finishes it without this page
+   * (serverDictation.ts): from then on closing the page loses nothing, and the browser does not ask.
+   */
+  uploaded?: Promise<unknown>;
 }
 
 interface Entry<R> {
@@ -34,6 +39,8 @@ interface Entry<R> {
   pending: Promise<string> | null;
   // Set once recognised, so a failed save is tried again without transcribing again
   text: string | null;
+  // The recording is on the server (DictationSource.uploaded)
+  safe: boolean;
 }
 
 export interface DictationQueueOptions<R> {
@@ -70,11 +77,18 @@ export class DictationQueue<R = unknown> {
 
   /** Hands in a recording; its transcription starts at once. */
   add(source: DictationSource<R>): number {
-    const entry: Entry<R> = { id: this.nextId++, state: 'transcribing', source, pending: null, text: null };
+    const entry: Entry<R> = { id: this.nextId++, state: 'transcribing', source, pending: null, text: null, safe: false };
     entry.pending = this.request(source.text);
     this.entries.push(entry);
     this.changed();
     this.enqueue(entry);
+    source.uploaded?.then(
+      () => {
+        entry.safe = true;
+        this.holdLeaving();
+      },
+      () => {}
+    );
     return entry.id;
   }
 
@@ -160,8 +174,13 @@ export class DictationQueue<R = unknown> {
     // Dictations still being transcribed or saved: the app does not reload for a new version meanwhile.
     // Failed ones wait for "Erneut versuchen" and do not hold it (a reload loses them).
     holdReload(this, this.entries.some((e) => e.state !== 'failed'));
-    // Reloading or closing the page by hand loses all of them, failed ones too: the browser asks first
-    holdUnload(this, this.entries.length > 0);
+    this.holdLeaving();
     this.options.onChange(this.items());
+  }
+
+  // Reloading or closing the page by hand loses every recording that is only here, failed ones too: the
+  // browser asks first. One already on the server is finished there, it does not ask for that one.
+  private holdLeaving(): void {
+    holdUnload(this, this.entries.some((e) => !e.safe));
   }
 }
