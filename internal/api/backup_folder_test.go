@@ -18,6 +18,7 @@ import (
 // folder named after an account id with its account.json), never other folders, also old ones, in a
 // folder the person chose. A chosen folder only gets MindSift's subfolder; nothing is swept beside it.
 func TestDeletedBackupSweepLeavesForeignFolders(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
 	router := srv.Router()

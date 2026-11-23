@@ -274,6 +274,7 @@ func TestPasskeysNotInDemo(t *testing.T) {
 }
 
 func TestPasskeyRegistrationAndPasswordlessLogin(t *testing.T) {
+	t.Parallel()
 	e := newPasskeyEnv(t)
 	token := e.session()
 	a := newTestAuthenticator(t)
@@ -369,6 +370,7 @@ func TestPasskeyRegistrationAndPasswordlessLogin(t *testing.T) {
 }
 
 func TestPasskeyAsSecondFactor(t *testing.T) {
+	t.Parallel()
 	e := newPasskeyEnv(t)
 	a := newTestAuthenticator(t)
 	if code, res := e.addPasskey(e.session(), a, nil); code != http.StatusCreated {
@@ -414,6 +416,7 @@ func TestPasskeyAsSecondFactor(t *testing.T) {
 }
 
 func TestPasskeyWrongOriginOrRelyingParty(t *testing.T) {
+	t.Parallel()
 	e := newPasskeyEnv(t)
 	token := e.session()
 	// Registration from another site is refused
@@ -460,6 +463,7 @@ func TestPasskeyWrongOriginOrRelyingParty(t *testing.T) {
 }
 
 func TestPasswordlessChallengeWorksOnce(t *testing.T) {
+	t.Parallel()
 	e := newPasskeyEnv(t)
 	a := newTestAuthenticator(t)
 	if code, res := e.addPasskey(e.session(), a, nil); code != http.StatusCreated {
@@ -505,6 +509,7 @@ func (e *mfaEnv) session2(a *testAuthenticator) string {
 }
 
 func TestPasswordlessChecksTheAccount(t *testing.T) {
+	t.Parallel()
 	e := newPasskeyEnv(t)
 	a := newTestAuthenticator(t)
 	if code, res := e.addPasskey(e.session(), a, nil); code != http.StatusCreated {
@@ -552,6 +557,7 @@ func TestPasswordlessChecksTheAccount(t *testing.T) {
 }
 
 func TestPasskeySignCounter(t *testing.T) {
+	t.Parallel()
 	e := newPasskeyEnv(t)
 	a := newTestAuthenticator(t)
 	if code, res := e.addPasskey(e.session(), a, nil); code != http.StatusCreated {
@@ -582,6 +588,7 @@ func TestPasskeySignCounter(t *testing.T) {
 }
 
 func TestRemovingTheLastSecondFactor(t *testing.T) {
+	t.Parallel()
 	e := newPasskeyEnv(t)
 	token := e.session()
 	a := newTestAuthenticator(t)
@@ -634,6 +641,7 @@ func (e *mfaEnv) passkeyTrust(a *testAuthenticator) (string, string) {
 // With the app and a passkey, each can go without switching two-factor sign-in off; the recovery codes
 // stay those of the first method.
 func TestAppAndPasskeyTogether(t *testing.T) {
+	t.Parallel()
 	e := newPasskeyEnv(t)
 	token := e.session()
 	key, codes := e.enable(token)
@@ -710,6 +718,7 @@ func TestAppAndPasskeyTogether(t *testing.T) {
 // Passkeys switched off later (BASE_URL changed): an account with only passkeys signs in with a
 // recovery code, two-factor sign-in stays on.
 func TestPasskeysOffLaterKeepsTheSecondFactor(t *testing.T) {
+	t.Parallel()
 	e := newPasskeyEnv(t)
 	a := newTestAuthenticator(t)
 	_, res := e.addPasskey(e.session(), a, nil)

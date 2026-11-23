@@ -26,20 +26,8 @@ var testSecretsKey = []byte("test-secrets-key-32-bytes-long!!")
 func setupTestServer(t *testing.T) (*Server, *storage.Store, string) {
 	t.Helper()
 	dbPath := filepath.Join(t.TempDir(), "test_mindsift.db")
-	store, err := storage.NewStore(dbPath, storage.WithSecretsKey(testSecretsKey))
-	openSharing(t, store)
-	if err != nil {
-		t.Fatalf("failed to create test store: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = store.Close()
-	})
-
-	user, err := store.EnsureDefaultUser()
-	if err != nil {
-		t.Fatalf("failed to ensure test user: %v", err)
-	}
-	_ = store.SeedStarterContent(user)
+	// Sharing open, the default user and the sample data (testmain_test.go)
+	store, user := newSeededStore(t, dbPath)
 
 	cfg := &config.Config{
 		Port:              "8080",
@@ -61,6 +49,7 @@ func setupTestServer(t *testing.T) (*Server, *storage.Store, string) {
 }
 
 func TestFirstBootSetupAndInviteRegistrationAndNonNullSlices(t *testing.T) {
+	t.Parallel()
 	dbPath := filepath.Join(t.TempDir(), "fresh_mindsift.db")
 	store, err := storage.NewStore(dbPath)
 	openSharing(t, store)
@@ -194,6 +183,7 @@ func TestFirstBootSetupAndInviteRegistrationAndNonNullSlices(t *testing.T) {
 }
 
 func TestConcurrentInitialLoadAndListsNoDeadlock(t *testing.T) {
+	t.Parallel()
 	srv, _, token := setupTestServer(t)
 	router := srv.Router()
 
@@ -225,6 +215,7 @@ func TestConcurrentInitialLoadAndListsNoDeadlock(t *testing.T) {
 }
 
 func TestQuickDumpToTriageAndDirectTargets(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 
@@ -333,6 +324,7 @@ func TestQuickDumpToTriageAndDirectTargets(t *testing.T) {
 }
 
 func TestNewFullFeatures(t *testing.T) {
+	t.Parallel()
 	srv, _, token := setupTestServer(t)
 	router := srv.Router()
 
@@ -533,6 +525,7 @@ func TestLoginWithUsernameAndDemoMode(t *testing.T) {
 }
 
 func TestSpaceMembersDirectInvitationAPI(t *testing.T) {
+	t.Parallel()
 	dbPath := filepath.Join(t.TempDir(), "space_members_test.db")
 	store, err := storage.NewStore(dbPath)
 	openSharing(t, store)
@@ -676,6 +669,7 @@ func TestSpaceMembersDirectInvitationAPI(t *testing.T) {
 }
 
 func TestWorkspaceTagsAPI(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 
@@ -779,6 +773,7 @@ func TestWorkspaceTagsAPI(t *testing.T) {
 }
 
 func TestWebhookTriageBadgeAndIngestion(t *testing.T) {
+	t.Parallel()
 	dbPath := filepath.Join(t.TempDir(), "test_webhook.db")
 	store, err := storage.NewStore(dbPath)
 	openSharing(t, store)
@@ -940,6 +935,7 @@ func TestSSEGlobalEndpoint(t *testing.T) {
 }
 
 func TestDecoupledFolderSharingAPI(t *testing.T) {
+	t.Parallel()
 	srv, store, tokenA := setupTestServer(t)
 	router := srv.Router()
 
@@ -1115,6 +1111,7 @@ func TestDecoupledFolderSharingAPI(t *testing.T) {
 }
 
 func TestTokenBlacklistingAndTokenVersionRevocation(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 
@@ -1261,6 +1258,7 @@ func TestTokenBlacklistingAndTokenVersionRevocation(t *testing.T) {
 }
 
 func TestDocumentSharingStrictlyReadOnly(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 
@@ -1366,6 +1364,7 @@ func openSharing(t *testing.T, store *storage.Store) {
 // (no task lists, lists or inbox thoughts), and creates no other users (shared demo accounts exist only
 // in demo mode).
 func TestFirstBootSetupWithHelpNotes(t *testing.T) {
+	t.Parallel()
 	dbPath := filepath.Join(t.TempDir(), "sample.db")
 	store, err := storage.NewStore(dbPath)
 	if err != nil {
@@ -1420,6 +1419,7 @@ func TestFirstBootSetupWithHelpNotes(t *testing.T) {
 
 // Impressum and Datenschutz must be reachable without login; unset texts stay hidden.
 func TestLegalTextsArePublic(t *testing.T) {
+	t.Parallel()
 	// In memory: no files the cleanup could race with
 	dbPath := ":memory:"
 	store, err := storage.NewStore(dbPath)
@@ -1470,6 +1470,7 @@ func TestLegalTextsArePublic(t *testing.T) {
 // API keys only deliver data, and only what their scopes allow (FLAW-07). Revoked sessions are refused
 // everywhere, the webhook ingest included.
 func TestAPIKeysOnlyDeliverData(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -1540,6 +1541,7 @@ func TestAPIKeysOnlyDeliverData(t *testing.T) {
 }
 
 func TestPasswordResetFlow(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	post := func(path, body string) (int, string) {
@@ -1576,6 +1578,7 @@ func TestPasswordResetFlow(t *testing.T) {
 }
 
 func TestShareTargetFallbackRedirects(t *testing.T) {
+	t.Parallel()
 	store, err := storage.NewStore(":memory:")
 	if err != nil {
 		t.Fatalf("NewStore: %v", err)
@@ -1607,6 +1610,7 @@ func testSession(t *testing.T, store *storage.Store, userID string) string {
 
 // List entries move between lists only if the user may edit both
 func TestMoveListItemBetweenLists(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

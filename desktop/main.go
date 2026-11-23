@@ -13,7 +13,6 @@ import (
 	"embed"
 	"encoding/json"
 	"io/fs"
-	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -44,8 +43,13 @@ var appIcon []byte
 var version = ""
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: config.LogLevelFromEnv(), ReplaceAttr: i18n.LogInEnglish}))
-	slog.SetDefault(logger)
+	// The same logger as the server's (cmd/server): LOG_LEVEL / DEBUG and LOG_FORMAT=json
+	logOpts := &slog.HandlerOptions{Level: config.LogLevelFromEnv(), ReplaceAttr: i18n.LogInEnglish}
+	var handler slog.Handler = slog.NewTextHandler(os.Stdout, logOpts)
+	if config.LogJSONFromEnv() {
+		handler = slog.NewJSONHandler(os.Stdout, logOpts)
+	}
+	slog.SetDefault(slog.New(handler))
 
 	base := appDataDir()
 	settings, err := shell.LoadSettings(base)
@@ -54,7 +58,8 @@ func main() {
 	}
 	staticFS, err := fs.Sub(embeddedDist, "dist")
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("The app's embedded pages are missing", "error", err)
+		os.Exit(1)
 	}
 	login, name := shell.SystemUser()
 	// ShownPath: a folder of the Flatpak document portal shown as the host's (the backup folder)
@@ -253,7 +258,8 @@ func main() {
 	err = app.Run()
 	local.Close()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("The window ended with an error", "error", err)
+		os.Exit(1)
 	}
 }
 

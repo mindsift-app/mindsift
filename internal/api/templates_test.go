@@ -12,6 +12,7 @@ import (
 // PUT /documents/{id} with isTemplate marks the note as the caller's template; a reader may do it for
 // themselves, someone without access gets 404, and the mark is in the note and the note list.
 func TestDocumentTemplateFlag(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

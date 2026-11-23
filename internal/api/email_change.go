@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -64,8 +63,7 @@ func (s *Server) handleConfirmEmailChange(w http.ResponseWriter, r *http.Request
 	var req struct {
 		Token string `json:"token"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, storage.ErrEmailChangeInvalid.Error())
+	if !decodeJSONLimit(w, r, 4096, &req) {
 		return
 	}
 	before, kind, err := s.store.ConfirmEmailChange(req.Token)

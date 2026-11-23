@@ -17,6 +17,7 @@ import (
 )
 
 func TestReleaseVersions(t *testing.T) {
+	t.Parallel()
 	for _, v := range []string{"v1.2.3", "1.2.3", "v0.80.0", " v10.0.1 "} {
 		if _, ok := parseReleaseVersion(v); !ok {
 			t.Errorf("%q is a release", v)
@@ -279,6 +280,7 @@ func TestUpdateCheckSwitch(t *testing.T) {
 }
 
 func TestAdminUpdateEndpoint(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	get := func(tok string) (int, updateStatus) {

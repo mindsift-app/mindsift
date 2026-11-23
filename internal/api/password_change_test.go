@@ -39,6 +39,7 @@ func (e *mfaEnv) adminReset(admin, password string, mustChange, revokeKeys bool)
 // A reset that asks for it: after signing in with the new password the session reaches nothing but the
 // change (API keys keep working); the new password lifts it, and only for this account
 func TestAdminResetMustChangePassword(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	admin := e.adminToken()
 	key, err := e.store.CreateAPIKey(e.user.ID, "Skript", []string{storage.ScopeTasksRead})
@@ -101,6 +102,7 @@ func TestAdminResetMustChangePassword(t *testing.T) {
 
 // Without the switch nothing is asked for; a later reset without it drops an earlier request
 func TestAdminResetWithoutMustChange(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	admin := e.adminToken()
 	e.adminReset(admin, "vom-admin-1234", true, false)
@@ -123,6 +125,7 @@ func TestAdminResetWithoutMustChange(t *testing.T) {
 
 // Revoking with the reset removes the API keys and OAuth grants (MCP) of the account, not those of others
 func TestAdminResetRevokesKeys(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	admin := e.adminToken()
 	key, _ := e.store.CreateAPIKey(e.user.ID, "Skript", []string{storage.ScopeTasksRead})
@@ -161,6 +164,7 @@ func TestAdminResetRevokesKeys(t *testing.T) {
 // The calendar subscription reads the tasks without a sign-in, like a key: a reset that revokes keys
 // switches it off (its address answers 404), a plain reset keeps it
 func TestAdminResetRevokesCalendarFeed(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	admin := e.adminToken()
 	feedStatus := func(token string) int {
@@ -211,6 +215,7 @@ func TestAdminResetRevokesCalendarFeed(t *testing.T) {
 // Both required: the new password first, then the second factor; changing the password is reachable
 // while the second factor is missing
 func TestMustChangePasswordBeforeRequiredMFA(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	admin := e.adminToken()
 	e.adminReset(admin, "vom-admin-1234", true, false)

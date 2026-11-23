@@ -734,8 +734,23 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	_ = json.NewEncoder(w).Encode(data)
 }
 
-// writeError answers with the message in the language of the request (languageMiddleware); the code
-// lets the app react to one specific error regardless of the language
+// decodeJSON reads the request body as JSON into v. A body that is not JSON, does not fit v or is larger
+// than the endpoint's limit (bodyLimit) is answered with 400 and false. Bodies that may be left out are
+// read with "_ = json.NewDecoder(r.Body).Decode(&req)" instead.
+func decodeJSON(w http.ResponseWriter, r *http.Request, v any) bool {
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+		return false
+	}
+	return true
+}
+
+// decodeJSONLimit is decodeJSON with a tighter limit than bodyLimit's (small requests, some without a session).
+func decodeJSONLimit(w http.ResponseWriter, r *http.Request, limit int64, v any) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, limit)
+	return decodeJSON(w, r, v)
+}
+
 // staticTexts: the German texts of index.html (description, link preview) and manifest.json (app
 // description, shortcuts), served in the browser's language
 var staticTexts = []string{
@@ -775,6 +790,7 @@ func localizeStatic(data []byte, lang string) []byte {
 	return []byte(out)
 }
 
+// writeError answers with the message in the language of the request (languageMiddleware)
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": tr(w, message)})
 }
@@ -801,6 +817,8 @@ func writeEmailError(w http.ResponseWriter, err error) {
 	writeErrorFrom(w, http.StatusBadRequest, err)
 }
 
+// writeErrorCode is writeError with a code that lets the app react to one specific error regardless of
+// the language
 func writeErrorCode(w http.ResponseWriter, status int, code, message string) {
 	writeJSON(w, status, map[string]string{"error": tr(w, message), "code": code})
 }

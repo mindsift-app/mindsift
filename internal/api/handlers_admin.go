@@ -34,8 +34,7 @@ func (s *Server) handleAdminCreateOrganization(w http.ResponseWriter, r *http.Re
 	var req struct {
 		Name string `json:"name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	org, err := s.store.CreateOrganization(req.Name)
@@ -51,8 +50,7 @@ func (s *Server) handleAdminRenameOrganization(w http.ResponseWriter, r *http.Re
 	var req struct {
 		Name string `json:"name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	orgID := chi.URLParam(r, "id")
@@ -84,8 +82,7 @@ func (s *Server) handleAdminAddOrganizationMember(w http.ResponseWriter, r *http
 	var req struct {
 		UserID string `json:"userId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	orgID := chi.URLParam(r, "id")
@@ -190,8 +187,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 		Role            string   `json:"role"`
 		OrganizationIDs []string `json:"organizationIds"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	req.Email = domain.NormalizeEmail(req.Email)
@@ -236,7 +232,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 	if names := s.organizationNames(u.OrganizationIDs); len(names) > 0 {
 		created["organizations"] = names
 	}
-	s.audit(r, storage.AuditAccountCreated, auditUserTarget(u), created)
+	s.audit(r, storage.AuditAccountCreated, storage.AuditUserTarget(u), created)
 	writeJSON(w, http.StatusCreated, staffUser{User: *u})
 }
 
@@ -264,8 +260,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		IsActive          *bool   `json:"isActive"`
 		DiscordWebhookURL *string `json:"discordWebhookUrl"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	// Roles, e-mail and username stay with server admins: a new address plus "forgot password" would hand
@@ -332,8 +327,7 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		MustChange bool   `json:"mustChange"`
 		RevokeKeys bool   `json:"revokeKeys"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Neues Passwort erforderlich")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
@@ -364,7 +358,7 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 	if req.RevokeKeys {
 		keys, grants, feed, err := s.store.RevokeAPIAccess(targetUserID)
 		if err != nil {
-			s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), details)
+			s.audit(r, storage.AuditAccountPasswordReset, storage.AuditUserTarget(target), details)
 			writeInternal(w, err)
 			return
 		}
@@ -375,9 +369,9 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		}
 	}
 	if len(details) == 0 {
-		s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), nil)
+		s.audit(r, storage.AuditAccountPasswordReset, storage.AuditUserTarget(target), nil)
 	} else {
-		s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), details)
+		s.audit(r, storage.AuditAccountPasswordReset, storage.AuditUserTarget(target), details)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -407,7 +401,7 @@ func (s *Server) handleAdminResetMFA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Warn("Two-factor sign-in reset by an administrator", "user_id", target.ID, "by", callerID)
-	s.audit(r, storage.AuditAccountMFAReset, auditUserTarget(target), nil)
+	s.audit(r, storage.AuditAccountMFAReset, storage.AuditUserTarget(target), nil)
 	s.notifySecurityChange(target, securityChangeReset)
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
@@ -437,7 +431,7 @@ func (s *Server) handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 		if pending {
 			details = map[string]bool{"pendingRegistration": true}
 		}
-		s.audit(r, storage.AuditAccountDeleted, auditUserTarget(targetUser), details)
+		s.audit(r, storage.AuditAccountDeleted, storage.AuditUserTarget(targetUser), details)
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
@@ -479,8 +473,7 @@ func (s *Server) handleAdminCreateInvite(w http.ResponseWriter, r *http.Request)
 		ValidDays       int      `json:"validDays"`
 		MaxUses         int      `json:"maxUses"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	inv, err := s.store.CreateUserInvite(callerID, req.Email, req.OrganizationIDs, req.ValidDays, req.MaxUses)
@@ -645,8 +638,7 @@ var timeZoneLogged atomic.Bool
 
 func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	var settings domain.SystemSettings
-	if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &settings) {
 		return
 	}
 	// Empty means unchanged (the browser never has it); without SMTP user the password goes too. One that

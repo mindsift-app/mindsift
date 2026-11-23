@@ -10,6 +10,7 @@ import (
 )
 
 func TestInviteCodeRedeemedOnlyOnce(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	inv, err := store.CreateUserInvite("", "", nil, 7, 1)
@@ -44,6 +45,7 @@ func TestInviteCodeRedeemedOnlyOnce(t *testing.T) {
 }
 
 func TestInviteReleasedWhenAccountFails(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	inv, _ := store.CreateUserInvite("", "", nil, 7, 1)
@@ -60,6 +62,7 @@ func TestInviteReleasedWhenAccountFails(t *testing.T) {
 }
 
 func TestRegisterThrottledPerAddress(t *testing.T) {
+	t.Parallel()
 	srv, _, _ := setupTestServer(t)
 	router := srv.Router()
 	for i := 0; i < limitRegisterPerIP; i++ {
@@ -75,6 +78,7 @@ func TestRegisterThrottledPerAddress(t *testing.T) {
 }
 
 func TestThrottleWindowAndSwitch(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	g := newLoginGuard(true)
 	g.now = func() time.Time { return now }

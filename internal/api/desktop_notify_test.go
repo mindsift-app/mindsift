@@ -72,6 +72,7 @@ func newDueTask(t *testing.T, store *storage.Store, userID, title, due string) *
 // through the system's notifications, and a task alarm reaches the notifier once, with the task to open,
 // a failed one again in the next run.
 func TestDesktopNotificationsForAlarms(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
 	router := srv.Router()
@@ -137,6 +138,7 @@ func TestDesktopNotificationsForAlarms(t *testing.T) {
 
 // The test button and the daily summary go through the notifier too.
 func TestDesktopNotificationTestAndSummary(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopWindows, nil)
 	router := srv.Router()
@@ -175,6 +177,7 @@ func TestDesktopNotificationTestAndSummary(t *testing.T) {
 
 // Settings saved once stay as they are at the next start; a normal server takes no notifier.
 func TestDesktopNotificationDefaultsKeepSavedSettings(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
 	_, me := desktopSignIn(t, srv.Router())

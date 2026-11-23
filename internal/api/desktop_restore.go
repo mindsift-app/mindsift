@@ -453,6 +453,16 @@ func (s *Server) handleSnapshotTakeOver(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 	slog.Info("Account of a database snapshot taken over", "user_id", userID, "notes", sum.Notes, "tasks", sum.Tasks, "lists", sum.Lists, "settings", settings)
+	from := account.Username
+	if from == "" {
+		from = account.DisplayName
+	}
+	mode := "merge"
+	if replace != nil {
+		mode = "restore"
+	}
+	s.audit(r, storage.AuditBackupTakenOver, storage.AuditEntry{TargetKind: storage.AuditTargetBackup},
+		map[string]any{"account": from, "mode": mode, "settings": settings, "notes": sum.Notes, "tasks": sum.Tasks, "lists": sum.Lists})
 	finished = true // the snapshot goes once released (deferred above), after the store on it is closed
 	writeJSON(w, http.StatusOK, snapshotSummary{trSummary(w, sum), *account, settings, settingsSkipped, mediaFound, mediaMissing})
 }

@@ -39,6 +39,7 @@ func sessionLogin(t *testing.T, router http.Handler, login, pw, ua string) strin
 }
 
 func TestSessionsListEndAndLogout(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	_, _ = store.CreateUser("sess@example.com", mustHash(t, "richtig123"), "Sess", "member")
@@ -88,6 +89,7 @@ func TestSessionsListEndAndLogout(t *testing.T) {
 }
 
 func TestSessionTokenRenewedWhenOld(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	if rec := sessionCall(router, "GET", "/api/v1/auth/me", token, "", ""); rec.Header().Get("X-Session-Token") != "" {
@@ -112,6 +114,7 @@ func TestSessionTokenRenewedWhenOld(t *testing.T) {
 }
 
 func TestPasswordChangeNeedsCurrentPassword(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	_, _ = store.CreateUser("pw@example.com", mustHash(t, "richtig123"), "Pw", "member")

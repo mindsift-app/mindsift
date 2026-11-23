@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
+
+	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
 // The audit log of the administration: who changed accounts, roles and server settings, and when. One
@@ -72,6 +74,7 @@ const (
 	AuditBackupDownloaded          = "backup.downloaded"
 	AuditBackupRestored            = "backup.restored"       // the whole instance from a full backup (in the restored log)
 	AuditBackupRestoreFailed       = "backup.restore_failed" // the restored data did not open; the previous data stayed
+	AuditBackupTakenOver           = "backup.taken_over"     // the desktop app took an account of a server backup over (details.account)
 	AuditSpeechModelDownload       = "speech_model.download" // the admin asked the Whisper server for a model
 	AuditSpeechModelDeleted        = "speech_model.deleted"
 )
@@ -137,6 +140,22 @@ func (s *Store) migrateAuditLog() error {
 			ORDER BY id`),
 		stmt(`DROP TABLE IF EXISTS cli_events`),
 	)
+}
+
+// AuditUserTarget: an account as the target of a row (the server's and the command line's).
+func AuditUserTarget(u *domain.User) AuditEntry {
+	if u == nil {
+		return AuditEntry{TargetKind: AuditTargetUser}
+	}
+	return AuditEntry{TargetKind: AuditTargetUser, TargetID: u.ID, TargetName: AuditName(u)}
+}
+
+// AuditName: how a row names an account, the username, else the display name (accounts from before usernames).
+func AuditName(u *domain.User) string {
+	if u.Username != "" {
+		return u.Username
+	}
+	return u.DisplayName
 }
 
 // RecordAudit adds a row; At is set to now when empty. details is marshalled to JSON (nil: none).

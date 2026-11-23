@@ -13,6 +13,7 @@ import (
 // Sign-ups on the login page go to the audit log: without invite as account.registered with what the
 // account waits for, with an invite as invite.redeemed (who, which invite, never its code)
 func TestAuditRegistration(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	admin, _ := store.GetFirstUser()
 
@@ -62,6 +63,7 @@ func TestAuditRegistration(t *testing.T) {
 
 // Accounts whose address was not confirmed in time are deleted by the server, which logs each one
 func TestAuditUnconfirmedAccountsDeleted(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	u, err := store.CreateInactiveUser("spaet@example.com", "hash", "Spät", "member")
 	if err != nil {

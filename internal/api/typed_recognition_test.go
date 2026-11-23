@@ -10,6 +10,7 @@ import (
 // "Datum und Menge beim Tippen erkennen" is on for a new account, the settings switch it per account and
 // /auth/me reports it; other settings leave it alone.
 func TestTypedRecognitionSetting(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

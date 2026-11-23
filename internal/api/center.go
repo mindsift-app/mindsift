@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -37,8 +36,7 @@ func (s *Server) handleCenterRead(w http.ResponseWriter, r *http.Request) {
 		IDs []int64 `json:"ids"`
 	}
 	if r.ContentLength != 0 {
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+		if !decodeJSON(w, r, &req) {
 			return
 		}
 	}

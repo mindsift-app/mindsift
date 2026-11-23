@@ -45,6 +45,7 @@ import { useHoldReload } from '../../lib/reloadHold';
 import { can } from '../../lib/capabilities';
 import { guardLeave } from '../../lib/leaveGuard';
 import { useCloseOnEscape } from '../../lib/useDismiss';
+import { useInlineEdit } from '../../lib/useInlineEdit';
 
 interface TaskDetailModalProps {
   task: Thought | null;
@@ -153,6 +154,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
     const current = (task.subtasks || []).find((s) => s.id === edit.id);
     if (title && current && title !== current.title) void onRenameSubtask(task, edit.id, title);
   };
+  // Enter saves, Escape cancels, leaving the field saves (lib/useInlineEdit.ts)
+  const subtaskEdit = useInlineEdit({ onSave: saveSubtaskTitle, onCancel: () => setEditingSubtask(null) });
   const caretTo = (el: HTMLTextAreaElement | HTMLInputElement | null, caret: number) =>
     requestAnimationFrame(() => {
       el?.focus();
@@ -282,6 +285,16 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
       await onUpdateTitle(task, trimmed);
     }
   };
+  const cancelTitleEdit = () => {
+    setIsEditingTitle(false);
+    setTitleDraft(task.content);
+  };
+  // Enter saves (Shift+Enter: a new line), Escape cancels; leaving the field keeps the edit open for its buttons
+  const titleEdit = useInlineEdit<HTMLTextAreaElement>({
+    onSave: () => void handleTitleSubmit(),
+    onCancel: cancelTitleEdit,
+    saveOnBlur: false,
+  });
 
   const handleNotesSubmit = async () => {
     await onUpdateNotes(task, notesDraft);
@@ -514,17 +527,10 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     ref={titleRef}
                     value={titleDraft}
                     onChange={(e) => setTitleDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleTitleSubmit();
-                      } else if (e.key === 'Escape') {
-                        setIsEditingTitle(false);
-                        setTitleDraft(task.content);
-                      }
-                    }}
+                    onKeyDown={titleEdit.onKeyDown}
                     autoFocus
                     onFocus={(e) => {
+                      titleEdit.onFocus();
                       if (editTitleOnOpen) e.currentTarget.select();
                     }}
                     rows={2}
@@ -535,10 +541,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 <div className="flex justify-end gap-1.5">
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsEditingTitle(false);
-                      setTitleDraft(task.content);
-                    }}
+                    onClick={cancelTitleEdit}
                     className="btn-action h-7 px-2.5 text-xs"
                   >
                     {t('common:cancel')}
@@ -999,18 +1002,12 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                             }}
                             onKeyDown={(e) => {
                               if (editSubtaskMention.handleKeyDown(e, editingSubtask.title, applyEditSubtaskMention)) return;
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                saveSubtaskTitle();
-                              } else if (e.key === 'Escape') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setEditingSubtask(null);
-                              }
+                              subtaskEdit.onKeyDown(e);
                             }}
+                            onFocus={subtaskEdit.onFocus}
                             onBlur={() => {
                               editSubtaskMention.close();
-                              saveSubtaskTitle();
+                              subtaskEdit.onBlur();
                             }}
                             className="w-full h-11 sm:h-6 px-1.5 text-base sm:text-xs input-field"
                           />

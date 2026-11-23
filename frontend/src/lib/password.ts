@@ -8,3 +8,7 @@ export const passwordProblem = (password: string): string | null =>
   !password.trim() || Array.from(password).length < MIN_PASSWORD_LENGTH
     ? i18n.t('auth:password.tooShort', { count: MIN_PASSWORD_LENGTH })
     : null;
+
+// A new password typed twice (NewPasswordFields): what is wrong with it (too short, the two differ), or null
+export const passwordPairProblem = (password: string, repeat: string): string | null =>
+  passwordProblem(password) ?? (password !== repeat ? i18n.t('auth:password.noMatch') : null);

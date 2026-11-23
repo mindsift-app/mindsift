@@ -14,6 +14,7 @@ import (
 // Reminders of a task through the API: only the choices are accepted, an early reminder names the due
 // date ("ist am … fällig") and each reminder lands in the bell once
 func TestTaskRemindersAlarm(t *testing.T) {
+	t.Parallel()
 	srv, sent := notifyServer(t)
 	store := srv.store
 	router := srv.Router()

@@ -104,6 +104,7 @@ func TestListItemTickSentLate(t *testing.T) {
 }
 
 func TestChangeTime(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC)
 	for _, c := range []struct {
 		changedAt, sentAt int64

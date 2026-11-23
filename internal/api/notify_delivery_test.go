@@ -14,6 +14,7 @@ import (
 // fails, only the failed one is tried again (up to notifyMaxAttempts runs), and a channel with nothing to
 // deliver to is not retried.
 func TestNotificationRetryOnlyOnFailedChannel(t *testing.T) {
+	t.Parallel()
 	srv, _ := notifyServer(t)
 	store := srv.store
 	router := srv.Router()
@@ -151,6 +152,7 @@ func itemTexts(items []notifyItem) string {
 // summary's window, alone; one that keeps failing is given up at the end of the window, and push without
 // a device is not retried.
 func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
+	t.Parallel()
 	srv, _ := notifyServer(t)
 	store := srv.store
 	router := srv.Router()
@@ -299,6 +301,7 @@ func TestDailySummaryRetryOnlyOnFailedChannel(t *testing.T) {
 }
 
 func TestDailySummarySlotAcrossMidnight(t *testing.T) {
+	t.Parallel()
 	loc := clock.Location()
 	cases := []struct {
 		now     time.Time

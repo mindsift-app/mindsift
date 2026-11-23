@@ -9,6 +9,7 @@ import (
 // Imprint and privacy notice from the administration: stored, shown on the login screen and as page,
 // checked, recorded in the audit log without their text, and each field fixed by its LEGAL_* variable.
 func TestLegalSettings(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	status := func() string { return sessionCall(router, "GET", "/api/v1/auth/status", "", "", "").Body.String() }

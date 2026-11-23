@@ -132,6 +132,7 @@ func (e *mfaEnv) challenge() string {
 }
 
 func TestLoginWithoutSecondFactorUnchanged(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	rec, res := e.login()
 	if rec.Code != http.StatusOK || res["token"] == nil || res["mfaRequired"] != nil {
@@ -144,6 +145,7 @@ func TestLoginWithoutSecondFactorUnchanged(t *testing.T) {
 }
 
 func TestTOTPSetupNeedsPasswordAndARightCode(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	token := e.session()
 	if rec, _ := e.call("POST", "/api/v1/auth/mfa/totp/setup", token, map[string]string{"password": "falsch-123"}); rec.Code != http.StatusForbidden {
@@ -182,6 +184,7 @@ func TestTOTPSetupNeedsPasswordAndARightCode(t *testing.T) {
 }
 
 func TestLoginWithTOTP(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	key, _ := e.enable(e.session())
 	e.tick()
@@ -229,6 +232,7 @@ func TestLoginWithTOTP(t *testing.T) {
 }
 
 func TestRecoveryCodeWorksOnce(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	_, codes := e.enable(e.session())
 	// Typed in capitals and without the dash
@@ -252,6 +256,7 @@ func TestRecoveryCodeWorksOnce(t *testing.T) {
 
 // Wrong codes count like wrong passwords; entering the right password again clears nothing.
 func TestWrongCodesLockTheLogin(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	key, _ := e.enable(e.session())
 	e.tick()
@@ -274,6 +279,7 @@ func TestWrongCodesLockTheLogin(t *testing.T) {
 
 // A challenge takes at most mfaMaxAttempts wrong codes, then the password is asked again.
 func TestChallengeEndsAfterTooManyCodes(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	e.srv.loginGuard.enabled = false
 	key, _ := e.enable(e.session())
@@ -288,6 +294,7 @@ func TestChallengeEndsAfterTooManyCodes(t *testing.T) {
 }
 
 func TestTrustedDevice(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	key, _ := e.enable(e.session())
 	e.tick()
@@ -334,6 +341,7 @@ func (e *mfaEnv) trustAgain(key []byte) (string, string) {
 }
 
 func TestTrustEndsWithSessionsPasswordAndDisabling(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	key, codes := e.enable(e.session())
 
@@ -397,6 +405,7 @@ func TestTrustEndsWithSessionsPasswordAndDisabling(t *testing.T) {
 }
 
 func TestNewRecoveryCodesReplaceTheOld(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	token := e.session()
 	key, old := e.enable(token)
@@ -418,6 +427,7 @@ func TestNewRecoveryCodesReplaceTheOld(t *testing.T) {
 }
 
 func TestRemoveTrustedDevices(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	key, _ := e.enable(e.session())
 	first, token := e.trustAgain(key)
@@ -465,6 +475,7 @@ func TestMFANotInDemo(t *testing.T) {
 
 // Hashes of earlier versions (plain bcrypt) sign in and are stored in the newer form afterwards.
 func TestLegacyPasswordHashIsUpgradedAtLogin(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	legacy, _ := bcrypt.GenerateFromPassword([]byte(e.pw), bcrypt.MinCost)
 	if err := e.store.SetPasswordHash(e.user.ID, e.user.PasswordHash, string(legacy)); err != nil {
@@ -489,6 +500,7 @@ func TestLegacyPasswordHashIsUpgradedAtLogin(t *testing.T) {
 
 // Passwords longer than bcrypt's 72 bytes count to the last character, wherever they are set.
 func TestLongPasswordCountsInFull(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	token := e.session()
 	long := strings.Repeat("satz ", 20) + "Ende-A"

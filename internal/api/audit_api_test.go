@@ -16,6 +16,7 @@ import (
 
 // Unknown API paths answer 404 with JSON, not the app's page (P-04)
 func TestUnknownAPIPathIs404(t *testing.T) {
+	t.Parallel()
 	srv, _, token := setupTestServer(t)
 	srv.staticFS = fstest.MapFS{"index.html": {Data: []byte("<html><head></head></html>")}}
 	router := srv.Router()
@@ -94,6 +95,7 @@ func TestHeadAndUnknownFiles(t *testing.T) {
 
 // A broken body does not quietly create an API key; an empty one still gives the default (P-05)
 func TestCreateKeyRefusesBrokenJSON(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	u, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")

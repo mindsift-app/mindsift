@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+// InFlatpak: the app runs in a Flatpak sandbox (flatpak sets FLATPAK_ID). Dialogs and notifications then
+// go through the portals, and the app brings its own desktop entry.
+func InFlatpak() bool { return os.Getenv("FLATPAK_ID") != "" }
+
 // SystemUser: login name and full name of the system's user, for the account of an instance's first start.
 func SystemUser() (login, name string) {
 	u, err := user.Current()

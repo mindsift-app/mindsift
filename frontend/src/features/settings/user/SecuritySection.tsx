@@ -4,7 +4,8 @@ import i18n from '../../../i18n';
 import { CircleAlert, KeyRound, MonitorSmartphone, ShieldCheck } from 'lucide-react';
 import { api, getCurrentOidc, triggerHaptic } from '../../../lib/api';
 import { startOidcConfirm } from '../../../lib/oidc';
-import { passwordProblem } from '../../../lib/password';
+import { passwordPairProblem } from '../../../lib/password';
+import { NewPasswordFields } from '../../../components/NewPasswordFields';
 import { User } from '../../../lib/types';
 import { askConfirm } from '../../../components/askConfirm';
 import { StatusToast } from '../../../components/StatusToast';
@@ -134,13 +135,9 @@ function PasswordCard({ currentUser, onUserUpdated, demoMode }: { currentUser: U
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
-    const problem = passwordProblem(next);
+    const problem = passwordPairProblem(next, repeat);
     if (problem) {
       setMsg({ type: 'err', text: problem });
-      return;
-    }
-    if (next !== repeat) {
-      setMsg({ type: 'err', text: t('security.password.noMatch') });
       return;
     }
     setBusy(true);
@@ -179,31 +176,18 @@ function PasswordCard({ currentUser, onUserUpdated, demoMode }: { currentUser: U
         </p>
       </div>
       <StatusToast msg={msg} onClose={() => setMsg(null)} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <label className="block text-muted font-medium">
-          {t('security.password.new')}
-          <input
-            type="password"
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-            placeholder={demoMode ? t('profile.demoDisabled') : t('security.password.minChars')}
-            autoComplete="new-password"
-            disabled={demoMode}
-            className="mt-1 w-full h-11 sm:h-9 px-3 input-field text-base sm:text-xs disabled:opacity-60"
-          />
-        </label>
-        <label className="block text-muted font-medium">
-          {t('security.password.repeat')}
-          <input
-            type="password"
-            value={repeat}
-            onChange={(e) => setRepeat(e.target.value)}
-            autoComplete="new-password"
-            disabled={demoMode}
-            className="mt-1 w-full h-11 sm:h-9 px-3 input-field text-base sm:text-xs disabled:opacity-60"
-          />
-        </label>
-      </div>
+      <NewPasswordFields
+        value={next}
+        onChange={setNext}
+        repeat={repeat}
+        onRepeatChange={setRepeat}
+        label={t('security.password.new')}
+        repeatLabel={t('security.password.repeat')}
+        placeholder={demoMode ? t('profile.demoDisabled') : t('security.password.minChars')}
+        disabled={demoMode}
+        className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+        inputClassName="h-11 sm:h-9 px-3 text-base sm:text-xs"
+      />
       {next !== '' && !firstPassword && (
         <label className="block text-muted font-medium">
           {t('profile.currentPassword')}

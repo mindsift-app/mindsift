@@ -12,6 +12,7 @@ import (
 // API_KEYS_ENABLED=false: keys are refused on the REST API (403) but keep working on MCP; sessions
 // are unaffected, and new keys can only be created while MCP is on.
 func TestRESTAPIKeysOff(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

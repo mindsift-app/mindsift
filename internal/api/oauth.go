@@ -292,8 +292,7 @@ func (s *Server) handleOAuthAuthorize(w http.ResponseWriter, r *http.Request) {
 		Approve bool     `json:"approve"`
 		Scopes  []string `json:"scopes"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	p := req.oauthAuthorizeParams

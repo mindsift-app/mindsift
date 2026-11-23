@@ -12,7 +12,6 @@ interface UseItemEditingOptions {
 // (the list is updated right away, the server afterwards)
 export function useItemEditing({ activeList, setLists, onRefreshGlobal }: UseItemEditingOptions) {
   const [editingQtyItemId, setEditingQtyItemId] = useState<string | null>(null);
-  const [editingQtyValue, setEditingQtyValue] = useState('');
 
   const handleSaveQuantity = async (itemId: string, quantity: string) => {
     setEditingQtyItemId(null);
@@ -79,8 +78,6 @@ export function useItemEditing({ activeList, setLists, onRefreshGlobal }: UseIte
   return {
     editingQtyItemId,
     setEditingQtyItemId,
-    editingQtyValue,
-    setEditingQtyValue,
     handleSaveQuantity,
     handleToggleItem,
     handleDeleteItem,

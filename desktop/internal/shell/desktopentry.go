@@ -27,7 +27,7 @@ const DesktopEntryID = "app.mindsift.MindSift"
 // line: a line break would start a line of its own (another key, another group). ErrExecPath then, and
 // nothing is written.
 func InstallDesktopEntry(dataHome, exe string, entry []byte, icons fs.FS) error {
-	if os.Getenv("FLATPAK_ID") != "" || exe == "" || strings.HasPrefix(exe, "/usr/") || dataHome == "" {
+	if InFlatpak() || exe == "" || strings.HasPrefix(exe, "/usr/") || dataHome == "" {
 		return nil
 	}
 	if hasControlChar(exe) {

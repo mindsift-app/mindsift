@@ -11,6 +11,7 @@ import (
 )
 
 func TestPushSubscribeKeyAndChannel(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	srv.cfg.NotifyDigestMinutes = 5
 	router := srv.Router()
@@ -68,6 +69,7 @@ func TestPushSubscribeKeyAndChannel(t *testing.T) {
 }
 
 func TestPushDigestText(t *testing.T) {
+	t.Parallel()
 	one := pushDigest("de", "Neuigkeiten", []notifyItem{{text: "Anna hat „Einkauf“ erledigt"}}, "")
 	if one.Body != "Anna hat „Einkauf“ erledigt" || one.URL != "/" {
 		t.Fatalf("single: %+v", one)
@@ -80,6 +82,7 @@ func TestPushDigestText(t *testing.T) {
 
 // A reinstalled app registers a new subscription and names the old one: it is dropped, not counted twice
 func TestPushResubscribeReplacesOldDevice(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	me, token := newTestUser(t, store, "reinstall@example.com")

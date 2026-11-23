@@ -30,6 +30,7 @@ func statusCapabilities(t *testing.T, srv *Server) map[string]bool {
 // private switches off sharing only, the desktop app what needs other people, sign-in, a browser or an
 // address others reach.
 func TestCapabilitiesInAuthStatus(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := NewServer(&config.Config{Port: "8080", DatabasePath: dbPath, JWTSecret: "capabilities-test-secret-0123456789"}, store, ws.NewHub(), nil)
 	t.Cleanup(srv.Close)

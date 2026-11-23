@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -181,8 +180,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		SetupCode   string `json:"setupCode"`
 		setupChoices
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if !s.checkSetupCode(w, r, req.SetupCode) {
@@ -222,7 +220,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		s.setupCode.clear()
 		slog.Info("First administrator created in the setup wizard; the setup code is no longer valid", "user_id", user.ID)
 	}
-	s.auditAs(user, storage.AuditAccountCreated, auditUserTarget(user), map[string]string{"role": user.Role})
+	s.auditAs(user, storage.AuditAccountCreated, storage.AuditUserTarget(user), map[string]string{"role": user.Role})
 	if err := s.applySetupChoices(r, user, req.setupChoices); err != nil {
 		writeError(w, http.StatusInternalServerError, "Einstellungen konnten nicht gespeichert werden: "+clientMessage(err))
 		return
@@ -357,8 +355,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		DisplayName string `json:"displayName"`
 		InviteCode  string `json:"inviteCode"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if wait := s.loginGuard.throttle("register", clientIPFrom(r), limitRegisterPerIP); wait > 0 {
@@ -539,8 +536,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		// Devices trusted at an earlier sign-in with a second factor (mfa.go); the browser sends all it has
 		TrustTokens []string `json:"trustTokens"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -800,8 +796,7 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		// Dates and quantities read from typed text (storage/typed_recognition.go)
 		TypedRecognition *bool `json:"typedRecognition"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	before, err := s.store.GetUserByID(userID)
@@ -1021,8 +1016,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 		Channel string `json:"channel"` // email | discord | webhook
 		Target  string `json:"target"`  // optional override URL or email
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 

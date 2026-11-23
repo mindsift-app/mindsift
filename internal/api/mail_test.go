@@ -234,6 +234,7 @@ func TestSendMailWithDisplayNameSender(t *testing.T) {
 }
 
 func TestEHLONameNeverLocalhost(t *testing.T) {
+	t.Parallel()
 	if got := ehloName("Alarm <alarm@mail.example.org>"); got != "mail.example.org" {
 		t.Errorf("got %q", got)
 	}
@@ -274,6 +275,7 @@ func TestAuthLoginOnlyAndBothFailing(t *testing.T) {
 }
 
 func TestSenderAddressGetsDisplayName(t *testing.T) {
+	t.Parallel()
 	cases := []struct{ raw, name, envelope, header string }{
 		{"alerts@example.com", "MindSift", "alerts@example.com", `"MindSift" <alerts@example.com>`},
 		{`"Mein Dienst" <alerts@example.com>`, "MindSift", "alerts@example.com", `"Mein Dienst" <alerts@example.com>`},
@@ -289,6 +291,7 @@ func TestSenderAddressGetsDisplayName(t *testing.T) {
 
 // HTML mails carry the logo as an inline part (multipart/related), plain mails stay single-part
 func TestMailLayoutEmbedsLogo(t *testing.T) {
+	t.Parallel()
 	text, htmlBody := renderMail(mailContent{
 		Greeting: "Hallo Anna",
 		Intro:    "Eine Aufgabe ist fällig <jetzt>:",

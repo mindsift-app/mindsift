@@ -8,6 +8,7 @@ import (
 )
 
 func TestRequestBodyLimited(t *testing.T) {
+	t.Parallel()
 	srv, _, token := setupTestServer(t)
 	router := srv.Router()
 	huge := `{"content":"` + strings.Repeat("x", defaultMaxBody) + `"}`
@@ -23,6 +24,7 @@ func TestRequestBodyLimited(t *testing.T) {
 }
 
 func TestWebhookTokenInURLOnlyAPIKey(t *testing.T) {
+	t.Parallel()
 	srv, _, token := setupTestServer(t)
 	rec := sessionCall(srv.Router(), "POST", "/api/v1/webhooks/ingest?token="+token, "", `{"text":"x"}`, "")
 	if rec.Code != http.StatusUnauthorized {

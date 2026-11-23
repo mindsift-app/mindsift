@@ -62,6 +62,7 @@ func TestNoteTitleLimit(t *testing.T) {
 }
 
 func TestTitleAllowed(t *testing.T) {
+	t.Parallel()
 	limit := strings.Repeat("a", collab.MaxTitleRunes)
 	cases := []struct {
 		title, current string

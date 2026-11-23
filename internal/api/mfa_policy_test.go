@@ -37,6 +37,7 @@ func (e *mfaEnv) otherSession(email, role string) (string, string) {
 }
 
 func TestRequiredMFABlocksAllButTheSetup(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	token := e.session()
 	e.requireMFA(storage.MFARequiredAll)
@@ -64,6 +65,7 @@ func TestRequiredMFABlocksAllButTheSetup(t *testing.T) {
 // a ticket from before it was switched on) and the webhook ingest. API keys from scripts keep delivering,
 // sessions from the OIDC provider keep their streams.
 func TestRequiredMFABlocksStreamsAndIngest(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	token := e.session()
 	rec, res := e.call("POST", "/api/v1/auth/stream-ticket", token, nil)
@@ -128,6 +130,7 @@ func TestRequiredMFABlocksStreamsAndIngest(t *testing.T) {
 }
 
 func TestRequiredMFAForAdminsLeavesMembers(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	member := e.session()
 	_, admin := e.otherSession("chefin@example.com", "admin")
@@ -142,6 +145,7 @@ func TestRequiredMFAForAdminsLeavesMembers(t *testing.T) {
 }
 
 func TestRequiredMFASettingIsValidated(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	_, admin := e.otherSession("chefin@example.com", "admin")
 	if rec, _ := e.call("PUT", "/api/v1/admin/settings", admin, map[string]any{"mfaRequired": "manche"}); rec.Code != http.StatusBadRequest {
@@ -150,6 +154,7 @@ func TestRequiredMFASettingIsValidated(t *testing.T) {
 }
 
 func TestAdminResetsMFA(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	e.enable(e.session())
 	adminID, admin := e.otherSession("chefin@example.com", "admin")
@@ -169,6 +174,7 @@ func TestAdminResetsMFA(t *testing.T) {
 }
 
 func TestMemberCannotResetMFA(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	member := e.session()
 	otherID, _ := e.otherSession("andere@example.com", "member")
@@ -178,6 +184,7 @@ func TestMemberCannotResetMFA(t *testing.T) {
 }
 
 func TestSensitiveActionsNeedTheSecondFactor(t *testing.T) {
+	t.Parallel()
 	e := newMFAEnv(t)
 	token := e.session()
 	key, codes := e.enable(token)

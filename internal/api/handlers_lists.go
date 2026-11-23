@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -71,8 +70,7 @@ func (s *Server) handleCreateList(w http.ResponseWriter, r *http.Request) {
 		Icon     *string `json:"icon"` // "" = no icon; missing = the default
 		ListType string  `json:"listType"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -135,8 +133,7 @@ func (s *Server) handleUpdateList(w http.ResponseWriter, r *http.Request) {
 		Title *string `json:"title"`
 		Icon  *string `json:"icon"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	l, err := s.store.UpdateList(userID, listID, req.Title, req.Icon)
@@ -180,8 +177,7 @@ func (s *Server) handleCreateListShare(w http.ResponseWriter, r *http.Request) {
 		TargetID   string `json:"targetId"`   // userId/email or teamId
 		Role       string `json:"role"`       // "editor" or "viewer"
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -258,8 +254,7 @@ func (s *Server) handleCreateListItem(w http.ResponseWriter, r *http.Request) {
 		Category string `json:"category"`
 		Quantity string `json:"quantity"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -284,8 +279,10 @@ func (s *Server) setListItemDoneAt(userID, listID, itemID string, done bool, at 
 	if err := s.store.EnsureListItemsWritable(userID, listID, itemID); err != nil {
 		return nil, err
 	}
+	// The name is stored with the item for everyone who sees the list (in nobody's language); without
+	// one the app shows none
 	user, _ := s.store.GetUserByID(userID)
-	userName := "Mitglied"
+	userName := ""
 	if user != nil {
 		userName = user.DisplayName
 	}
@@ -326,8 +323,7 @@ func (s *Server) handleToggleListItem(w http.ResponseWriter, r *http.Request) {
 		ChangedAt   int64 `json:"changedAt"`
 		SentAt      int64 `json:"sentAt"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -353,8 +349,7 @@ func (s *Server) handleUpdateListItem(w http.ResponseWriter, r *http.Request) {
 		Category *string `json:"category"`
 		Quantity *string `json:"quantity"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -426,7 +421,10 @@ func (s *Server) handleMoveListItem(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		TargetListID string `json:"targetListId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.TargetListID == "" {
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.TargetListID == "" {
 		writeError(w, http.StatusBadRequest, "Zielliste fehlt")
 		return
 	}
@@ -483,8 +481,7 @@ func (s *Server) handleReorderListItems(w http.ResponseWriter, r *http.Request) 
 	var req struct {
 		Items []domain.ListItemReorderItem `json:"items"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -506,7 +503,10 @@ func (s *Server) handleListOrder(kind string) http.HandlerFunc {
 		var req struct {
 			IDs []string `json:"ids"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.IDs) > 1000 {
+		if !decodeJSON(w, r, &req) {
+			return
+		}
+		if len(req.IDs) > 1000 {
 			writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
 			return
 		}

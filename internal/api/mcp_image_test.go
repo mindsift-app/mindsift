@@ -46,6 +46,7 @@ func bulletByID(t *testing.T, res map[string]any, id string) map[string]any {
 
 // add_note_image stores the file like an upload and inserts an image bullet like the editor.
 func TestMCPAddNoteImage(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	srv.cfg.Media.MaxImageMB = 1
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -237,6 +238,7 @@ func TestMCPAddNoteImageFromURL(t *testing.T) {
 // Only a few large MCP requests at a time: the next one gets a busy error before its body is read, small
 // ones go on. The image tool names the server's own limit.
 func TestMCPLargeRequestGate(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	srv.cfg.Media.MaxImageMB = 7
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

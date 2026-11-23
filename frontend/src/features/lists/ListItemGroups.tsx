@@ -8,6 +8,25 @@ import { getItemCategory, getItemDisplayContent, ItemGroup } from './listItems';
 import { useItemEditing } from './useItemEditing';
 import { QUANTITY_MAX_LENGTH } from './itemQuantity';
 import { useListDrag } from './useListDrag';
+import { InlineEditInput } from '../../components/InlineEditInput';
+
+// The quantity of an entry edited in place: Enter or leaving it saves, Escape keeps the old one
+function QuantityEditor({ item, editing }: { item: ListItem; editing: ReturnType<typeof useItemEditing> }) {
+  const { t } = useTranslation('lists');
+  return (
+    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <InlineEditInput
+        autoFocus
+        value={item.quantity || ''}
+        maxLength={QUANTITY_MAX_LENGTH}
+        onSave={(quantity) => void editing.handleSaveQuantity(item.id, quantity)}
+        onCancel={() => editing.setEditingQtyItemId(null)}
+        className="w-16 h-8 sm:h-6 px-1.5 text-base sm:text-xs input-field font-semibold text-accent text-center"
+        placeholder={t('quantity')}
+      />
+    </div>
+  );
+}
 
 // Open entries of the list, by category, draggable; an empty list shows a hint
 export function OpenItemGroups({
@@ -25,7 +44,7 @@ export function OpenItemGroups({
 }) {
   const { t } = useTranslation('lists');
   const { draggingItemId, setDraggingItemId, dragOverItemTarget, setDragOverItemTarget, dragOverCategoryTarget, setDragOverCategoryTarget, setDragOverListTab, handleItemDragStart, handleItemDragOver, handleItemDragLeave, handleDropOnItem, handleDropOnCategoryHeader } = drag;
-  const { editingQtyItemId, setEditingQtyItemId, editingQtyValue, setEditingQtyValue, handleSaveQuantity, handleToggleItem, handleDeleteItem } = editing;
+  const { editingQtyItemId, setEditingQtyItemId, handleToggleItem, handleDeleteItem } = editing;
   return (
     <>
       {openItems.length === 0 ? (
@@ -131,35 +150,13 @@ export function OpenItemGroups({
                         )}
 
                         {editingQtyItemId === item.id ? (
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="text"
-                              autoFocus
-                              value={editingQtyValue}
-                              maxLength={QUANTITY_MAX_LENGTH}
-                              onChange={(e) => setEditingQtyValue(e.target.value)}
-                              onKeyDown={async (e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  await handleSaveQuantity(item.id, editingQtyValue);
-                                } else if (e.key === 'Escape') {
-                                  setEditingQtyItemId(null);
-                                }
-                              }}
-                              onBlur={async () => {
-                                await handleSaveQuantity(item.id, editingQtyValue);
-                              }}
-                              className="w-16 h-8 sm:h-6 px-1.5 text-base sm:text-xs input-field font-semibold text-accent text-center"
-                              placeholder={t('quantity')}
-                            />
-                          </div>
+                          <QuantityEditor item={item} editing={editing} />
                         ) : (
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingQtyItemId(item.id);
-                              setEditingQtyValue(item.quantity || '');
                             }}
                             className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 transition-colors ${
                               item.quantity
@@ -217,7 +214,7 @@ export function CompletedItems({
   renderItemAuthor: (item: ListItem) => React.ReactNode;
 }) {
   const { t } = useTranslation('lists');
-  const { editingQtyItemId, setEditingQtyItemId, editingQtyValue, setEditingQtyValue, handleSaveQuantity, handleToggleItem, handleDeleteItem, handleClearCompleted } = editing;
+  const { editingQtyItemId, setEditingQtyItemId, handleToggleItem, handleDeleteItem, handleClearCompleted } = editing;
   return (
     <>
       {completedItems.length > 0 && (
@@ -263,35 +260,13 @@ export function CompletedItems({
                     </span>
 
                     {editingQtyItemId === item.id ? (
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="text"
-                          autoFocus
-                          value={editingQtyValue}
-                          maxLength={QUANTITY_MAX_LENGTH}
-                          onChange={(e) => setEditingQtyValue(e.target.value)}
-                          onKeyDown={async (e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              await handleSaveQuantity(item.id, editingQtyValue);
-                            } else if (e.key === 'Escape') {
-                              setEditingQtyItemId(null);
-                            }
-                          }}
-                          onBlur={async () => {
-                            await handleSaveQuantity(item.id, editingQtyValue);
-                          }}
-                          className="w-16 h-8 sm:h-6 px-1.5 text-base sm:text-xs input-field font-semibold text-accent text-center"
-                          placeholder={t('quantity')}
-                        />
-                      </div>
+                      <QuantityEditor item={item} editing={editing} />
                     ) : (
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingQtyItemId(item.id);
-                          setEditingQtyValue(item.quantity || '');
                         }}
                         className={`text-xs px-1.5 py-0.5 rounded-sm whitespace-nowrap shrink-0 transition-colors ${
                           item.quantity

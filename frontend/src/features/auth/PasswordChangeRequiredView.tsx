@@ -5,7 +5,8 @@ import { AuthStatus, User } from '../../lib/types';
 import { api } from '../../lib/api';
 import { LegalLinks } from '../../components/LegalLinks';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
-import { passwordProblem } from '../../lib/password';
+import { passwordPairProblem } from '../../lib/password';
+import { NewPasswordFields } from '../../components/NewPasswordFields';
 import { errorMessage } from '../../lib/errorMessage';
 
 // A reset by the administration asked for a new own password at the next sign-in: until it is chosen the
@@ -28,13 +29,9 @@ export const PasswordChangeRequiredView: React.FC<{
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const problem = passwordProblem(next);
+    const problem = passwordPairProblem(next, repeat);
     if (problem) {
       setError(problem);
-      return;
-    }
-    if (next !== repeat) {
-      setError(t('passwordRequired.noMatch'));
       return;
     }
     if (next === current) {
@@ -91,14 +88,16 @@ export const PasswordChangeRequiredView: React.FC<{
               className={field}
             />
           </label>
-          <label className="block text-muted font-medium">
-            {t('passwordRequired.new')}
-            <input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" required className={field} />
-          </label>
-          <label className="block text-muted font-medium">
-            {t('passwordRequired.repeat')}
-            <input type="password" value={repeat} onChange={(e) => setRepeat(e.target.value)} autoComplete="new-password" required className={field} />
-          </label>
+          <NewPasswordFields
+            value={next}
+            onChange={setNext}
+            repeat={repeat}
+            onRepeatChange={setRepeat}
+            label={t('passwordRequired.new')}
+            repeatLabel={t('passwordRequired.repeat')}
+            className="space-y-4"
+            inputClassName="h-11 sm:h-9 px-3 text-base sm:text-xs"
+          />
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <button type="button" onClick={onLogout} className="h-11 sm:h-9 px-3 text-xs text-muted hover:text-main flex items-center gap-1.5">

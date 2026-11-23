@@ -149,8 +149,9 @@ func (s *Store) openSuccessors(taskID string) []string {
 // in the list's first open column, linked to the task (recurrence_of). It spawns whenever the task is
 // completed and has no open successor: re-opening and completing it again creates no second one, while
 // a successor deleted or completed meanwhile (or a rule set again after it was removed) lets the series
-// go on. The new task goes to OnTaskCreated (live update for all clients).
-func (s *Store) spawnNextOccurrence(taskID string) {
+// go on. The new task goes to OnTaskCreated (live update for all clients). doneAt: when the task was
+// completed (zero: now, see changeInstant), for the day the next date counts from.
+func (s *Store) spawnNextOccurrence(taskID string, doneAt time.Time) {
 	s.recurrenceMu.Lock()
 	defer s.recurrenceMu.Unlock()
 	t, err := s.getThoughtRaw(taskID)
@@ -162,7 +163,7 @@ func (s *Store) spawnNextOccurrence(taskID string) {
 	}
 
 	column := statusColumn(s.listColumns(t.TaskListID), false, "")
-	due := NextDueDate(t.DueDate, t.Recurrence, time.Now())
+	due := NextDueDate(t.DueDate, t.Recurrence, changeInstant(doneAt))
 	next, err := s.CreateThoughtWithDetails(t.UserID, t.Content, t.Priority, t.Source, due, t.TaskListID, column, t.Notes)
 	if err != nil {
 		slog.Error("Creating the next occurrence failed", "task_id", taskID, "error", err)

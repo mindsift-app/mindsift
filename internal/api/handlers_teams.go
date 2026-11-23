@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -29,8 +28,7 @@ func (s *Server) handleCreateTeamDirect(w http.ResponseWriter, r *http.Request) 
 		Description    string `json:"description"`
 		OrganizationID string `json:"organizationId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if s.store.SharingMode() == storage.SharingPrivate {
@@ -87,8 +85,7 @@ func (s *Server) handleUpdateTeam(w http.ResponseWriter, r *http.Request) {
 		Name        string `json:"name"`
 		Description string `json:"description"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	name := strings.TrimSpace(req.Name)
@@ -140,8 +137,7 @@ func (s *Server) handleAddTeamMember(w http.ResponseWriter, r *http.Request) {
 		Email  string `json:"email"`
 		Role   string `json:"role"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	targetUserID := strings.TrimSpace(req.UserID)
@@ -183,8 +179,7 @@ func (s *Server) handleUpdateTeamMemberRole(w http.ResponseWriter, r *http.Reque
 	var req struct {
 		Role string `json:"role"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	role := strings.ToLower(strings.TrimSpace(req.Role))

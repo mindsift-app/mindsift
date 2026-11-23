@@ -25,6 +25,7 @@ func deleteJSON(t *testing.T, router http.Handler, path, token, body string) *ht
 // The app's account has no password and no provider to confirm at; the person at the machine is the
 // account, so the actions that ask a normal server for the password (or the provider) go through without.
 func TestDesktopConfirmsDangerousActionsWithoutCredentials(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
 	router := srv.Router()
@@ -66,6 +67,7 @@ func TestDesktopConfirmsDangerousActionsWithoutCredentials(t *testing.T) {
 // A normal server keeps asking: an account without a password (and without a provider) cannot confirm
 // by nothing, and the answer is the request for the password.
 func TestNormalServerStillAsksToConfirmDangerousActions(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	if srv.confirmsWithoutCredentials() {
 		t.Fatal("a normal server must not confirm without credentials")

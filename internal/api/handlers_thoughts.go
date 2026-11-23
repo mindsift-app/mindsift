@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"slices"
@@ -32,8 +31,7 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 		TaskListID   string `json:"taskListId"`
 		TaskListID2  string `json:"task_list_id"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	dueDate := req.DueDate
@@ -156,8 +154,7 @@ func (s *Server) handleTriageAction(w http.ResponseWriter, r *http.Request) {
 		DueDate      string `json:"dueDate"`
 		DueDate2     string `json:"due_date"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -266,8 +263,7 @@ func (s *Server) handleReorderTasks(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Items []domain.ThoughtReorderItem `json:"items"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -469,8 +465,7 @@ func (s *Server) handleUpdateThought(w http.ResponseWriter, r *http.Request) {
 	thoughtID := chi.URLParam(r, "id")
 
 	var req taskPatch
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	req.actor = actorFrom(r.Context())

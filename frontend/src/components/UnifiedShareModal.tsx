@@ -3,7 +3,6 @@ import { Trans, useTranslation } from 'react-i18next';
 import {
   Users,
   User as UserIcon,
-  X,
   Plus,
   Trash,
   Lock,
@@ -17,6 +16,7 @@ import { SelectMenu } from './SelectMenu';
 import { errorMessage } from '../lib/errorMessage';
 import { can } from '../lib/capabilities';
 import { useCloseOnEscape } from '../lib/useDismiss';
+import { DialogHeader } from './BottomSheet';
 
 export interface UnifiedShareModalProps {
   isOpen: boolean;
@@ -123,35 +123,20 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
       }}
     >
       <div className="panel-surface w-full max-w-lg p-5 shadow-panel rounded-card border border-border space-y-4 animate-in fade-in zoom-in-95 duration-150">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-border">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-btn bg-accent/15 text-accent flex items-center justify-center shrink-0">
-              {resourceIcon ? (
-                typeof resourceIcon === 'string' ? (
-                  <span className="text-base">{resourceIcon}</span>
-                ) : (
-                  resourceIcon
-                )
-              ) : (
-                <Users className="w-4 h-4" />
-              )}
-            </div>
-            <div className="min-w-0">
-              {/* What is shared, small; its name large below (the name only once) */}
-              <p className="text-[11px] text-muted truncate">{title ?? t('share.defaultTitle')}</p>
-              <h3 className="text-sm font-bold text-main truncate">{resourceName}</h3>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text-muted hover:text-main rounded-btn hover:bg-panel transition-colors cursor-pointer"
-            title={t('close')}
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        {/* What is shared, small; its name large below (the name only once) */}
+        <DialogHeader
+          overline={title ?? t('share.defaultTitle')}
+          title={resourceName}
+          icon={
+            resourceIcon ? (
+              typeof resourceIcon === 'string' ? <span className="text-base">{resourceIcon}</span> : resourceIcon
+            ) : (
+              <Users className="w-4 h-4" />
+            )
+          }
+          onClose={onClose}
+          className="pb-3"
+        />
 
         {error && (
           <div className="p-2.5 bg-status-danger/10 border border-status-danger/30 text-status-danger rounded-sm text-xs">

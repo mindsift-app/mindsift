@@ -248,6 +248,7 @@ func TestVoiceUploadLimitAndModes(t *testing.T) {
 }
 
 func TestVoiceLanguageSetting(t *testing.T) {
+	t.Parallel()
 	srv, _, token := setupTestServer(t)
 	router := srv.Router()
 	for _, tc := range []struct {

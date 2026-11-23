@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"unicode/utf8"
@@ -164,7 +163,7 @@ func (s *Shell) pickFolder(start string) (string, error) {
 	// Under Flatpak the dialog is the portal's, on the host: it gets the host's path (also for a folder
 	// stored as the portal's path), which the sandbox cannot see, so it is not shortened to what exists
 	// here; the portal falls back to a folder of its own when it is not there
-	sandboxed := os.Getenv("FLATPAK_ID") != ""
+	sandboxed := InFlatpak()
 	if sandboxed && start != "" {
 		start = HostPath(start)
 	}

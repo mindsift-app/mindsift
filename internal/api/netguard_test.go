@@ -9,6 +9,7 @@ import (
 )
 
 func TestTargetIPAllowed(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		ip           string
 		allowPrivate bool
@@ -34,6 +35,7 @@ func TestTargetIPAllowed(t *testing.T) {
 }
 
 func TestValidateWebhookURL(t *testing.T) {
+	t.Parallel()
 	ok := []struct {
 		url              string
 		discord, private bool

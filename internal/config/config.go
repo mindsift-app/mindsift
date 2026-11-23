@@ -208,9 +208,11 @@ func loadOIDC() OIDCConfig {
 	return c
 }
 
-// parseBool reads true/false (also 1/0, yes/no, on/off); unset gives def, anything else ok=false.
+// parseBool reads a yes/no value: true/false, 1/0, yes/no or on/off, in any case and with surrounding
+// spaces; empty gives def, anything else def with ok=false. Every yes/no variable goes through it (envBool,
+// envBoolPtr), so they all take the same values.
 func parseBool(raw string, def bool) (value, ok bool) {
-	switch strings.ToLower(raw) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "":
 		return def, true
 	case "true", "1", "yes", "on":
@@ -530,7 +532,7 @@ func BackupSecretsKeyFromEnv(dataDir string) []byte {
 	if strings.TrimSpace(os.Getenv("SECRETS_KEY")) != "" {
 		return nil
 	}
-	if v := envBoolPtr("BACKUP_EXCLUDE_SECRETS_KEY"); v != nil && *v {
+	if envBool("BACKUP_EXCLUDE_SECRETS_KEY", false) {
 		return nil
 	}
 	data, err := os.ReadFile(filepath.Join(dataDir, secretsKeyFile))
@@ -627,8 +629,7 @@ func DatabasePathFromEnv() string {
 // DemoModeFromEnv: MINDSIFT_DEMO is the name; MINDA_DEMO and DEMO_MODE are earlier names that still switch it on.
 func DemoModeFromEnv() bool {
 	for _, name := range []string{"MINDSIFT_DEMO", "MINDA_DEMO", "DEMO_MODE"} {
-		switch strings.ToLower(getEnv(name, "false")) {
-		case "true", "1", "yes", "on":
+		if envBool(name, false) {
 			return true
 		}
 	}
@@ -643,10 +644,10 @@ func Load() *Config {
 	jwtSecret := resolveJWTSecret(os.Getenv("JWT_SECRET"), filepath.Dir(dbPath))
 	secretsKey, secretsKeySource := resolveSecretsKey(os.Getenv("SECRETS_KEY"), filepath.Dir(dbPath))
 	baseURL := getEnv("BASE_URL", "http://localhost:"+port)
-	allowReg := strings.ToLower(getEnv("ALLOW_REGISTRATION", "false")) == "true"
+	allowReg := envBool("ALLOW_REGISTRATION", false)
 
-	debug := debugFromEnv()
-	logLevel := logLevelFromEnv()
+	debug := envBool("DEBUG", false)
+	logLevel := logLevelFromEnv(debug)
 
 	demoMode := DemoModeFromEnv()
 
@@ -655,8 +656,9 @@ func Load() *Config {
 	smtpUser := getEnv("SMTP_USER", "")
 	smtpPass := getEnv("SMTP_PASS", "")
 	smtpFrom := getEnv("SMTP_FROM", "")
-	smtpTLS := strings.ToLower(getEnv("SMTP_TLS", "true")) != "false"
-	smtpSkipVerify := strings.ToLower(getEnv("SMTP_SKIP_VERIFY", "false")) == "true"
+	smtpTLS := envBool("SMTP_TLS", true)
+	smtpSkipVerify := envBool("SMTP_SKIP_VERIFY", false)
+	allowBrowserSpeech := envBoolPtr("STT_ALLOW_BROWSER")
 
 	return &Config{
 		Port:                    port,
@@ -679,14 +681,14 @@ func Load() *Config {
 		TrustedProxies:          getEnv("TRUSTED_PROXIES", "private"),
 		RetentionAllowNever:     envBoolPtr("RETENTION_ALLOW_NEVER"),
 		MCPEnabled:              envBoolPtr("MCP_ENABLED"),
-		RESTAPIKeysOff:          envBoolPtr("API_KEYS_ENABLED") != nil && !*envBoolPtr("API_KEYS_ENABLED"),
+		RESTAPIKeysOff:          !envBool("API_KEYS_ENABLED", true),
 		PeopleSearch:            envBoolPtr("PEOPLE_SEARCH"),
 		PublicLinks:             envBoolPtr("PUBLIC_LINKS"),
 		PublicLinkMaxDays:       publicLinkMaxDaysFromEnv(),
 		CalendarFeeds:           envBoolPtr("CALENDAR_FEEDS"),
-		UpdateCheckOff:          envBoolPtr("UPDATE_CHECK") != nil && !*envBoolPtr("UPDATE_CHECK"),
+		UpdateCheckOff:          !envBool("UPDATE_CHECK", true),
 		DefaultLanguage:         defaultLanguage(demoMode),
-		DisableLoginProtection:  strings.ToLower(getEnv("LOGIN_PROTECTION", "true")) == "false",
+		DisableLoginProtection:  !envBool("LOGIN_PROTECTION", true),
 		OAuthIdleDays:           envInt("OAUTH_IDLE_DAYS", 90, 0, 36500),
 		SMTPHost:                smtpHost,
 		SMTPPort:                smtpPort,
@@ -696,7 +698,7 @@ func Load() *Config {
 		SMTPFromName:            getEnv("SMTP_FROM_NAME", "MindSift"),
 		SMTPTLS:                 smtpTLS,
 		SMTPSkipVerify:          smtpSkipVerify,
-		SMTPDisabled:            envBoolPtr("SMTP_DISABLED") != nil && *envBoolPtr("SMTP_DISABLED"),
+		SMTPDisabled:            envBool("SMTP_DISABLED", false),
 		InstanceName:            strings.TrimSpace(getEnv("INSTANCE_NAME", "")),
 		LinkPreviews:            envBoolPtr("LINK_PREVIEWS"),
 		PushKnownServicesOnly:   envBoolPtr("PUSH_KNOWN_SERVICES_ONLY"),
@@ -704,14 +706,14 @@ func Load() *Config {
 		BackupEnabled:           envBoolPtr("BACKUP_ENABLED"),
 		BackupTime:              backupTimeFromEnv(),
 		BackupRetentionDays:     envInt("BACKUP_RETENTION_DAYS", 0, 1, 365),
-		BackupExcludeSecretsKey: envBoolPtr("BACKUP_EXCLUDE_SECRETS_KEY") != nil && *envBoolPtr("BACKUP_EXCLUDE_SECRETS_KEY"),
+		BackupExcludeSecretsKey: envBool("BACKUP_EXCLUDE_SECRETS_KEY", false),
 		Speech: SpeechConfig{
 			URL:            strings.TrimRight(getEnv("STT_URL", ""), "/"),
 			Model:          strings.TrimSpace(getEnv("STT_MODEL", "")),
 			APIKey:         getEnv("STT_API_KEY", ""),
-			Disabled:       strings.ToLower(getEnv("STT_DISABLED", "false")) == "true",
-			NoBrowser:      strings.ToLower(getEnv("STT_ALLOW_BROWSER", "")) == "false",
-			BrowserAllowed: strings.ToLower(getEnv("STT_ALLOW_BROWSER", "")) == "true",
+			Disabled:       envBool("STT_DISABLED", false),
+			NoBrowser:      allowBrowserSpeech != nil && !*allowBrowserSpeech,
+			BrowserAllowed: allowBrowserSpeech != nil && *allowBrowserSpeech,
 			MaxSeconds:     envInt("STT_MAX_SECONDS", 0, 5, 3600),
 			MaxUploadMB:    envInt("STT_MAX_UPLOAD_MB", 0, 1, 500),
 			MaxParallel:    envInt("STT_MAX_PARALLEL", 0, 1, 32),
@@ -761,15 +763,9 @@ func Load() *Config {
 	}
 }
 
-// debugFromEnv: DEBUG is switched on (true, 1, yes, on).
-func debugFromEnv() bool {
-	v := strings.ToLower(getEnv("DEBUG", "false"))
-	return v == "true" || v == "1" || v == "yes" || v == "on"
-}
-
 // logLevelFromEnv: LOG_LEVEL, or debug while DEBUG is on.
-func logLevelFromEnv() string {
-	if debugFromEnv() {
+func logLevelFromEnv(debug bool) string {
+	if debug {
 		return "debug"
 	}
 	return strings.ToLower(getEnv("LOG_LEVEL", "info"))
@@ -784,7 +780,11 @@ func LogJSONFromEnv() bool {
 // LogLevelFromEnv is the level Load gives Config.LogLevel, read before Load: the server sets up its logger
 // first, so the messages of Load itself (a generated JWT secret, ignored variables) are already in its
 // format and filtered by its level.
-func LogLevelFromEnv() slog.Level { return (&Config{LogLevel: logLevelFromEnv()}).SlogLevel() }
+// DEBUG is read without a warning here: Load warns about a value that is no yes/no, once the logger is set up.
+func LogLevelFromEnv() slog.Level {
+	debug, _ := parseBool(os.Getenv("DEBUG"), false)
+	return (&Config{LogLevel: logLevelFromEnv(debug)}).SlogLevel()
+}
 
 // SlogLevel parses Config.LogLevel into a standard slog.Level.
 func (c *Config) SlogLevel() slog.Level {
@@ -850,13 +850,34 @@ func memoryLimit() int64 {
 	return 0
 }
 
-func demoResetMinutes() int {
-	n, err := strconv.Atoi(strings.TrimSpace(getEnv("DEMO_RESET_MINUTES", "20")))
-	if err != nil || n < 0 {
-		return 20
+// envBool reads a yes/no variable (parseBool); unset gives def, any other value def with a warning.
+func envBool(key string, def bool) bool {
+	if v := envBoolPtr(key); v != nil {
+		return *v
 	}
-	return n
+	return def
 }
+
+// EnvBool is envBool for the desktop app (desktop/), so its own switches take the same values.
+func EnvBool(key string, def bool) bool { return envBool(key, def) }
+
+// envBoolPtr reads a yes/no variable (parseBool) whose absence means "the admin settings decide": nil when
+// unset, and nil with a warning for any other value.
+func envBoolPtr(key string) *bool {
+	raw := getEnv(key, "")
+	if raw == "" {
+		return nil
+	}
+	v, ok := parseBool(raw, false)
+	if !ok {
+		slog.Warn("Invalid value, ignored: allowed are true/false, 1/0, yes/no and on/off", "variable", key, "value", raw)
+		return nil
+	}
+	return &v
+}
+
+// demoResetMinutes: DEMO_RESET_MINUTES, 0 = never; up to a year
+func demoResetMinutes() int { return envInt("DEMO_RESET_MINUTES", 20, 0, 525600) }
 
 // registrationMode reads REGISTRATION_MODE; unknown values are ignored ("" = admin settings decide).
 func registrationMode(allowReg bool) string {
@@ -873,29 +894,18 @@ func registrationMode(allowReg bool) string {
 	return ""
 }
 
-// boolEnvOrEmpty: "true" or "false" when the variable is set to a boolean, "" when unset or unknown.
+// boolEnvOrEmpty: "true" or "false" when the variable is set to a yes/no value, "" when unset or invalid.
 func boolEnvOrEmpty(key string) string {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
-	case "true", "1", "yes", "on":
-		return "true"
-	case "false", "0", "no", "off":
-		return "false"
+	if v := envBoolPtr(key); v != nil {
+		return strconv.FormatBool(*v)
 	}
 	return ""
 }
 
-// envBoolPtr reads true/false; nil when unset or anything else.
-// publicLinkMaxDaysFromEnv reads PUBLIC_LINKS_MAX_DAYS; outside 1–14 (or unset) it is 0, meaning the
-// system settings decide.
+// publicLinkMaxDaysFromEnv reads PUBLIC_LINKS_MAX_DAYS: 0 (also unset or invalid) means the system
+// settings decide; more than MaxPublicLinkDays is cut down to it.
 func publicLinkMaxDaysFromEnv() int {
-	n, err := strconv.Atoi(strings.TrimSpace(os.Getenv("PUBLIC_LINKS_MAX_DAYS")))
-	if err != nil || n < 1 {
-		return 0
-	}
-	if n > MaxPublicLinkDays {
-		return MaxPublicLinkDays
-	}
-	return n
+	return min(envInt("PUBLIC_LINKS_MAX_DAYS", 0, 0, math.MaxInt32), MaxPublicLinkDays)
 }
 
 // imageQualityFromEnv reads MEDIA_IMAGE_QUALITY (high, medium or low); anything else is ignored with a
@@ -938,18 +948,6 @@ func backupTimeFromEnv() string {
 // MaxPublicLinkDays is the hard limit for public links (storage.MaxPublicLinkDays): there is no link
 // that lives for good.
 const MaxPublicLinkDays = 14
-
-func envBoolPtr(key string) *bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
-	case "true", "1", "yes":
-		v := true
-		return &v
-	case "false", "0", "no":
-		v := false
-		return &v
-	}
-	return nil
-}
 
 // defaultLanguage: DEFAULT_LANGUAGE; the demo starts in English unless it says otherwise.
 func defaultLanguage(demoMode bool) string {

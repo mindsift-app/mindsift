@@ -18,7 +18,8 @@ import { AuthStatus, MfaMethod, User } from '../../lib/types';
 import { MfaStep } from './MfaStep';
 import { api, ApiError, triggerHaptic } from '../../lib/api';
 import { LegalLinks } from '../../components/LegalLinks';
-import { passwordProblem } from '../../lib/password';
+import { passwordPairProblem, passwordProblem } from '../../lib/password';
+import { NewPasswordFields } from '../../components/NewPasswordFields';
 import { demoHintText } from '../../components/DemoHint';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
 import { startOidcLogin, takeOidcResult } from '../../lib/oidc';
@@ -254,14 +255,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const resetProblem = passwordProblem(newPassword);
+    const resetProblem = passwordPairProblem(newPassword, newPasswordConfirm);
     if (resetProblem) {
       setError(resetProblem);
-      triggerHaptic(25);
-      return;
-    }
-    if (newPassword !== newPasswordConfirm) {
-      setError(t('password.noMatch'));
       triggerHaptic(25);
       return;
     }
@@ -363,7 +359,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 setError(null);
                 setNotice(null);
               }}
-              className={`flex-1 h-9 px-3 font-medium flex items-center justify-center gap-1.5 border-r border-border transition-colors ${
+              className={`flex-1 h-11 sm:h-9 px-3 font-medium flex items-center justify-center gap-1.5 border-r border-border transition-colors ${
                 authTab === 'login'
                   ? 'bg-panel text-main border-b-2 border-b-accent'
                   : 'text-muted hover:text-main'
@@ -379,7 +375,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 setAuthTab('invite');
                 setError(null);
               }}
-              className={`flex-1 h-9 px-3 font-medium flex items-center justify-center gap-1.5 border-r border-border transition-colors ${
+              className={`flex-1 h-11 sm:h-9 px-3 font-medium flex items-center justify-center gap-1.5 border-r border-border transition-colors ${
                 authTab === 'invite'
                   ? 'bg-panel text-main border-b-2 border-b-accent'
                   : 'text-muted hover:text-main'
@@ -396,7 +392,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   setAuthTab('register');
                   setError(null);
                 }}
-                className={`flex-1 h-9 px-3 font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                className={`flex-1 h-11 sm:h-9 px-3 font-medium flex items-center justify-center gap-1.5 transition-colors ${
                   authTab === 'register'
                     ? 'bg-panel text-main border-b-2 border-b-accent'
                     : 'text-muted hover:text-main'
@@ -420,7 +416,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   type="button"
                   onClick={() => void resendVerification()}
                   disabled={resendState !== 'idle'}
-                  className="btn-action h-8 px-2.5 text-[11px] shrink-0 disabled:opacity-50"
+                  className="btn-action h-11 sm:h-8 px-2.5 text-[11px] shrink-0 disabled:opacity-50"
                 >
                   {resendState === 'sending' ? t('sending') : t('verify.resend')}
                 </button>
@@ -483,30 +479,19 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 <h2 className="text-sm font-bold text-main">{t('reset.title')}</h2>
                 <p className="text-muted mt-1">{t('reset.intro')}</p>
               </div>
-              <div>
-                <label className="block text-muted mb-1">{t('reset.newPassword')}</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder={t('password.minPlaceholder')}
-                  required
-                  autoFocus
-                  autoComplete="new-password"
-                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-muted mb-1">{t('reset.repeat')}</label>
-                <input
-                  type="password"
-                  value={newPasswordConfirm}
-                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
-                  required
-                  autoComplete="new-password"
-                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
-                />
-              </div>
+              <NewPasswordFields
+                value={newPassword}
+                onChange={setNewPassword}
+                repeat={newPasswordConfirm}
+                onRepeatChange={setNewPasswordConfirm}
+                label={t('reset.newPassword')}
+                repeatLabel={t('reset.repeat')}
+                placeholder={t('password.minPlaceholder')}
+                autoFocus
+                className="space-y-3.5"
+                labelClassName="block text-muted"
+                inputClassName="h-11 sm:h-8 px-2.5 text-base sm:text-xs"
+              />
               <button
                 type="submit"
                 disabled={submitting}
@@ -568,7 +553,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                         setEmail('admin');
                         setPassword('admin');
                       }}
-                      className="flex-1 py-1 px-2 text-[11px] rounded-sm bg-panel hover:bg-panel-elevated border border-border text-main font-mono transition-colors text-center"
+                      className="flex-1 min-h-11 sm:min-h-0 py-1 px-2 text-[11px] rounded-sm bg-panel hover:bg-panel-elevated border border-border text-main font-mono transition-colors text-center"
                     >
                       admin / admin
                     </button>
@@ -578,7 +563,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                         setEmail('user');
                         setPassword('user');
                       }}
-                      className="flex-1 py-1 px-2 text-[11px] rounded-sm bg-panel hover:bg-panel-elevated border border-border text-main font-mono transition-colors text-center"
+                      className="flex-1 min-h-11 sm:min-h-0 py-1 px-2 text-[11px] rounded-sm bg-panel hover:bg-panel-elevated border border-border text-main font-mono transition-colors text-center"
                     >
                       user / user
                     </button>
@@ -597,7 +582,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   autoFocus
                   // "webauthn": the browser offers the passkeys of this site in the autofill
                   autoComplete={passkeysOn ? 'username webauthn' : 'username'}
-                  className="w-full h-8 px-2.5 input-field"
+                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
                 />
               </div>
 
@@ -609,7 +594,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full h-8 px-2.5 input-field"
+                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
                 />
                 {/* After the field in the markup, so Tab goes from the name straight to the password;
                     shown next to the label */}
@@ -632,7 +617,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full btn-primary h-9 text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full btn-primary h-11 sm:h-9 text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>{submitting ? t('login.submitting') : t('login.tab')}</span>
@@ -693,7 +678,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                     placeholder="MS-XXXXXXXX"
                     required
                     autoFocus
-                    className="w-full h-8 px-2.5 input-field font-mono uppercase"
+                    className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs font-mono uppercase"
                   />
                 </div>
               )}
@@ -706,7 +691,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder={t('register.displayNamePlaceholder')}
                   required
-                  className="w-full h-8 px-2.5 input-field"
+                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
                 />
               </div>
 
@@ -718,7 +703,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('emailPlaceholder')}
                   required
-                  className="w-full h-8 px-2.5 input-field"
+                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
                 />
               </div>
 
@@ -730,7 +715,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t('password.minPlaceholder')}
                   required
-                  className="w-full h-8 px-2.5 input-field"
+                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
                 />
               </div>
 
@@ -738,7 +723,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full btn-primary h-9 text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full btn-primary h-11 sm:h-9 text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>

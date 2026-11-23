@@ -5,6 +5,7 @@ import { UserTheme } from '../../../lib/types';
 import { customThemeId, ThemeId } from '../../../lib/theme';
 import { hasOwnThemeColor, readThemeVar, resolveThemeColor, THEME_COLOR_VARS, THEME_EXTRA_COLOR_VARS, THEME_STATUS_COLOR_VARS, ThemeColorVar } from '../../../lib/themeCss';
 import { ConfirmPopover } from '../../../components/ConfirmPopover';
+import { InlineEditInput } from '../../../components/InlineEditInput';
 import { StatusToast } from '../../../components/StatusToast';
 import { useAppearanceSettings } from './useAppearanceSettings';
 
@@ -140,9 +141,6 @@ function CustomThemeRow({
 }) {
   const { t } = useTranslation('settings');
   const { handleRenameTheme, handleThemeColor, handleResetThemeColor, handleExportTheme } = appearance;
-  // What is being typed; null shows the saved name (also after a rename on another device)
-  const [draft, setDraft] = useState<string | null>(null);
-  const name = draft ?? theme.name;
   // "Weitere Farben": the less important colours, folded away
   const [more, setMore] = useState(false);
 
@@ -164,24 +162,13 @@ function CustomThemeRow({
         <Check className="w-3.5 h-3.5" />
       </button>
 
-      <input
-        type="text"
-        value={name}
+      {/* Shows the saved name until something is typed (also after a rename on another device) */}
+      <InlineEditInput
+        value={theme.name}
         maxLength={60}
         aria-label={t('appearance.custom.nameLabel')}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
-          if (draft !== null && draft.trim()) handleRenameTheme(theme, draft);
-          setDraft(null);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') e.currentTarget.blur();
-          if (e.key === 'Escape') {
-            const input = e.currentTarget;
-            setDraft(null);
-            // Blur after the reset, so the typed name is not saved
-            requestAnimationFrame(() => input.blur());
-          }
+        onSave={(name) => {
+          if (name.trim()) handleRenameTheme(theme, name);
         }}
         className="flex-1 min-w-[8rem] h-11 sm:h-8 px-2 rounded-input border border-transparent bg-transparent text-sm font-semibold text-main hover:border-border focus:border-accent focus:bg-input outline-none"
       />
@@ -296,7 +283,10 @@ function NewThemeRow({ onCreate, onCancel }: { onCreate: (name: string) => void;
         placeholder={t('appearance.custom.newNamePlaceholder')}
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Escape') onCancel();
+          if (e.key !== 'Escape') return;
+          // Only the new theme's row, not a dialog around the settings (lib/useDismiss.ts)
+          e.preventDefault();
+          onCancel();
         }}
         onBlur={() => {
           if (!name.trim()) onCancel();

@@ -11,6 +11,7 @@ import (
 // A second organization with the same name (trimmed, any case) is refused with 409, also on rename;
 // renaming to the own name in other case is fine, and duplicates from before stay as they are
 func TestOrganizationNamesUnique(t *testing.T) {
+	t.Parallel()
 	srv, _, admin := setupTestServer(t)
 	router := srv.Router()
 	create := func(name string) (int, map[string]any) {
@@ -57,6 +58,7 @@ func TestOrganizationNamesUnique(t *testing.T) {
 
 // Adding someone already in the organization changes nothing and writes no second log entry
 func TestAddOrganizationMemberIdempotent(t *testing.T) {
+	t.Parallel()
 	srv, store, admin := setupTestServer(t)
 	router := srv.Router()
 	org, err := store.CreateOrganization("Team Nord")

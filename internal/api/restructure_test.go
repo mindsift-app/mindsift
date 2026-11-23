@@ -25,6 +25,7 @@ func flatOf(t *testing.T, store *storage.Store, userID, docID string) []string {
 }
 
 func TestExtractBranchIntoOwnNote(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -87,6 +88,7 @@ func TestExtractBranchIntoOwnNote(t *testing.T) {
 
 // A bullet without text to name the note (a drawing) gives "Neue Notiz", never its content as the title
 func TestExtractDrawingGetsDefaultTitle(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -115,6 +117,7 @@ func TestExtractDrawingGetsDefaultTitle(t *testing.T) {
 }
 
 func TestExtractRejectsBulletThatIsOnlyANoteLink(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -132,6 +135,7 @@ func TestExtractRejectsBulletThatIsOnlyANoteLink(t *testing.T) {
 }
 
 func TestExtractInSharedNoteKeepsAccess(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	owner, _ := newTestUser(t, store, "owner@example.com")
@@ -168,6 +172,7 @@ func TestExtractInSharedNoteKeepsAccess(t *testing.T) {
 }
 
 func TestMergeDocumentsAndUndo(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -296,6 +301,7 @@ func TestInlineNoteBringsBranchBack(t *testing.T) {
 // Extracting and pulling back gives the branch as it was: the note's first bullet takes the link's
 // place again (type and props included), not the title on top of it
 func TestInlineExtractedNoteRestoresBullet(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -330,6 +336,7 @@ func TestInlineExtractedNoteRestoresBullet(t *testing.T) {
 }
 
 func TestMoveBranchToOtherNote(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -352,7 +359,7 @@ func TestMoveBranchToOtherNote(t *testing.T) {
 		t.Fatalf("move into the same note: %d", rec.Code)
 	}
 	_, strangerToken := newTestUser(t, store, "fremd3@example.com")
-	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/branches/move", strangerToken, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, ""); rec.Code != http.StatusForbidden {
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/branches/move", strangerToken, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, ""); rec.Code != http.StatusNotFound {
 		t.Fatalf("stranger must not move: %d", rec.Code)
 	}
 
@@ -405,6 +412,7 @@ func TestMoveBranchToOtherNote(t *testing.T) {
 }
 
 func TestInlineRejectsLinkToSingleBullet(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

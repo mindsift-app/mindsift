@@ -230,6 +230,8 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `STT_*` | admin UI decides | Your own Whisper server for voice input (address, key, model, limits, and `STT_CHUNKED` / `STT_CHUNK_SECONDS`: send the recording in pieces while speaking, every 8 s by default); each one set fixes its field in the admin UI. `STT_DEFAULT_MODEL` only presets the model |
 | `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a server with real data!** |
 
+Yes/no variables take `true`/`false`, `1`/`0`, `yes`/`no` or `on`/`off`, in any case. Any other value, and a number outside its range, is ignored with a warning in the log and the default applies.
+
 * **First admin:** with `ADMIN_USER` and `ADMIN_PASSWORD` (at least 8 characters, or `ADMIN_PASSWORD_FILE`), the admin exists before the server accepts connections; unusable values stop the start with a reason in the log. They act only while the database has no account ([details](Doku/operations.md#first-admin)).
 * **Language:** the app follows the browser if it speaks that language, and everyone can pick their own. `DEFAULT_LANGUAGE` covers the rest; unset, it is German, so for an English instance set `en` or pick it in the setup wizard.
 * **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can; otherwise MindSift falls back to long polling. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).

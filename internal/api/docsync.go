@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -102,8 +101,7 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 		Device  string `json:"device"`
 		Browser string `json:"browser"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, syncMaxBody)).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSONLimit(w, r, syncMaxBody, &req) {
 		return
 	}
 	if req.ClientID == "" || len(req.ClientID) > maxClientIDLen {
@@ -351,7 +349,10 @@ func (s *Server) handleDocLeave(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		ClientID string `json:"clientId"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil || req.ClientID == "" {
+	if !decodeJSONLimit(w, r, 4096, &req) {
+		return
+	}
+	if req.ClientID == "" {
 		writeError(w, http.StatusBadRequest, "clientId fehlt")
 		return
 	}
@@ -399,7 +400,15 @@ func reservedClientID(w http.ResponseWriter, id string) bool {
 // compactionInterval is how often the operation log and tombstones are compacted (also once at start).
 const compactionInterval = 6 * time.Hour
 
+// compactAtStart: the first pass of startCompaction right at the start. Only tests switch it off
+// (TestMain): every test starts a server on a new database, where the pass finds nothing to do but
+// still analyzes every table.
+var compactAtStart = true
+
 func (s *Server) startCompaction() {
+	if !compactAtStart && !s.wait(compactionInterval) {
+		return
+	}
 	for {
 		done := s.demoPass()
 		s.compactOnce()
@@ -419,7 +428,7 @@ func (s *Server) purgeUnconfirmedAccounts(now time.Time) {
 	}
 	slog.Info("Unconfirmed registrations deleted", "count", len(gone))
 	for i := range gone {
-		s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountUnconfirmedDeleted, auditUserTarget(&gone[i]), nil)
+		s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountUnconfirmedDeleted, storage.AuditUserTarget(&gone[i]), nil)
 	}
 }
 

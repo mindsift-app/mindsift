@@ -10,6 +10,7 @@ import (
 // A new password from the command line lifts the sign-in lock of the account in the running server,
 // which only the server can do (its counters live in memory).
 func TestCLIEventsReachTheRunningServer(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	u, err := store.CreateUserWithUsername("bert@example.com", "bert", "x", "", domain.RoleMember)
 	if err != nil {

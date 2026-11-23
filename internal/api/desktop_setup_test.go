@@ -122,7 +122,8 @@ func TestDesktopSetupWizard(t *testing.T) {
 	}
 	var mine []struct{ Name string }
 	_ = json.Unmarshal(getWith(t, router, "/api/v1/backups", token).Body.Bytes(), &mine)
-	if len(mine) != 1 {
+	// as above: the one by hand, and the first one of the setup when it is done already
+	if len(mine) < 1 || len(mine) > 2 {
 		t.Fatalf("own backups listed: %v", mine)
 	}
 	if rec := postJSON(t, router, "/api/v1/backups/"+mine[0].Name+"/restore?preview=1&sections=notes", token, `{}`); rec.Code != http.StatusOK {
@@ -140,6 +141,7 @@ func TestDesktopSetupWizard(t *testing.T) {
 // language as DEFAULT_LANGUAGE (German here): the administration, the sign-in status and the account all
 // say English afterwards, and a restart with the same system language keeps it.
 func TestDesktopSetupLanguageWinsOverTheSystemLanguage(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	german := func(c *config.Config) { c.DefaultLanguage = "de" }
 	router := startDesktop(t, store, dbPath, config.DesktopLinux, german).Router()
@@ -173,6 +175,7 @@ func TestDesktopSetupLanguageWinsOverTheSystemLanguage(t *testing.T) {
 // The folder in the administration: shown with the default, checked when changed, "" goes back to the
 // default; refused are relative paths, the instance's own folder and a folder that cannot be written to.
 func TestDesktopBackupLocation(t *testing.T) {
+	t.Parallel()
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
 	router := srv.Router()

@@ -49,6 +49,7 @@ func createSecretIn(t *testing.T, router http.Handler, token, docID, value strin
 }
 
 func TestSecretsOnlyRevealToLoginsWithAccess(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -137,6 +138,7 @@ func TestSecretsOnlyRevealToLoginsWithAccess(t *testing.T) {
 // owner's value alone, and the copy stays when the share ends (a copy is a copy); pasting again after
 // that gives the placeholder.
 func TestSecretCopiedByAReaderIsTheirOwn(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
@@ -211,6 +213,7 @@ func TestSecretCopiedByAReaderIsTheirOwn(t *testing.T) {
 
 // An agent adding a bullet with a reference over MCP: the same rule as the editor.
 func TestMCPBulletWithSecretGetsOwnCopy(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

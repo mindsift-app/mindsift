@@ -1,7 +1,7 @@
 package api
 
 import (
-	"encoding/json"
+	"database/sql"
 	"errors"
 	"net/http"
 
@@ -39,19 +39,30 @@ func restructureStatus(err error) int {
 	return http.StatusInternalServerError
 }
 
+// writeRestructureError answers a failed restructuring: a note the user cannot see (sql.ErrNoRows of the
+// store) is the same 404 as a missing one, and a failure not meant for people stays in the server log.
+func writeRestructureError(w http.ResponseWriter, err error) {
+	if errors.Is(err, sql.ErrNoRows) {
+		err = storage.ErrDocNotFound
+	}
+	writeErrorFrom(w, restructureStatus(err), err)
+}
+
 // handleExtractBranch: POST /documents/{id}/extract {blockId, clientId}
 func (s *Server) handleExtractBranch(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
-	if !storage.CanEditDoc(s.store.DocRole(userID, docID)) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz")
+	userID, ok := s.requireDocEdit(w, r, docID)
+	if !ok {
 		return
 	}
 	var req struct {
 		BlockID  string `json:"blockId"`
 		ClientID string `json:"clientId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.BlockID == "" {
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.BlockID == "" {
 		writeError(w, http.StatusBadRequest, "blockId fehlt")
 		return
 	}
@@ -60,7 +71,7 @@ func (s *Server) handleExtractBranch(w http.ResponseWriter, r *http.Request) {
 	}
 	created, link, err := s.store.ExtractBranch(userID, docID, req.BlockID, s.restructureActor(r, req.ClientID), s.leases.View(docID))
 	if err != nil {
-		writeError(w, restructureStatus(err), trErr(w, err))
+		writeRestructureError(w, err)
 		return
 	}
 	if full, err := s.store.GetDocumentByID(userID, created.ID); err == nil {
@@ -73,23 +84,24 @@ func (s *Server) handleExtractBranch(w http.ResponseWriter, r *http.Request) {
 // handleMoveBranch: POST /documents/{id}/move {blockId, targetId, clientId} copies the branch to the end of
 // the target note; the editor removes it from this note itself (storage.MoveBranch).
 func (s *Server) handleMoveBranch(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
+	userID, ok := s.requireDocEdit(w, r, docID)
+	if !ok {
+		return
+	}
 	var req struct {
 		BlockID  string `json:"blockId"`
 		TargetID string `json:"targetId"`
 		ClientID string `json:"clientId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.BlockID == "" || req.TargetID == "" {
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.BlockID == "" || req.TargetID == "" {
 		writeError(w, http.StatusBadRequest, "blockId und targetId fehlen")
 		return
 	}
-	if !storage.CanEditDoc(s.store.DocRole(userID, docID)) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz")
-		return
-	}
-	if !storage.CanEditDoc(s.store.DocRole(userID, req.TargetID)) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für die Zielnotiz")
+	if !s.targetDocEditable(w, userID, req.TargetID) {
 		return
 	}
 	if reservedClientID(w, req.ClientID) {
@@ -97,7 +109,7 @@ func (s *Server) handleMoveBranch(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := s.store.MoveBranch(userID, docID, req.BlockID, req.TargetID, s.restructureActor(r, req.ClientID), s.leases.View(docID), s.leases.View(req.TargetID))
 	if err != nil {
-		writeError(w, restructureStatus(err), trErr(w, err))
+		writeRestructureError(w, err)
 		return
 	}
 	s.notifyDocChanged(req.TargetID, s.store.DocHead(req.TargetID))
@@ -107,25 +119,30 @@ func (s *Server) handleMoveBranch(w http.ResponseWriter, r *http.Request) {
 // handleUndoMove: POST /documents/{id}/move/undo {targetId, rootId, moved, clientId} takes the branch out
 // of the target note again and gives the task links back to this note.
 func (s *Server) handleUndoMove(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
+	userID, ok := s.requireDocEdit(w, r, docID)
+	if !ok {
+		return
+	}
 	var req struct {
 		storage.MoveResult
 		ClientID string `json:"clientId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.TargetID == "" || req.RootID == "" {
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.TargetID == "" || req.RootID == "" {
 		writeError(w, http.StatusBadRequest, "targetId und rootId fehlen")
 		return
 	}
-	if !storage.CanEditDoc(s.store.DocRole(userID, docID)) || !storage.CanEditDoc(s.store.DocRole(userID, req.TargetID)) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für die Zielnotiz")
+	if !s.targetDocEditable(w, userID, req.TargetID) {
 		return
 	}
 	if reservedClientID(w, req.ClientID) {
 		return
 	}
 	if err := s.store.UndoMove(docID, req.MoveResult, s.restructureActor(r, req.ClientID), s.leases.View(req.TargetID)); err != nil {
-		writeError(w, restructureStatus(err), trErr(w, err))
+		writeRestructureError(w, err)
 		return
 	}
 	s.notifyDocChanged(req.TargetID, s.store.DocHead(req.TargetID))
@@ -138,7 +155,7 @@ func (s *Server) handleUndoExtract(w http.ResponseWriter, r *http.Request) {
 	docID := chi.URLParam(r, "id")
 	users, _ := s.store.GetAuthorizedDocUsers(docID)
 	if err := s.store.UndoExtract(userID, docID); err != nil {
-		writeError(w, restructureStatus(err), trErr(w, err))
+		writeRestructureError(w, err)
 		return
 	}
 	for _, uid := range users {
@@ -152,17 +169,19 @@ func (s *Server) handleUndoExtract(w http.ResponseWriter, r *http.Request) {
 // Links by id from other people's notes answer 409 with code "foreign_links" and their number;
 // {confirmForeignLinks: true} pulls the note back anyway.
 func (s *Server) handleInlineNote(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
-	if !storage.CanEditDoc(s.store.DocRole(userID, docID)) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz")
+	userID, ok := s.requireDocEdit(w, r, docID)
+	if !ok {
 		return
 	}
 	var req struct {
 		BlockID             string `json:"blockId"`
 		ConfirmForeignLinks bool   `json:"confirmForeignLinks"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.BlockID == "" {
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.BlockID == "" {
 		writeError(w, http.StatusBadRequest, "blockId fehlt")
 		return
 	}
@@ -178,7 +197,7 @@ func (s *Server) handleInlineNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, restructureStatus(err), trErr(w, err))
+		writeRestructureError(w, err)
 		return
 	}
 	users, _ := s.store.GetAuthorizedDocUsers(res.SourceID)
@@ -190,17 +209,19 @@ func (s *Server) handleInlineNote(w http.ResponseWriter, r *http.Request) {
 
 // handleMergeDocuments: POST /documents/{id}/merge {sourceId, clientId} appends the source to this note.
 func (s *Server) handleMergeDocuments(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
 	targetID := chi.URLParam(r, "id")
-	if !storage.CanEditDoc(s.store.DocRole(userID, targetID)) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für die Zielnotiz")
+	userID, ok := s.requireDocEdit(w, r, targetID)
+	if !ok {
 		return
 	}
 	var req struct {
 		SourceID string `json:"sourceId"`
 		ClientID string `json:"clientId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.SourceID == "" {
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.SourceID == "" {
 		writeError(w, http.StatusBadRequest, "sourceId fehlt")
 		return
 	}
@@ -210,7 +231,7 @@ func (s *Server) handleMergeDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := s.store.MergeDocuments(userID, req.SourceID, targetID, s.restructureActor(r, req.ClientID), s.leases.View(targetID))
 	if err != nil {
-		writeError(w, restructureStatus(err), trErr(w, err))
+		writeRestructureError(w, err)
 		return
 	}
 	s.notifyDocChanged(targetID, s.store.DocHead(targetID))
@@ -222,10 +243,9 @@ func (s *Server) handleMergeDocuments(w http.ResponseWriter, r *http.Request) {
 
 // handleUndoMerge: POST /documents/{id}/merge/undo {sourceId, headingId, clientId}
 func (s *Server) handleUndoMerge(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
 	targetID := chi.URLParam(r, "id")
-	if !storage.CanEditDoc(s.store.DocRole(userID, targetID)) {
-		writeError(w, http.StatusForbidden, "Keine Schreibrechte für die Zielnotiz")
+	userID, ok := s.requireDocEdit(w, r, targetID)
+	if !ok {
 		return
 	}
 	var req struct {
@@ -233,7 +253,10 @@ func (s *Server) handleUndoMerge(w http.ResponseWriter, r *http.Request) {
 		HeadingID string `json:"headingId"`
 		ClientID  string `json:"clientId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.SourceID == "" || req.HeadingID == "" {
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.SourceID == "" || req.HeadingID == "" {
 		writeError(w, http.StatusBadRequest, "sourceId und headingId fehlen")
 		return
 	}
@@ -242,7 +265,7 @@ func (s *Server) handleUndoMerge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.store.UndoMerge(userID, m, s.restructureActor(r, req.ClientID), s.leases.View(targetID)); err != nil {
-		writeError(w, restructureStatus(err), trErr(w, err))
+		writeRestructureError(w, err)
 		return
 	}
 	s.notifyDocChanged(targetID, s.store.DocHead(targetID))

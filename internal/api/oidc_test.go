@@ -453,6 +453,7 @@ func TestOIDCTicketIsBoundAndUsedOnce(t *testing.T) {
 }
 
 func TestOIDCReturnPathStaysOnTheSite(t *testing.T) {
+	t.Parallel()
 	for in, want := range map[string]string{
 		"":                                  "/",
 		"/":                                 "/",

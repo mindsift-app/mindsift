@@ -98,6 +98,7 @@ type snapshotUploadResult struct {
 // into the local account (things others shared with it are listed as skipped), with its settings; the
 // other account, the sharing and the server's settings stay out, and the instance keeps its one account.
 func TestDesktopTakesOverOneAccountOfAServerSnapshot(t *testing.T) {
+	t.Parallel()
 	snapshot, anna, _ := serverSnapshot(t)
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)
@@ -159,6 +160,11 @@ func TestDesktopTakesOverOneAccountOfAServerSnapshot(t *testing.T) {
 	if len(users) != 1 || users[0].ID != me.ID || users[0].Role != domain.RoleAdmin || users[0].Username != me.Username {
 		t.Fatalf("accounts after the take over: %+v", users)
 	}
+	// Recorded like the other changes of the backups: who took which account over, and how
+	if e := lastAudit(t, store, storage.AuditBackupTakenOver); e.ActorID != me.ID || e.TargetKind != storage.AuditTargetBackup ||
+		!strings.Contains(string(e.Details), `"mode":"restore"`) || !strings.Contains(string(e.Details), `"notes":1`) || strings.Contains(string(e.Details), `"account":""`) {
+		t.Errorf("audit row of the take over: %+v %s", e, e.Details)
+	}
 	if users[0].DisplayName != "Anna Server" || store.Language(me.ID) != "en" {
 		t.Errorf("settings not taken over: name %q, language %q", users[0].DisplayName, store.Language(me.ID))
 	}
@@ -191,6 +197,7 @@ func TestDesktopTakesOverOneAccountOfAServerSnapshot(t *testing.T) {
 
 // What is not a snapshot is refused, and a cancelled one is removed.
 func TestDesktopSnapshotRefusesOtherFilesAndCancels(t *testing.T) {
+	t.Parallel()
 	snapshot, _, _ := serverSnapshot(t)
 	store, dbPath := freshStore(t)
 	srv := startDesktop(t, store, dbPath, config.DesktopLinux, nil)

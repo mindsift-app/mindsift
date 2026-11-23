@@ -42,7 +42,7 @@ func (s *Server) handleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	// An empty body gives a key with the default name and rights; a broken one is refused, so a typo
 	// does not quietly create a key with rights nobody asked for
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
 		return
 	}
 	user, ok := s.currentUser(w, r)
@@ -78,8 +78,7 @@ func (s *Server) handleUpdateAPIKey(w http.ResponseWriter, r *http.Request) {
 		Name   *string   `json:"name"`
 		Scopes *[]string `json:"scopes"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	key, err := s.store.UpdateAPIKey(userID, chi.URLParam(r, "id"), req.Name, req.Scopes)
@@ -256,18 +255,8 @@ func (s *Server) handleWebhookIngest(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// createTask creates a task directly (POST /webhooks/ingest, MCP tool create_task), optionally in a
-// task list the user may write to (otherwise storage.ErrTaskListReadOnly). actor: the API key, if any.
-func (s *Server) createTask(userID, content, priority, source, dueDate, taskListID, notes string, actor *apiActor) (*domain.Thought, error) {
-	// Before the text is checked, so an empty task in a read-only list is refused as such
-	if taskListID != "" && !s.store.CanEditTaskList(userID, taskListID) {
-		return nil, storage.ErrTaskListReadOnly
-	}
-	return s.insertTask(userID, content, priority, source, dueDate, taskListID, notes, actor)
-}
-
 func (s *Server) ingestTask(w http.ResponseWriter, userID, content, priority, source, dueDate, taskListID string, actor *apiActor) {
-	task, err := s.createTask(userID, content, priority, source, dueDate, taskListID, "", actor)
+	task, err := s.insertTask(userID, content, priority, source, dueDate, taskListID, "", actor)
 	if errors.Is(err, storage.ErrTaskListReadOnly) {
 		writeErrorFrom(w, http.StatusForbidden, err)
 		return

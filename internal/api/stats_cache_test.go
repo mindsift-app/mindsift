@@ -42,6 +42,7 @@ func countingCompute(n *atomic.Int32) func() (*domain.DashboardStats, error) {
 }
 
 func TestStatsCacheAnswersFromMemoryWithinTTL(t *testing.T) {
+	t.Parallel()
 	c, clk := newTestStatsCache()
 	var n atomic.Int32
 	for i := 0; i < 5; i++ {
@@ -61,6 +62,7 @@ func TestStatsCacheAnswersFromMemoryWithinTTL(t *testing.T) {
 }
 
 func TestStatsCacheInvalidateDropsTheUserOnly(t *testing.T) {
+	t.Parallel()
 	c, _ := newTestStatsCache()
 	var n atomic.Int32
 	c.get("u1", countingCompute(&n))
@@ -77,6 +79,7 @@ func TestStatsCacheInvalidateDropsTheUserOnly(t *testing.T) {
 // A change that lands while the counters are being computed: that result may predate the change and
 // must not be stored.
 func TestStatsCacheDoesNotStoreAComputationOverlappingAChange(t *testing.T) {
+	t.Parallel()
 	c, _ := newTestStatsCache()
 	var n atomic.Int32
 	c.get("u1", countingCompute(&n))
@@ -122,6 +125,7 @@ func TestStatsCacheBurstComputesOnce(t *testing.T) {
 }
 
 func TestStatsCacheKeepsTheMapSmall(t *testing.T) {
+	t.Parallel()
 	c, clk := newTestStatsCache()
 	var n atomic.Int32
 	for i := 0; i < statsCacheMaxUsers+10; i++ {
@@ -152,6 +156,7 @@ func getStats(t *testing.T, srv *Server, token string) domain.DashboardStats {
 
 // The acting user sees the own change at once, other changes reach the counters with the realtime event
 func TestStatsCacheThroughTheAPI(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, err := auth.ValidateToken("test-jwt-secret-key", token)
 	if err != nil {

@@ -225,8 +225,7 @@ func (s *Server) handleLoginMFA(w http.ResponseWriter, r *http.Request) {
 		Code        string `json:"code"`
 		TrustDevice bool   `json:"trustDevice"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if req.Code == "" {

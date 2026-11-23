@@ -12,6 +12,7 @@ import (
 
 // The part of an address before the @ signs in only when exactly one account has it (P-06)
 func TestLocalPartLoginOnlyWhenUnambiguous(t *testing.T) {
+	t.Parallel()
 	_, store, _ := setupTestServer(t)
 	a, _ := store.CreateUser("john@a.example", "hash", "Johnny A", "member")
 	if u, err := store.GetUserByLogin("john"); err != nil || u.ID != a.ID {
@@ -29,6 +30,7 @@ func TestLocalPartLoginOnlyWhenUnambiguous(t *testing.T) {
 // With confirmation by mail a taken address gets the same answer as a new one, and accounts waiting
 // for their link are locked from the start (SA-06, P-07)
 func TestRegistrationDoesNotTellTakenAddresses(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	srv.cfg.BaseURL, srv.cfg.BaseURLSet = "https://ms.example", true
 	sys, _ := store.GetSystemSettings()
@@ -54,6 +56,7 @@ func TestRegistrationDoesNotTellTakenAddresses(t *testing.T) {
 
 // A token without version is not one of ours (SA-14)
 func TestTokenWithoutVersionRefused(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	u, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
 	// GenerateToken never issues version 0, so the token is signed by hand
@@ -68,6 +71,7 @@ func TestTokenWithoutVersionRefused(t *testing.T) {
 
 // A list is always read for somebody; an empty person owns nothing (SA-15)
 func TestListWithoutPersonIsNotFound(t *testing.T) {
+	t.Parallel()
 	_, store, _ := setupTestServer(t)
 	u, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
 	l, err := store.CreateList(u.ID, "Einkauf", "🛒", "shopping")

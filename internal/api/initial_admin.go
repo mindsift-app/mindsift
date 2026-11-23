@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -65,7 +64,7 @@ func (s *Server) CreateInitialAdmin() error {
 	if err != nil {
 		return fmt.Errorf("creating the account: %w", err)
 	}
-	s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountCreated, auditUserTarget(user),
+	s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountCreated, storage.AuditUserTarget(user),
 		map[string]string{"role": user.Role, "via": "ADMIN_USER"})
 	// The wizard's other questions come after the first sign-in
 	if err := s.store.SetSetupPending(true); err != nil {
@@ -133,8 +132,7 @@ func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
 		// The desktop app's backup folder ("" = backups/ in the instance's folder); ignored on a server
 		BackupDir *string `json:"backupDir"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if err := req.check(); err != nil {

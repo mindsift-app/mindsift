@@ -104,18 +104,6 @@ func noteBullets(d *collab.Doc, titles map[string]string) []noteBullet {
 	return out
 }
 
-// editableNote checks that the user may change the note (own or shared for editing, not in the trash)
-func (s *Server) editableNote(userID, docID string) error {
-	role := s.store.DocRole(userID, docID)
-	if role == "" {
-		return errors.New("Notiz nicht gefunden")
-	}
-	if !storage.CanEditDoc(role) {
-		return errors.New("Keine Schreibrechte für diese Notiz (nur Lesen oder im Papierkorb)")
-	}
-	return nil
-}
-
 // mcpCollabActor: the agent as the writer of note changes (its own client id, so editors' leases count)
 func (s *Server) mcpCollabActor(userID string, actor *apiActor) collab.Actor {
 	a := collab.Actor{UserID: userID, ClientID: collab.MCPHolder}
@@ -319,7 +307,7 @@ var mcpWriteTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			if err := s.editableNote(userID, a.ID); err != nil {
+			if err := s.docWritable(userID, a.ID); err != nil {
 				return nil, err
 			}
 			if a.Title != nil && strings.TrimSpace(*a.Title) == "" {
@@ -380,7 +368,7 @@ var mcpWriteTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			if err := s.editableNote(userID, a.NoteID); err != nil {
+			if err := s.docWritable(userID, a.NoteID); err != nil {
 				return nil, err
 			}
 			if strings.TrimSpace(a.Markdown) != "" {
@@ -487,7 +475,7 @@ var mcpWriteTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			if err := s.editableNote(userID, a.NoteID); err != nil {
+			if err := s.docWritable(userID, a.NoteID); err != nil {
 				return nil, err
 			}
 			if a.Type != nil && !mcpBulletTypes[*a.Type] {
@@ -596,7 +584,7 @@ var mcpWriteTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			if err := s.editableNote(userID, a.NoteID); err != nil {
+			if err := s.docWritable(userID, a.NoteID); err != nil {
 				return nil, err
 			}
 			d, err := s.noteDoc(a.NoteID)

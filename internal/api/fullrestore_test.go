@@ -421,6 +421,7 @@ func TestUploadInChunksAndRestore(t *testing.T) {
 
 // An upload too large for the limit is refused at the start; one nobody touched for a day goes.
 func TestUploadLimitAndAbandonedCleanup(t *testing.T) {
+	t.Parallel()
 	e := newRestoreEnv(t)
 	e.srv.cfg.RestoreUploadMaxGB = 1
 	if rec := e.call(http.MethodPost, "/api/v1/admin/backups/uploads", fmt.Sprintf(`{"name":"gross.tar","size":%d}`, int64(2)<<30)); rec.Code != http.StatusRequestEntityTooLarge {

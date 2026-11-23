@@ -22,7 +22,7 @@ import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { SelectMenu } from '../../components/SelectMenu';
 import { StatusMessage, StatusToast } from '../../components/StatusToast';
 import { errorMessage } from '../../lib/errorMessage';
-import { useCloseOnEscape } from '../../lib/useDismiss';
+import { FormSheet } from '../../components/FormSheet';
 
 interface GroupsViewProps {
   currentUser: User;
@@ -38,7 +38,6 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
 
   // Create Group Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
-  useCloseOnEscape(() => setShowCreateModal(false), { active: showCreateModal });
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   // Whoever is in several organizations picks the group's one (its members come from there)
@@ -244,7 +243,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
             triggerHaptic(10);
             setShowCreateModal(true);
           }}
-          className="btn-primary h-8 px-3.5 text-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+          className="btn-primary h-11 sm:h-8 px-3.5 text-sm sm:text-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>{t('newGroup')}</span>
@@ -254,104 +253,60 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       {/* Answers to changes float above the page, so nothing in it moves */}
       <StatusToast msg={statusMsg} onClose={() => setStatusMsg(null)} />
 
-      {/* Modal: Neue Gruppe erstellen */}
       {showCreateModal && (
-        <div
-          className="fixed inset-0 m-0! modal-overlay z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
-          onClick={() => setShowCreateModal(false)}
+        <FormSheet
+          title={t('create.title')}
+          icon={<Users className="w-4 h-4 text-accent" />}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreateGroup}
+          submitLabel={t('create.submit')}
+          busy={creating || !newGroupName.trim()}
         >
-          <div
-            className="w-full max-w-md bg-panel border border-border rounded-xl shadow-panel p-5 space-y-4 animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
-                  <Users className="w-4 h-4" />
-                </div>
-                <h3 className="font-bold text-sm text-main">{t('create.title')}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCreateModal(false)}
-                className="p-1 text-muted hover:text-main rounded-btn transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateGroup} className="space-y-4">
-              <div>
-                <label className="block text-muted text-xs mb-1 font-medium">
-                  {t('create.name')}
-                </label>
-                <input
-                  type="text"
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                  placeholder={t('create.namePlaceholder')}
-                  required
-                  autoFocus
-                  className="w-full h-8 px-2.5 input-field text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-muted text-xs mb-1 font-medium">
-                  {t('create.description')}
-                </label>
-                <input
-                  type="text"
-                  value={newGroupDesc}
-                  onChange={(e) => setNewGroupDesc(e.target.value)}
-                  placeholder={t('create.descriptionPlaceholder')}
-                  className="w-full h-8 px-2.5 input-field text-xs"
-                />
-              </div>
-
-              {myOrgs.length > 1 && (
-                <div>
-                  <label className="block text-muted text-xs mb-1 font-medium">{t('create.organization')}</label>
-                  <SelectMenu
-                    ariaLabel={t('create.organization')}
-                    value={newGroupOrg}
-                    onChange={setNewGroupOrg}
-                    options={myOrgs.map((o) => ({ value: o.id, label: o.name }))}
-                  />
-                  <p className="text-[11px] text-faint mt-1">{t('create.organizationHint')}</p>
-                </div>
-              )}
-
-              <div className="p-3 bg-canvas border border-border rounded-btn text-[11px] text-muted space-y-1">
-                <p className="font-semibold text-main flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-accent" />
-                  <span>{t('create.youAdmin')}</span>
-                </p>
-                <p>
-                  {t('create.youAdminHint')}
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="btn-action h-8 px-3 text-xs cursor-pointer"
-                >
-                  {t('common:cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={creating || !newGroupName.trim()}
-                  className="btn-primary h-8 px-4 text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{t('create.submit')}</span>
-                </button>
-              </div>
-            </form>
+          <div>
+            <label className="block text-muted text-xs mb-1 font-medium">{t('create.name')}</label>
+            <input
+              type="text"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              placeholder={t('create.namePlaceholder')}
+              required
+              autoFocus
+              className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
+            />
           </div>
-        </div>
+
+          <div>
+            <label className="block text-muted text-xs mb-1 font-medium">{t('create.description')}</label>
+            <input
+              type="text"
+              value={newGroupDesc}
+              onChange={(e) => setNewGroupDesc(e.target.value)}
+              placeholder={t('create.descriptionPlaceholder')}
+              className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
+            />
+          </div>
+
+          {myOrgs.length > 1 && (
+            <div>
+              <label className="block text-muted text-xs mb-1 font-medium">{t('create.organization')}</label>
+              <SelectMenu
+                ariaLabel={t('create.organization')}
+                value={newGroupOrg}
+                onChange={setNewGroupOrg}
+                options={myOrgs.map((o) => ({ value: o.id, label: o.name }))}
+              />
+              <p className="text-[11px] text-faint mt-1">{t('create.organizationHint')}</p>
+            </div>
+          )}
+
+          <div className="p-3 bg-canvas border border-border rounded-btn text-[11px] text-muted space-y-1">
+            <p className="font-semibold text-main flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-accent" />
+              <span>{t('create.youAdmin')}</span>
+            </p>
+            <p>{t('create.youAdminHint')}</p>
+          </div>
+        </FormSheet>
       )}
 
       {/* Main Content Area */}
@@ -373,7 +328,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
               triggerHaptic(10);
               setShowCreateModal(true);
             }}
-            className="btn-primary h-8 px-4 text-xs inline-flex items-center gap-1.5 cursor-pointer"
+            className="btn-primary h-11 sm:h-8 px-4 text-sm sm:text-xs inline-flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{t('empty.create')}</span>
@@ -420,27 +375,27 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                 value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
                                 placeholder={t('namePlaceholder')}
-                                className="w-full h-8 px-2.5 input-field text-xs font-bold"
+                                className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs font-bold"
                               />
                               <input
                                 type="text"
                                 value={editDesc}
                                 onChange={(e) => setEditDesc(e.target.value)}
                                 placeholder={t('descriptionPlaceholder')}
-                                className="w-full h-7 px-2.5 input-field text-xs"
+                                className="w-full h-11 sm:h-7 px-2.5 input-field text-base sm:text-xs"
                               />
                               <div className="flex gap-2">
                                 <button
                                   type="button"
                                   onClick={() => handleSaveEdit(team.id)}
-                                  className="btn-primary h-7 px-3 text-[11px] cursor-pointer"
+                                  className="btn-primary h-11 sm:h-7 px-3 text-sm sm:text-[11px] cursor-pointer"
                                 >
                                   {t('common:save')}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setEditingTeamId(null)}
-                                  className="btn-action h-7 px-2.5 text-[11px] cursor-pointer"
+                                  className="btn-action h-11 sm:h-7 px-2.5 text-sm sm:text-[11px] cursor-pointer"
                                 >
                                   {t('common:cancel')}
                                 </button>
@@ -472,7 +427,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                           <div className="flex items-center gap-1.5 shrink-0">
                             <button
                               onClick={() => handleStartEdit(team)}
-                              className="btn-action h-7 px-2.5 text-xs flex items-center gap-1 cursor-pointer"
+                              className="btn-action h-11 sm:h-7 px-2.5 text-xs flex items-center gap-1 cursor-pointer"
                               title={t('edit')}
                             >
                               <Pencil className="w-3.5 h-3.5" />
@@ -535,7 +490,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
 
                                   <button
                                     onClick={() => handleRemoveMember(team.id, m.userId, m.displayName)}
-                                    className="p-1 text-faint hover:text-status-err rounded-sm transition-colors cursor-pointer"
+                                    className="w-11 h-11 -mr-2 sm:mr-0 sm:w-auto sm:h-auto sm:p-1 flex items-center justify-center text-faint hover:text-status-err rounded-sm transition-colors cursor-pointer"
                                     title={isSelf ? t('leave') : t('removeMember')}
                                   >
                                     <X className="w-3.5 h-3.5" />
@@ -577,7 +532,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                           type="button"
                           onClick={() => handleAddMember(team.id)}
                           disabled={!selectedUserByTeam[team.id]}
-                          className="btn-primary h-8 px-3.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
+                          className="btn-primary h-11 sm:h-8 px-3.5 text-sm sm:text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
                         >
                           <UserPlus className="w-3.5 h-3.5" />
                           <span>{t('add')}</span>
@@ -628,7 +583,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
 
                         <button
                           onClick={() => handleRemoveMember(team.id, currentUser.id, currentUser.displayName)}
-                          className="btn-action text-status-err hover:bg-status-err-bg h-7 px-2.5 text-xs flex items-center gap-1.5 cursor-pointer"
+                          className="btn-action text-status-err hover:bg-status-err-bg h-11 sm:h-7 px-2.5 text-xs flex items-center gap-1.5 cursor-pointer"
                           title={t('leave')}
                         >
                           <LogOut className="w-3.5 h-3.5" />

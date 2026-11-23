@@ -40,6 +40,7 @@ func importArchive(t *testing.T, router http.Handler, token, path string, files 
 // note (or writing a bullet) that shows it; the bullet made the file readable for its note's readers.
 // References to files the writer may not read are dropped now, on import and in the editor sync.
 func TestForeignMediaReferencesGiveNoAccess(t *testing.T) {
+	t.Parallel()
 	srv, store, tokenA := setupTestServer(t)
 	srv.cfg.Media.MaxImageMB = 1
 	router := srv.Router()

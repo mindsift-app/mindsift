@@ -273,7 +273,7 @@ var mcpStructureTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			if err := s.editableNote(userID, a.NoteID); err != nil {
+			if err := s.docWritable(userID, a.NoteID); err != nil {
 				return nil, err
 			}
 			d, err := s.noteDoc(a.NoteID)
@@ -333,7 +333,7 @@ var mcpStructureTools = []mcpTool{
 // (storage.ExtractBranchAs), then the branch is replaced by the link as a change of the agent's own
 // (useBranchActions.ts handleExtractBlock).
 func (s *Server) mcpExtractBullet(ctx context.Context, userID string, actor *apiActor, noteID, bulletID, title string, folderPath *string) (any, error) {
-	if err := s.editableNote(userID, noteID); err != nil {
+	if err := s.docWritable(userID, noteID); err != nil {
 		return nil, err
 	}
 	if folderPath != nil {

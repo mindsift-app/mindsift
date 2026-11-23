@@ -48,6 +48,7 @@ func bulletID(t *testing.T, res map[string]any, text string) string {
 
 // notes:write changes bullets through the sync operations, renames and trashes own notes only.
 func TestMCPNoteWrite(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)
@@ -145,6 +146,7 @@ func TestMCPNoteWrite(t *testing.T) {
 
 // inbox:read lists open entries, inbox:write converts or discards them, never reaches tasks.
 func TestMCPInbox(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)
@@ -207,6 +209,7 @@ func TestMCPInbox(t *testing.T) {
 
 // Agents read drawings as a description and cannot overwrite them with text
 func TestMCPDrawings(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)
@@ -242,6 +245,7 @@ func TestMCPDrawings(t *testing.T) {
 
 // Agents draw with Mermaid (laid out by the server) or with the drawing model
 func TestMCPCreatesDrawings(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)
@@ -307,6 +311,7 @@ func TestMCPCreatesDrawings(t *testing.T) {
 // Agents read links to notes with the current title and without ids; [[Titel]] they write points at the
 // note by id where the title is unique, links they leave alone keep their id.
 func TestMCPWikiLinks(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	uid := claims.UserID
@@ -379,6 +384,7 @@ func TestMCPWikiLinks(t *testing.T) {
 
 // Agents write tables as Markdown; they are stored the way the editor writes them and read back in get_note
 func TestMCPNoteTables(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)
@@ -424,6 +430,7 @@ func TestMCPNoteTables(t *testing.T) {
 // drawing_help explains drawings to whoever may write one; its examples are drawings the tools accept. The
 // bullet tools only point to it, so their descriptions stay short enough for every client.
 func TestMCPDrawingHelp(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)
@@ -463,6 +470,7 @@ func TestMCPDrawingHelp(t *testing.T) {
 // add_note_bullet with markdown inserts a whole nested outline in one call, at the same places as a
 // single bullet.
 func TestMCPAddNoteBulletMarkdown(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	call := mcpCaller(t, srv)

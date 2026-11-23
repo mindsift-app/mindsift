@@ -4,7 +4,6 @@ import {
   Link as LinkIcon,
   FileText,
   Globe,
-  X,
   Search,
   ExternalLink,
   LoaderCircle,
@@ -19,6 +18,7 @@ import { SnippetRenderer } from '../../components/SnippetRenderer';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { useWorkspaceDocsSnapshot } from '../../lib/wikiLinkResolver';
 import { useCloseOnEscape } from '../../lib/useDismiss';
+import { DialogHeader } from '../../components/BottomSheet';
 
 export interface LinkModalProps {
   isOpen: boolean;
@@ -273,28 +273,13 @@ export const LinkModal: React.FC<LinkModalProps> = ({
       }}
     >
       <div className="panel-surface w-full max-w-lg p-5 shadow-panel rounded-card border border-border space-y-4 animate-in fade-in zoom-in-95 duration-150">
-        {/* Header - identical to UnifiedShareModal */}
-        <div className="flex items-center justify-between pb-3 border-b border-border">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-btn bg-accent/15 text-accent flex items-center justify-center shrink-0">
-              <LinkIcon className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-bold text-main truncate">{t('link.title')}</h3>
-              <p className="text-[11px] text-muted truncate">
-                {t('link.intro')}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text-muted hover:text-main rounded-btn hover:bg-panel transition-colors cursor-pointer"
-            title={t('close')}
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <DialogHeader
+          title={t('link.title')}
+          subtitle={t('link.intro')}
+          icon={<LinkIcon className="w-4 h-4" />}
+          onClose={onClose}
+          className="pb-3"
+        />
 
         {/* Control Box - matching UnifiedShareModal form header */}
         <div className="space-y-3 p-3 bg-panel-elevated border border-border rounded-card">

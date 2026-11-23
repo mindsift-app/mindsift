@@ -351,8 +351,7 @@ func (s *Server) handleMFAPasskeyOptions(w http.ResponseWriter, r *http.Request)
 	var req struct {
 		MFAToken string `json:"mfaToken"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	expired := func() {
@@ -392,8 +391,7 @@ func (s *Server) handleLoginMFAPasskey(w http.ResponseWriter, r *http.Request) {
 		Credential  json.RawMessage `json:"credential"`
 		TrustDevice bool            `json:"trustDevice"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	s.finishSecondStep(w, r, req.MFAToken, req.TrustDevice, func(user *domain.User) (string, bool) {
@@ -433,8 +431,7 @@ func (s *Server) handlePasskeyLogin(w http.ResponseWriter, r *http.Request) {
 		Token      string          `json:"token"`
 		Credential json.RawMessage `json:"credential"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	wa, err := s.webAuthn()
@@ -559,8 +556,7 @@ func (s *Server) handlePasskeyRegister(w http.ResponseWriter, r *http.Request) {
 		Name       string          `json:"name"`
 		Credential json.RawMessage `json:"credential"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	user, ok := s.currentUser(w, r)

@@ -15,6 +15,7 @@ import (
 // Alarms and bundled notifications go out the same way (postWebhook): the JSON reaches the target, and a
 // refusing target gives the same translatable error for both.
 func TestPostWebhookAlarmAndDigestAlike(t *testing.T) {
+	t.Parallel()
 	srv, _, _ := setupTestServer(t)
 
 	status := http.StatusOK

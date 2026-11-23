@@ -77,7 +77,7 @@ func (s *Server) prepareDesktopAccount() error {
 	if err != nil {
 		return fmt.Errorf("creating the account: %w", err)
 	}
-	s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountCreated, auditUserTarget(user),
+	s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountCreated, storage.AuditUserTarget(user),
 		map[string]string{"role": user.Role, "via": "desktop"})
 	// One person: nothing to share with anyone (the sharing options disappear), no registration
 	if sys, err := s.store.GetSystemSettings(); err == nil && sys != nil {

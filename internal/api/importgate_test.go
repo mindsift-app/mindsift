@@ -33,6 +33,7 @@ func importRequest(t *testing.T, router http.Handler, token, path string) *httpt
 
 // One import per person and two per server run at a time, previews included; the others get 429.
 func TestImportsRunOneAtATime(t *testing.T) {
+	t.Parallel()
 	srv, _, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)

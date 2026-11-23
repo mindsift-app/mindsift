@@ -208,7 +208,7 @@ func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 		drawError(c, p.DocID, p.BlockID, "rate")
 		return
 	}
-	if !storage.CanEditDoc(s.store.DocRole(userID, p.DocID)) {
+	if s.docWritable(userID, p.DocID) != nil {
 		drawError(c, p.DocID, p.BlockID, "forbidden")
 		return
 	}
@@ -622,7 +622,10 @@ func (s *Server) handleDrawWatch(w http.ResponseWriter, r *http.Request) {
 		SSEID string `json:"sseId"`
 		Leave bool   `json:"leave"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil || strings.TrimSpace(req.SSEID) == "" {
+	if !decodeJSONLimit(w, r, 4096, &req) {
+		return
+	}
+	if strings.TrimSpace(req.SSEID) == "" {
 		writeError(w, http.StatusBadRequest, "sseId und room erforderlich")
 		return
 	}

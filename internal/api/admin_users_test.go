@@ -13,6 +13,7 @@ import (
 
 // An address another account has is 409 in the admin's user management, not a 500 from the database
 func TestAdminUserEmailTakenIsConflict(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	taken, _ := newTestUser(t, store, "taken@example.com")
@@ -57,6 +58,7 @@ func TestAdminUserEmailTakenIsConflict(t *testing.T) {
 // A display name with a line break is stored in one line (admin, registration and profile go through the
 // same store functions)
 func TestAdminUserDisplayNameOneLine(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	rec := sessionCall(router, "POST", "/api/v1/admin/users", token,
@@ -86,6 +88,7 @@ func TestAdminUserDisplayNameOneLine(t *testing.T) {
 
 // The admin's user management checks an address the way the profile does
 func TestAdminUserInvalidEmail(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	other, _ := newTestUser(t, store, "other@example.com")
@@ -121,6 +124,7 @@ func TestAdminUserInvalidEmail(t *testing.T) {
 // An empty display name becomes the username, which (unlike the part of the address before the @) no
 // other account has: in the admin's user management, in the profile and at registration
 func TestEmptyDisplayNameBecomesUsername(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	created := func(body string) (id, username, display string) {
@@ -172,6 +176,7 @@ func TestEmptyDisplayNameBecomesUsername(t *testing.T) {
 
 // Names typed in by people cannot start a line of their own in the plain-text part of a mail
 func TestMailNamesStayOnOneLine(t *testing.T) {
+	t.Parallel()
 	text, htmlBody := renderMail(mailContent{
 		Preheader: "Anna\nX wartet",
 		Greeting:  mailGreeting("de", time.Now(), "Anna\nBcc: x@example.com"),
@@ -197,6 +202,7 @@ func TestMailNamesStayOnOneLine(t *testing.T) {
 // The admin user list says which accounts have no password of their own, so the administration can warn
 // before it removes the address of one that has (no reset by mail any more); removing it stays allowed
 func TestAdminUserListTellsNoPassword(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	withPassword, _ := newTestUser(t, store, "mit@example.com")

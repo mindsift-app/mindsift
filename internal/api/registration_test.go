@@ -33,6 +33,7 @@ func register(srv *Server, email, invite string) (int, map[string]any) {
 }
 
 func TestRegistrationModes(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 
 	setRegistration(t, store, storage.RegistrationClosed, "")
@@ -70,6 +71,7 @@ func TestRegistrationModes(t *testing.T) {
 }
 
 func TestApprovalFlow(t *testing.T) {
+	t.Parallel()
 	srv, store, adminToken := setupTestServer(t)
 	router := srv.Router()
 	setRegistration(t, store, storage.RegistrationApproval, "")
@@ -116,6 +118,7 @@ func TestApprovalFlow(t *testing.T) {
 }
 
 func TestInviteLinkForSeveralPeople(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	if _, err := store.CreateUserInvite("", "x@example.com", nil, 7, 3); err == nil {
 		t.Fatal("a link for several people must not be bound to one address")
@@ -139,6 +142,7 @@ func TestInviteLinkForSeveralPeople(t *testing.T) {
 }
 
 func TestRegistrationFixedByEnvironment(t *testing.T) {
+	t.Parallel()
 	srv, store, adminToken := setupTestServer(t)
 	router := srv.Router()
 	srv.cfg.RegistrationMode = storage.RegistrationClosed
@@ -286,6 +290,7 @@ func TestEmailVerificationBeforeApproval(t *testing.T) {
 // An invite bound to an address takes the same address copied with invisible marks (from a messenger);
 // another address is refused with a hint which one the code belongs to.
 func TestRegisterInviteEmailWithInvisibleCharacters(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	setRegistration(t, store, storage.RegistrationClosed, "")
 	other, _ := store.CreateUserInvite("", "anna.beispiel@example.com", nil, 7, 1)
@@ -340,6 +345,7 @@ func TestRegisterAndSetupRefuseInvalidEmail(t *testing.T) {
 
 // Only a taken address is 409; a failed write for another reason is not blamed on the address.
 func TestRegisterCreateErrors(t *testing.T) {
+	t.Parallel()
 	srv, store, _ := setupTestServer(t)
 	setRegistration(t, store, storage.RegistrationOpen, "")
 	if code, _ := register(srv, "doppelt@example.com", ""); code != http.StatusCreated {
@@ -367,6 +373,7 @@ func TestRegisterCreateErrors(t *testing.T) {
 // Sending an invite needs a real address (the same check as everywhere else, not only an "@"); a
 // refused one does not bind a single-use invite.
 func TestSendInviteChecksTheAddress(t *testing.T) {
+	t.Parallel()
 	srv, store, token := setupTestServer(t)
 	sys, _ := store.GetSystemSettings()
 	sys.SMTPHost = "smtp.example.com"

@@ -16,6 +16,7 @@ import (
 
 // The token of a public link never reaches the log (SA-04)
 func TestLogPathHidesPublicTokens(t *testing.T) {
+	t.Parallel()
 	cases := map[string]string{
 		"/api/v1/public/abc123":        "/api/v1/public/<token>",
 		"/api/v1/public/abc123/unlock": "/api/v1/public/<token>/unlock",
@@ -31,6 +32,7 @@ func TestLogPathHidesPublicTokens(t *testing.T) {
 
 // Clients see texts written for people; driver messages and paths stay in the log (SA-08)
 func TestClientMessageHidesInternals(t *testing.T) {
+	t.Parallel()
 	if got := clientMessage(errors.New("sql: database is closed")); got != errInternal {
 		t.Errorf("internal error shown: %q", got)
 	}
@@ -48,6 +50,7 @@ func TestClientMessageHidesInternals(t *testing.T) {
 // Error answers below 500 show only texts written for people: a database or driver error on a 400 path
 // becomes an internal error (500, fixed text, details in the log), also behind a known context (N-02)
 func TestErrorAnswersHideInternals(t *testing.T) {
+	t.Parallel()
 	answer := func(status int, err error) (int, string) {
 		rec := httptest.NewRecorder()
 		rec.Header().Set("Content-Language", "en")
@@ -88,6 +91,7 @@ func TestErrorAnswersHideInternals(t *testing.T) {
 
 // A password typed into the name field must not land in the log (SA-17)
 func TestMaskLogin(t *testing.T) {
+	t.Parallel()
 	for in, want := range map[string]string{"geheim123!": "ge***", "a": "a***", "anna@example.com": maskEmail("anna@example.com")} {
 		if got := maskLogin(in); got != want {
 			t.Errorf("maskLogin(%q) = %q, want %q", in, got, want)
