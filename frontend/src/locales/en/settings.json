@@ -1058,7 +1058,6 @@
       "save": "Change password",
       "saved": "Password changed. All other devices were signed out.",
       "failed": "The password could not be changed",
-      "noMatch": "The two new passwords do not match",
       "setTitle": "Set a password",
       "set": "Set password",
       "setHint": "Optional: with a password you can also sign in directly; you confirm at {{name}}.",

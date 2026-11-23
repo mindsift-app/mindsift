@@ -1058,7 +1058,6 @@
       "save": "Cambia password",
       "saved": "Password cambiata. Tutti gli altri dispositivi sono stati disconnessi.",
       "failed": "Impossibile cambiare la password",
-      "noMatch": "Le due nuove password non coincidono",
       "setTitle": "Imposta una password",
       "set": "Imposta password",
       "setHint": "Facoltativo: con una password puoi accedere anche direttamente; si conferma su {{name}}.",

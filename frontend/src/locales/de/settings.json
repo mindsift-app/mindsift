@@ -1057,7 +1057,6 @@
       "save": "Passwort ändern",
       "saved": "Passwort geändert. Alle anderen Geräte wurden abgemeldet.",
       "failed": "Passwort konnte nicht geändert werden",
-      "noMatch": "Die beiden neuen Passwörter stimmen nicht überein",
       "setTitle": "Passwort festlegen",
       "set": "Passwort festlegen",
       "setHint": "Optional: Mit einem Passwort meldest du dich auch direkt an; bestätigt wird bei {{name}}.",

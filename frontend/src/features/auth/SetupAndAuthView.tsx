@@ -18,7 +18,8 @@ import { AuthStatus, MfaMethod, User } from '../../lib/types';
 import { MfaStep } from './MfaStep';
 import { api, ApiError, triggerHaptic } from '../../lib/api';
 import { LegalLinks } from '../../components/LegalLinks';
-import { passwordProblem } from '../../lib/password';
+import { passwordPairProblem, passwordProblem } from '../../lib/password';
+import { NewPasswordFields } from '../../components/NewPasswordFields';
 import { demoHintText } from '../../components/DemoHint';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
 import { startOidcLogin, takeOidcResult } from '../../lib/oidc';
@@ -254,14 +255,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const resetProblem = passwordProblem(newPassword);
+    const resetProblem = passwordPairProblem(newPassword, newPasswordConfirm);
     if (resetProblem) {
       setError(resetProblem);
-      triggerHaptic(25);
-      return;
-    }
-    if (newPassword !== newPasswordConfirm) {
-      setError(t('password.noMatch'));
       triggerHaptic(25);
       return;
     }
@@ -483,30 +479,19 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 <h2 className="text-sm font-bold text-main">{t('reset.title')}</h2>
                 <p className="text-muted mt-1">{t('reset.intro')}</p>
               </div>
-              <div>
-                <label className="block text-muted mb-1">{t('reset.newPassword')}</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder={t('password.minPlaceholder')}
-                  required
-                  autoFocus
-                  autoComplete="new-password"
-                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-muted mb-1">{t('reset.repeat')}</label>
-                <input
-                  type="password"
-                  value={newPasswordConfirm}
-                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
-                  required
-                  autoComplete="new-password"
-                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
-                />
-              </div>
+              <NewPasswordFields
+                value={newPassword}
+                onChange={setNewPassword}
+                repeat={newPasswordConfirm}
+                onRepeatChange={setNewPasswordConfirm}
+                label={t('reset.newPassword')}
+                repeatLabel={t('reset.repeat')}
+                placeholder={t('password.minPlaceholder')}
+                autoFocus
+                className="space-y-3.5"
+                labelClassName="block text-muted"
+                inputClassName="h-11 sm:h-8 px-2.5 text-base sm:text-xs"
+              />
               <button
                 type="submit"
                 disabled={submitting}

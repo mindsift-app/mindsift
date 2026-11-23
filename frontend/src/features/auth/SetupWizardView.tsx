@@ -4,7 +4,8 @@ import { Brain, Shield, Check, CircleAlert } from 'lucide-react';
 import { AuthStatus, User } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import { LegalLinks } from '../../components/LegalLinks';
-import { passwordProblem } from '../../lib/password';
+import { passwordPairProblem } from '../../lib/password';
+import { NewPasswordFields } from '../../components/NewPasswordFields';
 import { SetupInstanceSection, useSetupChoices } from './SetupInstanceSection';
 import { SetupMailSection, useSetupMail } from './SetupMailSection';
 import { SetupSummary } from './SetupSummary';
@@ -38,14 +39,9 @@ export const SetupWizardView: React.FC<SetupWizardViewProps> = ({ authStatus, on
     e.preventDefault();
     setError(null);
 
-    const setupProblem = passwordProblem(setupPassword);
+    const setupProblem = passwordPairProblem(setupPassword, setupPasswordConfirm);
     if (setupProblem) {
       setError(setupProblem);
-      triggerHaptic(25);
-      return;
-    }
-    if (setupPassword !== setupPasswordConfirm) {
-      setError(t('password.noMatch'));
       triggerHaptic(25);
       return;
     }
@@ -159,39 +155,19 @@ export const SetupWizardView: React.FC<SetupWizardViewProps> = ({ authStatus, on
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-muted mb-1">{t('setup.password')}</label>
-                <input
-                  type="password"
-                  value={setupPassword}
-                  onChange={(e) => setSetupPassword(e.target.value)}
-                  placeholder={t('password.minPlaceholder')}
-                  required
-                  className="w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs input-field"
-                />
-              </div>
-              <div>
-                <label className="block text-muted mb-1">{t('setup.repeat')}</label>
-                <input
-                  type="password"
-                  value={setupPasswordConfirm}
-                  onChange={(e) => setSetupPasswordConfirm(e.target.value)}
-                  placeholder={t('setup.repeatPlaceholder')}
-                  required
-                  className={`w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs input-field ${
-                    setupPasswordConfirm && setupPassword !== setupPasswordConfirm
-                      ? 'border-status-err focus:border-status-err'
-                      : ''
-                  }`}
-                />
-                {setupPasswordConfirm && setupPassword !== setupPasswordConfirm && (
-                  <span className="text-[10px] text-status-err mt-1 block">
-                    {t('password.noMatchShort')}
-                  </span>
-                )}
-              </div>
-            </div>
+            <NewPasswordFields
+              value={setupPassword}
+              onChange={setSetupPassword}
+              repeat={setupPasswordConfirm}
+              onRepeatChange={setSetupPasswordConfirm}
+              label={t('setup.password')}
+              repeatLabel={t('setup.repeat')}
+              placeholder={t('password.minPlaceholder')}
+              repeatPlaceholder={t('setup.repeatPlaceholder')}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+              labelClassName="block text-muted"
+              inputClassName="h-11 sm:h-8 px-2.5 text-base sm:text-xs"
+            />
           </div>
 
           {/* Section 2: Server & Isolation */}
