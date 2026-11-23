@@ -52,12 +52,16 @@ type listForEveryone struct {
 	CreatedAt string                  `json:"createdAt"`
 }
 
-// broadcastListUpdated sends LIST_UPDATED with what is the same for everyone who sees the list.
+// broadcastListUpdated sends LIST_UPDATED with what is the same for everyone who sees the list, to all
+// of them (broadcastListAudience), not only to its room: the list overview shows title and icon of every
+// list, also of the ones not open. The entries' own events (ITEM_*) stay with the room: the overview
+// shows no entries of a list not open, and sending them all to everyone would multiply the traffic of a
+// busy list for nothing.
 func (s *Server) broadcastListUpdated(l *domain.SharedList) {
 	if l == nil {
 		return
 	}
-	s.wsHub.BroadcastListEvent(l.ID, eventListUpdated, listForEveryone{
+	s.broadcastListAudience(l.ID, nil, eventListUpdated, listForEveryone{
 		ID: l.ID, UserID: l.UserID, OwnerName: l.OwnerName, Title: l.Title, Icon: l.Icon, ListType: l.ListType,
 		Items: l.Items, Shares: l.Shares, Members: l.Members, UpdatedAt: l.UpdatedAt, CreatedAt: l.CreatedAt,
 	})
