@@ -593,13 +593,18 @@ func (s *Store) taskStatus(taskID string) (taskStatus, error) {
 	return st, err
 }
 
-// statusTime is thoughts.status_changed_at for a change made at (zero or in the future: now).
+// statusTime is thoughts.status_changed_at for a change made at (changeInstant).
 func statusTime(at time.Time) string {
-	now := time.Now().UTC()
-	if at.IsZero() || at.After(now) {
-		at = now
+	return changeInstant(at).UTC().Format(doneTimeLayout)
+}
+
+// changeInstant is when a change sent with the time it was made at happened: at, or now when at is zero
+// or in the future (a clock ahead).
+func changeInstant(at time.Time) time.Time {
+	if now := time.Now(); at.IsZero() || at.After(now) {
+		return now
 	}
-	return at.UTC().Format(doneTimeLayout)
+	return at
 }
 
 // NotifyPlan gives the notifications about a change from the task's new state (center entries and queued
@@ -831,7 +836,7 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 		return nil, nil, err
 	}
 	if !wasCompleted && thought.IsCompleted && thought.Recurrence != "" {
-		s.spawnNextOccurrence(thought.ID)
+		s.spawnNextOccurrence(thought.ID, p.StatusAt)
 	} else if wasCompleted && !thought.IsCompleted && thought.Recurrence != "" {
 		s.dropUntouchedSuccessor(thought.ID)
 	}

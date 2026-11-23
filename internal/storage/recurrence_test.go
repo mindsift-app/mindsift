@@ -64,6 +64,35 @@ func TestNextDueDateCountsFromTheServersDay(t *testing.T) {
 	}
 }
 
+// The next date counts from the day the task was ticked (a phone that was offline sends it later), in the
+// server's time zone, not from the moment the change arrives.
+func TestRepeatingTaskCountsFromWhenItWasTicked(t *testing.T) {
+	store, anna, _ := setupTestStore(t)
+	var pushed []*domain.Thought
+	store.OnTaskCreated = func(th *domain.Thought) { pushed = append(pushed, th) }
+	doneAt := time.Date(2026, 11, 13, 23, 30, 0, 0, time.UTC) // 14 November in Tokyo, 13th in Los Angeles
+	for zone, want := range map[string]string{"UTC": "2026-11-14", "Asia/Tokyo": "2026-11-15", "America/Los_Angeles": "2026-11-14", "Europe/Berlin": "2026-11-15"} {
+		loc, err := time.LoadLocation(zone)
+		if err != nil {
+			t.Fatal(err)
+		}
+		clock.UseInTest(t, loc)
+		task, _ := store.CreateThoughtWithDetails(anna.ID, "Blumen gießen", "normal", "manual", "2026-11-01", "", "todo", "")
+		_, _ = store.UpdateThoughtTriage(anna.ID, task.ID, "keep", "task", "", "2026-11-01", "")
+		if err := store.SetTaskRecurrence(anna.ID, task.ID, "daily"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.db.Exec(`UPDATE thoughts SET is_completed = 1 WHERE id = ?`, task.ID); err != nil {
+			t.Fatal(err)
+		}
+		pushed = nil
+		store.spawnNextOccurrence(task.ID, doneAt)
+		if len(pushed) != 1 || pushed[0].DueDate != want {
+			t.Errorf("%s: successor %+v, want due %s", zone, pushed, want)
+		}
+	}
+}
+
 func TestRepeatingTaskSpawnsItsSuccessor(t *testing.T) {
 	store, err := NewStore(filepath.Join(t.TempDir(), "recur.db"))
 	if err != nil {

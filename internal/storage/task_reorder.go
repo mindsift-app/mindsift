@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -252,7 +253,7 @@ func (s *Store) applyTaskOrder(items []domain.ThoughtReorderItem, expected map[s
 	}
 	res.Written = len(changes)
 	for _, id := range completed {
-		s.spawnNextOccurrence(id)
+		s.spawnNextOccurrence(id, time.Time{})
 	}
 	for _, id := range reopened {
 		s.dropUntouchedSuccessor(id)

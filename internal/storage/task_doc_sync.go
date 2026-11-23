@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"strings"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/blockfmt"
 	"github.com/mindsift-app/mindsift/internal/collab"
@@ -334,7 +335,7 @@ func (s *Store) ReconcileDocTaskLinksNotify(docID string, plan func([]TaskReconc
 	s.refreshReconciled(changed)
 	// A repeating task ticked in its note repeats, as when completed in the task view (UpdateTask)
 	for _, id := range completed {
-		s.spawnNextOccurrence(id)
+		s.spawnNextOccurrence(id, time.Time{})
 	}
 	// ... and unticked again, its untouched next occurrence goes
 	for _, id := range reopened {
