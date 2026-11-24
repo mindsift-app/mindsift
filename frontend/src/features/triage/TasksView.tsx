@@ -437,6 +437,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
   // The task's own column behind a board column, or null if its list has no column of that name
   const ownColumnIdFor = (task: Thought | undefined, boardColId: string): string | null =>
     task ? (columnsFor(task).find((c) => boardIdOf(c) === boardColId)?.id ?? null) : null;
+  // The board column a task stands in
+  const boardColumnOf = (task: Thought): string | null => {
+    const own = ownColumnOf(task);
+    return own ? boardIdOf(own) : null;
+  };
   const inBoardColumn = useCallback(
     (task: Thought, boardCol: KanbanColumn) => {
       const own = ownColumnOf(task);
@@ -639,6 +644,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setTasks,
     columnsFor,
     ownColumnIdFor,
+    boardColumnOf,
     isTaskReadOnly,
     pushUndo,
     orderSnapshot,
@@ -1140,6 +1146,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         />
       ) : (
         <TaskListView
+          drag={taskDrag}
           doneTasks={doneTasks}
           filter={filter}
           filteredTasks={filteredTasks}

@@ -6,6 +6,7 @@ import { OriginBadge } from '../../components/OriginBadge';
 import { KanbanColumn, RECURRENCE_LABELS, TaskList, Thought } from '../../lib/types';
 import { canDragTasks } from './useTaskDrag';
 import { stopOnControl } from './stopOnControl';
+import { PriorityChip } from './PriorityChip';
 import { AvatarPerson } from '../../components/AvatarStack';
 import { notePreview, renderMentions } from '../../lib/markdown';
 import { remindersText } from '../../lib/reminders';
@@ -140,28 +141,7 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
             <span>{t('row.inNote')}</span>
           </button>
         )}
-        {task.priority === 'urgent' && (
-          <button
-            type="button"
-            disabled={readOnly}
-            onClick={() => onCyclePriority(task)}
-            className="badge-accent text-[9px] cursor-pointer hover:opacity-85 disabled:cursor-default"
-            title={t('row.urgentToNormal')}
-          >
-            {t('tasks:listing.urgent')}
-          </button>
-        )}
-        {task.priority === 'high' && (
-          <button
-            type="button"
-            disabled={readOnly}
-            onClick={() => onCyclePriority(task)}
-            className="px-1.5 py-0.2 border border-status-warn text-status-warn rounded-btn text-[9px] font-medium cursor-pointer hover:opacity-85 disabled:cursor-default"
-            title={t('row.highToUrgent')}
-          >
-            {t('tasks:listing.high')}
-          </button>
-        )}
+        <PriorityChip task={task} onCycle={onCyclePriority} readOnly={readOnly} size="xs" />
         <OriginBadge origin={task.origin} createdAt={task.createdAt} size="xs" />
         {task.dueDate && (
           <span

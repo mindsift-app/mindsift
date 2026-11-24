@@ -7,9 +7,16 @@ import { TaskList, Thought, TrashedTask } from '../../lib/types';
 import { GroupBy, TaskFilter, TaskSort } from './taskViewTypes';
 import { TaskGroup, tagFilterLabel } from './taskListing';
 import { LoadingState } from '../../components/Spinner';
+import type { useTaskDrag } from './useTaskDrag';
 
 
 interface TaskListViewProps {
+  // From useTaskDrag in TasksView: a task can be dropped on a status group's header (or, in an empty group,
+  // on the strip below it that shows while dragging)
+  drag: Pick<
+    ReturnType<typeof useTaskDrag>,
+    'draggingTaskId' | 'dragOverGroup' | 'canDropInGroup' | 'handleGroupDragOver' | 'handleGroupDragLeave' | 'handleDropOnGroup'
+  >;
   doneTasks: Thought[];
   filter: TaskFilter;
   filteredTasks: Thought[];
@@ -38,6 +45,7 @@ interface TaskListViewProps {
 // List view of TasksView: filter tabs (open, done, trash), grouping and sorting, clearing, then the rows
 // (grouped or flat) or the task trash
 export function TaskListView({
+  drag,
   doneTasks,
   filter,
   filteredTasks,
@@ -158,17 +166,51 @@ export function TaskListView({
         <div className="space-y-3">
           {groupedTasks && groupedTasks.length > 0 ? (
             /* GROUPED LIST */
-            groupedTasks.map((grp) => (
-              <div key={grp.key} className="panel-surface overflow-hidden">
-                <div className="px-3 py-1.5 bg-panel border-b border-border flex items-center justify-between">
-                  <span className="text-xs font-semibold text-main">{grp.title}</span>
-                  <span className="badge-neutral font-mono text-[10px]">{grp.count}</span>
+            groupedTasks.map((grp) => {
+              const colId = grp.columnId;
+              // Status groups take a dragged task (like the Kanban columns); one its list lacks is greyed out
+              const accepts = !!colId && drag.canDropInGroup(colId);
+              const blocked = !!colId && !!drag.draggingTaskId && !accepts;
+              const over = !!colId && drag.dragOverGroup === colId;
+              return (
+                <div
+                  key={grp.key}
+                  className={`panel-surface overflow-hidden transition-[opacity,box-shadow] ${over ? 'ring-2 ring-accent/60' : ''} ${
+                    blocked ? 'opacity-40' : ''
+                  }`}
+                  title={blocked ? t('kanban.notInList') : undefined}
+                >
+                  <div
+                    data-group-drop={colId}
+                    onDragOver={colId ? (e) => drag.handleGroupDragOver(e, colId) : undefined}
+                    onDragLeave={colId ? (e) => drag.handleGroupDragLeave(e, colId) : undefined}
+                    onDrop={colId ? (e) => void drag.handleDropOnGroup(e, colId, grp.tasks) : undefined}
+                  >
+                    <div
+                      className={`px-3 py-1.5 border-b border-border flex items-center justify-between transition-colors ${
+                        over ? 'bg-accent/10' : 'bg-panel'
+                      }`}
+                    >
+                      <span className="text-xs font-semibold text-main">{grp.title}</span>
+                      <span className="badge-neutral font-mono text-[10px]">{grp.count}</span>
+                    </div>
+                    {/* An empty group gets a drop strip only while a task is dragged that may go there */}
+                    {accepts && grp.tasks.length === 0 && (
+                      <div
+                        aria-hidden="true"
+                        className={`h-10 m-2 rounded-card border-2 border-dashed transition-colors ${
+                          over ? 'border-accent/60 bg-accent/5' : 'border-border'
+                        }`}
+                      />
+                    )}
+                  </div>
+                  {/* Rows of a greyed-out group take no drop either (it would only reorder) */}
+                  <div className={blocked ? 'pointer-events-none' : undefined}>
+                    {grp.tasks.map((task) => renderTaskRow(task))}
+                  </div>
                 </div>
-                <div>
-                  {grp.tasks.map((task) => renderTaskRow(task))}
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             /* FLAT LIST */
             <div className="panel-surface divide-y divide-border overflow-hidden">

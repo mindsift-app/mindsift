@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronUp, Lock, Plus, Square, X } from 'lucide-react';
 import { VoiceWave } from '../../components/VoiceWave';
 import { CountBadge } from '../../components/CountBadge';
-import { Toast } from '../../components/Toast';
+import { Toast, toastObstacleRef } from '../../components/Toast';
 import { formatDue } from '../../lib/due';
 import { useHoldToDictate } from './useHoldToDictate';
 import type { DictationOutcome } from './captureDictation';
@@ -41,7 +41,7 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
   return (
     <>
       {recording && (
-        <div className={`${HINT_CLASS} rounded-card px-4 py-2.5 border-border text-main pointer-events-none`}>
+        <div ref={toastObstacleRef} className={`${HINT_CLASS} rounded-card px-4 py-2.5 border-border text-main pointer-events-none`}>
           <div className="space-y-1">
             <div className="text-xs font-semibold text-main flex items-center justify-center gap-2">
               {locked ? (

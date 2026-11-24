@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ExternalLink, Sparkles, X } from 'lucide-react';
 import { api } from '../../lib/api';
 import type { UpdateStatus, User } from '../../lib/types';
+import { toastObstacleRef } from '../../components/Toast';
 import { tourOfferPending } from '../tour/tourOffer';
 
 // Admins only: a new MindSift release is out (the server looks once a day, api/update.go). The same small
@@ -50,6 +51,7 @@ export function UpdateNoticeCard({
 
   return (
     <div
+      ref={toastObstacleRef}
       role="dialog"
       aria-modal="false"
       aria-labelledby="update-notice-title"

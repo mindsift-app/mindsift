@@ -9,12 +9,16 @@ Versions without a git tag were development states and were never published as a
 ## [Unreleased]
 
 ### Changed
+- On the phone, the priority chip under a task title (list and Kanban card) is now only a label instead of a button, so a stray tap no longer changes the priority; change it in the task details there.
 - Deleting an account or an organization, taking someone out of one, or a stricter sharing mode now only makes the apps of the people whose shares or groups changed load their lists and notes again, instead of everyone who is online.
 - Signing up and redeeming an invitation now ask for the password twice, like setting a new password everywhere else: the repetition turns red as soon as it differs, and the account is only created when both match.
-- The audit log (Administration → Log) now also records the security-relevant steps people take on their own account: changing their password (also through the reset link), removing the authenticator app or a passkey, creating new recovery codes, creating, renaming, changing the permissions of or deleting an API key or AI connection (with its name and permissions, and the old ones after a change; never the key), and signing out one device or all sessions. What people do with their own notes, tasks and settings is still not recorded.
+- The audit log (Administration → Log) now also records the security-relevant steps people take on their own account: changing their password (also through the reset link), removing the authenticator app or a passkey, creating new recovery codes, creating, renaming, changing the permissions of or deleting an API key or AI connection (with its name and permissions, and the old ones after a change; never the key), connecting an AI assistant on the consent page (also connecting it again with other permissions), and signing out one device or all sessions. What people do with their own notes, tasks and settings is still not recorded.
 
 ### Fixed
+- Tasks: in the list view grouped by status, a task can now be dragged into an empty group too; the group's header (and, while dragging, a strip below it in an empty group) takes the task and sets its status.
+- Tasks: in "All tasks", dropping a task on another task's row no longer gives it a status from the other task's list; it moves into the column of the same name in its own list, or, if its list has none, only changes its place.
 - Sign-in window: screen readers now read out the labels of every field when signing in, signing up or redeeming an invitation, and a password typed into the sign-in form no longer turns up in the sign-up form.
+- Notices at the bottom such as "Undo" no longer hide behind the tour offer, the update card or the recording hint above the phone's +: they move up above it, so both stay visible and usable (on the desktop too, where a narrow window puts the card under the notice).
 - Renaming a folder inside a shared folder, or moving a folder into or within one, no longer creates a subfolder of the same name inside it ("Team/New/New"); its subfolders now end up directly in the renamed or moved folder. Duplicates made before stay and can be deleted.
 
 ## [0.99.3] - 2026-11-24

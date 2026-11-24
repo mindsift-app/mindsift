@@ -6,17 +6,95 @@ import { X } from 'lucide-react';
 // Every notice at the bottom of the screen (Toast, StatusToast, ErrorNotice, the offline notice) goes into
 // one shared stack, so two at once (an "Undo" and an error) stand one above the other instead of on top of
 // each other (Doku/ui-patterns.md). The element is made on first use and made again should something have
-// removed it.
+// removed it. --toast-lift moves it up over cards at the same spot (see toastObstacleRef below).
 let stackEl: HTMLDivElement | null = null;
+// Elements placed at the same spot as the stack (the update and tour cards, the recording hint above the
+// phone's +). Each one reports its box; the stack moves up over them, both stay visible and usable.
+const obstacles = new Set<HTMLElement>();
+let observer: ResizeObserver | null = null;
+let observedStack: HTMLElement | null = null;
+
 export function toastStack(): HTMLDivElement {
   if (!stackEl || !stackEl.isConnected) {
     stackEl = document.createElement('div');
     stackEl.dataset.toastStack = '';
     stackEl.className =
-      'fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-6 z-70 w-max max-w-[calc(100vw-1.5rem)] pointer-events-none flex flex-col items-center';
+      'fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom)+var(--toast-lift,0px))] sm:bottom-[calc(1.5rem+var(--toast-lift,0px))] z-70 w-max max-w-[calc(100vw-1.5rem)] pointer-events-none flex flex-col items-center';
     document.body.appendChild(stackEl);
+    if (obstacles.size) watchStack();
   }
   return stackEl;
+}
+
+// Space between a card below and the lowest notice
+export const TOAST_LIFT_GAP = 8;
+
+export type LiftBox = { left: number; right: number; top: number; bottom: number };
+
+// How far the stack has to move up so that no obstacle covers it: the stack's box without any lift, the
+// notices grow up from its bottom edge. An obstacle beside the stack (the cards at the right edge on a wide
+// desktop) or below its bottom edge does not count; of several, the highest decides.
+export function toastLift(stack: LiftBox, boxes: LiftBox[], gap = TOAST_LIFT_GAP): number {
+  let lift = 0;
+  for (const b of boxes) {
+    if (b.right <= stack.left || b.left >= stack.right) continue;
+    if (b.top >= stack.bottom || b.bottom <= stack.top) continue;
+    lift = Math.max(lift, stack.bottom - b.top + gap);
+  }
+  return Math.ceil(lift);
+}
+
+function currentLift(stack: HTMLElement): number {
+  return parseFloat(stack.style.getPropertyValue('--toast-lift')) || 0;
+}
+
+export function updateToastLift(): void {
+  const stack = stackEl;
+  if (!stack || !stack.isConnected) return;
+  const before = currentLift(stack);
+  const r = stack.getBoundingClientRect();
+  const base = { left: r.left, right: r.right, top: r.top + before, bottom: r.bottom + before };
+  const boxes = [...obstacles].filter((el) => el.isConnected).map((el) => el.getBoundingClientRect());
+  const lift = toastLift(base, boxes);
+  if (lift === before) return;
+  if (lift) stack.style.setProperty('--toast-lift', `${lift}px`);
+  else stack.style.removeProperty('--toast-lift');
+}
+
+// The stack changes size with every notice that comes or goes: measure again then too
+function watchStack() {
+  if (!observer || !stackEl || observedStack === stackEl) return;
+  if (observedStack) observer.unobserve(observedStack);
+  observer.observe(stackEl);
+  observedStack = stackEl;
+}
+
+// Callback ref for such an element (React 19 calls the returned cleanup when it goes away). Its box is
+// measured again when it changes size, when its slide-in animation ends and when the window changes size.
+export function toastObstacleRef(el: HTMLElement | null): (() => void) | undefined {
+  if (!el) return undefined;
+  if (!obstacles.size) {
+    if (typeof ResizeObserver !== 'undefined') observer = new ResizeObserver(() => updateToastLift());
+    window.addEventListener('resize', updateToastLift);
+  }
+  obstacles.add(el);
+  toastStack();
+  watchStack();
+  observer?.observe(el);
+  el.addEventListener('animationend', updateToastLift);
+  updateToastLift();
+  return () => {
+    obstacles.delete(el);
+    observer?.unobserve(el);
+    el.removeEventListener('animationend', updateToastLift);
+    if (!obstacles.size) {
+      observer?.disconnect();
+      observer = null;
+      observedStack = null;
+      window.removeEventListener('resize', updateToastLift);
+    }
+    updateToastLift();
+  };
 }
 
 export type ToastTone = 'neutral' | 'err' | 'warn';

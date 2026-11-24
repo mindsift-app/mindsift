@@ -88,7 +88,7 @@ const (
 	AuditAccountTOTPDisabled         = "account.totp_disabled"          // authenticator app removed (details.mfaOff: no second factor left)
 	AuditAccountPasskeyRemoved       = "account.passkey_removed"        // details.name, details.mfaOff
 	AuditAccountRecoveryCodesRenewed = "account.recovery_codes_renewed" // new recovery codes, the earlier ones stop working
-	AuditAccountAPIKeyCreated        = "account.api_key_created"        // details.name, details.scopes; never the key
+	AuditAccountAPIKeyCreated        = "account.api_key_created"        // details.name, details.scopes; also an AI connection agreed to; never the key
 	AuditAccountAPIKeyDeleted        = "account.api_key_deleted"        // a key or an AI connection (details.kind "oauth")
 	AuditAccountAPIKeyUpdated        = "account.api_key_updated"        // renamed or other rights (details.previousName, details.previousScopes)
 	AuditAccountSessionEnded         = "account.session_ended"          // one device signed out (details.device: its user agent)

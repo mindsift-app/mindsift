@@ -1,0 +1,263 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import React from 'react';
+import { render, fireEvent, act, renderHook } from '@testing-library/react';
+import type { KanbanColumn, Thought } from '../../../lib/types';
+
+const reorderTasks = vi.hoisted(() => vi.fn());
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi({ reorderTasks }));
+
+import { useTaskDrag } from '../useTaskDrag';
+import { createMoveTracker } from '../taskMoves';
+import { TaskListView } from '../TaskListView';
+import type { TaskGroup } from '../taskListing';
+import { boardIdOfColumn, ownColumnIn } from '../../../lib/kanbanColumns';
+
+const columns: KanbanColumn[] = [
+  { id: 'todo', name: 'Zu erledigen' },
+  { id: 'doing', name: 'In Bearbeitung' },
+  { id: 'review', name: 'Zur Prüfung' },
+  { id: 'done', name: 'Erledigt', isDone: true },
+] as KanbanColumn[];
+
+const task = (id: string, kanbanStatus: string, sortOrder: number): Thought =>
+  ({ id, content: id, kanbanStatus, sortOrder, isCompleted: false, createdAt: '2026-11-20T08:00:00Z', priority: 'normal' }) as Thought;
+
+// A drop event as the browser hands it over: the dragged task's id in the data transfer
+const dropEvent = (taskId: string) =>
+  ({
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
+    dataTransfer: { getData: (k: string) => (k === 'application/mindsift-task-id' ? taskId : '') },
+  }) as unknown as React.DragEvent;
+
+interface SetupOptions {
+  columnsFor?: (t: Thought) => KanbanColumn[];
+  boardColumnOf?: (t: Thought) => string | null;
+  selectedListId?: string;
+}
+
+function setup(
+  initial: Thought[],
+  ownColumn: (t: Thought | undefined, col: string) => string | null = (t, col) => (t ? col : null),
+  { columnsFor = () => columns, boardColumnOf = (t) => t.kanbanStatus ?? null, selectedListId = 'l1' }: SetupOptions = {}
+) {
+  let tasks = initial;
+  const setTasks = vi.fn((next: Thought[] | ((prev: Thought[]) => Thought[])) => {
+    tasks = typeof next === 'function' ? next(tasks) : next;
+  });
+  const hook = renderHook(() =>
+    useTaskDrag({
+      tasks: initial,
+      setTasks: setTasks as React.Dispatch<React.SetStateAction<Thought[]>>,
+      columnsFor,
+      ownColumnIdFor: ownColumn,
+      boardColumnOf,
+      isTaskReadOnly: () => false,
+      pushUndo: vi.fn(),
+      orderSnapshot: () => [],
+      setSortBy: vi.fn(),
+      selectedListId,
+      loadData: vi.fn(async () => {}),
+      globalColumns: columns,
+      setTaskLists: vi.fn(),
+      onRefreshStats: vi.fn(),
+      viewMode: 'list',
+      kanbanBoardRef: { current: null },
+      kanbanPhoneSnap: false,
+      kanbanPhoneTop: 0,
+      moveTracker: createMoveTracker(),
+    })
+  );
+  return { hook, current: () => tasks };
+}
+
+describe('dropping a task on a status group of the list view', () => {
+  beforeEach(() => {
+    reorderTasks.mockReset();
+    reorderTasks.mockResolvedValue({ items: [] });
+  });
+
+  it('moves it into an empty group (there was no drop target before)', async () => {
+    const { hook, current } = setup([task('a', 'review', 0), task('b', 'todo', 1)]);
+    await act(async () => {
+      await hook.result.current.handleDropOnGroup(dropEvent('a'), 'doing', []);
+    });
+    expect(current().find((t) => t.id === 'a')).toMatchObject({ kanbanStatus: 'doing', isCompleted: false });
+    expect(reorderTasks).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ id: 'a', kanbanStatus: 'doing' })]), 'l1');
+  });
+
+  it('completes it when the empty group is the done column', async () => {
+    const { hook, current } = setup([task('a', 'review', 0)]);
+    await act(async () => {
+      await hook.result.current.handleDropOnGroup(dropEvent('a'), 'done', []);
+    });
+    expect(current()[0]).toMatchObject({ kanbanStatus: 'done', isCompleted: true });
+  });
+
+  it('puts it after the last task of a group that has some', async () => {
+    const tasks = [task('a', 'review', 0), task('b', 'doing', 1), task('c', 'doing', 2), task('d', 'todo', 3)];
+    const { hook, current } = setup(tasks);
+    await act(async () => {
+      await hook.result.current.handleDropOnGroup(dropEvent('a'), 'doing', [tasks[1], tasks[2]]);
+    });
+    expect(current().map((t) => t.id)).toEqual(['b', 'c', 'a', 'd']);
+    expect(current().find((t) => t.id === 'a')!.kanbanStatus).toBe('doing');
+  });
+
+  it('takes the column of the task’s own list behind the group, and nothing its list lacks', async () => {
+    const own = (t: Thought | undefined, col: string) => (t && col === 'doing' ? 'own-doing' : null);
+    const { hook, current } = setup([task('a', 'review', 0)], own);
+    await act(async () => {
+      await hook.result.current.handleDropOnGroup(dropEvent('a'), 'todo', []);
+    });
+    expect(reorderTasks).not.toHaveBeenCalled();
+    await act(async () => {
+      await hook.result.current.handleDropOnGroup(dropEvent('a'), 'doing', []);
+    });
+    expect(current()[0].kanbanStatus).toBe('own-doing');
+  });
+});
+
+describe('dropping a task on a row in "Alle Aufgaben" (lists with their own columns)', () => {
+  // Two lists whose columns share names but not IDs; the second has no "In Bearbeitung" and the first no
+  // "Zur Prüfung". The board joins them by name, as TasksView does.
+  const listColumns: Record<string, KanbanColumn[]> = {
+    l1: [
+      { id: 'l1-todo', name: 'Zu erledigen' },
+      { id: 'l1-doing', name: 'In Bearbeitung' },
+      { id: 'l1-done', name: 'Erledigt', isDone: true },
+    ],
+    l2: [
+      { id: 'l2-todo', name: 'Zu erledigen' },
+      { id: 'l2-review', name: 'Zur Prüfung' },
+      { id: 'l2-done', name: 'Erledigt', isDone: true },
+    ],
+  } as Record<string, KanbanColumn[]>;
+  const columnsOf = (t: Thought) => listColumns[t.taskListId as string];
+  const ownColumn = (t: Thought | undefined, boardCol: string) =>
+    t ? (columnsOf(t).find((c) => boardIdOfColumn(c, true) === boardCol)?.id ?? null) : null;
+  const boardColumnOf = (t: Thought) => {
+    const own = ownColumnIn(t, columnsOf(t));
+    return own ? boardIdOfColumn(own, true) : null;
+  };
+  const inList = (id: string, list: string, status: string, sortOrder: number, isCompleted = false): Thought =>
+    ({ ...task(id, status, sortOrder), taskListId: list, isCompleted }) as Thought;
+  const setupAll = (tasks: Thought[]) => setup(tasks, ownColumn, { columnsFor: columnsOf, boardColumnOf, selectedListId: 'all' });
+
+  beforeEach(() => {
+    reorderTasks.mockReset();
+    reorderTasks.mockResolvedValue({ items: [] });
+  });
+
+  it('takes the column of its own list behind the target’s column, not the target’s column ID', async () => {
+    const tasks = [inList('a', 'l1', 'l1-todo', 0), inList('b', 'l2', 'l2-done', 1, true)];
+    const { hook, current } = setupAll(tasks);
+    await act(async () => {
+      await hook.result.current.handleDropOnTask(dropEvent('a'), tasks[1]);
+    });
+    expect(current().map((t) => t.id)).toEqual(['b', 'a']);
+    expect(current().find((t) => t.id === 'a')).toMatchObject({ kanbanStatus: 'l1-done', isCompleted: true });
+    expect(reorderTasks).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: 'a', kanbanStatus: 'l1-done' })]),
+      undefined
+    );
+  });
+
+  it('keeps its status and only changes its place when its list has no such column', async () => {
+    const tasks = [inList('a', 'l1', 'l1-doing', 0), inList('b', 'l2', 'l2-review', 1)];
+    const { hook, current } = setupAll(tasks);
+    await act(async () => {
+      await hook.result.current.handleDropOnTask(dropEvent('a'), tasks[1]);
+    });
+    expect(current().map((t) => t.id)).toEqual(['b', 'a']);
+    expect(current().find((t) => t.id === 'a')).toMatchObject({ kanbanStatus: 'l1-doing', isCompleted: false });
+    expect(reorderTasks).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: 'a', kanbanStatus: 'l1-doing' })]),
+      undefined
+    );
+  });
+
+  it('takes the target’s column within the same list', async () => {
+    const tasks = [inList('a', 'l1', 'l1-todo', 0), inList('b', 'l1', 'l1-doing', 1)];
+    const { hook, current } = setupAll(tasks);
+    await act(async () => {
+      await hook.result.current.handleDropOnTask(dropEvent('a'), tasks[1]);
+    });
+    expect(current().find((t) => t.id === 'a')).toMatchObject({ kanbanStatus: 'l1-doing', isCompleted: false });
+  });
+});
+
+describe('TaskListView status groups as drop targets', () => {
+  const groups: TaskGroup[] = [
+    { key: 'status:todo', title: 'Zu erledigen', count: 1, tasks: [task('a', 'todo', 0)], columnId: 'todo' },
+    { key: 'status:doing', title: 'In Bearbeitung', count: 0, tasks: [], columnId: 'doing' },
+  ];
+
+  const renderView = (drag: Partial<React.ComponentProps<typeof TaskListView>['drag']>) => {
+    const full = {
+      draggingTaskId: null,
+      dragOverGroup: null,
+      canDropInGroup: () => false,
+      handleGroupDragOver: vi.fn(),
+      handleGroupDragLeave: vi.fn(),
+      handleDropOnGroup: vi.fn(async () => {}),
+      ...drag,
+    };
+    const view = render(
+      <TaskListView
+        drag={full}
+        doneTasks={[]}
+        filter="open"
+        filteredTasks={groups[0].tasks}
+        groupBy="status"
+        groupOptions={[]}
+        groupedTasks={groups}
+        handleClearDone={vi.fn()}
+        handleEmptyTaskTrash={vi.fn()}
+        handlePurgeTrashed={vi.fn()}
+        handleRestoreTrashed={vi.fn()}
+        isSelectedListReadOnly={false}
+        loading={false}
+        openTasks={groups[0].tasks}
+        renderTaskRow={(t) => <div key={t.id}>{t.content}</div>}
+        safeTaskLists={[]}
+        selectedListId="l1"
+        selectedTags={[]}
+        setFilter={vi.fn()}
+        setGroupBy={vi.fn()}
+        setSortBy={vi.fn()}
+        sortBy="custom"
+        taskTrash={null}
+      />
+    );
+    return { view, drag: full };
+  };
+
+  it('shows no drop strip in an empty group while nothing is dragged', () => {
+    const { view } = renderView({});
+    const target = view.container.querySelector('[data-group-drop="doing"]')!;
+    expect(target.children).toHaveLength(1);
+  });
+
+  it('lets a dragged task drop on the header and the strip of an empty group', () => {
+    const { view, drag } = renderView({ draggingTaskId: 'a', canDropInGroup: () => true, dragOverGroup: 'doing' });
+    const target = view.container.querySelector('[data-group-drop="doing"]')!;
+    // Header plus the strip below it
+    expect(target.children).toHaveLength(2);
+    fireEvent.dragOver(target.children[1]);
+    expect(drag.handleGroupDragOver).toHaveBeenCalledWith(expect.anything(), 'doing');
+    fireEvent.drop(target.children[0]);
+    expect(drag.handleDropOnGroup).toHaveBeenCalledWith(expect.anything(), 'doing', []);
+    // The hovered group lights up like the other drop targets
+    expect(target.parentElement!.className).toContain('ring-accent/60');
+  });
+
+  it('greys out a group the dragged task’s list has no column for', () => {
+    const { view } = renderView({ draggingTaskId: 'a', canDropInGroup: (c) => c === 'todo' });
+    const target = view.container.querySelector('[data-group-drop="doing"]')!;
+    expect(target.children).toHaveLength(1);
+    expect(target.parentElement!.className).toContain('opacity-40');
+    // Its rows take no drop either
+    expect((target.nextElementSibling as HTMLElement).className).toContain('pointer-events-none');
+  });
+});

@@ -5,7 +5,8 @@ import { GroupBy, TaskFilter, TaskSort } from './taskViewTypes';
 
 // Which tasks the list view of TasksView shows, in which order and in which groups. Pure functions.
 
-export type TaskGroup = { key: string; title: string; count: number; tasks: Thought[] };
+// columnId: the board column of a status group; a task dropped on such a group moves into that column
+export type TaskGroup = { key: string; title: string; count: number; tasks: Thought[]; columnId?: string };
 
 // A task opened from outside the shown list (a link, the search) is not in the list's tasks; every
 // update of the list (a new array or a function of the old one) is applied to it as well, so its detail
@@ -92,7 +93,7 @@ interface GroupContext {
 // Groups of the list view; null for "none"
 export function groupTasks(tasks: Thought[], groupBy: GroupBy, { lists, boardColumns, inBoardColumn, now }: GroupContext): TaskGroup[] | null {
   if (groupBy === 'none') return null;
-  const groups: { key: string; title: string; count: number; tasks: Thought[] }[] = [];
+  const groups: TaskGroup[] = [];
 
   if (groupBy === 'list') {
     // Tasks without a list first, then the lists in the order of the tabs
@@ -135,7 +136,7 @@ export function groupTasks(tasks: Thought[], groupBy: GroupBy, { lists, boardCol
   } else if (groupBy === 'status') {
     boardColumns.forEach((col) => {
       const list = tasks.filter((t) => inBoardColumn(t, col));
-      groups.push({ key: `status:${col.id}`, title: col.name, count: list.length, tasks: list });
+      groups.push({ key: `status:${col.id}`, title: col.name, count: list.length, tasks: list, columnId: col.id });
     });
   } else if (groupBy === 'priority') {
     const urgent = tasks.filter((t) => t.priority === 'urgent');

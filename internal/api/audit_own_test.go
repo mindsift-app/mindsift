@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -235,4 +236,66 @@ func TestAuditOwnAPIKeys(t *testing.T) {
 		t.Fatal("deleting an unknown key is not recorded")
 	}
 	noSecretsIn(t, store, key.RawKey, key.KeyPrefix)
+}
+
+// Agreeing on the consent page: a new AI connection, other rights when connecting again, nothing when
+// the rights stay the same or the person refuses; never the code
+func TestAuditOwnOAuthConsent(t *testing.T) {
+	t.Parallel()
+	srv, store, session := setupTestServer(t)
+	srv.cfg.BaseURL = "https://ms.example/"
+	srv.cfg.BaseURLSet = true
+	router := srv.Router()
+	me, _ := store.GetFirstUser()
+	client, err := store.CreateOAuthClient("Claude", []string{oauthTestRedirect}, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	send := func(approve bool, scopes string) map[string]any {
+		t.Helper()
+		body := `{"responseType":"code","clientId":"` + client.ID + `","redirectUri":"` + oauthTestRedirect + `","codeChallenge":"` +
+			pkceChallenge(strings.Repeat("v", 50)) + `","codeChallengeMethod":"S256","state":"st8","approve":` +
+			map[bool]string{true: "true", false: "false"}[approve] + `,"scopes":` + scopes + `}`
+		code, _, out := oauthDo(t, router, http.MethodPost, "/api/v1/oauth/authorize", session, "application/json", body)
+		if code != http.StatusOK {
+			t.Fatalf("consent: %d %v", code, out)
+		}
+		return out
+	}
+	consent := func(scopes string) string {
+		t.Helper()
+		redirect, _ := send(true, scopes)["redirect"].(string)
+		u, _ := url.Parse(redirect)
+		c := u.Query().Get("code")
+		if c == "" {
+			t.Fatalf("no code: %s", redirect)
+		}
+		return c
+	}
+
+	c1 := consent(`["tasks:read"]`)
+	if a := ownAudit(t, store, storage.AuditAccountAPIKeyCreated, me); string(a.Details) != `{"kind":"oauth","name":"Claude (OAuth)","scopes":["tasks:read"]}` {
+		t.Fatalf("connection created: %s", a.Details)
+	}
+
+	// The same rights again: nothing new
+	unchanged, _ := store.LastAuditID()
+	c2 := consent(`["tasks:read"]`)
+	if after, _ := store.LastAuditID(); after != unchanged {
+		t.Fatal("connecting again with the same rights is not recorded")
+	}
+
+	// More rights: recorded with the old ones, as for a key
+	c3 := consent(`["tasks:read","notes:read"]`)
+	if a := ownAudit(t, store, storage.AuditAccountAPIKeyUpdated, me); string(a.Details) != `{"kind":"oauth","name":"Claude (OAuth)","previousScopes":["tasks:read"],"scopes":["tasks:read","notes:read"]}` {
+		t.Fatalf("connection updated: %s", a.Details)
+	}
+
+	// Refusing writes nothing
+	before, _ := store.LastAuditID()
+	send(false, `[]`)
+	if after, _ := store.LastAuditID(); after != before {
+		t.Fatal("refusing is not recorded")
+	}
+	noSecretsIn(t, store, c1, c2, c3)
 }
