@@ -119,9 +119,11 @@ func TestDemoResetIsQuietForBackgroundJobs(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 	}
 	done()
+	// Only a guard against a reset that never runs: refilling the demo takes about a second, under the
+	// race detector and a loaded machine more than half a minute
 	select {
 	case <-reset:
-	case <-time.After(30 * time.Second):
+	case <-time.After(5 * time.Minute):
 		t.Fatal("the reset must run once the pass is done")
 	}
 

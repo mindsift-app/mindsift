@@ -179,7 +179,11 @@ func newCountingTestServer(t *testing.T) (*Server, *storage.Store, string, strin
 	}
 	cfg := &config.Config{Port: "8080", DatabasePath: dbPath, JWTSecret: testJWTSecret, SecretsKey: testSecretsKey}
 	srv := NewServer(cfg, store, ws.NewHub(), nil)
-	t.Cleanup(srv.Close)
+	// The background jobs stop before anything is measured: their passes (the alarm ticker every minute,
+	// the note counts a while after a sync) would add their statements to whichever request happens to
+	// run then, and under the race detector the tests take long enough to meet them. The measured
+	// requests start no background job of their own.
+	srv.Close()
 	token, err := auth.GenerateToken(cfg.JWTSecret, user.ID, user.Email, user.DisplayName, user.TokenVersion, testSession(t, store, user.ID))
 	if err != nil {
 		t.Fatal(err)
