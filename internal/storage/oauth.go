@@ -137,6 +137,21 @@ func (s *Store) GetOAuthClient(id string) (*OAuthClient, error) {
 	return &c, nil
 }
 
+// OAuthConnection: the api_keys entry of this person's grant to the client, nil when there is none.
+func (s *Store) OAuthConnection(userID, clientID string) (*domain.APIKey, error) {
+	var k domain.APIKey
+	err := s.db.QueryRow(`SELECT id, user_id, name, key_prefix, scopes, last_used_at, created_at, kind
+		FROM api_keys WHERE user_id = ? AND kind = ? AND oauth_client_id = ?`, userID, APIKeyKindOAuth, clientID).
+		Scan(&k.ID, &k.UserID, &k.Name, &k.KeyPrefix, &k.Scopes, &k.LastUsedAt, &k.CreatedAt, &k.Kind)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &k, nil
+}
+
 // GrantOAuth records a person's consent and returns a one-time authorization code. The grant is the
 // api_keys entry of this person and client; agreeing again reuses it with the newly chosen rights, so
 // reconnecting does not pile up entries.

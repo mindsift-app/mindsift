@@ -314,10 +314,26 @@ func (s *Server) handleOAuthAuthorize(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Wähle mindestens ein Recht aus.")
 		return
 	}
-	code, err := s.store.GrantOAuth(auth.GetUserID(r.Context()), client, scopes, p.RedirectURI, p.CodeChallenge, time.Now())
+	userID := auth.GetUserID(r.Context())
+	// The grant before and after, for the audit log: a new AI connection, or other rights when connecting again
+	before, err := s.store.OAuthConnection(userID, client.ID)
 	if err != nil {
 		writeInternal(w, err)
 		return
+	}
+	code, err := s.store.GrantOAuth(userID, client, scopes, p.RedirectURI, p.CodeChallenge, time.Now())
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	if after, err := s.store.OAuthConnection(userID, client.ID); err != nil || after == nil {
+		slog.Warn("oauth: grant not found for the audit log", "err", err)
+	} else if before == nil {
+		s.auditOwn(r, storage.AuditAccountAPIKeyCreated, auditAPIKey(after))
+	} else if before.Scopes != after.Scopes {
+		d := auditAPIKey(after)
+		d["previousScopes"] = strings.Split(before.Scopes, ",")
+		s.auditOwn(r, storage.AuditAccountAPIKeyUpdated, d)
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"redirect": s.oauthRedirect(p, url.Values{"code": {code}})})
 }
