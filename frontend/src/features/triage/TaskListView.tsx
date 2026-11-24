@@ -204,7 +204,8 @@ export function TaskListView({
                       />
                     )}
                   </div>
-                  <div>
+                  {/* Rows of a greyed-out group take no drop either (it would only reorder) */}
+                  <div className={blocked ? 'pointer-events-none' : undefined}>
                     {grp.tasks.map((task) => renderTaskRow(task))}
                   </div>
                 </div>

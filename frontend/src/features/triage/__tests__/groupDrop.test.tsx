@@ -257,5 +257,7 @@ describe('TaskListView status groups as drop targets', () => {
     const target = view.container.querySelector('[data-group-drop="doing"]')!;
     expect(target.children).toHaveLength(1);
     expect(target.parentElement!.className).toContain('opacity-40');
+    // Its rows take no drop either
+    expect((target.nextElementSibling as HTMLElement).className).toContain('pointer-events-none');
   });
 });
