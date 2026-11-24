@@ -115,7 +115,7 @@ Component: `DialogHeader` in [BottomSheet.tsx](../frontend/src/components/Bottom
 
 Component: [NewPasswordFields.tsx](../frontend/src/components/NewPasswordFields.tsx), check: `passwordPairProblem` in [password.ts](../frontend/src/lib/password.ts)
 
-- A new password and its repetition, everywhere one is set: the setup wizard, the reset link, the password the administration asks for, the security settings. As soon as the repetition differs it is framed red with "Die eingegebenen Passwörter stimmen nicht überein." below it; the same sentence is the error when sending.
+- A new password and its repetition, everywhere one is set: the setup wizard, signing up and redeeming an invitation, the reset link, the password the administration asks for, the security settings. As soon as the repetition differs it is framed red with "Die eingegebenen Passwörter stimmen nicht überein." below it; the same sentence is the error when sending.
 - `passwordPairProblem(password, repeat)` before sending: too short first (same rule as the server), then the two differ. The form decides the fields' height and the layout (one column or two from `sm`).
 
 ## Editing in Place

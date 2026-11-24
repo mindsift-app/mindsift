@@ -681,9 +681,11 @@ func (s *Server) handleRemovePasskey(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	found := false
+	found, name := false, ""
 	for _, k := range keys {
-		found = found || k.ID == id
+		if k.ID == id {
+			found, name = true, k.Name
+		}
 	}
 	if !found {
 		writeErrorFrom(w, http.StatusNotFound, storage.ErrPasskeyNotFound)
@@ -707,5 +709,6 @@ func (s *Server) handleRemovePasskey(w http.ResponseWriter, r *http.Request) {
 	} else {
 		s.notifySecurityChange(user, securityChangePasskeyGone)
 	}
+	s.auditOwn(r, storage.AuditAccountPasskeyRemoved, auditMFAOff(mfaOff, map[string]any{"name": name}))
 	writeJSON(w, http.StatusOK, map[string]bool{"removed": true, "mfaOff": mfaOff})
 }

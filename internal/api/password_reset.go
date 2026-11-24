@@ -109,5 +109,8 @@ func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	s.loginGuard.unlockAccount(userID)
 	s.wsHub.DisconnectUser(userID)
 	slog.Info("Password reset by email link", "user_id", userID)
+	if u, _ := s.store.GetUserByID(userID); u != nil {
+		s.auditAs(u, storage.AuditAccountPasswordChanged, storage.AuditUserTarget(u), map[string]string{"via": "emailLink"})
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

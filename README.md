@@ -120,7 +120,7 @@ claude mcp add --transport http mindsift https://your-server/api/v1/mcp --header
 ```
 
 ### 🏢 Users & admin
-Guided setup, sign-in through Authentik, Authelia, Keycloak or any other OpenID Connect provider, invite codes and links, registration modes (closed, approval, email domains, open), organizations that decide who may share with whom (a person can be in several), groups, sharing as editor or read-only, a user manager role for accounts without the server settings, an audit log of who changed accounts, roles and settings, and automatic backups that people restore for their own data.
+Guided setup, sign-in through Authentik, Authelia, Keycloak or any other OpenID Connect provider, invite codes and links, registration modes (closed, approval, email domains, open), organizations that decide who may share with whom (a person can be in several), groups, sharing as editor or read-only, a user manager role for accounts without the server settings, an audit log of who changed accounts, roles and settings (and of the security steps people take on their own accounts), and automatic backups that people restore for their own data.
 
 **More on the [website](https://mindsift.app/en/), or [open the demo](https://demo.mindsift.app) and poke around.**
 

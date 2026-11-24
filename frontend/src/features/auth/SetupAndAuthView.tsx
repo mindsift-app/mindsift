@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import {
@@ -18,7 +18,7 @@ import { AuthStatus, MfaMethod, User } from '../../lib/types';
 import { MfaStep } from './MfaStep';
 import { api, ApiError, triggerHaptic } from '../../lib/api';
 import { LegalLinks } from '../../components/LegalLinks';
-import { passwordPairProblem, passwordProblem } from '../../lib/password';
+import { passwordPairProblem } from '../../lib/password';
 import { NewPasswordFields } from '../../components/NewPasswordFields';
 import { demoHintText } from '../../components/DemoHint';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
@@ -56,6 +56,12 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // The new password when signing up (register / invite) and its repetition, see NewPasswordFields; apart
+  // from the login's, so a password typed there does not turn up in the sign-up form
+  const [newAccountPassword, setNewAccountPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  // Ids linking the labels to their fields
+  const fieldId = useId();
   const [displayName, setDisplayName] = useState('');
   const [inviteCode, setInviteCode] = useState(linkInviteCode);
   const [error, setError] = useState<string | null>(null);
@@ -304,7 +310,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const handleRegisterOrInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const registerProblem = passwordProblem(password);
+    const registerProblem = passwordPairProblem(newAccountPassword, passwordConfirm);
     if (registerProblem) {
       setError(registerProblem);
       triggerHaptic(25);
@@ -314,11 +320,12 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
     triggerHaptic(15);
     try {
       const code = authTab === 'invite' ? inviteCode.trim() : '';
-      const res = await api.register(email.trim(), password, displayName.trim(), code);
+      const res = await api.register(email.trim(), newAccountPassword, displayName.trim(), code);
       if (res.pending || !res.user) {
         // Waiting for approval: back to the login form with the explanation
         setNotice(res.message || t('register.pending'));
-        setPassword('');
+        setNewAccountPassword('');
+        setPasswordConfirm('');
         setAuthTab('login');
         return;
       }
@@ -439,8 +446,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 </p>
               </div>
               <div>
-                <label className="block text-muted mb-1">{t('emailLabel')}</label>
+                <label htmlFor={`${fieldId}-forgot-email`} className="block text-muted mb-1">{t('emailLabel')}</label>
                 <input
+                  id={`${fieldId}-forgot-email`}
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -572,8 +580,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               )}
 
               <div>
-                <label className="block text-muted mb-1">{t('login.login')}</label>
+                <label htmlFor={`${fieldId}-login`} className="block text-muted mb-1">{t('login.login')}</label>
                 <input
+                  id={`${fieldId}-login`}
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -587,8 +596,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               </div>
 
               <div className="relative">
-                <label className="block text-muted mb-1">{t('login.password')}</label>
+                <label htmlFor={`${fieldId}-login-password`} className="block text-muted mb-1">{t('login.password')}</label>
                 <input
+                  id={`${fieldId}-login-password`}
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -670,8 +680,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               )}
               {authTab === 'invite' && (
                 <div>
-                  <label className="block text-muted mb-1">{t('invite.code')}</label>
+                  <label htmlFor={`${fieldId}-invite-code`} className="block text-muted mb-1">{t('invite.code')}</label>
                   <input
+                    id={`${fieldId}-invite-code`}
                     type="text"
                     value={inviteCode}
                     onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
@@ -684,8 +695,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               )}
 
               <div>
-                <label className="block text-muted mb-1">{t('register.displayName')}</label>
+                <label htmlFor={`${fieldId}-display-name`} className="block text-muted mb-1">{t('register.displayName')}</label>
                 <input
+                  id={`${fieldId}-display-name`}
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
@@ -696,8 +708,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-muted mb-1">{t('register.email')}</label>
+                <label htmlFor={`${fieldId}-register-email`} className="block text-muted mb-1">{t('register.email')}</label>
                 <input
+                  id={`${fieldId}-register-email`}
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -707,17 +720,18 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-muted mb-1">{t('register.password')}</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t('password.minPlaceholder')}
-                  required
-                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
-                />
-              </div>
+              <NewPasswordFields
+                value={newAccountPassword}
+                onChange={setNewAccountPassword}
+                repeat={passwordConfirm}
+                onRepeatChange={setPasswordConfirm}
+                label={t('register.password')}
+                repeatLabel={t('register.repeat')}
+                placeholder={t('password.minPlaceholder')}
+                className="space-y-3.5"
+                labelClassName="block text-muted"
+                inputClassName="h-11 sm:h-8 px-2.5 text-base sm:text-xs"
+              />
 
               <div className="pt-1">
                 <button

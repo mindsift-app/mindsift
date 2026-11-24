@@ -85,7 +85,17 @@ func (s *Server) handleListSessions(w http.ResponseWriter, r *http.Request) {
 // handleEndSession logs out one device.
 func (s *Server) handleEndSession(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
-	if err := s.store.RevokeSession(userID, chi.URLParam(r, "id")); err != nil {
+	id := chi.URLParam(r, "id")
+	// The device for the audit log, read before the session ends
+	device := ""
+	if list, err := s.store.ListSessions(userID, sessionIDFrom(r)); err == nil {
+		for _, sess := range list {
+			if sess.ID == id {
+				device = sess.UserAgent
+			}
+		}
+	}
+	if err := s.store.RevokeSession(userID, id); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, storage.ErrSessionNotFound) {
 			status = http.StatusNotFound
@@ -93,6 +103,11 @@ func (s *Server) handleEndSession(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, status, err)
 		return
 	}
+	var details map[string]string
+	if device != "" {
+		details = map[string]string{"device": device}
+	}
+	s.auditOwn(r, storage.AuditAccountSessionEnded, details)
 	// That device's streams end; the others reconnect with their still valid sessions
 	s.wsHub.DisconnectUser(userID)
 	writeJSON(w, http.StatusOK, map[string]bool{"ended": true})
