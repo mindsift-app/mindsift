@@ -143,4 +143,27 @@ describe('DocumentEditor header actions & status callback (Teil D)', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByText('Notiz anheften')).toBeNull();
   });
+
+  it('shows the journal day calendar symbol as a plain symbol, not as a button; a note keeps its icon button', async () => {
+    const doc = makeDoc({ icon: '📝' });
+    const props = {
+      docId: 'doc_1',
+      initialDoc: doc,
+      availableFolders: [],
+      onDocMetadataChange: vi.fn(),
+      onDeleteDoc: vi.fn(),
+      onOpenShareModal: vi.fn(),
+      onSelectTag: vi.fn(),
+      onRequestMerge: vi.fn(),
+    };
+    const { container, unmount } = render(<DocumentEditor {...props} variant="journal" />);
+    await waitFor(() => expect(container.querySelector('.lucide-calendar-days')).toBeTruthy());
+    const symbol = container.querySelector('.lucide-calendar-days') as Element;
+    expect(symbol.closest('button')).toBeNull();
+    expect(symbol.closest('[aria-hidden="true"]')).toBeTruthy();
+    unmount();
+
+    render(<DocumentEditor {...props} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: '📝' })).toBeTruthy());
+  });
 });

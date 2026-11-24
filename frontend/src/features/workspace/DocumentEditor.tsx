@@ -1165,24 +1165,27 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             {/* Document Icon + Title Header */}
             <div className="flex items-center gap-3 mb-4 relative">
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => canEdit && !inJournal && setShowEmojiPicker((prev) => !prev)}
-                  className={`tap-area text-2xl sm:text-3xl transition-opacity select-none leading-none sm:leading-9 bg-transparent border-0 outline-hidden p-0 focus:outline-hidden focus:ring-0 shadow-none ${
-                    inJournal ? 'cursor-default' : 'hover:opacity-80 cursor-pointer'
-                  }`}
-                  title={inJournal ? undefined : t('editor.changeIcon')}
-                >
-                  {/* Journal days: a quiet calendar in the theme's text colour instead of the colourful emoji;
-                      a note without an icon shows a faint "choose icon" to editors only */}
-                  {inJournal ? (
+                {inJournal ? (
+                  /* Journal days: a quiet calendar in the theme's text colour instead of the colourful emoji.
+                     A plain symbol, not a button: it does nothing (the calendar has its own toggle in the journal header) */
+                  <span aria-hidden="true" className="inline-flex items-center text-2xl sm:text-3xl select-none leading-none sm:leading-9">
                     <CalendarDays className="w-6 h-6 sm:w-7 sm:h-7 text-muted" strokeWidth={1.75} />
-                  ) : doc?.icon ? (
-                    doc.icon
-                  ) : canEdit ? (
-                    <FaceSlightlySmilingPlus className="w-6 h-6 sm:w-7 sm:h-7 text-faint" strokeWidth={1.5} aria-label={t('editor.chooseIcon')} />
-                  ) : null}
-                </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => canEdit && setShowEmojiPicker((prev) => !prev)}
+                    className="tap-area text-2xl sm:text-3xl transition-opacity select-none leading-none sm:leading-9 bg-transparent border-0 outline-hidden p-0 focus:outline-hidden focus:ring-0 shadow-none hover:opacity-80 cursor-pointer"
+                    title={t('editor.changeIcon')}
+                  >
+                    {/* A note without an icon shows a faint "choose icon" to editors only */}
+                    {doc?.icon ? (
+                      doc.icon
+                    ) : canEdit ? (
+                      <FaceSlightlySmilingPlus className="w-6 h-6 sm:w-7 sm:h-7 text-faint" strokeWidth={1.5} aria-label={t('editor.chooseIcon')} />
+                    ) : null}
+                  </button>
+                )}
                 {showEmojiPicker && canEdit && (
                   <EmojiPickerModal
                     currentIcon={doc?.icon}
