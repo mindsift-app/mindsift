@@ -9,7 +9,7 @@ const api = vi.hoisted(() => ({
   adminDeletedBackups: vi.fn(),
   adminGetBackupLocation: vi.fn(),
 }));
-vi.mock('../../../lib/api', () => ({ api, isDesktopApp: () => shell.desktop }));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi(api, { isDesktopApp: () => shell.desktop }));
 
 import { DataSettingsSection } from '../admin/DataSettingsSection';
 import type { useAdminSettings } from '../admin/useAdminSettings';

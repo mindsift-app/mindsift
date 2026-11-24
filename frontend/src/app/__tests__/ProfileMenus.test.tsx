@@ -9,10 +9,7 @@ const askChoice = vi.hoisted(() => vi.fn());
 vi.mock('../../components/askConfirm', () => ({ askChoice }));
 
 let desktop = false;
-vi.mock('../../lib/api', () => ({
-  isDesktopApp: () => desktop,
-  triggerHaptic: vi.fn(),
-}));
+vi.mock('../../lib/api', async () => (await import('../../test/apiMock')).stubApi({}, { isDesktopApp: () => desktop }));
 const openDesktopStart = vi.fn();
 vi.mock('../../lib/desktopStart', () => ({ openDesktopStart: () => openDesktopStart() }));
 

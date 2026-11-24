@@ -61,7 +61,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
-          className="h-9 w-9 sm:h-7 sm:w-7 shrink-0 rounded-btn flex items-center justify-center text-muted hover:text-main hover:bg-panel transition-colors cursor-pointer"
+          className="h-11 w-11 sm:h-7 sm:w-7 shrink-0 rounded-btn flex items-center justify-center text-muted hover:text-main hover:bg-panel transition-colors cursor-pointer"
           title={t('journal.prevMonth')}
           aria-label={t('journal.prevMonth')}
         >
@@ -72,7 +72,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
             ariaLabel={t('journal.month')}
             value={String(view.month)}
             onChange={(m) => setView((v) => ({ ...v, month: Number(m) }))}
-            buttonClassName="w-full h-9 sm:h-7 px-1.5 gap-1 rounded-btn bg-panel text-main text-xs font-semibold"
+            buttonClassName="w-full h-11 sm:h-7 px-1.5 gap-1 rounded-btn bg-panel text-main text-xs font-semibold"
             options={monthNames().map((m, i) => ({ value: String(i), label: m }))}
           />
         </div>
@@ -81,14 +81,14 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
             ariaLabel={t('journal.year')}
             value={String(view.year)}
             onChange={(y) => setView((v) => ({ ...v, year: Number(y) }))}
-            buttonClassName="w-full h-9 sm:h-7 px-1.5 gap-1 rounded-btn bg-panel text-main text-xs font-semibold tabular-nums"
+            buttonClassName="w-full h-11 sm:h-7 px-1.5 gap-1 rounded-btn bg-panel text-main text-xs font-semibold tabular-nums"
             options={years.map((y) => ({ value: String(y), label: String(y) }))}
           />
         </div>
         <button
           type="button"
           onClick={() => shiftMonth(1)}
-          className="h-9 w-9 sm:h-7 sm:w-7 shrink-0 rounded-btn flex items-center justify-center text-muted hover:text-main hover:bg-panel transition-colors cursor-pointer"
+          className="h-11 w-11 sm:h-7 sm:w-7 shrink-0 rounded-btn flex items-center justify-center text-muted hover:text-main hover:bg-panel transition-colors cursor-pointer"
           title={t('journal.nextMonth')}
           aria-label={t('journal.nextMonth')}
         >
@@ -110,7 +110,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
               onClick={() => onSelect(date)}
               aria-current={date === activeDate ? 'date' : undefined}
               title={formatDate(parseISODate(date), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-              className={`relative h-9 sm:h-7 rounded-btn text-xs tabular-nums transition-colors cursor-pointer ${
+              className={`relative h-11 sm:h-7 rounded-btn text-xs tabular-nums transition-colors cursor-pointer ${
                 date === activeDate
                   ? 'bg-accent-dim text-accent font-bold'
                   : date === today

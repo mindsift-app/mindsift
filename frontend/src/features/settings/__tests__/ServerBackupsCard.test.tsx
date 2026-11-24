@@ -7,7 +7,7 @@ const api = vi.hoisted(() => ({
   restoreMyBackup: vi.fn(),
   downloadMyBackup: vi.fn(),
 }));
-vi.mock('../../../lib/api', () => ({ api }));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi(api));
 
 import { ServerBackupsCard } from '../ServerBackupsCard';
 

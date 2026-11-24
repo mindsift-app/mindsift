@@ -2,18 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { ApiError } from '../../../lib/api/client';
 
-vi.mock('../../../lib/api', async () => {
-  const client = await vi.importActual<typeof import('../../../lib/api/client')>('../../../lib/api/client');
-  return {
-    ApiError: client.ApiError,
-    api: {
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi(
+    {
       getMfaStatus: vi.fn(async () => ({ available: true, enabled: true, totp: { enabled: true }, passkeys: [], recoveryCodesLeft: 10, trustedDevices: [] })),
       passkeyChallenge: vi.fn(),
       oidcConfirm: vi.fn(async () => ({ url: 'https://auth.example/authorize?prompt=login', bind: 'b' })),
     },
-    getCurrentOidc: () => ({ enabled: true, name: 'Authentik', passwordLogin: true }),
-  };
-});
+    { getCurrentOidc: () => ({ enabled: true, name: 'Authentik', passwordLogin: true }) }
+  )
+);
 
 import { SecondFactorHost, withSecondFactor } from '../user/askSecondFactor';
 import { api } from '../../../lib/api';

@@ -98,7 +98,7 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
         <button
           type="submit"
           disabled={!quickTitle.trim()}
-          className="btn-primary h-9 sm:h-7 px-3.5 sm:px-3 text-xs disabled:opacity-40"
+          className="btn-primary h-11 sm:h-7 px-3.5 sm:px-3 text-xs disabled:opacity-40"
         >
           {t('common:add')}
         </button>

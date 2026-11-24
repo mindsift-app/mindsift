@@ -9,7 +9,7 @@ import type { Document } from '../../../lib/types';
 // an open bullet moves alone, without its children (OutlinerTree tells at the start of the drag), a collapsed
 // one with them; the drop is always a move.
 
-vi.mock('../../../lib/api', () => ({ api: {}, triggerHaptic: () => {} }));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi());
 
 const doc = (id: string, title: string): Document =>
   ({ id, title, isOwner: true, isArchived: false } as unknown as Document);

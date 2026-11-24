@@ -3,10 +3,9 @@ import { act, renderHook } from '@testing-library/react';
 import { CenterEntry, WSMessage } from '../../lib/types';
 
 const mocks = vi.hoisted(() => ({ getNotifications: vi.fn() }));
-vi.mock('../../lib/api', async (original) => ({
-  ...(await original<typeof import('../../lib/api')>()),
-  api: { getNotifications: mocks.getNotifications },
-}));
+vi.mock('../../lib/api', async (original) =>
+  (await import('../../test/apiMock')).withApi(original, { getNotifications: mocks.getNotifications })
+);
 
 import { CENTER_LIMIT, CenterState, centerAfterEvent, useNotificationCenter } from '../notificationCenter';
 import { RELOAD_SOON_MS } from '../../lib/realtimeReload';

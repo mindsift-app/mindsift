@@ -6,19 +6,14 @@ import { api } from '../../../lib/api';
 import { User } from '../../../lib/types';
 import { actAsDesktopApp } from '../../../test/desktop';
 
-vi.mock('../../../lib/api', async () => {
-  const actual = await vi.importActual<typeof import('../../../lib/api')>('../../../lib/api');
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
-      getMe: vi.fn(async () => ({ isLastAdmin: false })),
-      getAuthStatus: vi.fn(async () => ({ demoMode: false })),
-      getPushDevices: vi.fn(async () => []),
-      updateSettings: vi.fn(async (patch) => ({ ...baseUser, ...patch })),
-    },
-  };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, {
+    getMe: vi.fn(async () => ({ isLastAdmin: false })),
+    getAuthStatus: vi.fn(async () => ({ demoMode: false })),
+    getPushDevices: vi.fn(async () => []),
+    updateSettings: vi.fn(async (patch) => ({ ...baseUser, ...patch })),
+  })
+);
 
 const baseUser: User = {
   id: 'u1',

@@ -256,7 +256,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
         <button
           type="button"
           onClick={() => setShowCalendar((v) => !v)}
-          className="lg:pointer-events-none flex-1 min-w-0 flex items-center gap-1.5 text-xs text-main font-medium text-left cursor-pointer"
+          className="lg:pointer-events-none flex-1 min-w-0 min-h-11 sm:min-h-0 flex items-center gap-1.5 text-xs text-main font-medium text-left cursor-pointer"
           aria-expanded={showCalendar}
           title={t('journal.calendarTitle')}
         >

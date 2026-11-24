@@ -158,7 +158,7 @@ export function OpenItemGroups({
                               e.stopPropagation();
                               setEditingQtyItemId(item.id);
                             }}
-                            className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 transition-colors ${
+                            className={`tap-area text-xs px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 transition-colors ${
                               item.quantity
                                 ? 'badge-accent cursor-pointer hover:brightness-125'
                                 : 'opacity-0 group-hover:opacity-60 hover:opacity-100! text-muted hover:text-accent border border-dashed hover:border-accent text-[11px]'
@@ -186,7 +186,7 @@ export function OpenItemGroups({
                           e.stopPropagation();
                           handleDeleteItem(item.id);
                         }}
-                        className="btn-icon btn-icon-danger p-2 sm:p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                        className="tap-area btn-icon btn-icon-danger p-2 sm:p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                         title={t('deleteItem')}
                       >
                         <Trash className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
@@ -225,7 +225,7 @@ export function CompletedItems({
             </span>
             <button
               onClick={handleClearCompleted}
-              className="btn-action min-h-[36px] sm:min-h-0 text-xs"
+              className="btn-action min-h-11 sm:min-h-0 text-xs"
             >
               {t('clearDone')}
             </button>
@@ -268,7 +268,7 @@ export function CompletedItems({
                           e.stopPropagation();
                           setEditingQtyItemId(item.id);
                         }}
-                        className={`text-xs px-1.5 py-0.5 rounded-sm whitespace-nowrap shrink-0 transition-colors ${
+                        className={`tap-area text-xs px-1.5 py-0.5 rounded-sm whitespace-nowrap shrink-0 transition-colors ${
                           item.quantity
                             ? 'text-faint hover:text-main cursor-pointer'
                             : 'opacity-0 group-hover:opacity-60 text-faint hover:text-main text-[11px]'
@@ -292,7 +292,7 @@ export function CompletedItems({
                         e.stopPropagation();
                         handleDeleteItem(item.id);
                       }}
-                      className="btn-icon btn-icon-danger p-2 sm:p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                      className="tap-area btn-icon btn-icon-danger p-2 sm:p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                       title={t('delete')}
                     >
                       <Trash className="w-4 h-4 sm:w-3.5 sm:h-3.5" />

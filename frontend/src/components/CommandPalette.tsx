@@ -326,7 +326,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Input Bar */}
-        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border bg-canvas/40 shrink-0">
+        <div className="flex items-center gap-2.5 px-4 py-0.5 sm:py-3 border-b border-border bg-canvas/40 shrink-0">
           <Search className="w-5 h-5 text-accent shrink-0" />
           <input
             ref={inputRef}
@@ -335,10 +335,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             onChange={(e) => setQuery(e.target.value)}
             {...NO_AUTOFILL}
             placeholder={t('palette.placeholder')}
-            className="flex-1 bg-transparent border-0 outline-hidden text-main placeholder:text-muted text-base sm:text-sm focus:ring-0 p-0"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-hidden text-main placeholder:text-muted text-base sm:text-sm focus:ring-0 p-0 min-h-11 sm:min-h-0"
           />
           {/* One fixed slot for the spinner or the clear button, so the field keeps its width while typing */}
-          <span className="w-6 h-6 shrink-0 flex items-center justify-center">
+          <span className="w-11 h-11 sm:w-6 sm:h-6 shrink-0 flex items-center justify-center">
             {loading ? (
               <Spinner size="md" tone="accent" />
             ) : query ? (
@@ -349,7 +349,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   setHits([]);
                   inputRef.current?.focus();
                 }}
-                className="w-6 h-6 flex items-center justify-center text-muted hover:text-main"
+                className="w-11 h-11 sm:w-6 sm:h-6 flex items-center justify-center text-muted hover:text-main"
                 title={t('palette.clear')}
               >
                 <X className="w-4 h-4" />
@@ -374,7 +374,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="sm:hidden px-2 py-1 text-xs font-semibold text-accent"
+            className="sm:hidden min-h-11 px-2 flex items-center text-xs font-semibold text-accent"
           >
             {t('common:done')}
           </button>
@@ -395,7 +395,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   setKind(k.kind);
                   inputRef.current?.focus();
                 }}
-                className={`h-9 sm:h-7 px-3 rounded-pill border text-xs flex items-center gap-1.5 shrink-0 transition-colors ${
+                className={`h-11 sm:h-7 px-3 rounded-pill border text-xs flex items-center gap-1.5 shrink-0 transition-colors ${
                   active ? 'bg-accent/10 border-accent text-main font-semibold' : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >

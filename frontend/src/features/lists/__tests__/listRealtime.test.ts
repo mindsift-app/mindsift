@@ -7,10 +7,9 @@ import { listOpenCount } from '../listItems';
 import { RELOAD_SHARED_DELAY_MS, RELOAD_SOON_MS } from '../../../lib/realtimeReload';
 import { emitRealtimeMessage, emitRealtimeStatus } from '../../../lib/realtimeBus';
 
-vi.mock('../../../lib/api', async (original) => ({
-  ...(await original<typeof import('../../../lib/api')>()),
-  createRealtimeConnection: vi.fn(() => ({ close: vi.fn() })),
-}));
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, {}, { createRealtimeConnection: vi.fn(() => ({ close: vi.fn() })) })
+);
 
 const item = (id: string, i: Partial<ListItem> = {}) =>
   ({ id, listId: 'l1', content: id, isCompleted: false, sortOrder: 0, createdAt: '', ...i }) as ListItem;

@@ -37,6 +37,26 @@
    where needed, e.g. the delete button on the open note's row in the tree */
 @custom-variant touch (@media (hover: none) and (pointer: coarse));
 
+/* A small control inside a row or a line (check box, quantity, bin, chip) keeps its look but takes taps in at
+   least 44 x 44 px on phones (AGENTS.md): an invisible ::before centred on it catches the press. On phones it
+   makes the control position: relative, so it is not for controls placed absolute; the area spills over its
+   neighbours, so a later neighbour wins where two overlap. From sm the control is unchanged. */
+@utility tap-area {
+  @media (width < 768px) {
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
 @theme {
   /* Phone layout below sm, desktop from sm (see AGENTS.md). sm is 768 px, not Tailwind's 640, so phones in
      landscape and small tablets (iPad mini upright) get the touch layout too; keep PHONE_MAX_WIDTH in

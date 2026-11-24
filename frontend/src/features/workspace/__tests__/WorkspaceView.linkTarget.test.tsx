@@ -18,12 +18,10 @@ vi.mock('../DocumentEditor', () => ({
   },
 }));
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(
+    original,
+    {
       getDocuments: vi.fn(),
       getDocumentTodos: vi.fn(),
       getFolders: vi.fn(),
@@ -31,9 +29,9 @@ vi.mock('../../../lib/api', async (importOriginal) => {
       getWorkspaceTags: vi.fn(),
       getTrash: vi.fn(),
     },
-    triggerHaptic: vi.fn(),
-  };
-});
+    { triggerHaptic: vi.fn() }
+  )
+);
 
 const makeDoc = (id: string, title: string): Document => ({
   id,

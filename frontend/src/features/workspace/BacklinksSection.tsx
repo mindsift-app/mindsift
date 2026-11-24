@@ -94,7 +94,7 @@ export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title
               <button
                 type="button"
                 onClick={() => onOpen(l.docId)}
-                className="flex items-center gap-2 min-w-0 max-w-full text-left cursor-pointer group"
+                className="flex items-center gap-2 min-w-0 max-w-full min-h-11 sm:min-h-0 text-left cursor-pointer group"
               >
                 {l.icon && <span className="shrink-0">{l.icon}</span>}
                 <span className="text-sm font-semibold text-main truncate group-hover:text-accent">
@@ -113,7 +113,7 @@ export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title
                     <button
                       type="button"
                       onClick={() => onOpen(l.docId, b.id)}
-                      className="w-full text-left text-xs text-muted hover:text-main px-2 py-1.5 rounded-btn hover:bg-panel-elevated border-l-2 border-border line-clamp-3 wrap-break-word cursor-pointer"
+                      className="w-full min-h-11 sm:min-h-0 text-left text-xs text-muted hover:text-main px-2 py-3 sm:py-1.5 rounded-btn hover:bg-panel-elevated border-l-2 border-border line-clamp-3 wrap-break-word cursor-pointer"
                     >
                       <Snippet text={b.content} />
                     </button>

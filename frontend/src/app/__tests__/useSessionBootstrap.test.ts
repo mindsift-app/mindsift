@@ -16,27 +16,31 @@ const mocks = vi.hoisted(() => ({
   lastWrite: 0,
 }));
 
-vi.mock('../../lib/api', () => ({
-  api: {
-    getAuthStatus: mocks.getAuthStatus,
-    getMe: mocks.getMe,
-    getTriageDeck: mocks.getTriageDeck,
-    getAllLists: mocks.getAllLists,
-    flushOfflineQueue: mocks.flushOfflineQueue,
-    oidcExchange: mocks.oidcExchange,
-    getStats: mocks.getStats,
-    desktopSignIn: mocks.desktopSignIn,
-  },
-  isDesktopApp: () => mocks.desktop,
-  lastLocalWriteAt: () => mocks.lastWrite,
-  getToken: () => mocks.token || null,
-  clearToken: () => {
-    mocks.token = '';
-  },
-  connectWebSocket: vi.fn(),
-  disconnectWebSocket: vi.fn(),
-  getCurrentOidc: () => ({}),
-}));
+vi.mock('../../lib/api', async () =>
+  (await import('../../test/apiMock')).stubApi(
+    {
+      getAuthStatus: mocks.getAuthStatus,
+      getMe: mocks.getMe,
+      getTriageDeck: mocks.getTriageDeck,
+      getAllLists: mocks.getAllLists,
+      flushOfflineQueue: mocks.flushOfflineQueue,
+      oidcExchange: mocks.oidcExchange,
+      getStats: mocks.getStats,
+      desktopSignIn: mocks.desktopSignIn,
+    },
+    {
+      isDesktopApp: () => mocks.desktop,
+      lastLocalWriteAt: () => mocks.lastWrite,
+      getToken: () => mocks.token || null,
+      clearToken: () => {
+        mocks.token = '';
+      },
+      connectWebSocket: vi.fn(),
+      disconnectWebSocket: vi.fn(),
+      getCurrentOidc: () => ({}),
+    }
+  )
+);
 vi.mock('../../lib/offline', () => ({ outboxCount: () => mocks.outbox, clearOfflineData: vi.fn() }));
 vi.mock('../../lib/docSync/flushClosed', () => ({ flushClosedNotes: vi.fn() }));
 

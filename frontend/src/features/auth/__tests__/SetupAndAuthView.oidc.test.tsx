@@ -4,12 +4,11 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 const { api } = vi.hoisted(() => ({
   api: { login: vi.fn(), oidcStart: vi.fn(), oidcExchange: vi.fn() },
 }));
-vi.mock('../../../lib/api', () => ({
-  api,
-  ApiError: class extends Error {},
-  triggerHaptic: vi.fn(),
-  getCurrentOidc: () => ({ enabled: true, name: 'Authentik', passwordLogin: false }),
-}));
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi(api, {
+    getCurrentOidc: () => ({ enabled: true, name: 'Authentik', passwordLogin: false }),
+  })
+);
 
 import { SetupAndAuthView } from '../SetupAndAuthView';
 import { finishOidcReturn } from '../../../lib/oidc';

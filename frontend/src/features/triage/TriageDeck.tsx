@@ -656,7 +656,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                   type="button"
                   onClick={() => openActionSheetForCard(activeCard)}
                   title={t('moreOptions')}
-                  className="h-8 w-8 bg-canvas hover:bg-panel-hover border border-border rounded-btn text-muted hover:text-main flex items-center justify-center cursor-pointer"
+                  className="h-11 w-11 sm:h-8 sm:w-8 bg-canvas hover:bg-panel-hover border border-border rounded-btn text-muted hover:text-main flex items-center justify-center cursor-pointer"
                 >
                   <Ellipsis className="w-4 h-4" />
                 </button>

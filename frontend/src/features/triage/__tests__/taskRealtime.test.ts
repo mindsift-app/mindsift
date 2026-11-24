@@ -9,11 +9,9 @@ import { emitRealtimeMessage } from '../../../lib/realtimeBus';
 import type { WSMessage } from '../../../lib/types';
 
 const mocks = vi.hoisted(() => ({ getTaskLists: vi.fn() }));
-vi.mock('../../../lib/api', async (original) => ({
-  ...(await original<typeof import('../../../lib/api')>()),
-  api: { getTaskLists: mocks.getTaskLists },
-  getCurrentUserId: () => 'usr_anna',
-}));
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, { getTaskLists: mocks.getTaskLists }, { getCurrentUserId: () => 'usr_anna' })
+);
 
 const ids = (list: Thought[]) => list.map((t) => t.id);
 

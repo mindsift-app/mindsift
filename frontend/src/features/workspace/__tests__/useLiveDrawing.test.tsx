@@ -8,15 +8,17 @@ type SentMessage = { event: string; payload: { els?: { id: string }[] } & Record
 const realtime = vi.hoisted(() => ({
   sent: [] as SentMessage[],
 }));
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const orig = await importOriginal<typeof import('../../../lib/api')>();
-  return {
-    ...orig,
-    isWebSocketConnected: () => true,
-    getSSEId: () => null,
-    sendWebSocketMessage: (msg: SentMessage) => realtime.sent.push(msg),
-  };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(
+    original,
+    {},
+    {
+      isWebSocketConnected: () => true,
+      getSSEId: () => null,
+      sendWebSocketMessage: (msg: SentMessage) => realtime.sent.push(msg),
+    }
+  )
+);
 
 import { useLiveDrawing, LiveOptions } from '../drawing/useLiveDrawing';
 import { Drawing, DrawElement } from '../../../lib/drawing/model';

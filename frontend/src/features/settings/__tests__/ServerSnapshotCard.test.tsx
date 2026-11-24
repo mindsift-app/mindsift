@@ -7,7 +7,7 @@ const api = vi.hoisted(() => ({
   adminTakeOverSnapshotAccount: vi.fn(),
   adminDiscardServerSnapshot: vi.fn(),
 }));
-vi.mock('../../../lib/api', () => ({ api, isDesktopApp: () => true }));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi(api, { isDesktopApp: () => true }));
 
 import { ServerSnapshotCard } from '../ServerSnapshotCard';
 
