@@ -8,6 +8,9 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Changed
+- Deleting an account or an organization, taking someone out of one, or a stricter sharing mode now only makes the apps of the people whose shares or groups changed load their lists and notes again, instead of everyone who is online.
+
 ## [0.99.3] - 2026-11-24
 
 ### Added
