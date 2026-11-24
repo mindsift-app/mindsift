@@ -9,6 +9,7 @@ Versions without a git tag were development states and were never published as a
 ## [Unreleased]
 
 ### Changed
+- On the phone, the priority chip under a task title (list and Kanban card) is now only a label instead of a button, so a stray tap no longer changes the priority; change it in the task details there.
 - Deleting an account or an organization, taking someone out of one, or a stricter sharing mode now only makes the apps of the people whose shares or groups changed load their lists and notes again, instead of everyone who is online.
 - Signing up and redeeming an invitation now ask for the password twice, like setting a new password everywhere else: the repetition turns red as soon as it differs, and the account is only created when both match.
 - The audit log (Administration → Log) now also records the security-relevant steps people take on their own account: changing their password (also through the reset link), removing the authenticator app or a passkey, creating new recovery codes, creating, renaming, changing the permissions of or deleting an API key or AI connection (with its name and permissions, and the old ones after a change; never the key), and signing out one device or all sessions. What people do with their own notes, tasks and settings is still not recorded.

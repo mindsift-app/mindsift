@@ -8,6 +8,7 @@ import { columnDotClass } from './ManageColumnsModal';
 import { KanbanColumn, RECURRENCE_LABELS, Thought } from '../../lib/types';
 import { canDragTasks } from './useTaskDrag';
 import { stopOnControl } from './stopOnControl';
+import { PriorityChip } from './PriorityChip';
 import { notePreview, renderMentions } from '../../lib/markdown';
 import { remindersText } from '../../lib/reminders';
 
@@ -226,29 +227,8 @@ function TaskRowView({
               );
             })()}
 
-            {/* Priority badge: click to cycle or clear */}
-            {task.priority === 'urgent' && (
-              <button
-                type="button"
-                disabled={readOnly}
-                onClick={() => handleCyclePriority(task)}
-                className="badge-accent text-[10px] cursor-pointer hover:opacity-85 disabled:cursor-default"
-                title={t('row.urgentToNormal')}
-              >
-                {t('tasks:listing.urgent')}
-              </button>
-            )}
-            {task.priority === 'high' && (
-              <button
-                type="button"
-                disabled={readOnly}
-                onClick={() => handleCyclePriority(task)}
-                className="px-1.5 py-0.5 border border-status-warn text-status-warn rounded-btn text-[10px] font-medium cursor-pointer hover:opacity-85 disabled:cursor-default"
-                title={t('row.highToUrgent')}
-              >
-                {t('tasks:listing.high')}
-              </button>
-            )}
+            {/* Priority badge: click to cycle on desktop, display only on the phone */}
+            <PriorityChip task={task} onCycle={handleCyclePriority} readOnly={readOnly} size="sm" />
 
             <OriginBadge origin={task.origin} createdAt={task.createdAt} />
 
