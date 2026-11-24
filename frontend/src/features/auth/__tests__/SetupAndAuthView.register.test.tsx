@@ -16,8 +16,8 @@ const status = {
 const user = { id: 'u1', displayName: 'Bert', username: 'bert', email: 'bert@beispiel.de', role: 'member', isActive: true };
 
 async function fillAndSubmit(password: string, repeat: string, submitName: string) {
-  fireEvent.change(screen.getByPlaceholderText('Dein Name'), { target: { value: 'Bert' } });
-  fireEvent.change(screen.getByPlaceholderText('name@beispiel.de'), { target: { value: 'bert@beispiel.de' } });
+  fireEvent.change(screen.getByLabelText('Anzeigename *'), { target: { value: 'Bert' } });
+  fireEvent.change(screen.getByLabelText('E-Mail-Adresse *'), { target: { value: 'bert@beispiel.de' } });
   fireEvent.change(screen.getByLabelText('Passwort *'), { target: { value: password } });
   fireEvent.change(screen.getByLabelText('Passwort wiederholen *'), { target: { value: repeat } });
   await act(async () => {
@@ -62,5 +62,12 @@ describe('SetupAndAuthView: new password typed twice when signing up', () => {
       fireEvent.click(screen.getByRole('button', { name: submit }));
     });
     expect(register).toHaveBeenCalledWith('bert@beispiel.de', 'geheimes-Passwort', 'Bert', 'MS-ABCDEFGH');
+  });
+
+  it('does not carry a password typed into the login over to the sign-up form', () => {
+    render(<SetupAndAuthView authStatus={status} onAuthenticated={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Passwort'), { target: { value: 'Login-Passwort' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Registrieren' }));
+    expect((screen.getByLabelText('Passwort *') as HTMLInputElement).value).toBe('');
   });
 });

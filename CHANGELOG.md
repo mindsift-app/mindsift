@@ -13,6 +13,7 @@ Versions without a git tag were development states and were never published as a
 - Signing up and redeeming an invitation now ask for the password twice, like setting a new password everywhere else: the repetition turns red as soon as it differs, and the account is only created when both match.
 
 ### Fixed
+- Sign-in window: screen readers now read out the labels of every field when signing in, signing up or redeeming an invitation, and a password typed into the sign-in form no longer turns up in the sign-up form.
 - Renaming a folder inside a shared folder, or moving a folder into or within one, no longer creates a subfolder of the same name inside it ("Team/New/New"); its subfolders now end up directly in the renamed or moved folder. Duplicates made before stay and can be deleted.
 
 ## [0.99.3] - 2026-11-24
