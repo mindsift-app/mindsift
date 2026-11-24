@@ -262,7 +262,7 @@ export function KanbanBoard({
                   type="button"
                   disabled={!activeColumns.some((c) => boardIdOf(c) === col.id)}
                   onClick={() => handleQuickAddTaskToColumn(col.id)}
-                  className="w-full h-7 px-2 text-xs border border-dashed border-border rounded-btn text-muted hover:text-main hover:bg-canvas flex items-center justify-center gap-1 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-full h-11 sm:h-7 px-2 text-xs border border-dashed border-border rounded-btn text-muted hover:text-main hover:bg-canvas flex items-center justify-center gap-1 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Plus className="w-3 h-3" />
                   <span>{t('kanban.addTask')}</span>

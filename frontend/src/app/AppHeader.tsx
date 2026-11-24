@@ -104,12 +104,15 @@ export function MobileHeaderBar({
               setShowManualPwaGuide(false);
               setShowPwaInstallModal(true);
             }}
-            className="h-9 px-2.5 rounded-xl bg-accent/15 border border-accent/40 text-accent text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-transform cursor-pointer"
+            className="h-11 flex items-center active:scale-95 transition-transform cursor-pointer"
             title={t('header.installApp')}
           >
-            <Download className="w-3.5 h-3.5" />
-            {/* Very narrow phones: the icon alone, so search, bell and profile still fit */}
-            <span className="max-[380px]:hidden">{t('header.app')}</span>
+            {/* Visibly as tall as the search and bell beside it; the 44px button stays the touch target */}
+            <span className="h-9 px-2.5 rounded-xl bg-accent/15 border border-accent/40 text-accent text-xs font-semibold flex items-center gap-1.5">
+              <Download className="w-3.5 h-3.5" />
+              {/* Very narrow phones: the icon alone, so search, bell and profile still fit */}
+              <span className="max-[380px]:hidden">{t('header.app')}</span>
+            </span>
           </button>
         )}
 

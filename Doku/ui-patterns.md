@@ -2,6 +2,12 @@
 
 Recurring user interface elements that look and behave consistently everywhere. When a new one is needed, use the existing component instead of building a custom variation.
 
+## Tap Targets on Phones
+
+- Everything that takes a tap is at least 44 x 44 px below `sm`: buttons and fields of their own grow there (`h-11 sm:h-…`, `min-h-11 sm:min-h-0`), from `sm` they stay as they were.
+- A small control inside a row or a line of text (check box of a task, quantity and bin of a list entry, the arrows of a Kanban card, the footer links of `LegalLinks`) keeps its look and gets the utility `tap-area` (`index.css`): an invisible `::before` of 44 x 44 px centred on it takes the tap on phones. It makes the control `position: relative` there, so not for controls placed absolute.
+- Deliberately small: bullets, check boxes and inline chips inside a note (the outliner keeps its lines compact), links in running text, and the meta chips of a task row or Kanban card (tag, priority, note), where the row itself is the target.
+
 ## Searching People (Type-to-Search)
 
 Component: [UserAutocomplete.tsx](../frontend/src/features/UserAutocomplete.tsx)

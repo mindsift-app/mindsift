@@ -208,7 +208,7 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
             type="button"
             disabled={!prevCol}
             onClick={() => prevCol && onSetStatus(task, prevCol.id)}
-            className="text-faint hover:text-main disabled:opacity-20 flex items-center gap-0.5"
+            className="tap-area text-faint hover:text-main disabled:opacity-20 flex items-center gap-0.5"
             title={prevCol ? t('kanban.moveTo', { column: prevCol.name }) : ''}
           >
             <ArrowLeft className="w-3 h-3" />
@@ -219,7 +219,7 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
             type="button"
             disabled={!nextCol}
             onClick={() => nextCol && onSetStatus(task, nextCol.id)}
-            className="text-faint hover:text-main disabled:opacity-20 flex items-center gap-0.5"
+            className="tap-area text-faint hover:text-main disabled:opacity-20 flex items-center gap-0.5"
             title={nextCol ? t('kanban.moveTo', { column: nextCol.name }) : ''}
           >
             <span className="hidden sm:inline">{nextCol?.name ?? ''}</span>

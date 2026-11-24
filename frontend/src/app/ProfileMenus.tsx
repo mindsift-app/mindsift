@@ -246,7 +246,7 @@ export function MobileProfileSheet({
                 setShowManualPwaGuide(false);
                 setShowPwaInstallModal(true);
               }}
-              className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 bg-accent/10 border border-accent/30 text-accent font-semibold transition-colors text-xs cursor-pointer mb-1"
+              className="w-full min-h-11 px-3 py-2.5 rounded-btn text-left flex items-center gap-3 bg-accent/10 border border-accent/30 text-accent font-semibold transition-colors text-xs cursor-pointer mb-1"
             >
               <Smartphone className="w-4 h-4 text-accent" />
               <span>{t('profile.installApp')}</span>
@@ -260,7 +260,7 @@ export function MobileProfileSheet({
               setShowMobileProfile(false);
               setActiveTab('user_settings');
             }}
-            className={`w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 hover:bg-panel-elevated transition-colors text-xs cursor-pointer ${
+            className={`w-full min-h-11 px-3 py-2.5 rounded-btn text-left flex items-center gap-3 hover:bg-panel-elevated transition-colors text-xs cursor-pointer ${
               activeTab === 'user_settings' ? 'text-accent font-semibold bg-panel-elevated' : 'text-main'
             }`}
           >
@@ -276,7 +276,7 @@ export function MobileProfileSheet({
               setShowMobileProfile(false);
               setActiveTab('groups');
             }}
-            className={`w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 hover:bg-panel-elevated transition-colors text-xs cursor-pointer ${
+            className={`w-full min-h-11 px-3 py-2.5 rounded-btn text-left flex items-center gap-3 hover:bg-panel-elevated transition-colors text-xs cursor-pointer ${
               activeTab === 'groups' ? 'text-accent font-semibold bg-panel-elevated' : 'text-main'
             }`}
           >
@@ -291,7 +291,7 @@ export function MobileProfileSheet({
               setShowMobileProfile(false);
               handleOpenHelp();
             }}
-            className={`w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 hover:bg-panel-elevated transition-colors text-xs cursor-pointer ${
+            className={`w-full min-h-11 px-3 py-2.5 rounded-btn text-left flex items-center gap-3 hover:bg-panel-elevated transition-colors text-xs cursor-pointer ${
               activeTab === 'help' ? 'text-accent font-semibold bg-panel-elevated' : 'text-main'
             }`}
           >
@@ -306,7 +306,7 @@ export function MobileProfileSheet({
               setShowMobileProfile(false);
               setShowAbout(true);
             }}
-            className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 hover:bg-panel-elevated transition-colors text-xs cursor-pointer text-main"
+            className="w-full min-h-11 px-3 py-2.5 rounded-btn text-left flex items-center gap-3 hover:bg-panel-elevated transition-colors text-xs cursor-pointer text-main"
           >
             <Brain className="w-4 h-4 text-accent" />
             <span>{t('common:aboutMindSift')}</span>
@@ -320,7 +320,7 @@ export function MobileProfileSheet({
                 setShowMobileProfile(false);
                 setActiveTab('admin_settings');
               }}
-              className={`w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 hover:bg-panel-elevated transition-colors text-xs cursor-pointer ${
+              className={`w-full min-h-11 px-3 py-2.5 rounded-btn text-left flex items-center gap-3 hover:bg-panel-elevated transition-colors text-xs cursor-pointer ${
                 activeTab === 'admin_settings' ? 'text-accent font-semibold bg-panel-elevated' : 'text-main'
               }`}
             >
@@ -336,7 +336,7 @@ export function MobileProfileSheet({
             <button
               type="button"
               onClick={switchToDesktopStart}
-              className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-main hover:bg-panel-elevated transition-colors text-xs cursor-pointer"
+              className="w-full min-h-11 px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-main hover:bg-panel-elevated transition-colors text-xs cursor-pointer"
             >
               <ArrowLeftRight className="w-4 h-4 text-accent" />
               <span>{t('profile.switchInstance')}</span>
@@ -347,7 +347,7 @@ export function MobileProfileSheet({
               <button
                 type="button"
                 onClick={() => switchToShellStart(shellStart)}
-                className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-main hover:bg-panel-elevated transition-colors text-xs cursor-pointer"
+                className="w-full min-h-11 px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-main hover:bg-panel-elevated transition-colors text-xs cursor-pointer"
               >
                 <ArrowLeftRight className="w-4 h-4 text-accent" />
                 <span>{t('profile.switchInstance')}</span>
@@ -359,7 +359,7 @@ export function MobileProfileSheet({
                 setShowMobileProfile(false);
                 handleLogout();
               }}
-              className="w-full px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-status-err hover:bg-status-err-bg transition-colors text-xs font-medium cursor-pointer"
+              className="w-full min-h-11 px-3 py-2.5 rounded-btn text-left flex items-center gap-3 text-status-err hover:bg-status-err-bg transition-colors text-xs font-medium cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span>{t('profile.logout')}</span>

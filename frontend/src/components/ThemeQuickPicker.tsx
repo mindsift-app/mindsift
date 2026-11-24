@@ -26,7 +26,7 @@ export const ThemeQuickPicker: React.FC<ThemeQuickPickerProps> = ({ activeTheme,
   const active = AVAILABLE_THEMES.find((t) => t.id === activeTheme);
   const mode = active?.mode ?? 'dark';
   const customThemes = themes.filter((t) => t.isCustom);
-  const dot = touch ? 'w-9 h-9' : 'w-7 h-7';
+  const dot = touch ? 'w-11 h-11' : 'w-7 h-7';
   // Kept in state: choosing "System" may not change the theme, but the selection must still show
   const [followSystem, setFollow] = useState(getFollowSystem);
   const pick = (id: ThemeId) => onChange(resolveTheme(id));
@@ -78,7 +78,7 @@ export const ThemeQuickPicker: React.FC<ThemeQuickPickerProps> = ({ activeTheme,
                 }}
                 title={m === 'light' ? t('theme.light') : m === 'dark' ? t('theme.dark') : t('theme.system')}
                 aria-label={m === 'light' ? t('theme.light') : m === 'dark' ? t('theme.dark') : t('theme.system')}
-                className={`${touch ? 'h-9' : 'h-7'} rounded-full flex items-center justify-center gap-1 text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`${touch ? 'h-11' : 'h-7'} rounded-full flex items-center justify-center gap-1 text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                   selected ? 'bg-panel text-accent shadow-xs' : 'text-muted hover:text-main'
                 }`}
               >

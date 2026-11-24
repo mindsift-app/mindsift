@@ -146,7 +146,7 @@ function TaskRowView({
             e.stopPropagation();
             handleToggleDone(task);
           }}
-          className={`w-5 h-5 sm:w-4 sm:h-4 checkbox-square flex items-center justify-center shrink-0 transition-colors border disabled:cursor-default ${
+          className={`tap-area w-5 h-5 sm:w-4 sm:h-4 checkbox-square flex items-center justify-center shrink-0 transition-colors border disabled:cursor-default ${
             isCompleted
               ? 'bg-status-ok border-status-ok text-on-accent'
               : 'border-strong hover:border-accent text-transparent'

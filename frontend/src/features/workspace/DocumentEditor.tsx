@@ -1168,7 +1168,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => canEdit && !inJournal && setShowEmojiPicker((prev) => !prev)}
-                  className={`text-2xl sm:text-3xl transition-opacity select-none leading-none sm:leading-9 bg-transparent border-0 outline-hidden p-0 focus:outline-hidden focus:ring-0 shadow-none ${
+                  className={`tap-area text-2xl sm:text-3xl transition-opacity select-none leading-none sm:leading-9 bg-transparent border-0 outline-hidden p-0 focus:outline-hidden focus:ring-0 shadow-none ${
                     inJournal ? 'cursor-default' : 'hover:opacity-80 cursor-pointer'
                   }`}
                   title={inJournal ? undefined : t('editor.changeIcon')}

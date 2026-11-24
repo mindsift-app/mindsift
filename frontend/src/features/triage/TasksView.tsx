@@ -919,7 +919,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                   <button
                     type="button"
                     onClick={() => handleOpenShareModal(currentSelectedList)}
-                    className="btn-icon min-h-[36px] min-w-[36px] flex items-center justify-center"
+                    className="btn-icon min-h-11 min-w-11 sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center"
                     title={t('tabs.shareList')}
                   >
                     <Users className="w-4 h-4 text-accent" />

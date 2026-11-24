@@ -114,7 +114,7 @@ export function SidebarTags({
           </button>
         )}
       </div>
-      <div className="flex flex-wrap gap-1 px-1">
+      <div className="flex flex-wrap gap-1.5 sm:gap-1 px-1">
         {tagsSummary.map((tag) => {
           const selected = selectedTags.includes(tag.tag);
           return (
@@ -124,12 +124,12 @@ export function SidebarTags({
               onClick={() => toggleTag(tag.tag)}
               aria-pressed={selected}
               title={selected ? t('sidebar.tagFilterOff', { tag: tag.tag }) : t('sidebar.tagFilterOn', { tag: tag.tag })}
-              className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-btn text-[10px] font-medium transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-0.5 px-2.5 sm:px-2 min-h-11 sm:min-h-0 py-0.5 rounded-btn text-xs sm:text-[10px] font-medium transition-colors cursor-pointer ${
                 selected ? 'bg-accent text-on-accent' : 'bg-panel-elevated text-muted hover:text-accent'
               }`}
             >
               <span>#{tag.tag}</span>
-              <span className="opacity-60 font-mono text-[9px]">{tag.count}</span>
+              <span className="opacity-60 font-mono text-[10px] sm:text-[9px]">{tag.count}</span>
             </button>
           );
         })}
