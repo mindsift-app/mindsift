@@ -13,7 +13,9 @@ import (
 // row per change, written by the server (admin API, OIDC role sync, the account from ADMIN_USER) and by
 // the command line (internal/cli). The running server reads the command line's rows as well
 // (AuditEntriesAfter): it ends live connections and lifts the sign-in lock for them
-// (api/cli_support.go). Normal work of people on their own content is not recorded.
+// (api/cli_support.go). Of what people do with their own account only the security-relevant steps are
+// recorded (account.password_changed and the other own-account actions below, actor and target the same
+// account); their work on their own content and settings is not.
 //
 // Details are small JSON objects without secrets: a changed password, SMTP password or webhook address
 // is recorded as changed, never with its value. No IP addresses: the actor is a signed-in account (or
@@ -77,6 +79,19 @@ const (
 	AuditBackupTakenOver           = "backup.taken_over"     // the desktop app took an account of a server backup over (details.account)
 	AuditSpeechModelDownload       = "speech_model.download" // the admin asked the Whisper server for a model
 	AuditSpeechModelDeleted        = "speech_model.deleted"
+)
+
+// Security-relevant steps a person took on their own account (actor = target): what weakens or widens
+// access. Everyday work on their own content and settings is not recorded.
+const (
+	AuditAccountPasswordChanged      = "account.password_changed"       // own password, also through the mail link (details.via)
+	AuditAccountTOTPDisabled         = "account.totp_disabled"          // authenticator app removed (details.mfaOff: no second factor left)
+	AuditAccountPasskeyRemoved       = "account.passkey_removed"        // details.name, details.mfaOff
+	AuditAccountRecoveryCodesRenewed = "account.recovery_codes_renewed" // new recovery codes, the earlier ones stop working
+	AuditAccountAPIKeyCreated        = "account.api_key_created"        // details.name, details.scopes; never the key
+	AuditAccountAPIKeyDeleted        = "account.api_key_deleted"        // a key or an AI connection (details.kind "oauth")
+	AuditAccountSessionEnded         = "account.session_ended"          // one device signed out (details.device: its user agent)
+	AuditAccountSessionsRevoked      = "account.sessions_revoked"       // signed out everywhere
 )
 
 // AuditKeep: how long a row stays (PruneAudit, hourly).

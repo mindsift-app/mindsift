@@ -3,6 +3,8 @@
 import type { TFunction } from 'i18next';
 import type { AuditEntry, User } from '../../../lib/types';
 import { formatDateTime } from '../../../lib/format';
+import { scopeChip } from '../../../lib/apiScopes';
+import { describeDevice } from '../SessionsPanel';
 
 // The actions the server records (storage/audit.go), in the order of the filter menu
 export const AUDIT_ACTIONS = [
@@ -17,6 +19,14 @@ export const AUDIT_ACTIONS = [
   'account.updated',
   'account.password_reset',
   'account.mfa_reset',
+  'account.password_changed',
+  'account.totp_disabled',
+  'account.passkey_removed',
+  'account.recovery_codes_renewed',
+  'account.api_key_created',
+  'account.api_key_deleted',
+  'account.session_ended',
+  'account.sessions_revoked',
   'invite.created',
   'invite.sent',
   'invite.redeemed',
@@ -133,7 +143,24 @@ export function detailLines(t: TFunction, e: AuditEntry): string[] {
     case 'speech_model.download':
       if (d.select === true) lines.push(t('audit.detail.speechModelSelect'));
       break;
+    // What a person did to their own account: the key or passkey by name, never a secret
+    case 'account.api_key_created':
+    case 'account.api_key_deleted':
+    case 'account.passkey_removed':
+      if (typeof d.name === 'string' && d.name) lines.push(t('audit.detail.value', { label: t('audit.field.name'), value: d.name }));
+      if (d.kind === 'oauth') lines.push(t('audit.detail.aiConnection'));
+      if (Array.isArray(d.scopes) && d.scopes.length > 0) {
+        lines.push(t('audit.detail.value', { label: t('audit.field.scopes'), value: (d.scopes as string[]).map(scopeChip).join(', ') }));
+      }
+      break;
+    case 'account.session_ended':
+      if (typeof d.device === 'string' && d.device) {
+        lines.push(t('audit.detail.value', { label: t('audit.field.device'), value: describeDevice(d.device).label }));
+      }
+      break;
   }
+  if (d.via === 'emailLink') lines.push(t('audit.detail.viaEmailLink'));
+  if (d.mfaOff) lines.push(t('audit.detail.mfaOff'));
   if (typeof d.group === 'string' && d.group) {
     lines.push(t('audit.detail.value', { label: t('audit.field.group'), value: d.group }));
   }

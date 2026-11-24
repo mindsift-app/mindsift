@@ -58,6 +58,34 @@ func (s *Server) auditAs(actor *domain.User, action string, target storage.Audit
 	s.recordAudit(e, details)
 }
 
+// auditOwn records a security-relevant step the signed-in account took on itself (own password, second
+// factors, API keys, sessions): actor and target are that account.
+func (s *Server) auditOwn(r *http.Request, action string, details any) {
+	actor := s.auditActor(r)
+	s.auditAs(actor, action, storage.AuditUserTarget(actor), details)
+}
+
+// auditAPIKey: name, rights and, for an AI connection, its kind; never the key or its prefix.
+func auditAPIKey(k *domain.APIKey) map[string]any {
+	d := map[string]any{"name": k.Name, "scopes": strings.Split(k.Scopes, ",")}
+	if k.Kind == storage.APIKeyKindOAuth {
+		d["kind"] = k.Kind
+	}
+	return d
+}
+
+// auditMFAOff adds mfaOff to the details when removing a second factor left the account without one.
+func auditMFAOff(mfaOff bool, details map[string]any) map[string]any {
+	if !mfaOff {
+		return details
+	}
+	if details == nil {
+		details = map[string]any{}
+	}
+	details["mfaOff"] = true
+	return details
+}
+
 // auditBy records a change made without a request: the sign-in provider or the server itself.
 func (s *Server) auditBy(actorKind, source, action string, target storage.AuditEntry, details any) {
 	e := target

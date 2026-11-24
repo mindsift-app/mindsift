@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import i18n from '../../../i18n';
 import { AuditSection } from '../admin/AuditSection';
-import { detailLines } from '../admin/auditView';
+import { AUDIT_ACTIONS, detailLines } from '../admin/auditView';
+import deSettings from '../../../locales/de/settings.json';
 import type { AuditEntry, AuditPage, User } from '../../../lib/types';
 
 const adminGetAudit = vi.fn<(p: { action?: string; user?: string; before?: number; limit?: number }) => Promise<AuditPage>>();
@@ -85,6 +86,35 @@ describe('audit log details in words', () => {
     expect(detailLines(t, row({ action: 'account.unconfirmed_deleted', actorKind: 'system' }))).toEqual([
       'E-Mail-Adresse nicht innerhalb von 48 Stunden bestätigt',
     ]);
+  });
+});
+
+describe('own account actions in the audit log', () => {
+  it('every action has a label (the other languages follow German, a test checks their keys)', () => {
+    const labels = deSettings.audit.action as Record<string, string>;
+    for (const a of AUDIT_ACTIONS) expect(labels[a.replace(/\./g, '_')], a).toBeTruthy();
+  });
+
+  it('keys by name and rights, passkeys, devices and the mail link', () => {
+    const own = (e: Partial<AuditEntry>) => row({ actorId: 'u-anna', actorName: 'anna', ...e });
+    expect(detailLines(t, own({ action: 'account.api_key_created', details: { name: 'Hausautomation', scopes: ['webhook:task', 'tasks:read'] } }))).toEqual([
+      'Name: Hausautomation',
+      'Rechte: Aufgaben anlegen, Aufgaben lesen',
+    ]);
+    expect(
+      detailLines(t, own({ action: 'account.api_key_deleted', details: { name: 'Claude (OAuth)', kind: 'oauth', scopes: ['notes:read'] } }))
+    ).toEqual(['Name: Claude (OAuth)', 'KI-Zugang (OAuth)', 'Rechte: Notizen lesen']);
+    expect(detailLines(t, own({ action: 'account.passkey_removed', details: { name: 'Laptop Firefox', mfaOff: true } }))).toEqual([
+      'Name: Laptop Firefox',
+      'Zwei-Faktor-Anmeldung damit ausgeschaltet',
+    ]);
+    expect(detailLines(t, own({ action: 'account.totp_disabled', details: { mfaOff: true } }))).toEqual(['Zwei-Faktor-Anmeldung damit ausgeschaltet']);
+    expect(
+      detailLines(t, own({ action: 'account.session_ended', details: { device: 'Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 Firefox/130.0' } }))
+    ).toEqual(['Gerät: Firefox auf Linux']);
+    expect(detailLines(t, own({ action: 'account.password_changed', details: { via: 'emailLink' } }))).toEqual(['Über den Link aus der E-Mail']);
+    expect(detailLines(t, own({ action: 'account.sessions_revoked' }))).toEqual([]);
+    expect(t('audit.action.account_sessions_revoked')).toBe('Alle Sitzungen beendet');
   });
 });
 

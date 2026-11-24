@@ -67,6 +67,7 @@ func (s *Server) handleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
+	s.auditOwn(r, storage.AuditAccountAPIKeyCreated, auditAPIKey(key))
 	writeJSON(w, http.StatusCreated, key)
 }
 
@@ -95,9 +96,21 @@ func (s *Server) handleUpdateAPIKey(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleDeleteAPIKey(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	keyID := chi.URLParam(r, "id")
+	// Name and rights for the audit log, read before the key goes
+	var gone *domain.APIKey
+	if keys, err := s.store.GetAPIKeys(userID); err == nil {
+		for i := range keys {
+			if keys[i].ID == keyID {
+				gone = &keys[i]
+			}
+		}
+	}
 	if err := s.store.DeleteAPIKey(userID, keyID); err != nil {
 		writeInternal(w, err)
 		return
+	}
+	if gone != nil {
+		s.auditOwn(r, storage.AuditAccountAPIKeyDeleted, auditAPIKey(gone))
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }

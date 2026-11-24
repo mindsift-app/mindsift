@@ -671,6 +671,7 @@ func (s *Server) handleTOTPDisable(w http.ResponseWriter, r *http.Request) {
 		slog.Info("Authenticator app removed, passkeys stay", "user_id", user.ID)
 		s.notifySecurityChange(user, securityChangeAppRemoved)
 	}
+	s.auditOwn(r, storage.AuditAccountTOTPDisabled, auditMFAOff(mfaOff, nil))
 	writeJSON(w, http.StatusOK, map[string]bool{"disabled": true, "mfaOff": mfaOff})
 }
 
@@ -704,6 +705,7 @@ func (s *Server) handleNewRecoveryCodes(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	s.notifySecurityChange(user, securityChangeNewCodes)
+	s.auditOwn(r, storage.AuditAccountRecoveryCodesRenewed, nil)
 	writeJSON(w, http.StatusOK, map[string]any{"recoveryCodes": codes})
 }
 

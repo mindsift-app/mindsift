@@ -763,6 +763,7 @@ func (s *Server) handleRevokeAllSessions(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, "Sitzungen konnten nicht beendet werden")
 		return
 	}
+	s.auditOwn(r, storage.AuditAccountSessionsRevoked, nil)
 	s.wsHub.DisconnectUser(userID)
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }

@@ -117,6 +117,7 @@ func (s *Server) setOwnPassword(w http.ResponseWriter, r *http.Request, userID, 
 		return false
 	}
 	s.wsHub.DisconnectUser(userID)
+	s.auditOwn(r, storage.AuditAccountPasswordChanged, nil)
 	if fresh, err := s.store.GetUserByID(userID); err == nil {
 		current := &auth.Claims{}
 		current.ID = sid

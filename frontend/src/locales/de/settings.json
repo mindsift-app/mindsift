@@ -1280,6 +1280,14 @@
       "account_updated": "Kontodaten geändert",
       "account_password_reset": "Passwort zurückgesetzt",
       "account_mfa_reset": "Zwei-Faktor-Anmeldung zurückgesetzt",
+      "account_password_changed": "Eigenes Passwort geändert",
+      "account_totp_disabled": "Authenticator-App entfernt",
+      "account_passkey_removed": "Passkey entfernt",
+      "account_recovery_codes_renewed": "Neue Wiederherstellungscodes erzeugt",
+      "account_api_key_created": "API-Schlüssel erstellt",
+      "account_api_key_deleted": "API-Schlüssel gelöscht",
+      "account_session_ended": "Gerät abgemeldet",
+      "account_sessions_revoked": "Alle Sitzungen beendet",
       "invite_created": "Einladung erstellt",
       "invite_sent": "Einladung verschickt",
       "invite_revoked": "Einladung widerrufen",
@@ -1317,7 +1325,10 @@
       "mustChange": "Neues Passwort bei der nächsten Anmeldung verlangt",
       "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen",
       "calendarFeedRevoked": "Kalender-Abo abgeschaltet",
-      "speechModelSelect": "Wird nach dem Download verwendet"
+      "speechModelSelect": "Wird nach dem Download verwendet",
+      "viaEmailLink": "Über den Link aus der E-Mail",
+      "mfaOff": "Zwei-Faktor-Anmeldung damit ausgeschaltet",
+      "aiConnection": "KI-Zugang (OAuth)"
     },
     "value": {
       "on": "an",
@@ -1404,6 +1415,9 @@
       "file": "Datei",
       "account": "Konto",
       "invitedBy": "Eingeladen von",
+      "name": "Name",
+      "scopes": "Rechte",
+      "device": "Gerät",
       "legal": "Impressum & Datenschutz",
       "speech": {
         "mode": "Spracherkennung",

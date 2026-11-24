@@ -1281,6 +1281,14 @@
       "account_updated": "Datos de la cuenta cambiados",
       "account_password_reset": "Contraseña restablecida",
       "account_mfa_reset": "Inicio de sesión en dos pasos restablecido",
+      "account_password_changed": "Contraseña propia cambiada",
+      "account_totp_disabled": "App de autenticación quitada",
+      "account_passkey_removed": "Llave de acceso quitada",
+      "account_recovery_codes_renewed": "Nuevos códigos de recuperación creados",
+      "account_api_key_created": "Clave API creada",
+      "account_api_key_deleted": "Clave API eliminada",
+      "account_session_ended": "Dispositivo desconectado",
+      "account_sessions_revoked": "Todas las sesiones cerradas",
       "invite_created": "Invitación creada",
       "invite_sent": "Invitación enviada",
       "invite_revoked": "Invitación revocada",
@@ -1318,7 +1326,10 @@
       "mustChange": "Contraseña nueva exigida en el próximo inicio de sesión",
       "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados",
       "calendarFeedRevoked": "Suscripción de calendario desactivada",
-      "speechModelSelect": "Se usará una vez descargado"
+      "speechModelSelect": "Se usará una vez descargado",
+      "viaEmailLink": "Mediante el enlace del correo",
+      "mfaOff": "El inicio de sesión en dos pasos queda desactivado",
+      "aiConnection": "Acceso de IA (OAuth)"
     },
     "value": {
       "on": "activado",
@@ -1405,6 +1416,9 @@
       "file": "Archivo",
       "account": "Cuenta",
       "invitedBy": "Invitado por",
+      "name": "Nombre",
+      "scopes": "Permisos",
+      "device": "Dispositivo",
       "legal": "Aviso legal y privacidad",
       "speech": {
         "mode": "Reconocimiento de voz",
