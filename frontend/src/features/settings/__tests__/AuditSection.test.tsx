@@ -6,11 +6,11 @@ import { detailLines } from '../admin/auditView';
 import type { AuditEntry, AuditPage, User } from '../../../lib/types';
 
 const adminGetAudit = vi.fn<(p: { action?: string; user?: string; before?: number; limit?: number }) => Promise<AuditPage>>();
-vi.mock('../../../lib/api', () => ({
-  api: { adminGetAudit: (p: { action?: string; user?: string; before?: number; limit?: number }) => adminGetAudit(p) },
-  triggerHaptic: vi.fn(),
-  isDesktopApp: () => false,
-}));
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi({
+    adminGetAudit: (p: { action?: string; user?: string; before?: number; limit?: number }) => adminGetAudit(p),
+  })
+);
 
 const users = [
   { id: 'u-admin', username: 'admin', displayName: 'Sandra Admin', email: 'admin@example.com', role: 'admin' },

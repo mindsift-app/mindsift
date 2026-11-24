@@ -8,13 +8,13 @@ const on = (token: string): CalendarFeedState => ({ enabled: true, active: true,
 const getCalendarFeed = vi.fn(async (): Promise<CalendarFeedState> => off);
 const renewCalendarFeed = vi.fn(async (): Promise<CalendarFeedState> => on('tok1'));
 const disableCalendarFeed = vi.fn(async (): Promise<CalendarFeedState> => off);
-vi.mock('../../../lib/api', () => ({
-  api: {
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi({
     getCalendarFeed: () => getCalendarFeed(),
     renewCalendarFeed: () => renewCalendarFeed(),
     disableCalendarFeed: () => disableCalendarFeed(),
-  },
-}));
+  })
+);
 const askConfirm = vi.fn(async (_opts: { message: unknown; confirmLabel: string; danger?: boolean }) => true);
 vi.mock('../../../components/askConfirm', () => ({ askConfirm: (opts: { message: unknown; confirmLabel: string; danger?: boolean }) => askConfirm(opts) }));
 

@@ -10,12 +10,10 @@ vi.mock('../DocumentEditor', () => ({
   DocumentEditor: () => <div data-testid="document-editor">DocumentEditor</div>,
 }));
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(
+    original,
+    {
       getDocuments: vi.fn(),
       getDocument: vi.fn(),
       createDocument: vi.fn(),
@@ -25,9 +23,9 @@ vi.mock('../../../lib/api', async (importOriginal) => {
       getWorkspaceTags: vi.fn(),
       getTrash: vi.fn(),
     },
-    triggerHaptic: vi.fn(),
-  };
-});
+    { triggerHaptic: vi.fn() }
+  )
+);
 
 describe('Neue Notiz from a template', () => {
   beforeEach(() => {

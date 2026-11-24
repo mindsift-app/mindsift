@@ -6,7 +6,7 @@ const { api, askConfirm } = vi.hoisted(() => ({
   api: { adminSpeechModels: vi.fn(), adminDownloadSpeechModel: vi.fn(), adminDeleteSpeechModel: vi.fn() },
   askConfirm: vi.fn(),
 }));
-vi.mock('../../../lib/api', () => ({ api, triggerHaptic: vi.fn(), isDesktopApp: () => false }));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi(api));
 vi.mock('../../../components/askConfirm', () => ({ askConfirm }));
 
 import { SpeechSettingsCard } from '../admin/SpeechSettingsCard';

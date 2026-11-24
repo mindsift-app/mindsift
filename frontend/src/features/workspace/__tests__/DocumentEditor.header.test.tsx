@@ -60,18 +60,12 @@ vi.mock('../../../lib/docSync/engine', () => {
   };
 });
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
-      getDocument: vi.fn(),
-      getUsersDirectory: vi.fn(() => Promise.resolve([])),
-      getDocumentBacklinks: vi.fn(() => Promise.resolve({ backlinks: [] })),
-    },
-  };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, {
+    getDocument: vi.fn(),
+    getUsersDirectory: vi.fn(() => Promise.resolve([])),
+  })
+);
 
 
 const makeDoc = (overrides: Partial<Document> = {}) =>

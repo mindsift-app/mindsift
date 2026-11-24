@@ -11,17 +11,19 @@ const realtime = vi.hoisted(() => ({
   ws: true,
   sent: [] as SentMessage[],
 }));
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const orig = await importOriginal<typeof import('../../../lib/api')>();
-  return {
-    ...orig,
-    isWebSocketConnected: () => realtime.ws,
-    // A fresh attempt before opening a drawing (realtime.tryWebSocket); here it fails without one
-    tryWebSocket: async () => realtime.ws,
-    getSSEId: () => null,
-    sendWebSocketMessage: (msg: SentMessage) => realtime.sent.push(msg),
-  };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(
+    original,
+    {},
+    {
+      isWebSocketConnected: () => realtime.ws,
+      // A fresh attempt before opening a drawing (realtime.tryWebSocket); here it fails without one
+      tryWebSocket: async () => realtime.ws,
+      getSSEId: () => null,
+      sendWebSocketMessage: (msg: SentMessage) => realtime.sent.push(msg),
+    }
+  )
+);
 
 import { DrawingBlock } from '../drawing/DrawingBlock';
 import { NoteSharedContext } from '../drawing/noteShared';

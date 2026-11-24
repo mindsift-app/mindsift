@@ -1,23 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import { ApiError } from '../../../lib/api/client';
 
-const { FakeApiError, loginMfa } = vi.hoisted(() => ({
-  FakeApiError: class extends Error {
-    constructor(
-      message: string,
-      readonly status: number,
-      readonly code?: string
-    ) {
-      super(message);
-    }
-  },
-  loginMfa: vi.fn(),
-}));
-vi.mock('../../../lib/api', () => ({
-  api: { loginMfa: (...args: unknown[]) => loginMfa(...args) },
-  ApiError: FakeApiError,
-  triggerHaptic: vi.fn(),
-}));
+const { loginMfa } = vi.hoisted(() => ({ loginMfa: vi.fn() }));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi({ loginMfa: (...args: unknown[]) => loginMfa(...args) }));
 
 import { MfaStep } from '../MfaStep';
 
@@ -65,7 +51,7 @@ describe('MfaStep: second step of the sign-in', () => {
 
   it('shows the error of a wrong code and empties the field', async () => {
     loginMfa.mockImplementation(async () => {
-      throw new FakeApiError('Der Code ist falsch oder abgelaufen', 401, 'mfa_invalid');
+      throw new ApiError('Der Code ist falsch oder abgelaufen', 401, 'mfa_invalid');
     });
     const { onAuthenticated, onBack } = renderStep();
     await act(async () => {
@@ -79,7 +65,7 @@ describe('MfaStep: second step of the sign-in', () => {
 
   it('goes back to the password when the step expired', async () => {
     loginMfa.mockImplementation(async () => {
-      throw new FakeApiError('Die Anmeldung ist abgelaufen. Bitte melde dich erneut an.', 401, 'mfa_expired');
+      throw new ApiError('Die Anmeldung ist abgelaufen. Bitte melde dich erneut an.', 401, 'mfa_expired');
     });
     const { onBack } = renderStep();
     await act(async () => {

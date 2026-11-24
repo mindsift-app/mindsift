@@ -5,10 +5,9 @@ import { api } from '../../../lib/api';
 import { Document, DocumentBlock } from '../../../lib/types';
 import { WikiLinkResolverContext, WikiLinkStore } from '../../../lib/wikiLinkResolver';
 
-vi.mock('../../../lib/api', async () => {
-  const actual = await vi.importActual<typeof import('../../../lib/api')>('../../../lib/api');
-  return { ...actual, api: { ...actual.api, getDocument: vi.fn(), getDocuments: vi.fn() } };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, { getDocument: vi.fn(), getDocuments: vi.fn() })
+);
 
 const block = (id: string, content: string): DocumentBlock =>
   ({ id, documentId: '', type: 'bullet', content, level: 0, position: 0 }) as DocumentBlock;

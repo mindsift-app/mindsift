@@ -14,7 +14,7 @@ const api = vi.hoisted(() => ({
   adminDiscardUpload: vi.fn(),
   serverBoot: vi.fn(),
 }));
-vi.mock('../../../lib/api', () => ({ api, isDesktopApp: () => false }));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi(api));
 const askConfirm = vi.hoisted(() => vi.fn());
 vi.mock('../../../components/askConfirm', () => ({ askConfirm }));
 const reopen = vi.hoisted(() => ({ waitForReopen: vi.fn() }));

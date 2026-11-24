@@ -28,7 +28,7 @@ const { api, createPasskey, getPasskey } = vi.hoisted(() => ({
   createPasskey: vi.fn(),
   getPasskey: vi.fn(),
 }));
-vi.mock('../../../lib/api', () => ({ api, triggerHaptic: vi.fn() }));
+vi.mock('../../../lib/api', async () => (await import('../../../test/apiMock')).stubApi(api));
 vi.mock('../../../lib/webauthn', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../lib/webauthn')>()),
   passkeysSupported: () => true,

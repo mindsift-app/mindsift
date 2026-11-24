@@ -10,12 +10,10 @@ vi.mock('../DocumentEditor', () => ({
   DocumentEditor: () => <div data-testid="document-editor">DocumentEditor</div>,
 }));
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(
+    original,
+    {
       getDocuments: vi.fn(),
       getDocumentTodos: vi.fn(),
       getFolders: vi.fn(),
@@ -24,9 +22,9 @@ vi.mock('../../../lib/api', async (importOriginal) => {
       getTrash: vi.fn(),
       deleteDocument: vi.fn(),
     },
-    triggerHaptic: vi.fn(),
-  };
-});
+    { triggerHaptic: vi.fn() }
+  )
+);
 
 describe('WorkspaceView sidebar explorer', () => {
   beforeEach(() => {

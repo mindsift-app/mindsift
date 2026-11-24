@@ -7,21 +7,16 @@ import { registerNoteClient } from '../../../lib/docSync/noteClients';
 import { useWorkspaceData } from '../useWorkspaceData';
 import { reconnect } from '../../../test/realtime';
 
-vi.mock('../../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../lib/api')>();
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
-      getDocuments: vi.fn(),
-      getDocumentTodos: vi.fn(),
-      getFolders: vi.fn(),
-      getSharedFolders: vi.fn(),
-      getWorkspaceTags: vi.fn(),
-      getJournal: vi.fn(),
-    },
-  };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, {
+    getDocuments: vi.fn(),
+    getDocumentTodos: vi.fn(),
+    getFolders: vi.fn(),
+    getSharedFolders: vi.fn(),
+    getWorkspaceTags: vi.fn(),
+    getJournal: vi.fn(),
+  })
+);
 
 const listed = (id: string, d: Partial<Document> = {}) =>
   ({ id, title: id, blocks: [], tags: [], content: '', folderPath: '', ...d }) as unknown as Document;

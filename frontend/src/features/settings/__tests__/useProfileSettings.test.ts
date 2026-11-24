@@ -6,21 +6,16 @@ import type { User } from '../../../lib/types';
 import { useProfileSettings } from '../user/useProfileSettings';
 
 // The server stores an empty display name as the username
-vi.mock('../../../lib/api', async () => {
-  const actual = await vi.importActual<typeof import('../../../lib/api')>('../../../lib/api');
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
-      getMe: vi.fn(async () => ({ isLastAdmin: false })),
-      purgeOwnData: vi.fn(async () => {}),
-      updateSettings: vi.fn(async (patch: { displayName?: string }) => ({
-        ...user,
-        displayName: patch.displayName?.trim() || user.username,
-      })),
-    },
-  };
-});
+vi.mock('../../../lib/api', async (original) =>
+  (await import('../../../test/apiMock')).withApi(original, {
+    getMe: vi.fn(async () => ({ isLastAdmin: false })),
+    purgeOwnData: vi.fn(async () => {}),
+    updateSettings: vi.fn(async (patch: { displayName?: string }) => ({
+      ...user,
+      displayName: patch.displayName?.trim() || user.username,
+    })),
+  })
+);
 
 const user: User = {
   id: 'u1',

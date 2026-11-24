@@ -19,23 +19,24 @@ vi.mock('../../../lib/desktopShell', () => ({
   },
   DesktopShellError: class extends Error {},
 }));
-vi.mock('../../../lib/api', () => ({
-  api: {
-    getAPIKeys: vi.fn(async () => [
-      { id: 'k0', userId: 'u', name: 'Rauchmelder', keyPrefix: 'mindsift_sec_xy', scopes: 'webhook:triage,webhook:task', createdAt: '' },
-      { id: 'k9', userId: 'u', name: 'Claude (OAuth)', keyPrefix: 'OAuth', scopes: 'tasks:read', createdAt: '', kind: 'oauth' },
-    ]),
-    getAuthStatus: (...args: unknown[]) => getAuthStatus(...(args as [])),
-    getAllLists: vi.fn(async () => []),
-    getTaskLists: vi.fn(async () => []),
-    createAPIKey: (...args: unknown[]) => createAPIKey(...(args as [])),
-    deleteAPIKey: vi.fn(),
-    updateAPIKey: (...args: unknown[]) => updateAPIKey(...(args as [])),
-    testWebhookIngest: vi.fn(),
-  },
-  triggerHaptic: vi.fn(),
-  isDesktopApp: () => desktop,
-}));
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi(
+    {
+      getAPIKeys: vi.fn(async () => [
+        { id: 'k0', userId: 'u', name: 'Rauchmelder', keyPrefix: 'mindsift_sec_xy', scopes: 'webhook:triage,webhook:task', createdAt: '' },
+        { id: 'k9', userId: 'u', name: 'Claude (OAuth)', keyPrefix: 'OAuth', scopes: 'tasks:read', createdAt: '', kind: 'oauth' },
+      ]),
+      getAuthStatus: (...args: unknown[]) => getAuthStatus(...(args as [])),
+      getAllLists: vi.fn(async () => []),
+      getTaskLists: vi.fn(async () => []),
+      createAPIKey: (...args: unknown[]) => createAPIKey(...(args as [])),
+      deleteAPIKey: vi.fn(),
+      updateAPIKey: (...args: unknown[]) => updateAPIKey(...(args as [])),
+      testWebhookIngest: vi.fn(),
+    },
+    { isDesktopApp: () => desktop }
+  )
+);
 
 import { ApiKeysPanel } from '../ApiKeysPanel';
 

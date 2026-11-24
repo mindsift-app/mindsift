@@ -2,17 +2,18 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { User } from '../../../lib/types';
 
-vi.mock('../../../lib/api', () => ({
-  api: {
-    adminGetUsers: vi.fn(async () => []),
-    adminGetInvites: vi.fn(async () => []),
-    adminGetOrganizations: vi.fn(async () => []),
-    adminGetSettings: vi.fn(async () => ({ sharingMode: 'private', instanceName: 'Privat', defaultLanguage: 'en' })),
-    getAuthStatus: vi.fn(async () => ({})),
-  },
-  setCurrentPeopleSearch: vi.fn(),
-  triggerHaptic: vi.fn(),
-}));
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi(
+    {
+      adminGetUsers: vi.fn(async () => []),
+      adminGetInvites: vi.fn(async () => []),
+      adminGetOrganizations: vi.fn(async () => []),
+      adminGetSettings: vi.fn(async () => ({ sharingMode: 'private', instanceName: 'Privat', defaultLanguage: 'en' })),
+      getAuthStatus: vi.fn(async () => ({})),
+    },
+    { setCurrentPeopleSearch: vi.fn() }
+  )
+);
 
 import { useAdminSettings } from '../admin/useAdminSettings';
 

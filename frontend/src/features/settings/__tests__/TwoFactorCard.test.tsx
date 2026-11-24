@@ -19,17 +19,16 @@ const setupTotp = vi.fn();
 const confirmTotp = vi.fn();
 const disableTotp = vi.fn();
 const removeTrustedDevice = vi.fn();
-vi.mock('../../../lib/api', () => ({
-  api: {
+vi.mock('../../../lib/api', async () =>
+  (await import('../../../test/apiMock')).stubApi({
     getMfaStatus: () => getMfaStatus(),
     setupTotp: (...a: unknown[]) => setupTotp(...a),
     confirmTotp: (...a: unknown[]) => confirmTotp(...a),
     disableTotp: (...a: unknown[]) => disableTotp(...a),
     newRecoveryCodes: vi.fn(),
     removeTrustedDevice: (...a: unknown[]) => removeTrustedDevice(...a),
-  },
-  triggerHaptic: vi.fn(),
-}));
+  })
+);
 
 import { TwoFactorCard } from '../user/TwoFactorCard';
 
