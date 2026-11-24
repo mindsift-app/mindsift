@@ -10,6 +10,7 @@ import { useTaskDrag } from '../useTaskDrag';
 import { createMoveTracker } from '../taskMoves';
 import { TaskListView } from '../TaskListView';
 import type { TaskGroup } from '../taskListing';
+import { boardIdOfColumn, ownColumnIn } from '../../../lib/kanbanColumns';
 
 const columns: KanbanColumn[] = [
   { id: 'todo', name: 'Zu erledigen' },
@@ -29,7 +30,17 @@ const dropEvent = (taskId: string) =>
     dataTransfer: { getData: (k: string) => (k === 'application/mindsift-task-id' ? taskId : '') },
   }) as unknown as React.DragEvent;
 
-function setup(initial: Thought[], ownColumn: (t: Thought | undefined, col: string) => string | null = (t, col) => (t ? col : null)) {
+interface SetupOptions {
+  columnsFor?: (t: Thought) => KanbanColumn[];
+  boardColumnOf?: (t: Thought) => string | null;
+  selectedListId?: string;
+}
+
+function setup(
+  initial: Thought[],
+  ownColumn: (t: Thought | undefined, col: string) => string | null = (t, col) => (t ? col : null),
+  { columnsFor = () => columns, boardColumnOf = (t) => t.kanbanStatus ?? null, selectedListId = 'l1' }: SetupOptions = {}
+) {
   let tasks = initial;
   const setTasks = vi.fn((next: Thought[] | ((prev: Thought[]) => Thought[])) => {
     tasks = typeof next === 'function' ? next(tasks) : next;
@@ -38,13 +49,14 @@ function setup(initial: Thought[], ownColumn: (t: Thought | undefined, col: stri
     useTaskDrag({
       tasks: initial,
       setTasks: setTasks as React.Dispatch<React.SetStateAction<Thought[]>>,
-      columnsFor: () => columns,
+      columnsFor,
       ownColumnIdFor: ownColumn,
+      boardColumnOf,
       isTaskReadOnly: () => false,
       pushUndo: vi.fn(),
       orderSnapshot: () => [],
       setSortBy: vi.fn(),
-      selectedListId: 'l1',
+      selectedListId,
       loadData: vi.fn(async () => {}),
       globalColumns: columns,
       setTaskLists: vi.fn(),
@@ -103,6 +115,75 @@ describe('dropping a task on a status group of the list view', () => {
       await hook.result.current.handleDropOnGroup(dropEvent('a'), 'doing', []);
     });
     expect(current()[0].kanbanStatus).toBe('own-doing');
+  });
+});
+
+describe('dropping a task on a row in "Alle Aufgaben" (lists with their own columns)', () => {
+  // Two lists whose columns share names but not IDs; the second has no "In Bearbeitung" and the first no
+  // "Zur Prüfung". The board joins them by name, as TasksView does.
+  const listColumns: Record<string, KanbanColumn[]> = {
+    l1: [
+      { id: 'l1-todo', name: 'Zu erledigen' },
+      { id: 'l1-doing', name: 'In Bearbeitung' },
+      { id: 'l1-done', name: 'Erledigt', isDone: true },
+    ],
+    l2: [
+      { id: 'l2-todo', name: 'Zu erledigen' },
+      { id: 'l2-review', name: 'Zur Prüfung' },
+      { id: 'l2-done', name: 'Erledigt', isDone: true },
+    ],
+  } as Record<string, KanbanColumn[]>;
+  const columnsOf = (t: Thought) => listColumns[t.taskListId as string];
+  const ownColumn = (t: Thought | undefined, boardCol: string) =>
+    t ? (columnsOf(t).find((c) => boardIdOfColumn(c, true) === boardCol)?.id ?? null) : null;
+  const boardColumnOf = (t: Thought) => {
+    const own = ownColumnIn(t, columnsOf(t));
+    return own ? boardIdOfColumn(own, true) : null;
+  };
+  const inList = (id: string, list: string, status: string, sortOrder: number, isCompleted = false): Thought =>
+    ({ ...task(id, status, sortOrder), taskListId: list, isCompleted }) as Thought;
+  const setupAll = (tasks: Thought[]) => setup(tasks, ownColumn, { columnsFor: columnsOf, boardColumnOf, selectedListId: 'all' });
+
+  beforeEach(() => {
+    reorderTasks.mockReset();
+    reorderTasks.mockResolvedValue({ items: [] });
+  });
+
+  it('takes the column of its own list behind the target’s column, not the target’s column ID', async () => {
+    const tasks = [inList('a', 'l1', 'l1-todo', 0), inList('b', 'l2', 'l2-done', 1, true)];
+    const { hook, current } = setupAll(tasks);
+    await act(async () => {
+      await hook.result.current.handleDropOnTask(dropEvent('a'), tasks[1]);
+    });
+    expect(current().map((t) => t.id)).toEqual(['b', 'a']);
+    expect(current().find((t) => t.id === 'a')).toMatchObject({ kanbanStatus: 'l1-done', isCompleted: true });
+    expect(reorderTasks).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: 'a', kanbanStatus: 'l1-done' })]),
+      undefined
+    );
+  });
+
+  it('keeps its status and only changes its place when its list has no such column', async () => {
+    const tasks = [inList('a', 'l1', 'l1-doing', 0), inList('b', 'l2', 'l2-review', 1)];
+    const { hook, current } = setupAll(tasks);
+    await act(async () => {
+      await hook.result.current.handleDropOnTask(dropEvent('a'), tasks[1]);
+    });
+    expect(current().map((t) => t.id)).toEqual(['b', 'a']);
+    expect(current().find((t) => t.id === 'a')).toMatchObject({ kanbanStatus: 'l1-doing', isCompleted: false });
+    expect(reorderTasks).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: 'a', kanbanStatus: 'l1-doing' })]),
+      undefined
+    );
+  });
+
+  it('takes the target’s column within the same list', async () => {
+    const tasks = [inList('a', 'l1', 'l1-todo', 0), inList('b', 'l1', 'l1-doing', 1)];
+    const { hook, current } = setupAll(tasks);
+    await act(async () => {
+      await hook.result.current.handleDropOnTask(dropEvent('a'), tasks[1]);
+    });
+    expect(current().find((t) => t.id === 'a')).toMatchObject({ kanbanStatus: 'l1-doing', isCompleted: false });
   });
 });
 

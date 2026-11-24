@@ -20,6 +20,8 @@ interface TaskDragOptions {
   columnsFor: (task: Thought) => KanbanColumn[];
   // The task's own column behind a board column, or null if its list has no column of that name
   ownColumnIdFor: (task: Thought | undefined, boardColId: string) => string | null;
+  // The board column a task stands in (that of its own column), or null
+  boardColumnOf: (task: Thought) => string | null;
   isTaskReadOnly: (task: Thought) => boolean;
   pushUndo: (entry: { kind: 'order'; snapshot: OrderSnapshot }) => void;
   orderSnapshot: () => OrderSnapshot;
@@ -44,6 +46,7 @@ export function useTaskDrag({
   setTasks,
   columnsFor,
   ownColumnIdFor,
+  boardColumnOf,
   isTaskReadOnly,
   pushUndo,
   orderSnapshot,
@@ -152,6 +155,12 @@ export function useTaskDrag({
     setDraggingTaskId(null);
     setDragOverTaskTarget(null);
     setDragOverKanbanCol(null);
+    // Dropped on a row, the task goes into the target's board column, as the column of its own list (like
+    // a drop on a status group); if its list has no such column, it only changes its place
+    if (!newKanbanCol && sourceId) {
+      const boardCol = boardColumnOf(targetTask);
+      newKanbanCol = (boardCol && ownColumnIdFor(tasks.find((t) => t.id === sourceId), boardCol)) || undefined;
+    }
     await moveTaskNextTo(sourceId, targetTask, position, newKanbanCol);
   };
 
@@ -175,7 +184,8 @@ export function useTaskDrag({
     );
   };
 
-  // Shared by mouse drag & drop and the touch drag on the Kanban board
+  // Shared by mouse drag & drop and the touch drag on the Kanban board; without a column (newKanbanCol, one
+  // of the task's own list) the task keeps its status and only changes its place
   const moveTaskNextTo = async (sourceId: string | null, targetTask: Thought, position: 'before' | 'after', newKanbanCol?: string) => {
     if (!sourceId || sourceId === targetTask.id) return;
     triggerHaptic(15);
@@ -190,10 +200,10 @@ export function useTaskDrag({
     const insertIdx = position === 'before' ? targetIdx : targetIdx + 1;
     const updatedSourceTask: Thought = {
       ...sourceTask,
-      kanbanStatus: newKanbanCol || targetTask.kanbanStatus || sourceTask.kanbanStatus,
+      kanbanStatus: newKanbanCol || sourceTask.kanbanStatus,
       isCompleted: newKanbanCol
         ? !!columnsFor(sourceTask).find((c) => c.id === newKanbanCol)?.isDone || newKanbanCol === 'done'
-        : targetTask.isCompleted !== undefined ? targetTask.isCompleted : sourceTask.isCompleted,
+        : sourceTask.isCompleted,
     };
 
     const newTasks = [...remainingTasks];
