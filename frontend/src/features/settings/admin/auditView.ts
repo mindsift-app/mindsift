@@ -25,6 +25,7 @@ export const AUDIT_ACTIONS = [
   'account.recovery_codes_renewed',
   'account.api_key_created',
   'account.api_key_deleted',
+  'account.api_key_updated',
   'account.session_ended',
   'account.sessions_revoked',
   'invite.created',
@@ -146,11 +147,18 @@ export function detailLines(t: TFunction, e: AuditEntry): string[] {
     // What a person did to their own account: the key or passkey by name, never a secret
     case 'account.api_key_created':
     case 'account.api_key_deleted':
+    case 'account.api_key_updated':
     case 'account.passkey_removed':
       if (typeof d.name === 'string' && d.name) lines.push(t('audit.detail.value', { label: t('audit.field.name'), value: d.name }));
       if (d.kind === 'oauth') lines.push(t('audit.detail.aiConnection'));
       if (Array.isArray(d.scopes) && d.scopes.length > 0) {
         lines.push(t('audit.detail.value', { label: t('audit.field.scopes'), value: (d.scopes as string[]).map(scopeChip).join(', ') }));
+      }
+      if (typeof d.previousName === 'string') {
+        lines.push(t('audit.detail.value', { label: t('audit.field.previousName'), value: d.previousName }));
+      }
+      if (Array.isArray(d.previousScopes)) {
+        lines.push(t('audit.detail.value', { label: t('audit.field.previousScopes'), value: (d.previousScopes as string[]).map(scopeChip).join(', ') }));
       }
       break;
     case 'account.session_ended':

@@ -1287,6 +1287,7 @@
       "account_recovery_codes_renewed": "New recovery codes created",
       "account_api_key_created": "API key created",
       "account_api_key_deleted": "API key deleted",
+      "account_api_key_updated": "API key changed",
       "account_session_ended": "Device signed out",
       "account_sessions_revoked": "All sessions ended",
       "invite_created": "Invite created",
@@ -1418,6 +1419,8 @@
       "invitedBy": "Invited by",
       "name": "Name",
       "scopes": "Permissions",
+      "previousName": "Name before",
+      "previousScopes": "Permissions before",
       "device": "Device",
       "legal": "Imprint & privacy",
       "speech": {

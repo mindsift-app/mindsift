@@ -183,10 +183,29 @@ func TestAuditOwnAPIKeys(t *testing.T) {
 		t.Fatalf("key created: %s", a.Details)
 	}
 
+	// Other rights: recorded with the old ones; the same name and rights again write nothing
+	if rec := sendWith(t, router, http.MethodPatch, "/api/v1/keys/"+key.ID, token, map[string]any{"scopes": []string{"webhook:task", "tasks:read", "notes:read"}}); rec.Code != http.StatusOK {
+		t.Fatalf("update key: %d %s", rec.Code, rec.Body)
+	}
+	if a := ownAudit(t, store, storage.AuditAccountAPIKeyUpdated, me); string(a.Details) != `{"name":"Hausautomation","previousScopes":["webhook:task","tasks:read"],"scopes":["webhook:task","tasks:read","notes:read"]}` {
+		t.Fatalf("key updated: %s", a.Details)
+	}
+	if rec := sendWith(t, router, http.MethodPatch, "/api/v1/keys/"+key.ID, token, map[string]any{"name": "Haus"}); rec.Code != http.StatusOK {
+		t.Fatalf("rename key: %d %s", rec.Code, rec.Body)
+	}
+	if a := ownAudit(t, store, storage.AuditAccountAPIKeyUpdated, me); string(a.Details) != `{"name":"Haus","previousName":"Hausautomation","scopes":["webhook:task","tasks:read","notes:read"]}` {
+		t.Fatalf("key renamed: %s", a.Details)
+	}
+	unchanged, _ := store.LastAuditID()
+	sendWith(t, router, http.MethodPatch, "/api/v1/keys/"+key.ID, token, map[string]any{"name": "Haus"})
+	if after, _ := store.LastAuditID(); after != unchanged {
+		t.Fatal("a key saved unchanged is not recorded")
+	}
+
 	if rec := sendWith(t, router, http.MethodDelete, "/api/v1/keys/"+key.ID, token, nil); rec.Code != http.StatusOK {
 		t.Fatalf("delete key: %d %s", rec.Code, rec.Body)
 	}
-	if a := ownAudit(t, store, storage.AuditAccountAPIKeyDeleted, me); string(a.Details) != `{"name":"Hausautomation","scopes":["webhook:task","tasks:read"]}` {
+	if a := ownAudit(t, store, storage.AuditAccountAPIKeyDeleted, me); string(a.Details) != `{"name":"Haus","scopes":["webhook:task","tasks:read","notes:read"]}` {
 		t.Fatalf("key deleted: %s", a.Details)
 	}
 

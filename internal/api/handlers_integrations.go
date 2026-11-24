@@ -81,7 +81,9 @@ func (s *Server) handleUpdateAPIKey(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	key, err := s.store.UpdateAPIKey(userID, chi.URLParam(r, "id"), req.Name, req.Scopes)
+	keyID := chi.URLParam(r, "id")
+	before := s.ownAPIKey(userID, keyID)
+	key, err := s.store.UpdateAPIKey(userID, keyID, req.Name, req.Scopes)
 	if errors.Is(err, storage.ErrAPIKeyNotFound) {
 		writeErrorFrom(w, http.StatusNotFound, err)
 		return
@@ -90,21 +92,39 @@ func (s *Server) handleUpdateAPIKey(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
+	// Recorded with what it was before, only when something changed: more rights matter as much as a new key
+	if before != nil && key != nil && (before.Name != key.Name || before.Scopes != key.Scopes) {
+		d := auditAPIKey(key)
+		if before.Name != key.Name {
+			d["previousName"] = before.Name
+		}
+		if before.Scopes != key.Scopes {
+			d["previousScopes"] = strings.Split(before.Scopes, ",")
+		}
+		s.auditOwn(r, storage.AuditAccountAPIKeyUpdated, d)
+	}
 	writeJSON(w, http.StatusOK, key)
+}
+
+// ownAPIKey: one of the person's keys or AI connections, for the audit log (nil when there is none)
+func (s *Server) ownAPIKey(userID, keyID string) *domain.APIKey {
+	keys, err := s.store.GetAPIKeys(userID)
+	if err != nil {
+		return nil
+	}
+	for i := range keys {
+		if keys[i].ID == keyID {
+			return &keys[i]
+		}
+	}
+	return nil
 }
 
 func (s *Server) handleDeleteAPIKey(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	keyID := chi.URLParam(r, "id")
 	// Name and rights for the audit log, read before the key goes
-	var gone *domain.APIKey
-	if keys, err := s.store.GetAPIKeys(userID); err == nil {
-		for i := range keys {
-			if keys[i].ID == keyID {
-				gone = &keys[i]
-			}
-		}
-	}
+	gone := s.ownAPIKey(userID, keyID)
 	if err := s.store.DeleteAPIKey(userID, keyID); err != nil {
 		writeInternal(w, err)
 		return

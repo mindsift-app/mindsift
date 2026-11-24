@@ -90,6 +90,7 @@ const (
 	AuditAccountRecoveryCodesRenewed = "account.recovery_codes_renewed" // new recovery codes, the earlier ones stop working
 	AuditAccountAPIKeyCreated        = "account.api_key_created"        // details.name, details.scopes; never the key
 	AuditAccountAPIKeyDeleted        = "account.api_key_deleted"        // a key or an AI connection (details.kind "oauth")
+	AuditAccountAPIKeyUpdated        = "account.api_key_updated"        // renamed or other rights (details.previousName, details.previousScopes)
 	AuditAccountSessionEnded         = "account.session_ended"          // one device signed out (details.device: its user agent)
 	AuditAccountSessionsRevoked      = "account.sessions_revoked"       // signed out everywhere
 )

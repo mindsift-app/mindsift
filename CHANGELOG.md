@@ -11,7 +11,7 @@ Versions without a git tag were development states and were never published as a
 ### Changed
 - Deleting an account or an organization, taking someone out of one, or a stricter sharing mode now only makes the apps of the people whose shares or groups changed load their lists and notes again, instead of everyone who is online.
 - Signing up and redeeming an invitation now ask for the password twice, like setting a new password everywhere else: the repetition turns red as soon as it differs, and the account is only created when both match.
-- The audit log (Administration → Log) now also records the security-relevant steps people take on their own account: changing their password (also through the reset link), removing the authenticator app or a passkey, creating new recovery codes, creating or deleting an API key or AI connection (with its name and permissions, never the key), and signing out one device or all sessions. What people do with their own notes, tasks and settings is still not recorded.
+- The audit log (Administration → Log) now also records the security-relevant steps people take on their own account: changing their password (also through the reset link), removing the authenticator app or a passkey, creating new recovery codes, creating, renaming, changing the permissions of or deleting an API key or AI connection (with its name and permissions, and the old ones after a change; never the key), and signing out one device or all sessions. What people do with their own notes, tasks and settings is still not recorded.
 
 ### Fixed
 - Sign-in window: screen readers now read out the labels of every field when signing in, signing up or redeeming an invitation, and a password typed into the sign-in form no longer turns up in the sign-up form.

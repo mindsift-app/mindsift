@@ -1287,6 +1287,7 @@
       "account_recovery_codes_renewed": "Nouveaux codes de récupération créés",
       "account_api_key_created": "Clé API créée",
       "account_api_key_deleted": "Clé API supprimée",
+      "account_api_key_updated": "Clé API modifiée",
       "account_session_ended": "Appareil déconnecté",
       "account_sessions_revoked": "Toutes les sessions terminées",
       "invite_created": "Invitation créée",
@@ -1418,6 +1419,8 @@
       "invitedBy": "Invité par",
       "name": "Nom",
       "scopes": "Droits",
+      "previousName": "Nom précédent",
+      "previousScopes": "Droits précédents",
       "device": "Appareil",
       "legal": "Mentions légales et confidentialité",
       "speech": {

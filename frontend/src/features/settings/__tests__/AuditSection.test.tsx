@@ -104,6 +104,15 @@ describe('own account actions in the audit log', () => {
     expect(
       detailLines(t, own({ action: 'account.api_key_deleted', details: { name: 'Claude (OAuth)', kind: 'oauth', scopes: ['notes:read'] } }))
     ).toEqual(['Name: Claude (OAuth)', 'KI-Zugang (OAuth)', 'Rechte: Notizen lesen']);
+    expect(
+      detailLines(
+        t,
+        own({
+          action: 'account.api_key_updated',
+          details: { name: 'Haus', scopes: ['tasks:read', 'notes:read'], previousName: 'Hausautomation', previousScopes: ['tasks:read'] },
+        })
+      )
+    ).toEqual(['Name: Haus', 'Rechte: Aufgaben lesen, Notizen lesen', 'Name vorher: Hausautomation', 'Rechte vorher: Aufgaben lesen']);
     expect(detailLines(t, own({ action: 'account.passkey_removed', details: { name: 'Laptop Firefox', mfaOff: true } }))).toEqual([
       'Name: Laptop Firefox',
       'Zwei-Faktor-Anmeldung damit ausgeschaltet',

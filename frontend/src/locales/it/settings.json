@@ -1287,6 +1287,7 @@
       "account_recovery_codes_renewed": "Nuovi codici di recupero creati",
       "account_api_key_created": "Chiave API creata",
       "account_api_key_deleted": "Chiave API eliminata",
+      "account_api_key_updated": "Chiave API modificata",
       "account_session_ended": "Dispositivo disconnesso",
       "account_sessions_revoked": "Tutte le sessioni terminate",
       "invite_created": "Invito creato",
@@ -1418,6 +1419,8 @@
       "invitedBy": "Invitato da",
       "name": "Nome",
       "scopes": "Permessi",
+      "previousName": "Nome precedente",
+      "previousScopes": "Permessi precedenti",
       "device": "Dispositivo",
       "legal": "Note legali e privacy",
       "speech": {
