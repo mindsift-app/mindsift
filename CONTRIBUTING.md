@@ -17,6 +17,15 @@ E2E=1 ci/local-checks.sh    # plus the browser tests (Playwright, a few minutes)
 
 `E2E=1` is required for changes to notes, sharing, sync, locks or sign-in; see [e2e/README.md](e2e/README.md). The pipelines do not run the browser tests, so a pull request should say that both runs were green; the checks of a pull request run the unit tests, gofmt and golangci-lint.
 
+Many Go tests run in parallel (see the comment above `TestMain` in `internal/api/testmain_test.go`). The race detector needs cgo, which the Alpine Go image of the checks does not have; run it now and then in the Debian Go image of the desktop builds, `GO_DESKTOP_IMAGE` in [ci/images.env](ci/images.env):
+
+```bash
+. ci/images.env && podman run --rm -v "$PWD":/src:z -w /src -e DB_MAX_CONNS=1 -e CGO_ENABLED=1 "$GO_DESKTOP_IMAGE" \
+  go test -race -p 2 -count=1 ./cmd/... ./internal/...
+```
+
+It is not part of `ci/local-checks.sh`: with it `internal/api` and `internal/storage` take about an hour each, and a few tests that measure time or wait for background jobs fail under its slowdown. Read its `WARNING: DATA RACE` reports, not those failures.
+
 ESLint runs without warnings, and new code should not add any. An intentionally omitted hook dependency gets a one-line reason above its `// eslint-disable-next-line react-hooks/exhaustive-deps`.
 
 ## Language
