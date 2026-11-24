@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Compass, X } from 'lucide-react';
 import type { User } from '../../lib/types';
+import { toastObstacleRef } from '../../components/Toast';
 import { onTourStartRequest, requestTourStart } from './tourEvents';
 import { rememberTourOffered, tourOfferPending } from './tourOffer';
 
@@ -43,6 +44,7 @@ export function TourOfferCard({
 
   return (
     <div
+      ref={toastObstacleRef}
       role="dialog"
       aria-modal="false"
       aria-labelledby="tour-offer-title"
