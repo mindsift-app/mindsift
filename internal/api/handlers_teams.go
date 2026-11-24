@@ -71,6 +71,7 @@ func (s *Server) handleCreateTeamDirect(w http.ResponseWriter, r *http.Request) 
 	}
 	team.Members, err = s.store.GetTeamMembers(team.ID)
 	logFailed("Loading the members of the new group", err, "team_id", team.ID)
+	s.broadcastTeamUpdated(team.ID, nil)
 	writeJSON(w, http.StatusCreated, team)
 }
 
@@ -98,6 +99,7 @@ func (s *Server) handleUpdateTeam(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
+	s.broadcastTeamUpdated(teamID, nil)
 	writeJSON(w, http.StatusOK, updated)
 }
 
@@ -114,6 +116,7 @@ func (s *Server) handleDeleteTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.afterTeamChange(teamID, before, false)
+	s.broadcastTeamUpdated(teamID, before.members)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
@@ -173,6 +176,7 @@ func (s *Server) handleAddTeamMember(w http.ResponseWriter, r *http.Request) {
 		s.afterTeamChange(teamID, before, true)
 		s.notifyTeamAdded(userID, targetUserID, teamID)
 	}
+	s.broadcastTeamUpdated(teamID, nil)
 	members, _ := s.store.GetTeamMembers(teamID)
 	writeJSON(w, http.StatusOK, members)
 }
@@ -200,6 +204,7 @@ func (s *Server) handleUpdateTeamMemberRole(w http.ResponseWriter, r *http.Reque
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
+	s.broadcastTeamUpdated(teamID, nil)
 	members, _ := s.store.GetTeamMembers(teamID)
 	writeJSON(w, http.StatusOK, members)
 }
@@ -225,6 +230,7 @@ func (s *Server) handleRemoveTeamMember(w http.ResponseWriter, r *http.Request) 
 	}
 	if wasMember != "" {
 		s.afterTeamChange(teamID, before, false)
+		s.broadcastTeamUpdated(teamID, before.members)
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"removed": true})
 }
@@ -319,6 +325,19 @@ func (s *Server) afterTeamChange(teamID string, before teamAccess, added bool) {
 	if !added {
 		s.dropLostRooms(before.members)
 	}
+}
+
+// broadcastTeamUpdated sends TEAM_UPDATED {id} to the group's members and to before (the members before
+// a change: whoever was removed or left, everyone of a deleted group), so the groups page of each of them
+// shows the new members, roles, name or that the group is gone without a reload.
+func (s *Server) broadcastTeamUpdated(teamID string, before []string) {
+	users := append([]string{}, before...)
+	if members, err := s.store.GetTeamMembers(teamID); err == nil {
+		for _, m := range members {
+			users = append(users, m.UserID)
+		}
+	}
+	s.wsHub.BroadcastToUsers(unionIDs(users, nil), eventTeamUpdated, map[string]string{"id": teamID})
 }
 
 // unionIDs: the ids of a and b, each once, in order.

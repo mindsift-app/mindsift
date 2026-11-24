@@ -22,6 +22,8 @@ export const STATS_SHARED_INTERVAL_MS = RELOAD_SHARED_INTERVAL_MS;
 // DOC_UPDATED follow when the to-dos change), ITEM_REORDERED only moves entries of a list.
 export function eventChangesStats(event: unknown): boolean {
   if (typeof event !== 'string' || event === 'DOC_SEQ' || event === 'ITEM_REORDERED') return false;
+  // Shares removed by the administration: lists and tasks may be gone
+  if (event === 'ACCESS_CHANGED') return true;
   return ['TASK_', 'DOC_', 'ITEM_', 'LIST_'].some((prefix) => event.startsWith(prefix));
 }
 

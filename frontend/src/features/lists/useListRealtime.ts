@@ -99,6 +99,19 @@ export function listsAfterEvent(
   return { lists: listsAfterMessage(prev, msg, changes), reload: false };
 }
 
+// LIST_COUNTS {listId, open} reaches everyone who sees the list, the open count of the list overview. The
+// open list keeps its entries current itself (its ITEM_* events); any other list shows the count and is
+// marked out of date by it (liveOpenCount), so opening it loads the lists.
+export function listsAfterCounts(prev: SharedList[], msg: WSMessage, activeListId: string | undefined): SharedList[] {
+  if (msg.event !== 'LIST_COUNTS') return prev;
+  const p = msg.payload as { listId?: unknown; open?: unknown } | null | undefined;
+  const id = typeof p?.listId === 'string' ? p.listId : msg.listId || msg.list_id;
+  const open = p?.open;
+  if (!id || id === activeListId || typeof open !== 'number') return prev;
+  if (!prev.some((l) => l.id === id && l.liveOpenCount !== open)) return prev;
+  return prev.map((l) => (l.id === id ? { ...l, liveOpenCount: open } : l));
+}
+
 // How an entry event of a list's connection changes the lists shown (changes: see listsAfterEvent)
 export function listsAfterMessage(prev: SharedList[], msg: WSMessage, changes: PendingChanges = NO_CHANGES): SharedList[] {
   const msgListId = msg.listId || msg.list_id;
@@ -152,6 +165,7 @@ export function useListRealtime(
   loadLists: () => Promise<void>
 ) {
   const realtimeConnRef = useRef<ReturnType<typeof createRealtimeConnection> | null>(null);
+  const activeListIdRef = useLatestRef(activeListId);
   // The listeners below live longer than one render; they call the loadLists of the latest one, which
   // knows the list that is open now
   const loadListsRef = useLatestRef(loadLists);
@@ -202,6 +216,10 @@ export function useListRealtime(
   }, [listsRef, loadListsRef, reloader]);
 
   useRealtimeEvents((msg) => {
+    if (msg.event === 'LIST_COUNTS') {
+      setLists((prev) => listsAfterCounts(prev, msg, activeListIdRef.current));
+      return;
+    }
     if (!msg.event?.startsWith('LIST_') && !msg.event?.startsWith('ITEM_')) return;
     // Applied to the latest state (an event right after another must not undo it); whether it needs a
     // reload is decided from the lists shown
@@ -209,4 +227,10 @@ export function useListRealtime(
     setLists((prev) => listsAfterEvent(prev, msg, changes).lists);
     if (listsAfterEvent(listsRef.current, msg).reload) reloader.request();
   });
+
+  // A list opened whose entries are out of date (LIST_COUNTS came while another one was open): load the lists
+  useEffect(() => {
+    if (!activeListId) return;
+    if (listsRef.current.some((l) => l.id === activeListId && l.liveOpenCount !== undefined)) reloader.request(true);
+  }, [activeListId, listsRef, reloader]);
 }

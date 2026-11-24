@@ -1,5 +1,6 @@
 {
   "server": [
+    "ACCESS_CHANGED",
     "DEMO_RESET",
     "DOC_COUNTS",
     "DOC_CREATED",
@@ -19,6 +20,7 @@
     "ITEM_TOGGLED",
     "ITEM_UPDATED",
     "LIST_CLEARED",
+    "LIST_COUNTS",
     "LIST_CREATED",
     "LIST_DELETED",
     "LIST_SHARED",
@@ -36,6 +38,7 @@
     "TASK_LIST_UPDATED",
     "TASK_REORDERED",
     "TASK_UPDATED",
+    "TEAM_UPDATED",
     "TRANSCRIPTION_DONE",
     "TRANSCRIPTION_UPDATED",
     "USER_PRESENCE",

@@ -10,7 +10,7 @@ import { CountBadge } from '../../components/CountBadge';
 import { SharedPill } from '../../components/SharedPill';
 import { ListSwitcher } from '../../components/ListSwitcher';
 import { LivePill } from '../../components/LivePill';
-import { canWriteList, deduplicateItems } from './listItems';
+import { canWriteList, listOpenCount } from './listItems';
 import { useListDrag } from './useListDrag';
 import { useTabReorder } from '../../lib/useTabReorder';
 import { TabDropMarker } from '../../components/TabDropMarker';
@@ -52,7 +52,6 @@ export function ListTabsHeader({
     lists.map((l) => l.id),
     activeList?.id || null
   );
-  const openCountOf = (lst: SharedList) => deduplicateItems(lst.items || []).filter((i) => !i.isCompleted).length;
   // A dragged entry may drop on this list (its tab or its row in the "more" list)
   const tabDropProps = (lst: SharedList) => ({
     onDragOver: (e: React.DragEvent) => {
@@ -71,7 +70,7 @@ export function ListTabsHeader({
       {/* List Tabs: one row, what does not fit goes behind "⋯ n" */}
       <div ref={rowRef} className="relative flex-1 min-w-0 flex items-center gap-1">
         {lists.map((lst) => {
-          const openCount = openCountOf(lst);
+          const openCount = listOpenCount(lst);
           const isSelected = activeList?.id === lst.id;
           const drop = tabDropProps(lst);
           const hidden = isHidden(lst.id);
@@ -122,7 +121,7 @@ export function ListTabsHeader({
           ref={moreRef}
           items={lists
             .filter((lst) => isHidden(lst.id))
-            .map((lst) => ({ id: lst.id, icon: lst.icon, title: lst.title, count: openCountOf(lst) }))}
+            .map((lst) => ({ id: lst.id, icon: lst.icon, title: lst.title, count: listOpenCount(lst) }))}
           activeId={activeList?.id || null}
           onSelect={setActiveListId}
           dragActive={!!draggingItemId}
@@ -239,7 +238,7 @@ export function MobileListHeader({
               id: lst.id,
               title: lst.title,
               icon: lst.icon,
-              count: deduplicateItems(lst.items || []).filter((i) => !i.isCompleted).length,
+              count: listOpenCount(lst),
             }))}
             activeId={activeList.id}
             onSelect={setActiveListId}

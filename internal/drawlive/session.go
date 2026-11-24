@@ -563,6 +563,12 @@ func (m *Manager) Member(docID, blockID, connID string) bool {
 	return s != nil && (indexOf(s.participants, connID) >= 0 || indexOf(s.watchers, connID) >= 0)
 }
 
+// Drawing tells whether a connection draws in the session (watchers do not).
+func (m *Manager) Drawing(docID, blockID, connID string) bool {
+	s := m.get(docID, blockID)
+	return s != nil && indexOf(s.participants, connID) >= 0
+}
+
 // State returns the session's state.
 func (m *Manager) State(docID, blockID string) (State, bool) {
 	s := m.get(docID, blockID)

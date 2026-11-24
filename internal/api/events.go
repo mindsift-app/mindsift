@@ -25,18 +25,26 @@ const (
 	// Folders: `type` says what changed (folderEvent… in handlers_folders.go)
 	eventFoldersUpdated = "WORKSPACE_FOLDERS_UPDATED"
 
-	// Lists: LIST_* about the list, ITEM_* about its entries (the list's room)
+	// Lists: LIST_* about the list, ITEM_* about its entries (the list's room); LIST_COUNTS {listId, open}
+	// to everyone who sees the list, at most every 3 s (list_counts.go)
 	eventListCreated   = "LIST_CREATED"
 	eventListUpdated   = "LIST_UPDATED"
 	eventListDeleted   = "LIST_DELETED"
 	eventListShared    = "LIST_SHARED"
 	eventListUnshared  = "LIST_UNSHARED"
 	eventListCleared   = "LIST_CLEARED"
+	eventListCounts    = "LIST_COUNTS"
 	eventItemCreated   = "ITEM_CREATED"
 	eventItemUpdated   = "ITEM_UPDATED"
 	eventItemToggled   = "ITEM_TOGGLED"
 	eventItemDeleted   = "ITEM_DELETED"
 	eventItemReordered = "ITEM_REORDERED"
+
+	// Shares or group memberships removed in bulk by the administration ({}): the app loads its data again
+	// (tellAccessChanged)
+	eventAccessChanged = "ACCESS_CHANGED"
+	// Groups: {id} to the members before and after a change (broadcastTeamUpdated); the app reloads its groups
+	eventTeamUpdated = "TEAM_UPDATED"
 
 	// Notification center, transcriptions in the background, the demo's reset
 	eventNotification         = "NOTIFICATION"

@@ -131,3 +131,52 @@ func TestDeletingATeamIsLive(t *testing.T) {
 		t.Fatal("a member of the deleted group got no LIST_UNSHARED")
 	}
 }
+
+// Every change of a group's members, roles or name sends TEAM_UPDATED {id} to the members before and
+// after it, so their groups page follows without a reload; the person removed hears it as well.
+func TestTeamUpdatedReachesMembersBeforeAndAfter(t *testing.T) {
+	_, store, ts, owner, ownerToken := startRealtimeServer(t)
+	member, memberToken := newTestUser(t, store, "gruppe-a@example.com")
+	newcomer, newcomerToken := newTestUser(t, store, "gruppe-b@example.com")
+	team, err := store.CreateTeam("", "Verein", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = store.AddTeamMember(team.ID, owner.ID, "admin")
+	_ = store.AddTeamMember(team.ID, member.ID, "member")
+	memberStream := openSSE(t, ts, memberToken)
+	newcomerStream := openSSE(t, ts, newcomerToken)
+	expect := func(st *sseStream, who, step string) {
+		t.Helper()
+		m := st.waitFor(t, eventTeamUpdated, 10*time.Second)
+		if m == nil {
+			t.Fatalf("%s got no TEAM_UPDATED after %s", who, step)
+		}
+		var p struct {
+			ID string `json:"id"`
+		}
+		_ = json.Unmarshal(m.Payload, &p)
+		if p.ID != team.ID {
+			t.Fatalf("TEAM_UPDATED %s", m.Payload)
+		}
+	}
+	call := func(method, path string, body any) {
+		t.Helper()
+		if r := doJSON(t, ts, method, "/api/v1/teams/"+team.ID+path, ownerToken, body); r.StatusCode != http.StatusOK {
+			t.Fatalf("%s %s: status %d", method, path, r.StatusCode)
+		}
+	}
+
+	call(http.MethodPost, "/members", map[string]string{"userId": newcomer.ID})
+	expect(memberStream, "a member", "adding someone")
+	expect(newcomerStream, "the person added", "adding them")
+	call(http.MethodPut, "/members/"+newcomer.ID, map[string]string{"role": "admin"})
+	expect(memberStream, "a member", "a role change")
+	call(http.MethodPut, "", map[string]string{"name": "Sportverein"})
+	expect(memberStream, "a member", "renaming")
+	call(http.MethodDelete, "/members/"+newcomer.ID, nil)
+	expect(memberStream, "a member", "removing someone")
+	expect(newcomerStream, "the person removed", "removing them")
+	call(http.MethodDelete, "", nil)
+	expect(memberStream, "a member", "deleting the group")
+}

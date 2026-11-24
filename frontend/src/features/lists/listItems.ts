@@ -54,6 +54,13 @@ export function getItemDisplayContent(item: ListItem): string {
   return item.content;
 }
 
+// The number of open entries the list overview shows: the one of LIST_COUNTS while the list's entries are
+// out of date (it was not open), else counted from the entries
+export function listOpenCount(lst: SharedList): number {
+  if (typeof lst.liveOpenCount === 'number') return lst.liveOpenCount;
+  return deduplicateItems(lst.items || []).filter((i) => !i.isCompleted).length;
+}
+
 export function deduplicateItems(items: ListItem[]): ListItem[] {
   const seen = new Set<string>();
   const result: ListItem[] = [];

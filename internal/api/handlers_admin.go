@@ -68,11 +68,16 @@ func (s *Server) handleAdminRenameOrganization(w http.ResponseWriter, r *http.Re
 func (s *Server) handleAdminDeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "id")
 	name := s.organizationName(orgID)
+	members := s.store.OrganizationMemberIDs(orgID)
 	if err := s.store.DeleteOrganization(orgID); err != nil {
 		writeInternal(w, err)
 		return
 	}
 	s.dropLostAllRooms()
+	// Only its members can have lost shares or groups (with each other)
+	if len(members) > 0 {
+		s.tellAccessChanged(members)
+	}
 	if name != "" {
 		s.audit(r, storage.AuditOrgDeleted, auditOrgTarget(orgID, name), nil)
 	}
@@ -121,12 +126,18 @@ func (s *Server) handleAdminRemoveOrganizationMember(w http.ResponseWriter, r *h
 		writeJSON(w, http.StatusOK, map[string]int64{"affected": n})
 		return
 	}
+	// What goes is between this person and the other members (shares, the organization's groups)
+	affected, _ := s.store.RemoveOrganizationMemberImpact(orgID, userID)
+	members := s.store.OrganizationMemberIDs(orgID)
 	if err := s.store.RemoveOrganizationMember(orgID, userID); err != nil {
 		writeInternal(w, err)
 		return
 	}
 	// Shares and group memberships across the organization went with it, for others as well
 	s.dropLostAllRooms()
+	if affected > 0 {
+		s.tellAccessChanged(append(members, userID))
+	}
 	s.auditOrgMember(r, storage.AuditOrgMemberRemoved, orgID, userID)
 	writeJSON(w, http.StatusOK, map[string]bool{"removed": true})
 }
@@ -448,6 +459,7 @@ func (s *Server) deleteAccount(userID string, u *domain.User, now time.Time) err
 	}
 	// The account's lists and notes are gone for everyone it shared them with
 	s.dropLostAllRooms()
+	s.tellAccessChanged(nil)
 	if u != nil && !s.store.IsPendingRegistration(userID) {
 		s.keepUserBackups(u, now)
 	} else {
@@ -802,11 +814,15 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	}
 	// A stricter mode takes away what is no longer allowed (shares, group memberships, assignments)
 	if settings.SharingMode != previousMode {
-		if _, err := s.store.PruneSharing(settings.SharingMode, false); err != nil {
+		pruned, err := s.store.PruneSharing(settings.SharingMode, false)
+		if err != nil {
 			writeError(w, http.StatusInternalServerError, "Freigaben konnten nicht angepasst werden: "+clientMessage(err))
 			return
 		}
 		s.dropLostAllRooms()
+		if pruned > 0 {
+			s.tellAccessChanged(nil)
+		}
 	}
 	saved, _ := s.store.GetSystemSettings()
 	if saved == nil {

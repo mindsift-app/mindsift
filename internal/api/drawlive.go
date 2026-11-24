@@ -30,6 +30,11 @@ const (
 	drawMaxClientID = 64
 )
 
+// drawEditRecheck: how long a write check of someone drawing holds. DRAW_OPS come up to 40 a second per
+// person; checking the note's role for each would be two queries each, so the answer is kept this long and
+// someone who may only read now (a share changed to reading, out of a group) is out within it.
+const drawEditRecheck = time.Second
+
 // drawPointerTick: pointers go out bundled at most this often per drawing (the browser sends 20 a second)
 const drawPointerTick = 50 * time.Millisecond
 
@@ -41,8 +46,16 @@ type drawHub struct {
 	// pointers: drawings whose pointers go out bundled, by room; a drawing is here only while pointers
 	// come in, its timer stops after a tick without any
 	pointers map[string]*pointerRoom
+	// editOK: until when a connection drawing may still change the drawing without asking the store again
+	// (drawEditRecheck), by connection
+	editOK map[string]drawEditCheck
 	// afterFunc starts the timer of a bundle (time.AfterFunc; tests fire it by hand)
 	afterFunc func(time.Duration, func()) stopper
+}
+
+type drawEditCheck struct {
+	docID, blockID string
+	until          time.Time
 }
 
 type stopper interface{ Stop() bool }
@@ -54,7 +67,7 @@ func newDrawHub(maxBytes int) *drawHub {
 	m := drawlive.NewManager()
 	m.SetMaxTotalBytes(maxBytes)
 	return &drawHub{m: m, conns: map[string]*ws.Client{}, pointers: map[string]*pointerRoom{},
-		afterFunc: func(d time.Duration, f func()) stopper { return time.AfterFunc(d, f) }}
+		editOK: map[string]drawEditCheck{}, afterFunc: func(d time.Duration, f func()) stopper { return time.AfterFunc(d, f) }}
 }
 
 // drawRoom is the realtime room of a drawing; the room authorizer lets in everyone who can read the note.
@@ -257,6 +270,7 @@ func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 	st, _, won, err := d.m.Join(p.DocID, p.BlockID, me, p.Base, els, p.Grid, p.Resume, s.now())
 	if err == nil {
 		d.conns[c.ID()] = c
+		d.editOK[c.ID()] = drawEditCheck{docID: p.DocID, blockID: p.BlockID, until: s.now().Add(drawEditRecheck)}
 		c.SendEvent(eventDrawState, withYou(st, c.ID()))
 		if len(won) > 0 {
 			s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), eventDrawOps,
@@ -316,6 +330,12 @@ func (s *Server) drawOps(c *ws.Client, p drawMessage) {
 		drawError(c, p.DocID, p.BlockID, drawErrorCode(err))
 		return
 	}
+	if !s.drawMayEdit(c, p.DocID, p.BlockID) {
+		// Write access lost while drawing (now a reader): out of the session, as the tick would do
+		drawError(c, p.DocID, p.BlockID, "forbidden")
+		s.drawLeave(p.DocID, p.BlockID, c.ID(), "")
+		return
+	}
 	d := s.draw
 	d.mu.Lock()
 	ops, changed, err := d.m.Apply(p.DocID, p.BlockID, c.ID(), els, p.Order, p.Grid, s.now())
@@ -329,6 +349,30 @@ func (s *Server) drawOps(c *ws.Client, p drawMessage) {
 	if err != nil {
 		drawError(c, p.DocID, p.BlockID, drawErrorCode(err))
 	}
+}
+
+// drawMayEdit checks that someone drawing may still change the note (joining checked it once; a share can
+// become read-only meanwhile). The answer holds drawEditRecheck. Connections not drawing pass: Apply
+// answers them no_session as before.
+func (s *Server) drawMayEdit(c *ws.Client, docID, blockID string) bool {
+	d := s.draw
+	now := s.now()
+	d.mu.Lock()
+	drawing := d.m.Drawing(docID, blockID, c.ID())
+	e, ok := d.editOK[c.ID()]
+	d.mu.Unlock()
+	if !drawing || ok && e.docID == docID && e.blockID == blockID && now.Before(e.until) {
+		return true
+	}
+	writable := s.docWritable(c.UserID(), docID) == nil
+	d.mu.Lock()
+	if writable {
+		d.editOK[c.ID()] = drawEditCheck{docID: docID, blockID: blockID, until: now.Add(drawEditRecheck)}
+	} else {
+		delete(d.editOK, c.ID())
+	}
+	d.mu.Unlock()
+	return writable
 }
 
 // drawPresence takes a pointer and selection (dropped over the rate). Pointers go out bundled: one
@@ -470,6 +514,7 @@ func (s *Server) drawConnectionGone(connID string) {
 	d := s.draw
 	d.mu.Lock()
 	delete(d.conns, connID)
+	delete(d.editOK, connID)
 	changes := d.m.Gone(connID, s.now())
 	for _, ch := range changes {
 		s.wsHub.BroadcastRoom(drawRoom(ch.DocID, ch.BlockID), eventDrawPeople, people(ch.State), nil)

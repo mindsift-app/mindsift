@@ -167,6 +167,9 @@ func eventChangesStats(event string) bool {
 	if event == eventDocSeq || event == eventItemReordered {
 		return false
 	}
+	if event == eventAccessChanged {
+		return true
+	}
 	for _, prefix := range statsEventPrefixes {
 		if strings.HasPrefix(event, prefix) {
 			return true

@@ -13,6 +13,8 @@ import {
   LogOut,
 } from 'lucide-react';
 import { Team, User } from '../../lib/types';
+import { useRealtimeReload } from '../../lib/realtimeReload';
+import { useRealtimeEvents } from '../../lib/useRealtimeEvents';
 import { api, triggerHaptic } from '../../lib/api';
 import { can } from '../../lib/capabilities';
 import { UserAutocomplete } from '../UserAutocomplete';
@@ -75,6 +77,13 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, []);
+
+  // Someone else changed a group of mine (members, roles, name, deleted): TEAM_UPDATED reloads the groups,
+  // one request per burst (lib/realtimeReload.ts; a reconnect reloads once as well)
+  const reloader = useRealtimeReload(() => void loadData());
+  useRealtimeEvents((msg) => {
+    if (msg.event === 'TEAM_UPDATED') reloader.request();
+  });
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();

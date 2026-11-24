@@ -416,3 +416,50 @@ func TestLiveDrawingLimits(t *testing.T) {
 		t.Fatalf("no join refused for the rate: %v", codes)
 	}
 }
+
+// Someone drawing whose share becomes read-only cannot keep changing the drawing: DRAW_OPS checks write
+// access again (at most drawEditRecheck after the last check), answers forbidden and takes them out.
+func TestLiveDrawingDowngradedEditorStopsDrawing(t *testing.T) {
+	_, store, ts, owner, ownerToken := startRealtimeServer(t)
+	editor, editorToken := newTestUser(t, store, "draw-downgraded@example.com")
+	doc, err := store.CreateDocument(owner.ID, "", "Skizze", "", "", []domain.DocumentBlock{
+		{ID: "d_b1", Type: "drawing", Content: drawBase}}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateDocShare(owner.ID, doc.ID, editor.ID, "write"); err != nil {
+		t.Fatal(err)
+	}
+	join := map[string]any{"docId": doc.ID, "blockId": "d_b1", "base": drawBase, "els": []json.RawMessage{drawEl("e1", 1, 0, 0)}}
+	own := dialWS(t, ts, ownerToken)
+	sendDraw(t, own, "DRAW_JOIN", join)
+	readDraw(t, own, "DRAW_STATE")
+	ed := dialWS(t, ts, editorToken)
+	sendDraw(t, ed, "DRAW_JOIN", join)
+	readDraw(t, ed, "DRAW_STATE")
+	ops := map[string]any{"docId": doc.ID, "blockId": "d_b1", "els": []json.RawMessage{drawEl("e1", 2, 0, 40)}}
+	sendDraw(t, ed, "DRAW_OPS", ops)
+	readDraw(t, ed, "DRAW_ACK")
+
+	if _, err := store.CreateDocShare(owner.ID, doc.ID, editor.ID, "read"); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(drawEditRecheck + 100*time.Millisecond)
+	ops["els"] = []json.RawMessage{drawEl("e1", 3, 0, 80)}
+	sendDraw(t, ed, "DRAW_OPS", ops)
+	if p := readDraw(t, ed, "DRAW_ERROR"); p.Code != "forbidden" {
+		t.Fatalf("downgraded editor drawing: %+v", p)
+	}
+	// The owner sees them leave (the first DRAW_PEOPLE was their joining)
+	for {
+		p := readDraw(t, own, "DRAW_PEOPLE")
+		if len(p.Participants) == 1 {
+			break
+		}
+	}
+	// Nothing of theirs after the downgrade reached the drawing
+	sendDraw(t, own, "DRAW_SYNC", map[string]any{"docId": doc.ID, "blockId": "d_b1"})
+	if p := readDraw(t, own, "DRAW_STATE"); len(p.Els) != 1 || strings.Contains(string(p.Els[0]), `"x":80`) {
+		t.Fatalf("drawing after the downgrade: %+v", p)
+	}
+}

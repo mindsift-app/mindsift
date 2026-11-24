@@ -54,4 +54,7 @@ export interface SharedList {
   members?: TaskListMember[]; // owner + everyone the list is shared with
   updatedAt: string;
   createdAt: string;
+  // App only: the open count of LIST_COUNTS for a list not open, whose entries (ITEM_* go to the open
+  // list only) are then out of date; loading the lists drops it (features/lists/listItems.ts listOpenCount)
+  liveOpenCount?: number;
 }

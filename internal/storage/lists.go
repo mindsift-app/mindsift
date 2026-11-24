@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"regexp"
@@ -379,6 +380,13 @@ func (s *Store) GetListItems(listID string) ([]domain.ListItem, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+// CountOpenListItems is the number of open (not ticked) entries of a list, as the list overview shows it.
+func (s *Store) CountOpenListItems(ctx context.Context, listID string) (int, error) {
+	var n int
+	err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM list_items WHERE list_id = ? AND is_completed = 0`, listID).Scan(&n)
+	return n, err
 }
 
 func (s *Store) CreateListItem(listID, content, category, quantity string, sortOrder int, createdBy string) (*domain.ListItem, error) {

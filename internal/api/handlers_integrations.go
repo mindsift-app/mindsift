@@ -285,7 +285,7 @@ func (s *Server) addListItem(userID, listID, content, category, quantity string,
 		return nil, err
 	}
 	s.recordListItemOrigin(item, actor, true)
-	s.wsHub.BroadcastListEvent(listID, eventItemCreated, item)
+	s.broadcastListItemEvent(listID, eventItemCreated, item)
 	return item, nil
 }
 

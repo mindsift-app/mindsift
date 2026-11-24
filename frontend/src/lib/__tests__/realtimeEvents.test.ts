@@ -10,7 +10,7 @@ const sources = import.meta.glob(['../../**/*.{ts,tsx}', '!../../**/__tests__/**
   eager: true,
 }) as Record<string, string>;
 
-const EVENT = /['"`]((?:TASK|DOC|LIST|ITEM|WORKSPACE|NOTIFICATION|TRANSCRIPTION|DRAW|USER_PRESENCE|SSE|DEMO|JOIN|LEAVE)[A-Z_]*|PING|PONG)['"`]/g;
+const EVENT = /['"`]((?:ACCESS|TASK|TEAM|DOC|LIST|ITEM|WORKSPACE|NOTIFICATION|TRANSCRIPTION|DRAW|USER_PRESENCE|SSE|DEMO|JOIN|LEAVE)[A-Z_]*|PING|PONG)['"`]/g;
 const known = new Set([...events.server, ...events.client]);
 
 const named = Object.entries(sources).flatMap(([file, code]) =>
