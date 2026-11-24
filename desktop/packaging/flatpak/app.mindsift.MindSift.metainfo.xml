@@ -36,19 +36,19 @@
   <screenshots>
     <screenshot type="default">
       <caption>Notes as nested outlines</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.3/screenshots/store/notes.png</image>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.4/screenshots/store/notes.png</image>
     </screenshot>
     <screenshot>
       <caption>Tasks on a Kanban board</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.3/screenshots/store/board.png</image>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.4/screenshots/store/board.png</image>
     </screenshot>
     <screenshot>
       <caption>Tasks in the calendar</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.3/screenshots/store/calendar.png</image>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.4/screenshots/store/calendar.png</image>
     </screenshot>
     <screenshot>
       <caption>A journal for each day</caption>
-      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.3/screenshots/store/journal.png</image>
+      <image>https://raw.githubusercontent.com/mindsift-app/mindsift/v0.99.4/screenshots/store/journal.png</image>
     </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
@@ -74,6 +74,12 @@
     <keyword>outliner</keyword>
   </keywords>
   <releases>
+    <release version="0.99.4" date="2026-11-24" type="stable">
+      <description>
+        <p>Passwords are asked for twice at sign-up, the audit log records security steps on people's own accounts, and tasks can be dragged into empty status groups and between priority groups.</p>
+      </description>
+      <url type="details">https://github.com/mindsift-app/mindsift/releases/tag/v0.99.4</url>
+    </release>
     <release version="0.99.3" date="2026-11-24" type="stable">
       <description>
         <p>Realtime updates reach everyone who sees a list, note or group, access that ends also ends live updates, and screens, sheets and settings share one look with larger tap targets on phones.</p>

@@ -8,6 +8,8 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+## [0.99.4] - 2026-11-24
+
 ### Added
 - Tasks: in the list view grouped by priority, dragging a task into another priority group (onto its header or next to one of its tasks) sets that priority; empty groups show up while you drag.
 
