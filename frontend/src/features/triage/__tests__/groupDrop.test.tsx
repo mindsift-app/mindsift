@@ -299,14 +299,15 @@ describe('dragging a task between priority groups', () => {
     expect(updateThought).not.toHaveBeenCalled();
   });
 
-  it('takes no priority from a task the person may not change, and gives none to one', async () => {
+  it('takes the priority of a read-only task’s group, but gives none to a task the person may not change', async () => {
     const tasks = [prio('a', 'normal', 0), prio('b', 'urgent', 1, 'shared'), prio('c', 'high', 2, 'shared')];
     const { hook, current } = setup(tasks, undefined, { groupBy: 'priority', isTaskReadOnly: (t) => t.taskListId === 'shared' });
-    // Dropped on a read-only row: only the place changes
+    // Dropped on a read-only row: its row stands for the group like the header
     await act(async () => {
       await hook.result.current.handleDropOnTask(dropEvent('a'), tasks[1]);
     });
-    expect(current().find((t) => t.id === 'a')!.priority).toBe('normal');
+    expect(current().find((t) => t.id === 'a')!.priority).toBe('urgent');
+    updateThought.mockClear();
     // A read-only task has no priority group to go into
     await act(async () => {
       await hook.result.current.handleDropOnGroup(dropEvent('c'), priorityGroup('urgent', []));

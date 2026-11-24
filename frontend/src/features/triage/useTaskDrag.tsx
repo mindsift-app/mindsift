@@ -173,15 +173,15 @@ export function useTaskDrag({
     await moveTaskNextTo(sourceId, targetTask, position, newKanbanCol, priority);
   };
 
-  // The group a row stands in, as a drop target: only in the list view grouped by status or priority. A
-  // task the person may not change gives no priority.
+  // The group a row stands in, as a drop target: only in the list view grouped by status or priority (a row
+  // stands for its group like the header, whoever may change the task in it)
   const rowGroupDrop = (target: Thought): GroupDrop | null => {
     if (viewMode !== 'list') return null;
     if (groupBy === 'status') {
       const columnId = boardColumnOf(target);
       return columnId ? { kind: 'status', columnId } : null;
     }
-    if (groupBy === 'priority' && !isTaskReadOnly(target)) return { kind: 'priority', priority: priorityGroupOf(target) };
+    if (groupBy === 'priority') return { kind: 'priority', priority: priorityGroupOf(target) };
     return null;
   };
 
