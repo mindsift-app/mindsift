@@ -514,7 +514,9 @@ func (s *Server) handlePasskeyRegisterOptions(w http.ResponseWriter, r *http.Req
 		Password string `json:"password"`
 		secondFactor
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return
+	}
 	user, ok := s.currentUser(w, r)
 	if !ok || !s.confirmWithSecondFactor(w, r, user, req.Password, req.secondFactor) {
 		return
@@ -642,7 +644,9 @@ func (s *Server) handleRenamePasskey(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name string `json:"name"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return
+	}
 	err := s.store.RenamePasskey(auth.GetUserID(r.Context()), chi.URLParam(r, "id"), req.Name)
 	switch {
 	case errors.Is(err, storage.ErrPasskeyNotFound):
@@ -664,7 +668,9 @@ func (s *Server) handleRemovePasskey(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 		secondFactor
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return
+	}
 	user, ok := s.currentUser(w, r)
 	if !ok {
 		return

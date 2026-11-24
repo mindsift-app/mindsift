@@ -67,7 +67,9 @@ func (s *Server) confirmPassword(w http.ResponseWriter, r *http.Request) (*domai
 		Password string `json:"password"`
 		secondFactor
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if !decodeOptionalJSON(w, r, &req) {
+		return nil, false
+	}
 	user, err := s.store.GetUserByID(auth.GetUserID(r.Context()))
 	if err != nil || user == nil {
 		writeError(w, http.StatusUnauthorized, "Nicht autorisiert")

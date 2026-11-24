@@ -157,7 +157,8 @@ func (s *Server) handleAdminListBackups(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, files)
 }
 
-// manualBackupMu: held while a run started by hand is going
+// manualBackupMu: held while a run started by hand is going. Like backupRunMu and restoreMu it belongs to
+// the process: a process runs one server at a time (the desktop app too, see restoreMu).
 var manualBackupMu sync.Mutex
 
 func (s *Server) handleAdminRunBackup(w http.ResponseWriter, r *http.Request) {

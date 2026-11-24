@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -52,7 +51,11 @@ var (
 	errRestoreKeyMismatch = errors.New("Verschlüsselte Werte der Sicherung (z. B. SMTP-Passwort, versteckte Werte) lassen sich mit dem Schlüssel dieses Servers nicht öffnen; trotzdem wiederherstellen?")
 )
 
-// restoreMu: one restore at a time
+// restoreMu: one restore at a time. It belongs to the process, not to the Server, on purpose: a process runs
+// one server at a time (cmd/server; the desktop app closes the open instance before it opens another,
+// desktop/internal/shell/local.go), and the lock is held across the restart, from the old server until the
+// new one is open, which a field of the old server could not cover. Tests that restore do not run in
+// parallel (testmain_test.go).
 var restoreMu sync.Mutex
 
 // SetRestarter: the runner's function that closes this server and its store and opens them again (through
@@ -115,7 +118,9 @@ type restoreRequest struct {
 func (s *Server) handleAdminRestoreBackup(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 	var req restoreRequest
-	_ = json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req)
+	if !decodeOptionalJSONLimit(w, r, 4096, &req) {
+		return
+	}
 	if req.Confirm != name {
 		writeErrorFrom(w, http.StatusBadRequest, errRestoreConfirm)
 		return

@@ -51,6 +51,12 @@ type jsonrpcError struct {
 	Message string `json:"message"`
 }
 
+// rpcError: an error answer with the German text msg translated once into English (MCP speaks English to
+// agents whatever the user's language), placeholders {name} filled in from args after the translation.
+func rpcError(code int, msg string, args ...string) *jsonrpcError {
+	return &jsonrpcError{code, i18n.T("en", msg, args...)}
+}
+
 type jsonrpcResponse struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      json.RawMessage `json:"id"`
@@ -119,7 +125,7 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 	if mcpLargeRequest(r) {
 		if !s.mcpLarge.enter() {
 			w.Header().Set("Retry-After", "10")
-			writeRPC(w, nil, nil, &jsonrpcError{rpcServerBusy, "Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen"})
+			writeRPC(w, nil, nil, rpcError(rpcServerBusy, "Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen"))
 			return
 		}
 		defer s.mcpLarge.leave()
@@ -128,21 +134,21 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
 		var tooBig *http.MaxBytesError
 		if errors.As(err, &tooBig) {
-			writeRPC(w, nil, nil, &jsonrpcError{rpcInvalidRequest, i18n.T("en", "Anfrage zu groß (höchstens {mb} MB; ein Bild für add_note_image höchstens {img} MB)",
-				"mb", strconv.FormatInt(s.mcpBodyLimit()>>20, 10), "img", strconv.FormatInt(s.mediaLimit("image")>>20, 10))})
+			writeRPC(w, nil, nil, rpcError(rpcInvalidRequest, "Anfrage zu groß (höchstens {mb} MB; ein Bild für add_note_image höchstens {img} MB)",
+				"mb", strconv.FormatInt(s.mcpBodyLimit()>>20, 10), "img", strconv.FormatInt(s.mediaLimit("image")>>20, 10)))
 			return
 		}
-		writeRPC(w, nil, nil, &jsonrpcError{rpcParseError, "Ungültiges JSON"})
+		writeRPC(w, nil, nil, rpcError(rpcParseError, "Ungültiges JSON"))
 		return
 	}
 	trimmed := strings.TrimSpace(string(raw))
 	if strings.HasPrefix(trimmed, "[") {
-		writeRPC(w, nil, nil, &jsonrpcError{rpcInvalidRequest, "Batch-Anfragen werden nicht unterstützt"})
+		writeRPC(w, nil, nil, rpcError(rpcInvalidRequest, "Batch-Anfragen werden nicht unterstützt"))
 		return
 	}
 	var req jsonrpcRequest
 	if err := json.Unmarshal(raw, &req); err != nil || req.Method == "" {
-		writeRPC(w, nil, nil, &jsonrpcError{rpcInvalidRequest, "Ungültige JSON-RPC-Anfrage"})
+		writeRPC(w, nil, nil, rpcError(rpcInvalidRequest, "Ungültige JSON-RPC-Anfrage"))
 		return
 	}
 	// Notifications (no id) are acknowledged without a body
@@ -200,16 +206,16 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 			Arguments json.RawMessage `json:"arguments"`
 		}
 		if err := json.Unmarshal(req.Params, &p); err != nil || p.Name == "" {
-			writeRPC(w, req.ID, nil, &jsonrpcError{rpcInvalidParams, "Parameter 'name' fehlt"})
+			writeRPC(w, req.ID, nil, rpcError(rpcInvalidParams, "Parameter 'name' fehlt"))
 			return
 		}
 		tool, ok := mcpToolByName(p.Name)
 		if !ok {
-			writeRPC(w, req.ID, nil, &jsonrpcError{rpcInvalidParams, i18n.T("en", "Unbekanntes Tool: {name}", "name", p.Name)})
+			writeRPC(w, req.ID, nil, rpcError(rpcInvalidParams, "Unbekanntes Tool: {name}", "name", p.Name))
 			return
 		}
 		if !mcpToolAllowed(scopes, isKey, tool) {
-			writeRPC(w, req.ID, toolError(i18n.T("en", "Der API-Key hat keine Berechtigung für {tool} (Scope {scope} fehlt)", "tool", tool.Name, "scope", tool.Scope)), nil)
+			writeRPC(w, req.ID, toolError("Der API-Key hat keine Berechtigung für {tool} (Scope {scope} fehlt)", "tool", tool.Name, "scope", tool.Scope), nil)
 			return
 		}
 		if len(p.Arguments) == 0 {
@@ -217,14 +223,15 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 		}
 		result, err := tool.run(r.Context(), s, userID, actor, p.Arguments)
 		if err != nil {
-			msg := errInternal
+			failed := toolError(errInternal)
 			if errors.Is(err, sql.ErrNoRows) {
 				// A tool that did not look the id up first: someone else's or a missing item
-				msg = "Nicht gefunden oder kein Zugriff"
+				failed = toolError("Nicht gefunden oder kein Zugriff")
 			} else if clientMessage(err) != errInternal {
-				msg = i18n.Text("en", err)
+				// In English already, with its placeholders filled in
+				failed = toolErrorText(i18n.Text("en", err))
 			}
-			writeRPC(w, req.ID, toolError(msg), nil)
+			writeRPC(w, req.ID, failed, nil)
 			return
 		}
 		if tool.Name == "search" && isKey {
@@ -232,7 +239,7 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 		}
 		writeRPC(w, req.ID, toolResult(result), nil)
 	default:
-		writeRPC(w, req.ID, nil, &jsonrpcError{rpcMethodNotFound, i18n.T("en", "Methode nicht unterstützt: {method}", "method", req.Method)})
+		writeRPC(w, req.ID, nil, rpcError(rpcMethodNotFound, "Methode nicht unterstützt: {method}", "method", req.Method))
 	}
 }
 
@@ -260,11 +267,9 @@ func handleMCPNoStream(w http.ResponseWriter, _ *http.Request) {
 	writeError(w, http.StatusMethodNotAllowed, "Der MCP-Endpunkt nimmt nur POST an (kein Server-Stream)")
 }
 
-// MCP speaks English to agents whatever the user's language
+// writeRPC answers a JSON-RPC request. An error's text comes translated already (rpcError), so a name
+// filled into it is never looked up in the catalog a second time.
 func writeRPC(w http.ResponseWriter, id json.RawMessage, result any, rpcErr *jsonrpcError) {
-	if rpcErr != nil {
-		rpcErr.Message = i18n.T("en", rpcErr.Message)
-	}
 	if len(id) == 0 {
 		id = json.RawMessage("null")
 	}
@@ -290,9 +295,16 @@ func wrapStructured(data any) any {
 	return data
 }
 
-func toolError(msg string) map[string]any {
+// toolError: a failed tool call with the German text msg in English, placeholders filled in from args
+// after the translation.
+func toolError(msg string, args ...string) map[string]any {
+	return toolErrorText(i18n.T("en", msg, args...))
+}
+
+// toolErrorText: a failed tool call with a text that is in English already.
+func toolErrorText(text string) map[string]any {
 	return map[string]any{
-		"content": []map[string]string{{"type": "text", "text": i18n.T("en", msg)}},
+		"content": []map[string]string{{"type": "text", "text": text}},
 		"isError": true,
 	}
 }

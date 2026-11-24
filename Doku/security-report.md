@@ -13,6 +13,8 @@ penetration test at `c2367f8` (16 November), before v0.96.0:
   logout, calendar feed, outgoing proxy, required password change, operator command line, audit log, update check,
   `API_KEYS_ENABLED=false`). No rated finding; two hardening notes that are already covered and documented (see
   "Fourth run").
+- **Two later findings (23 November), both fixed:** an existence oracle and a database message in the answers of
+  note writes that checked access themselves (see "Later findings"; not counted in the 16 above).
 - **The two observations of the status check of 15 November are settled:** the proxy's own address is now dialled
   only as the proxy (`b9e025d`, confirmed by the fourth run), and the calendar feed is switched off together with keys
   and AI connections when an administrator resets a password with "revoke keys" (`22cec2e`); the person's own
@@ -284,6 +286,22 @@ attacked in a penetration test:
   API keys and AI connections (`22cec2e`); the person's own password change and "sign out everywhere" keep it, as
   documented. The owner can renew the address at any time.
 
+## Later findings
+
+Found on 23 November 2026 in a code review of the request handling (a shared check of write access to a note), not in
+a penetration test; rated low and fixed the same day in `1a25f13`. Since then every request that changes a note checks
+access in one place (`requireDocEdit` in `internal/api/doc_access.go`).
+
+- **Note writes told someone else's note from a missing one.** Restructuring (extract, move, merge, inline and their
+  undo), uploading and fetching pictures and creating hidden values checked access themselves and answered 403 "no
+  write access" for someone else's note but 404 for a missing one, so any account could learn whether a note id
+  exists. Both now answer the same 404; 403 is left for a note shared with the caller for reading. The MCP tools, the
+  transcription of a recording and live drawing use the same check.
+- **Merging and undoing an extraction answered 500 with a database message.** Merging someone else's or a missing
+  note into one's own, or taking back the extraction of one, failed with an internal error whose text was the raw
+  `sql: no rows in result set`. They answer 404 now; other failures of restructuring keep their details in the server
+  log (`writeRestructureError`).
+
 ## Penetration tests with fuzzing
 
 Three runs on 13 and 14 November 2026 and a re-test of all of them, plus a fourth run of the newer features on
@@ -521,12 +539,14 @@ privately as described in [SECURITY.md](../SECURITY.md).
   drawing (`DRAW_*`) until it closed. Fixed: every such change rechecks the rooms concerned and takes the connection
   out (`Hub.RecheckRooms*`, `internal/api/realtime_access.go`), a live drawing also leaves the session;
   `TestLostAccessLeavesTheRealtimeRooms`, `TestTeamMembershipChangesAreLive`, `TestRecheckRoomsDropsLostAccess`.
+- **23 November 2026:** two low findings in the access checks of note writes, found in a code review and fixed the same
+  day (see "Later findings").
 
 ## Finding index
 
 Every counted finding with the id of the working notes, its round, and the evidence in the code of 15 November
 (`0c62f02`). Rounds: AM = review of the morning of 13 November, AE = review of the evening, PT1–PT3 = penetration
-tests, RT1 = first re-test.
+tests, RT1 = first re-test, R23 = code review of 23 November (code and tests as of `1a25f13`).
 
 | Id | Round | Severity | Finding | Status | Fix | Code and test today |
 |---|---|---|---|---|---|---|
@@ -546,6 +566,8 @@ tests, RT1 = first re-test.
 | A1 (RT1) | RT1 | Low | Import on a new server held the database | Fixed | `96215f1` | `sqlDropMisleadingStats` in `internal/storage/sqlite.go`; `lookup_indexes_test.go` |
 | A2 (RT1) | RT1 | Low | Two imports at once could leave one half done | Fixed | `11ef45d` | `importMu` in `ApplyImport`; `TestFailedImportIsTakenOut` |
 | NB1 (RT1) | RT1 | Low | MCP "Internal error" for someone else's task | Fixed | `9560820` | lookup first in `internal/api/mcp.go`; `TestMCPForeignIDsAnswerNotFound` |
+| W1 | R23 | Low | Note writes: existence oracle (403 against 404) | Fixed | `1a25f13` | `requireDocEdit` in `internal/api/doc_access.go`; `TestNoteWriteChecksAnswerLikeMissingNotes` |
+| W2 | R23 | Low | Merge and extract undo: 500 with a database message | Fixed | `1a25f13` | `writeRestructureError` in `internal/api/restructure.go`; `TestNoteWriteChecksAnswerLikeMissingNotes` |
 | H1 | AM | Note | OIDC link by email address | Fixed (removed) | `7ce4bbd` | only `TestOIDCLinkByEmailRemoved` (the setting is ignored with a log line) |
 | H2 | AM | Note | Reserved client ids of live drawing | Fixed | `2792470` | `reservedClientID` in `internal/api/docsync.go` and `restructure.go` |
 | H1 | AE | Note | A file id worked as a key | Fixed | `a4f32d3`, `cf14a3a`, `879aeec` | `mediaGate` in `internal/storage/media.go`; `media_gate_test.go` (remaining case accepted as FLAW-43) |

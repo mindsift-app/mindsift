@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -144,7 +143,9 @@ func (s *Server) handleOpenPoll(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Rooms []string `json:"rooms"`
 	}
-	_ = json.NewDecoder(http.MaxBytesReader(w, r.Body, 16384)).Decode(&req)
+	if !decodeOptionalJSONLimit(w, r, 16384, &req) {
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"pollId": s.wsHub.OpenPoll(auth.GetUserID(r.Context()), req.Rooms)})
 }
 

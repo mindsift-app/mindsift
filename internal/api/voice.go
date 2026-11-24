@@ -37,6 +37,9 @@ type voiceService struct {
 
 	downloads modelDownloads // models the administration had downloaded (speech.go)
 	checking  atomic.Bool    // startVoiceCheck runs
+	// kicked: the checks kickVoiceCheck started and that have not ended yet; tests wait for them before
+	// they change the server's configuration, which the checks read
+	kicked sync.WaitGroup
 }
 
 // voiceStatus is what the admin page shows about the Whisper server.
@@ -379,7 +382,11 @@ func (s *Server) voiceCheck(fetchModel bool) {
 // kickVoiceCheck starts startVoiceCheck when the server mode applies (after saving the settings).
 func (s *Server) kickVoiceCheck() {
 	if s.voiceMode() == "server" && !s.voice.checking.Load() {
-		s.background(func() { s.voiceCheck(false) })
+		s.voice.kicked.Add(1)
+		s.background(func() {
+			defer s.voice.kicked.Done()
+			s.voiceCheck(false)
+		})
 	}
 }
 

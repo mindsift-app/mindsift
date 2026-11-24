@@ -41,8 +41,7 @@ func (s *Server) handleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 	// An empty body gives a key with the default name and rights; a broken one is refused, so a typo
 	// does not quietly create a key with rights nobody asked for
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
-		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+	if !decodeOptionalJSON(w, r, &req) {
 		return
 	}
 	user, ok := s.currentUser(w, r)

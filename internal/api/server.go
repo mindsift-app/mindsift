@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"html"
+	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -738,7 +739,7 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 
 // decodeJSON reads the request body as JSON into v. A body that is not JSON, does not fit v or is larger
 // than the endpoint's limit (bodyLimit) is answered with 400 and false. Bodies that may be left out are
-// read with "_ = json.NewDecoder(r.Body).Decode(&req)" instead.
+// read with decodeOptionalJSON.
 func decodeJSON(w http.ResponseWriter, r *http.Request, v any) bool {
 	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
@@ -751,6 +752,22 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, v any) bool {
 func decodeJSONLimit(w http.ResponseWriter, r *http.Request, limit int64, v any) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, limit)
 	return decodeJSON(w, r, v)
+}
+
+// decodeOptionalJSON is decodeJSON for bodies that may be left out: an empty body leaves v as it is, a
+// broken one is still answered with 400, so a typo is not quietly taken for "nothing given".
+func decodeOptionalJSON(w http.ResponseWriter, r *http.Request, v any) bool {
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil && !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+		return false
+	}
+	return true
+}
+
+// decodeOptionalJSONLimit is decodeOptionalJSON with a tighter limit than bodyLimit's.
+func decodeOptionalJSONLimit(w http.ResponseWriter, r *http.Request, limit int64, v any) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, limit)
+	return decodeOptionalJSON(w, r, v)
 }
 
 // staticTexts: the German texts of index.html (description, link preview) and manifest.json (app

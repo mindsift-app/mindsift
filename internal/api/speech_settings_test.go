@@ -74,7 +74,7 @@ func (f *modelWhisper) handler() http.Handler {
 // download with its state, the model in use once it is there.
 func TestSpeechSettingsAndModels(t *testing.T) {
 	srv, store, token := setupTestServer(t)
-	srv.cfg.Speech = config.SpeechConfig{}
+	setSpeechEnv(srv, config.SpeechConfig{})
 	router := srv.Router()
 	fake := &modelWhisper{local: []string{"Systran/faster-whisper-small"}, release: make(chan struct{})}
 	whisper := httptest.NewServer(fake.handler())
@@ -185,7 +185,7 @@ func TestSpeechSettingsAndModels(t *testing.T) {
 
 	// STT_* fixes its field: shown, locked, what the administration sends is not stored
 	off := false
-	srv.cfg.Speech = config.SpeechConfig{Model: "Systran/faster-whisper-large-v3", MaxSeconds: 30, NoBrowser: true, VADFilter: &off}
+	setSpeechEnv(srv, config.SpeechConfig{Model: "Systran/faster-whisper-large-v3", MaxSeconds: 30, NoBrowser: true, VADFilter: &off})
 	put(`{"mode":"server","url":"` + whisper.URL + `","model":"andere/modell","maxSeconds":99,"allowBrowser":true,"vadFilter":true}`)
 	body = sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String()
 	for _, want := range []string{`"model":"Systran/faster-whisper-large-v3"`, `"maxSeconds":30`, `"allowBrowser":false`, `"vadFilter":false`, `"configuredViaEnv":["allowBrowser","model","maxSeconds","vadFilter"]`} {
@@ -200,12 +200,12 @@ func TestSpeechSettingsAndModels(t *testing.T) {
 		t.Fatalf("STT_MODEL fixes the model: %d", rec.Code)
 	}
 	// STT_DISABLED switches voice input off whatever the administration chose
-	srv.cfg.Speech = config.SpeechConfig{Disabled: true}
+	setSpeechEnv(srv, config.SpeechConfig{Disabled: true})
 	if !strings.Contains(status(), `"mode":"off"`) {
 		t.Fatalf("STT_DISABLED: %s", status())
 	}
 	// The browser chosen in the administration, the Whisper server stays entered
-	srv.cfg.Speech = config.SpeechConfig{}
+	setSpeechEnv(srv, config.SpeechConfig{})
 	put(`{"mode":"browser","url":"` + whisper.URL + `"}`)
 	if !strings.Contains(status(), `"mode":"browser"`) {
 		t.Fatalf("browser chosen: %s", status())
@@ -217,7 +217,7 @@ func TestSpeechSettingsAndModels(t *testing.T) {
 // although speaches lists it from the start of its download.
 func TestSavingTheWhisperServerFetchesNothing(t *testing.T) {
 	srv, _, token := setupTestServer(t)
-	srv.cfg.Speech = config.SpeechConfig{}
+	setSpeechEnv(srv, config.SpeechConfig{})
 	router := srv.Router()
 	fake := &modelWhisper{}
 	whisper := httptest.NewServer(fake.handler())
@@ -251,7 +251,7 @@ func TestSavingTheWhisperServerFetchesNothing(t *testing.T) {
 func TestSpeechChunkSettings(t *testing.T) {
 	t.Parallel()
 	srv, store, token := setupTestServer(t)
-	srv.cfg.Speech = config.SpeechConfig{}
+	setSpeechEnv(srv, config.SpeechConfig{})
 	router := srv.Router()
 	status := func() string { return sessionCall(router, "GET", "/api/v1/auth/status", "", "", "").Body.String() }
 	put := func(speech string) *httptest.ResponseRecorder {
@@ -270,7 +270,7 @@ func TestSpeechChunkSettings(t *testing.T) {
 		t.Fatalf("stored: %+v", sys.Speech)
 	}
 	on := true
-	srv.cfg.Speech = config.SpeechConfig{Chunked: &on, ChunkSeconds: 3}
+	setSpeechEnv(srv, config.SpeechConfig{Chunked: &on, ChunkSeconds: 3})
 	put(`{"mode":"browser","chunked":false,"chunkSeconds":20}`)
 	body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String()
 	for _, want := range []string{`"chunked":true`, `"chunkSeconds":3`, `"configuredViaEnv":["chunked","chunkSeconds"]`} {
@@ -290,7 +290,7 @@ func TestSpeechChunkSettings(t *testing.T) {
 // STT_MODEL fixes the model; one that is not there answers 404.
 func TestSpeechModelDelete(t *testing.T) {
 	srv, store, token := setupTestServer(t)
-	srv.cfg.Speech = config.SpeechConfig{}
+	setSpeechEnv(srv, config.SpeechConfig{})
 	router := srv.Router()
 	fake := &modelWhisper{local: []string{"Systran/faster-whisper-small", "Systran/faster-whisper-medium"}}
 	whisper := httptest.NewServer(fake.handler())
@@ -336,7 +336,7 @@ func TestSpeechModelDelete(t *testing.T) {
 	if rec := del("Systran/faster-whisper-medium"); rec.Code != http.StatusNotFound {
 		t.Fatalf("not there: %d", rec.Code)
 	}
-	srv.cfg.Speech = config.SpeechConfig{Model: "Systran/faster-whisper-large-v3"}
+	setSpeechEnv(srv, config.SpeechConfig{Model: "Systran/faster-whisper-large-v3"})
 	if rec := del("Systran/faster-whisper-small"); rec.Code != http.StatusConflict {
 		t.Fatalf("STT_MODEL fixes the model: %d", rec.Code)
 	}
@@ -347,7 +347,7 @@ func TestSpeechModelDelete(t *testing.T) {
 func TestSpeechModeAutomaticUntilChosen(t *testing.T) {
 	t.Parallel()
 	srv, store, token := setupTestServer(t)
-	srv.cfg.Speech = config.SpeechConfig{}
+	setSpeechEnv(srv, config.SpeechConfig{})
 	router := srv.Router()
 	status := func() string { return sessionCall(router, "GET", "/api/v1/auth/status", "", "", "").Body.String() }
 	put := func(speech string) {
@@ -396,4 +396,11 @@ func TestSpeechModeAutomaticUntilChosen(t *testing.T) {
 			t.Fatalf("%s as chosen: %q %s", mode, sp.Mode, status())
 		}
 	}
+}
+
+// setSpeechEnv sets the voice input configuration of the environment (STT_*) once the checks a saved
+// setting started are done: they read it from another goroutine.
+func setSpeechEnv(srv *Server, speech config.SpeechConfig) {
+	srv.voice.kicked.Wait()
+	srv.cfg.Speech = speech
 }
