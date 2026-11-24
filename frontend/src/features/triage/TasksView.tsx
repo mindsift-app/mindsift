@@ -1140,6 +1140,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         />
       ) : (
         <TaskListView
+          drag={taskDrag}
           doneTasks={doneTasks}
           filter={filter}
           filteredTasks={filteredTasks}

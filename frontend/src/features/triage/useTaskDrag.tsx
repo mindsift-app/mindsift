@@ -70,6 +70,9 @@ export function useTaskDrag({
   const dragHeightRef = useRef(64);
   // List tab a dragged task hovers over (dropping moves it into that list)
   const [dragOverListTab, setDragOverListTab] = useState<string | null>(null);
+  // List view grouped by status: the group (board column) whose header or drop strip a dragged task
+  // hovers over (dropping moves it into that column)
+  const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
 
   const handleDropOnListTab = async (e: React.DragEvent, list: TaskList) => {
     e.preventDefault();
@@ -286,12 +289,48 @@ export function useTaskDrag({
     }
   };
 
+  // Whether the dragged task can go into a status group of the list view: its list needs a column of
+  // that name (in "Alle Aufgaben" the groups are the columns of all lists joined by name)
+  const canDropInGroup = (colId: string) =>
+    !!draggingTaskId && !!ownColumnIdFor(tasks.find((t) => t.id === draggingTaskId), colId);
+
+  const handleGroupDragOver = (e: React.DragEvent, colId: string) => {
+    if (!canDropInGroup(colId)) return;
+    e.preventDefault();
+    if (dragOverGroup !== colId) setDragOverGroup(colId);
+  };
+
+  const handleGroupDragLeave = (e: React.DragEvent, colId: string) => {
+    // Moving onto a child of the target is no leaving
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setDragOverGroup((cur) => (cur === colId ? null : cur));
+  };
+
+  // A task dropped on a status group's header (or the strip below it) moves into that column, after the
+  // group's last task; into an empty group it simply goes
+  const handleDropOnGroup = async (e: React.DragEvent, colId: string, groupTasks: Thought[]) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourceId =
+      e.dataTransfer.getData('application/mindsift-task-id') || e.dataTransfer.getData('text/plain') || draggingTaskId;
+    setDraggingTaskId(null);
+    setDragOverTaskTarget(null);
+    setDragOverGroup(null);
+    if (!sourceId) return;
+    const ownColId = ownColumnIdFor(tasks.find((t) => t.id === sourceId), colId);
+    if (!ownColId) return;
+    const others = groupTasks.filter((t) => t.id !== sourceId);
+    if (others.length === 0) await moveTaskToColumn(sourceId, ownColId);
+    else await moveTaskNextTo(sourceId, others[others.length - 1], 'after', ownColId);
+  };
+
   // A drag that ends outside any column (Escape, dropped elsewhere) leaves nothing behind
   useEffect(() => {
     if (!draggingTaskId) return;
     const end = () => {
       setKanbanSlot(null);
       setKanbanHiddenId(null);
+      setDragOverGroup(null);
     };
     window.addEventListener('dragend', end);
     window.addEventListener('drop', end);
@@ -410,6 +449,11 @@ export function useTaskDrag({
     handleKanbanColDragOver,
     handleKanbanColDragLeave,
     handleKanbanDrop,
+    dragOverGroup,
+    canDropInGroup,
+    handleGroupDragOver,
+    handleGroupDragLeave,
+    handleDropOnGroup,
     kanbanTouch,
   };
 }

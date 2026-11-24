@@ -41,6 +41,14 @@ function ListWithSwitch({ trash }: { trash: TrashedTask[] | null }) {
   const [filter, setFilter] = useState<TaskFilter>('open');
   return (
     <TaskListView
+      drag={{
+        draggingTaskId: null,
+        dragOverGroup: null,
+        canDropInGroup: () => false,
+        handleGroupDragOver: () => {},
+        handleGroupDragLeave: () => {},
+        handleDropOnGroup: async () => {},
+      }}
       doneTasks={[]}
       filter={filter}
       filteredTasks={[]}
