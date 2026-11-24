@@ -518,7 +518,6 @@ func (s *Store) moveFolderTo(userID, cleanSource, newFolderPath string) (string,
 	if newFolderPath == cleanSource {
 		return cleanSource, []string{}, nil
 	}
-	folderName := filepath.Base(newFolderPath)
 
 	// 1. Check if sourcePath is the root mount of a shared folder
 	mounts, _, err := s.getUserFolderMounts(userID)
@@ -599,12 +598,8 @@ func (s *Store) moveFolderTo(userID, cleanSource, newFolderPath string) (string,
 					suffix = strings.TrimPrefix(r.subPath, sourceSub)
 				}
 				if matches {
-					var newSub string
-					if targetSub == "" {
-						newSub = strings.TrimPrefix(folderName+suffix, "/")
-					} else {
-						newSub = targetSub + "/" + folderName + suffix
-					}
+					// targetSub is the place of the folder itself (its name included)
+					newSub := strings.TrimPrefix(targetSub+suffix, "/")
 					if isTargetSF {
 						remap = append(remap, stmt(`UPDATE workspace_folders SET shared_folder_id = ?, sub_path = ? WHERE id = ?`, targetSFID, newSub, r.id))
 					} else {
@@ -617,12 +612,7 @@ func (s *Store) moveFolderTo(userID, cleanSource, newFolderPath string) (string,
 				suffix := strings.TrimPrefix(r.path, cleanSource)
 				newP := newFolderPath + suffix
 				if isTargetSF {
-					var newSub string
-					if targetSub == "" {
-						newSub = strings.TrimPrefix(folderName+suffix, "/")
-					} else {
-						newSub = targetSub + "/" + folderName + suffix
-					}
+					newSub := strings.TrimPrefix(targetSub+suffix, "/")
 					remap = append(remap, stmt(`UPDATE workspace_folders SET shared_folder_id = ?, sub_path = ?, path = ? WHERE id = ?`, targetSFID, newSub, newP, r.id))
 				} else {
 					remap = append(remap, stmt(`UPDATE workspace_folders SET path = ? WHERE id = ?`, newP, r.id))

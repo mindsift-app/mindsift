@@ -155,3 +155,78 @@ func TestRenameFolder(t *testing.T) {
 		t.Errorf("top-level rename: %q %v", p, err)
 	}
 }
+
+// Renaming or moving a folder inside a shared folder gives exactly the new folder, for the owner and for
+// the person it is shared with: no subfolder of the same name inside it.
+func TestRenameFolderInSharedFolder(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "folders-rename-shared.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	openSharing(t, store)
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	ben, _ := store.CreateUser("ben@example.com", "hash", "Ben", "member")
+	if _, err := store.CreateFolder(anna.ID, "Team"); err != nil {
+		t.Fatal(err)
+	}
+	sf, err := store.CreateSharedFolder(anna.ID, "Team", "Team")
+	if err != nil {
+		t.Fatalf("CreateSharedFolder: %v", err)
+	}
+	if _, err := store.CreateFolderShare(anna.ID, sf.ID, "user", ben.ID, "write"); err != nil {
+		t.Fatalf("CreateFolderShare: %v", err)
+	}
+	for _, p := range []string{"Team/Alt", "Team/Alt/Unter", "Team/Ziel"} {
+		if _, err := store.CreateFolder(anna.ID, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	under := func(userID, root string) []string {
+		t.Helper()
+		all, err := store.GetFolders(userID)
+		if err != nil {
+			t.Fatalf("GetFolders: %v", err)
+		}
+		var got []string
+		for _, f := range all {
+			if f == root || len(f) > len(root) && f[:len(root)+1] == root+"/" {
+				got = append(got, f)
+			}
+		}
+		slices.Sort(got)
+		return got
+	}
+
+	if p, _, err := store.RenameFolder(anna.ID, "Team/Alt", "Neu"); err != nil || p != "Team/Neu" {
+		t.Fatalf("rename: %q %v", p, err)
+	}
+	want := []string{"Team", "Team/Neu", "Team/Neu/Unter", "Team/Ziel"}
+	for _, u := range []string{anna.ID, ben.ID} {
+		if got := under(u, "Team"); !slices.Equal(got, want) {
+			t.Errorf("after rename: %v, want %v", got, want)
+		}
+	}
+
+	if p, _, err := store.MoveFolder(anna.ID, "Team/Neu", "Team/Ziel"); err != nil || p != "Team/Ziel/Neu" {
+		t.Fatalf("move: %q %v", p, err)
+	}
+	want = []string{"Team", "Team/Ziel", "Team/Ziel/Neu", "Team/Ziel/Neu/Unter"}
+	for _, u := range []string{anna.ID, ben.ID} {
+		if got := under(u, "Team"); !slices.Equal(got, want) {
+			t.Errorf("after move: %v, want %v", got, want)
+		}
+	}
+
+	// A folder of one's own moved into the shared folder
+	if _, err := store.CreateFolder(anna.ID, "Privat"); err != nil {
+		t.Fatal(err)
+	}
+	if p, _, err := store.MoveFolder(anna.ID, "Privat", "Team"); err != nil || p != "Team/Privat" {
+		t.Fatalf("move in: %q %v", p, err)
+	}
+	want = []string{"Team", "Team/Privat", "Team/Ziel", "Team/Ziel/Neu", "Team/Ziel/Neu/Unter"}
+	if got := under(anna.ID, "Team"); !slices.Equal(got, want) {
+		t.Errorf("after moving in: %v, want %v", got, want)
+	}
+}
