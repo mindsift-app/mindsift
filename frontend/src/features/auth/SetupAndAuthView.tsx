@@ -18,7 +18,7 @@ import { AuthStatus, MfaMethod, User } from '../../lib/types';
 import { MfaStep } from './MfaStep';
 import { api, ApiError, triggerHaptic } from '../../lib/api';
 import { LegalLinks } from '../../components/LegalLinks';
-import { passwordPairProblem, passwordProblem } from '../../lib/password';
+import { passwordPairProblem } from '../../lib/password';
 import { NewPasswordFields } from '../../components/NewPasswordFields';
 import { demoHintText } from '../../components/DemoHint';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
@@ -56,6 +56,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Repetition of the password when signing up (register / invite), see NewPasswordFields
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [inviteCode, setInviteCode] = useState(linkInviteCode);
   const [error, setError] = useState<string | null>(null);
@@ -304,7 +306,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const handleRegisterOrInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const registerProblem = passwordProblem(password);
+    const registerProblem = passwordPairProblem(password, passwordConfirm);
     if (registerProblem) {
       setError(registerProblem);
       triggerHaptic(25);
@@ -319,6 +321,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         // Waiting for approval: back to the login form with the explanation
         setNotice(res.message || t('register.pending'));
         setPassword('');
+        setPasswordConfirm('');
         setAuthTab('login');
         return;
       }
@@ -707,17 +710,18 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-muted mb-1">{t('register.password')}</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t('password.minPlaceholder')}
-                  required
-                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
-                />
-              </div>
+              <NewPasswordFields
+                value={password}
+                onChange={setPassword}
+                repeat={passwordConfirm}
+                onRepeatChange={setPasswordConfirm}
+                label={t('register.password')}
+                repeatLabel={t('register.repeat')}
+                placeholder={t('password.minPlaceholder')}
+                className="space-y-3.5"
+                labelClassName="block text-muted"
+                inputClassName="h-11 sm:h-8 px-2.5 text-base sm:text-xs"
+              />
 
               <div className="pt-1">
                 <button
