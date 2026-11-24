@@ -8,6 +8,8 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+## [0.99.3] - 2026-11-24
+
 ### Added
 - When someone adds you to a group, you get a notification ("Anna added you to the group “Family”"), with the same settings and channels as a share. Being removed from a group tells you nothing.
 
