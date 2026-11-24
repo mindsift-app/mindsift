@@ -1,12 +1,22 @@
 import i18n from '../../i18n';
-import { KanbanColumn, TaskList, Thought } from '../../lib/types';
+import { KanbanColumn, PriorityLevel, TaskList, Thought } from '../../lib/types';
 import { isDueToday, isOverdue, localDay, splitDue } from '../../lib/due';
 import { GroupBy, TaskFilter, TaskSort } from './taskViewTypes';
 
 // Which tasks the list view of TasksView shows, in which order and in which groups. Pure functions.
 
-// columnId: the board column of a status group; a task dropped on such a group moves into that column
-export type TaskGroup = { key: string; title: string; count: number; tasks: Thought[]; columnId?: string };
+// What a task dropped on a group (its header, or a row in it) takes over: the board column of a status
+// group or the priority of a priority group. The other groupings set nothing.
+export type GroupDrop = { kind: 'status'; columnId: string } | { kind: 'priority'; priority: PriorityLevel };
+
+// drop: see GroupDrop; hideWhenEmpty: the group only shows with tasks, or while a task is dragged that
+// may go there
+export type TaskGroup = { key: string; title: string; count: number; tasks: Thought[]; drop?: GroupDrop; hideWhenEmpty?: boolean };
+
+// The priority group a task stands in: low counts as normal
+export function priorityGroupOf(task: Pick<Thought, 'priority'>): PriorityLevel {
+  return task.priority === 'urgent' || task.priority === 'high' ? task.priority : 'normal';
+}
 
 // A task opened from outside the shown list (a link, the search) is not in the list's tasks; every
 // update of the list (a new array or a function of the old one) is applied to it as well, so its detail
@@ -136,15 +146,19 @@ export function groupTasks(tasks: Thought[], groupBy: GroupBy, { lists, boardCol
   } else if (groupBy === 'status') {
     boardColumns.forEach((col) => {
       const list = tasks.filter((t) => inBoardColumn(t, col));
-      groups.push({ key: `status:${col.id}`, title: col.name, count: list.length, tasks: list, columnId: col.id });
+      groups.push({ key: `status:${col.id}`, title: col.name, count: list.length, tasks: list, drop: { kind: 'status', columnId: col.id } });
     });
   } else if (groupBy === 'priority') {
-    const urgent = tasks.filter((t) => t.priority === 'urgent');
-    const high = tasks.filter((t) => t.priority === 'high');
-    const normal = tasks.filter((t) => t.priority !== 'urgent' && t.priority !== 'high');
-    if (urgent.length > 0) groups.push({ key: 'p:urgent', title: i18n.t('tasks:listing.urgent'), count: urgent.length, tasks: urgent });
-    if (high.length > 0) groups.push({ key: 'p:high', title: i18n.t('tasks:listing.high'), count: high.length, tasks: high });
-    if (normal.length > 0) groups.push({ key: 'p:normal', title: i18n.t('common:priority.normal'), count: normal.length, tasks: normal });
+    // Empty ones only show while a task is dragged (it can be dropped there)
+    const titles: Record<string, string> = {
+      urgent: i18n.t('tasks:listing.urgent'),
+      high: i18n.t('tasks:listing.high'),
+      normal: i18n.t('common:priority.normal'),
+    };
+    (['urgent', 'high', 'normal'] as const).forEach((priority) => {
+      const list = tasks.filter((t) => priorityGroupOf(t) === priority);
+      groups.push({ key: `p:${priority}`, title: titles[priority], count: list.length, tasks: list, drop: { kind: 'priority', priority }, hideWhenEmpty: true });
+    });
   } else if (groupBy === 'due') {
       const today = localDay(now);
     const overdue = tasks.filter((t) => isOverdue(t.dueDate, now));

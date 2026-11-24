@@ -655,6 +655,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setTaskLists,
     onRefreshStats,
     viewMode,
+    groupBy,
     kanbanBoardRef,
     kanbanPhoneSnap,
     kanbanPhoneTop,

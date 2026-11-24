@@ -83,7 +83,14 @@ describe('task listing', () => {
       ['Zu erledigen', ['a', 'b']],
       ['Erledigt', ['c']],
     ]);
-    expect(groupTasks(tasks, 'priority', ctx())!.map((g) => g.key)).toEqual(['p:urgent', 'p:normal']);
+    // All three priority groups, the empty ones hidden until a task is dragged; low counts as normal
+    expect(
+      groupTasks(tasks, 'priority', ctx())!.map((g) => [g.key, ids(g.tasks), g.drop, g.hideWhenEmpty])
+    ).toEqual([
+      ['p:urgent', ids(tasks.filter((t) => t.priority === 'urgent')), { kind: 'priority', priority: 'urgent' }, true],
+      ['p:high', [], { kind: 'priority', priority: 'high' }, true],
+      ['p:normal', ids(tasks.filter((t) => t.priority !== 'urgent')), { kind: 'priority', priority: 'normal' }, true],
+    ]);
     expect(groupTasks(tasks, 'none', ctx())).toBeNull();
   });
 

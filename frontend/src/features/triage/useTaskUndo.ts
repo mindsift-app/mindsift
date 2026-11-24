@@ -2,14 +2,19 @@ import React, { useEffect, useRef } from 'react';
 import { useToast } from '../../components/Toast';
 import i18n from '../../i18n';
 import { api, triggerHaptic } from '../../lib/api';
-import { Thought } from '../../lib/types';
+import { PriorityLevel, Thought } from '../../lib/types';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { tasksAfterReorder } from './useTaskRealtime';
 import { MoveTracker, applyMoveAnswer, changedOrder } from './taskMoves';
 
 export type UndoEntry =
   | { kind: 'delete'; ids: string[] }
-  | { kind: 'order'; snapshot: { id: string; sortOrder: number; kanbanStatus?: string; isCompleted: boolean }[] }
+  // priority: the dragged task's priority before it was dropped in a priority group of the list view
+  | {
+      kind: 'order';
+      snapshot: { id: string; sortOrder: number; kanbanStatus?: string; isCompleted: boolean }[];
+      priority?: { id: string; priority: PriorityLevel };
+    }
   | { kind: 'status'; id: string; isCompleted: boolean; kanbanStatus?: string }
   | { kind: 'due'; id: string; dueDate: string };
 
@@ -63,12 +68,17 @@ export function useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefre
           tasks,
           entry.snapshot.map((x) => ({ id: x.id, sortOrder: x.sortOrder, kanbanStatus: x.kanbanStatus }))
         ).filter((x) => tasks.some((t) => t.id === x.id));
+        const oldPriority = entry.priority;
         setTasks((prev) =>
           prev.map((t) => {
             const old = byId.get(t.id);
-            return old ? { ...t, sortOrder: old.sortOrder, kanbanStatus: old.kanbanStatus, isCompleted: old.isCompleted } : t;
+            const moved = old ? { ...t, sortOrder: old.sortOrder, kanbanStatus: old.kanbanStatus, isCompleted: old.isCompleted } : t;
+            return oldPriority?.id === t.id ? { ...moved, priority: oldPriority.priority } : moved;
           })
         );
+        if (oldPriority) {
+          await api.updateThought(oldPriority.id, { priority: oldPriority.priority }).catch(() => void loadDataRef.current());
+        }
         if (payload.length > 0) {
           const seq = moveTracker.begin(payload);
           const res = await api.reorderTasks(payload, selectedListId !== 'all' ? selectedListId : undefined).catch(() => null);

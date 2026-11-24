@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api, triggerHaptic } from '../../lib/api';
-import { KanbanColumn, TaskList, Thought } from '../../lib/types';
+import { KanbanColumn, PriorityLevel, TaskList, Thought } from '../../lib/types';
 import { useKanbanTouchDrag } from './useKanbanTouchDrag';
 import { tasksAfterReorder } from './useTaskRealtime';
 import { MoveTracker, ReorderItem, applyMoveAnswer, changedOrder } from './taskMoves';
 import { startElementDragGhost } from '../../lib/dragGhost';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { GroupDrop, TaskGroup, priorityGroupOf } from './taskListing';
+import { GroupBy } from './taskViewTypes';
 
 // Drag & drop needs a mouse or pen; on touch-only devices a draggable row can swallow a slightly
 // longer tap, so the row would not open
@@ -23,7 +25,7 @@ interface TaskDragOptions {
   // The board column a task stands in (that of its own column), or null
   boardColumnOf: (task: Thought) => string | null;
   isTaskReadOnly: (task: Thought) => boolean;
-  pushUndo: (entry: { kind: 'order'; snapshot: OrderSnapshot }) => void;
+  pushUndo: (entry: { kind: 'order'; snapshot: OrderSnapshot; priority?: { id: string; priority: PriorityLevel } }) => void;
   orderSnapshot: () => OrderSnapshot;
   setSortBy: (sort: 'custom') => void;
   selectedListId: string;
@@ -32,6 +34,8 @@ interface TaskDragOptions {
   setTaskLists: React.Dispatch<React.SetStateAction<TaskList[]>>;
   onRefreshStats: () => void;
   viewMode: string;
+  // Grouping of the list view: a row drop takes over what the target's group stands for (status, priority)
+  groupBy: GroupBy;
   kanbanBoardRef: React.RefObject<HTMLDivElement | null>;
   kanbanPhoneSnap: boolean;
   kanbanPhoneTop: number;
@@ -57,6 +61,7 @@ export function useTaskDrag({
   setTaskLists,
   onRefreshStats,
   viewMode,
+  groupBy,
   kanbanBoardRef,
   kanbanPhoneSnap,
   kanbanPhoneTop,
@@ -73,8 +78,8 @@ export function useTaskDrag({
   const dragHeightRef = useRef(64);
   // List tab a dragged task hovers over (dropping moves it into that list)
   const [dragOverListTab, setDragOverListTab] = useState<string | null>(null);
-  // List view grouped by status: the group (board column) whose header or drop strip a dragged task
-  // hovers over (dropping moves it into that column)
+  // List view grouped by status or priority: the key of the group whose header or drop strip a dragged
+  // task hovers over (dropping moves it into that column or gives it that priority)
   const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
 
   const handleDropOnListTab = async (e: React.DragEvent, list: TaskList) => {
@@ -155,13 +160,43 @@ export function useTaskDrag({
     setDraggingTaskId(null);
     setDragOverTaskTarget(null);
     setDragOverKanbanCol(null);
-    // Dropped on a row, the task goes into the target's board column, as the column of its own list (like
-    // a drop on a status group); if its list has no such column, it only changes its place
+    // Dropped on a row of a grouped list, the task takes over what the target's group stands for, like a
+    // drop on that group's header: by status the target's board column (as the column of its own list; if
+    // its list has none, it only changes its place), by priority the target's priority. Otherwise (flat
+    // list, other groupings, calendar) it only changes its place.
+    let priority: PriorityLevel | undefined;
     if (!newKanbanCol && sourceId) {
-      const boardCol = boardColumnOf(targetTask);
-      newKanbanCol = (boardCol && ownColumnIdFor(tasks.find((t) => t.id === sourceId), boardCol)) || undefined;
+      const change = groupChange(sourceId, rowGroupDrop(targetTask));
+      newKanbanCol = change?.column;
+      priority = change?.priority;
     }
-    await moveTaskNextTo(sourceId, targetTask, position, newKanbanCol);
+    await moveTaskNextTo(sourceId, targetTask, position, newKanbanCol, priority);
+  };
+
+  // The group a row stands in, as a drop target: only in the list view grouped by status or priority (a row
+  // stands for its group like the header, whoever may change the task in it)
+  const rowGroupDrop = (target: Thought): GroupDrop | null => {
+    if (viewMode !== 'list') return null;
+    if (groupBy === 'status') {
+      const columnId = boardColumnOf(target);
+      return columnId ? { kind: 'status', columnId } : null;
+    }
+    if (groupBy === 'priority') return { kind: 'priority', priority: priorityGroupOf(target) };
+    return null;
+  };
+
+  // What a drop on a group changes for the dragged task: the column of its own list behind a status group
+  // (null if its list has none: no drop), or the priority of a priority group (nothing if it already
+  // stands there, so a low one stays low within "Normal"; null for a task the person may not change)
+  const groupChange = (sourceId: string | null, drop: GroupDrop | null): { column?: string; priority?: PriorityLevel } | null => {
+    const source = tasks.find((t) => t.id === sourceId);
+    if (!source || !drop) return null;
+    if (drop.kind === 'status') {
+      const column = ownColumnIdFor(source, drop.columnId);
+      return column ? { column } : null;
+    }
+    if (isTaskReadOnly(source)) return null;
+    return priorityGroupOf(source) === drop.priority ? {} : { priority: drop.priority };
   };
 
   // Saves a move and takes the places from the server's answer: tasks deleted meanwhile drop out, the done
@@ -185,8 +220,15 @@ export function useTaskDrag({
   };
 
   // Shared by mouse drag & drop and the touch drag on the Kanban board; without a column (newKanbanCol, one
-  // of the task's own list) the task keeps its status and only changes its place
-  const moveTaskNextTo = async (sourceId: string | null, targetTask: Thought, position: 'before' | 'after', newKanbanCol?: string) => {
+  // of the task's own list) the task keeps its status and only changes its place, without a priority (a
+  // drop in a priority group of the list view) it keeps its priority
+  const moveTaskNextTo = async (
+    sourceId: string | null,
+    targetTask: Thought,
+    position: 'before' | 'after',
+    newKanbanCol?: string,
+    priority?: PriorityLevel
+  ) => {
     if (!sourceId || sourceId === targetTask.id) return;
     triggerHaptic(15);
 
@@ -204,17 +246,27 @@ export function useTaskDrag({
       isCompleted: newKanbanCol
         ? !!columnsFor(sourceTask).find((c) => c.id === newKanbanCol)?.isDone || newKanbanCol === 'done'
         : sourceTask.isCompleted,
+      priority: priority ?? sourceTask.priority,
     };
 
     const newTasks = [...remainingTasks];
     newTasks.splice(insertIdx, 0, updatedSourceTask);
+    await applyMove(sourceTask, newTasks, priority);
+  };
 
+  // Shows a move at once and saves it: places and columns in one reorder call, a new priority with the
+  // task. Undo puts both back.
+  const applyMove = async (sourceTask: Thought, newTasks: Thought[], priority?: PriorityLevel) => {
     const updatedWithSort = newTasks.map((t, idx) => ({
       ...t,
       sortOrder: idx,
     }));
 
-    pushUndo({ kind: 'order', snapshot: orderSnapshot() });
+    pushUndo({
+      kind: 'order',
+      snapshot: orderSnapshot(),
+      ...(priority ? { priority: { id: sourceTask.id, priority: sourceTask.priority } } : {}),
+    });
     setTasks(updatedWithSort);
     setSortBy('custom');
 
@@ -224,7 +276,14 @@ export function useTaskDrag({
       kanbanStatus: t.kanbanStatus,
     }));
 
-    await saveOrder(tasks, reorderPayload);
+    await Promise.all([
+      saveOrder(tasks, reorderPayload),
+      priority &&
+        api
+          .updateThought(sourceTask.id, { priority })
+          .then(() => onRefreshStats())
+          .catch(() => void loadDataRef.current()),
+    ]);
   };
 
   const resetKanbanDrag = () => {
@@ -299,26 +358,26 @@ export function useTaskDrag({
     }
   };
 
-  // Whether the dragged task can go into a status group of the list view: its list needs a column of
-  // that name (in "Alle Aufgaben" the groups are the columns of all lists joined by name)
-  const canDropInGroup = (colId: string) =>
-    !!draggingTaskId && !!ownColumnIdFor(tasks.find((t) => t.id === draggingTaskId), colId);
+  // Whether the dragged task can go into a group of the list view: a status group if its list has a
+  // column of that name (in "Alle Aufgaben" the groups are the columns of all lists joined by name), a
+  // priority group if the person may change the task
+  const canDropInGroup = (drop: GroupDrop) => !!draggingTaskId && !!groupChange(draggingTaskId, drop);
 
-  const handleGroupDragOver = (e: React.DragEvent, colId: string) => {
-    if (!canDropInGroup(colId)) return;
+  const handleGroupDragOver = (e: React.DragEvent, group: TaskGroup) => {
+    if (!group.drop || !canDropInGroup(group.drop)) return;
     e.preventDefault();
-    if (dragOverGroup !== colId) setDragOverGroup(colId);
+    if (dragOverGroup !== group.key) setDragOverGroup(group.key);
   };
 
-  const handleGroupDragLeave = (e: React.DragEvent, colId: string) => {
+  const handleGroupDragLeave = (e: React.DragEvent, group: TaskGroup) => {
     // Moving onto a child of the target is no leaving
     if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-    setDragOverGroup((cur) => (cur === colId ? null : cur));
+    setDragOverGroup((cur) => (cur === group.key ? null : cur));
   };
 
-  // A task dropped on a status group's header (or the strip below it) moves into that column, after the
-  // group's last task; into an empty group it simply goes
-  const handleDropOnGroup = async (e: React.DragEvent, colId: string, groupTasks: Thought[]) => {
+  // A task dropped on a group's header (or the strip below it) moves into that column or takes that
+  // priority, after the group's last task; into an empty group it simply goes
+  const handleDropOnGroup = async (e: React.DragEvent, group: TaskGroup) => {
     e.preventDefault();
     e.stopPropagation();
     const sourceId =
@@ -326,12 +385,11 @@ export function useTaskDrag({
     setDraggingTaskId(null);
     setDragOverTaskTarget(null);
     setDragOverGroup(null);
-    if (!sourceId) return;
-    const ownColId = ownColumnIdFor(tasks.find((t) => t.id === sourceId), colId);
-    if (!ownColId) return;
-    const others = groupTasks.filter((t) => t.id !== sourceId);
-    if (others.length === 0) await moveTaskToColumn(sourceId, ownColId);
-    else await moveTaskNextTo(sourceId, others[others.length - 1], 'after', ownColId);
+    const change = groupChange(sourceId, group.drop ?? null);
+    if (!sourceId || !change) return;
+    const others = group.tasks.filter((t) => t.id !== sourceId);
+    if (others.length === 0) await moveTaskToColumn(sourceId, change.column, change.priority);
+    else await moveTaskNextTo(sourceId, others[others.length - 1], 'after', change.column, change.priority);
   };
 
   // A drag that ends outside any column (Escape, dropped elsewhere) leaves nothing behind
@@ -350,40 +408,25 @@ export function useTaskDrag({
     };
   }, [draggingTaskId]);
 
-  const moveTaskToColumn = async (sourceId: string | null, colId: string) => {
+  // Puts the task first, into the column colId (one of its own list) and with the priority where given: an
+  // empty Kanban column or an empty group of the list view
+  const moveTaskToColumn = async (sourceId: string | null, colId?: string, priority?: PriorityLevel) => {
     if (!sourceId) return;
     triggerHaptic(15);
 
     const sourceTask = tasks.find((t) => t.id === sourceId);
     if (!sourceTask) return;
 
-    const targetCol = columnsFor(sourceTask).find((c) => c.id === colId);
+    const targetCol = colId ? columnsFor(sourceTask).find((c) => c.id === colId) : undefined;
     const isDone = targetCol ? !!targetCol.isDone : colId === 'done';
     const updatedSourceTask: Thought = {
       ...sourceTask,
-      kanbanStatus: colId,
-      isCompleted: isDone,
+      ...(colId ? { kanbanStatus: colId, isCompleted: isDone } : {}),
+      priority: priority ?? sourceTask.priority,
     };
 
     const remainingTasks = tasks.filter((t) => t.id !== sourceId);
-    const newTasks = [updatedSourceTask, ...remainingTasks];
-
-    const updatedWithSort = newTasks.map((t, idx) => ({
-      ...t,
-      sortOrder: idx,
-    }));
-
-    pushUndo({ kind: 'order', snapshot: orderSnapshot() });
-    setTasks(updatedWithSort);
-    setSortBy('custom');
-
-    const reorderPayload = updatedWithSort.map((t) => ({
-      id: t.id,
-      sortOrder: t.sortOrder ?? 0,
-      kanbanStatus: t.kanbanStatus,
-    }));
-
-    await saveOrder(tasks, reorderPayload);
+    await applyMove(sourceTask, [updatedSourceTask, ...remainingTasks], priority);
   };
 
   // Kanban with a finger: hold a card, drag it, let go (mouse and pen use HTML5 drag & drop)
