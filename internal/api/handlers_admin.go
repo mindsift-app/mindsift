@@ -67,16 +67,13 @@ func (s *Server) handleAdminRenameOrganization(w http.ResponseWriter, r *http.Re
 func (s *Server) handleAdminDeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "id")
 	name := s.organizationName(orgID)
-	members := s.store.OrganizationMemberIDs(orgID)
-	if err := s.store.DeleteOrganization(orgID); err != nil {
+	// Only the people whose shares or groups went (none when another organization still connects them)
+	concerned, err := s.store.DeleteOrganization(orgID)
+	if err != nil {
 		writeInternal(w, err)
 		return
 	}
-	s.dropLostAllRooms()
-	// Only its members can have lost shares or groups (with each other)
-	if len(members) > 0 {
-		s.tellAccessChanged(members)
-	}
+	s.accessLost(concerned)
 	if name != "" {
 		s.audit(r, storage.AuditOrgDeleted, auditOrgTarget(orgID, name), nil)
 	}
@@ -125,18 +122,13 @@ func (s *Server) handleAdminRemoveOrganizationMember(w http.ResponseWriter, r *h
 		writeJSON(w, http.StatusOK, map[string]int64{"affected": n})
 		return
 	}
-	// What goes is between this person and the other members (shares, the organization's groups)
-	affected, _ := s.store.RemoveOrganizationMemberImpact(orgID, userID)
-	members := s.store.OrganizationMemberIDs(orgID)
-	if err := s.store.RemoveOrganizationMember(orgID, userID); err != nil {
+	// Only the people whose shares or groups went with it (none when nothing depended on it)
+	concerned, err := s.store.RemoveOrganizationMember(orgID, userID)
+	if err != nil {
 		writeInternal(w, err)
 		return
 	}
-	// Shares and group memberships across the organization went with it, for others as well
-	s.dropLostAllRooms()
-	if affected > 0 {
-		s.tellAccessChanged(append(members, userID))
-	}
+	s.accessLost(concerned)
 	s.auditOrgMember(r, storage.AuditOrgMemberRemoved, orgID, userID)
 	writeJSON(w, http.StatusOK, map[string]bool{"removed": true})
 }
@@ -453,12 +445,12 @@ func (s *Server) handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 // line). Its backups stay for the retention period, so a mistake can be undone; a rejected registration
 // has nothing worth keeping. u is the account as read before (nil when it was not found).
 func (s *Server) deleteAccount(userID string, u *domain.User, now time.Time) error {
+	partners := s.accountPartners(userID)
 	if err := s.store.DeleteUser(userID); err != nil {
 		return err
 	}
 	// The account's lists and notes are gone for everyone it shared them with
-	s.dropLostAllRooms()
-	s.tellAccessChanged(nil)
+	s.accessLost(partners)
 	if u != nil && !s.store.IsPendingRegistration(userID) {
 		s.keepUserBackups(u, now)
 	} else {
@@ -813,15 +805,12 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	}
 	// A stricter mode takes away what is no longer allowed (shares, group memberships, assignments)
 	if settings.SharingMode != previousMode {
-		pruned, err := s.store.PruneSharing(settings.SharingMode, false)
+		_, concerned, err := s.store.PruneSharingPeople(settings.SharingMode)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "Freigaben konnten nicht angepasst werden: "+clientMessage(err))
 			return
 		}
-		s.dropLostAllRooms()
-		if pruned > 0 {
-			s.tellAccessChanged(nil)
-		}
+		s.accessLost(concerned)
 	}
 	saved, _ := s.store.GetSystemSettings()
 	if saved == nil {

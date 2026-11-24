@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -119,10 +120,10 @@ func (s *Store) GetDiscoverableUsers(viewerID string) ([]domain.User, error) {
 	return users, nil
 }
 
-// connectedSQL lists everyone who works on something together with the user (?): people with access to
-// the same shared note, shared folder, task list or list, and members of the same groups. Their names
-// may show wherever they appear together, without making them findable.
-const connectedSQL = `
+// sharingAccessCTE is everyone's access through sharing: a row per resource ('d:' note, 'f:' shared
+// folder, 't:' task list, 'l:' list, 'g:' group, each with its id) and person (owner, the people it is
+// shared with, directly or through a group, and the members of a group).
+const sharingAccessCTE = `
 WITH access(res, uid) AS (
 	SELECT 'd:' || doc_id, user_id FROM doc_shares
 	UNION SELECT 'd:' || s.doc_id, tm.user_id FROM doc_team_shares s JOIN team_members tm ON tm.team_id = s.team_id
@@ -142,7 +143,32 @@ WITH access(res, uid) AS (
 	UNION SELECT 'l:' || id, user_id FROM lists WHERE id IN (SELECT list_id FROM list_shares)
 	UNION SELECT 'g:' || team_id, user_id FROM team_members
 )
-SELECT DISTINCT b.uid FROM access a JOIN access b ON b.res = a.res WHERE a.uid = ? AND b.uid != a.uid`
+`
+
+// connectedSQL lists everyone who works on something together with the user (?): people with access to
+// the same shared note, shared folder, task list or list, and members of the same groups. Their names
+// may show wherever they appear together, without making them findable.
+const connectedSQL = sharingAccessCTE +
+	`SELECT DISTINCT b.uid FROM access a JOIN access b ON b.res = a.res WHERE a.uid = ? AND b.uid != a.uid`
+
+// ConnectedUserIDs lists everyone connected to the user through something shared (connectedSQL): the
+// people whose shares, groups or member lists change when the account goes.
+func (s *Store) ConnectedUserIDs(userID string) ([]string, error) {
+	rows, err := s.db.Query(connectedSQL, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
 
 // GetDirectory returns the people whose names the viewer may see: with search on everyone the viewer
 // may share with (Findable), plus everyone connected through something shared, sorted by name.
@@ -227,7 +253,7 @@ func (s *Store) PruneSharing(mode string, dryRun bool) (int64, error) {
 		return 0, err
 	}
 	defer tx.Rollback()
-	affected, err := s.pruneSharingTx(tx, mode)
+	affected, err := s.pruneSharingTx(tx, mode, nil)
 	if err != nil || dryRun {
 		return affected, err
 	}
@@ -238,27 +264,59 @@ func (s *Store) PruneSharing(mode string, dryRun bool) (int64, error) {
 	return affected, nil
 }
 
+// PruneSharingPeople is PruneSharing that also returns the people the removal concerns (pruneSharingTx),
+// so the server tells only them.
+func (s *Store) PruneSharingPeople(mode string) (int64, []string, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, nil, err
+	}
+	defer tx.Rollback()
+	who := map[string]bool{}
+	affected, err := s.pruneSharingTx(tx, mode, who)
+	if err != nil {
+		return 0, nil, err
+	}
+	people, err := sharingPeopleTx(tx, who)
+	if err != nil {
+		return 0, nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, nil, err
+	}
+	s.PruneTaskAssignees()
+	return affected, people, nil
+}
+
 // pruneSharingTx removes inside tx what mode no longer allows and returns how many shares and group
-// memberships that were.
-func (s *Store) pruneSharingTx(tx *sql.Tx, mode string) (int64, error) {
+// memberships that were. With who it also collects, before each removal, what the removed rows
+// concern: the resource ("d:<note>", "g:<group>", ... as in sharingAccessCTE) and the people (owner,
+// the person or the group members it was shared with, the member who left a group); sharingPeopleTx
+// turns that into people.
+func (s *Store) pruneSharingTx(tx *sql.Tx, mode string, who map[string]bool) (int64, error) {
 	mode = NormalizeSharingMode(mode)
-	var stmts []string
+	// each removal with the query of what it concerns: rows of (resource, person, person)
+	type removal struct{ del, concerns string }
+	var removals []removal
 	switch mode {
 	case SharingPrivate:
-		stmts = append(stmts, `DELETE FROM team_members`)
+		removals = append(removals, removal{`DELETE FROM team_members`,
+			`SELECT 'g:' || team_id, user_id, NULL FROM team_members`})
 	case SharingOrganizations:
 		// A group belongs to one organization (teams.org_id); its members must be in it
-		stmts = append(stmts, `DELETE FROM team_members WHERE NOT EXISTS (SELECT 1 FROM organization_members m
-			WHERE m.user_id = team_members.user_id AND m.org_id = (SELECT org_id FROM teams WHERE id = team_members.team_id))`)
+		cond := `NOT EXISTS (SELECT 1 FROM organization_members m
+			WHERE m.user_id = team_members.user_id AND m.org_id = (SELECT org_id FROM teams WHERE id = team_members.team_id))`
+		removals = append(removals, removal{`DELETE FROM team_members WHERE ` + cond,
+			`SELECT 'g:' || team_id, user_id, NULL FROM team_members WHERE ` + cond})
 	}
 
-	type shareTable struct{ table, owner, userCol, teamCol string }
+	type shareTable struct{ table, res, owner, userCol, teamCol string }
 	tables := []shareTable{
-		{"doc_shares", "(SELECT user_id FROM documents WHERE id = doc_shares.doc_id)", "doc_shares.user_id", ""},
-		{"doc_team_shares", "(SELECT user_id FROM documents WHERE id = doc_team_shares.doc_id)", "", "doc_team_shares.team_id"},
-		{"task_list_shares", "(SELECT user_id FROM task_lists WHERE id = task_list_shares.task_list_id)", "task_list_shares.target_id", "task_list_shares.target_id"},
-		{"list_shares", "(SELECT user_id FROM lists WHERE id = list_shares.list_id)", "list_shares.target_id", "list_shares.target_id"},
-		{"workspace_folder_shares", "(SELECT owner_id FROM workspace_shared_folders WHERE id = workspace_folder_shares.folder_id)", "workspace_folder_shares.target_id", "workspace_folder_shares.target_id"},
+		{"doc_shares", "'d:' || doc_shares.doc_id", "(SELECT user_id FROM documents WHERE id = doc_shares.doc_id)", "doc_shares.user_id", ""},
+		{"doc_team_shares", "'d:' || doc_team_shares.doc_id", "(SELECT user_id FROM documents WHERE id = doc_team_shares.doc_id)", "", "doc_team_shares.team_id"},
+		{"task_list_shares", "'t:' || task_list_shares.task_list_id", "(SELECT user_id FROM task_lists WHERE id = task_list_shares.task_list_id)", "task_list_shares.target_id", "task_list_shares.target_id"},
+		{"list_shares", "'l:' || list_shares.list_id", "(SELECT user_id FROM lists WHERE id = list_shares.list_id)", "list_shares.target_id", "list_shares.target_id"},
+		{"workspace_folder_shares", "'f:' || workspace_folder_shares.folder_id", "(SELECT owner_id FROM workspace_shared_folders WHERE id = workspace_folder_shares.folder_id)", "workspace_folder_shares.target_id", "workspace_folder_shares.target_id"},
 	}
 	for _, t := range tables {
 		hasType := t.userCol != "" && t.teamCol != ""
@@ -267,20 +325,28 @@ func (s *Store) pruneSharingTx(tx *sql.Tx, mode string) (int64, error) {
 			if hasType {
 				cond = "target_type = 'user' AND " + cond
 			}
-			stmts = append(stmts, fmt.Sprintf(`DELETE FROM %s WHERE %s`, t.table, cond))
+			removals = append(removals, removal{fmt.Sprintf(`DELETE FROM %s WHERE %s`, t.table, cond),
+				fmt.Sprintf(`SELECT %s, %s, %s FROM %s WHERE %s`, t.res, t.owner, t.userCol, t.table, cond)})
 		}
 		if t.teamCol != "" {
 			cond := fmt.Sprintf(`NOT EXISTS (SELECT 1 FROM team_members WHERE team_id = %s AND user_id = %s)`, t.teamCol, t.owner)
 			if hasType {
 				cond = "target_type = 'team' AND " + cond
 			}
-			stmts = append(stmts, fmt.Sprintf(`DELETE FROM %s WHERE %s`, t.table, cond))
+			removals = append(removals, removal{fmt.Sprintf(`DELETE FROM %s WHERE %s`, t.table, cond),
+				fmt.Sprintf(`SELECT %s, %s, tm.user_id FROM %s LEFT JOIN team_members tm ON tm.team_id = %s WHERE %s`,
+					t.res, t.owner, t.table, t.teamCol, cond)})
 		}
 	}
 
 	var affected int64
-	for _, q := range stmts {
-		res, err := tx.Exec(q)
+	for _, r := range removals {
+		if who != nil {
+			if err := collectConcerned(tx, r.concerns, who); err != nil {
+				return 0, fmt.Errorf("prune sharing: %w", err)
+			}
+		}
+		res, err := tx.Exec(r.del)
 		if err != nil {
 			return 0, fmt.Errorf("prune sharing: %w", err)
 		}
@@ -298,11 +364,86 @@ func (s *Store) pruneSharingTx(tx *sql.Tx, mode string) (int64, error) {
 	return affected, nil
 }
 
+// collectConcerned adds what the rows of q (resource, person, person; persons may be NULL) concern to
+// who: resources as "res:<key>", people as "uid:<id>".
+func collectConcerned(tx *sql.Tx, q string, who map[string]bool) error {
+	rows, err := tx.Query(q)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var res string
+		var a, b sql.NullString
+		if err := rows.Scan(&res, &a, &b); err != nil {
+			return err
+		}
+		who["res:"+res] = true
+		for _, p := range []sql.NullString{a, b} {
+			if p.Valid && p.String != "" {
+				who["uid:"+p.String] = true
+			}
+		}
+	}
+	return rows.Err()
+}
+
+// sharingPeopleTx turns what pruneSharingTx collected into people: those named, and everyone who still
+// has access to one of the resources (they see its member list change).
+func sharingPeopleTx(tx *sql.Tx, who map[string]bool) ([]string, error) {
+	people := map[string]bool{}
+	var resources []string
+	for k := range who {
+		if id, ok := strings.CutPrefix(k, "uid:"); ok {
+			people[id] = true
+		} else if res, ok := strings.CutPrefix(k, "res:"); ok {
+			resources = append(resources, res)
+		}
+	}
+	if len(resources) > 0 {
+		raw, err := json.Marshal(resources)
+		if err != nil {
+			return nil, err
+		}
+		rows, err := tx.Query(sharingAccessCTE+`SELECT DISTINCT uid FROM access WHERE res IN (SELECT value FROM json_each(?))`, string(raw))
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				return nil, err
+			}
+			people[id] = true
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+	out := make([]string, 0, len(people))
+	for id := range people {
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
 // pruneSharingNow applies the current mode after a membership or organization change.
 func (s *Store) pruneSharingNow() {
 	if _, err := s.PruneSharing(s.SharingMode(), false); err != nil {
 		slog.Error("Applying the sharing mode failed", "error", err)
 	}
+}
+
+// pruneSharingNowPeople is pruneSharingNow that returns the people the removal concerns
+// (PruneSharingPeople); none when nothing was removed or it failed (logged).
+func (s *Store) pruneSharingNowPeople() []string {
+	_, people, err := s.PruneSharingPeople(s.SharingMode())
+	if err != nil {
+		slog.Error("Applying the sharing mode failed", "error", err)
+	}
+	return people
 }
 
 // --- ORGANIZATIONS (managed by server admins and user managers) ---
@@ -416,16 +557,16 @@ func (s *Store) RenameOrganization(orgID, name string) error {
 var ErrOrganizationNotFound = errors.New("Organisation nicht gefunden")
 
 // DeleteOrganization removes the organization; its members lose what they shared with each other
-// unless another organization still connects them. Its groups go with it.
-func (s *Store) DeleteOrganization(orgID string) error {
+// unless another organization still connects them. Its groups go with it. Returns the people whose
+// shares or groups changed (PruneSharingPeople), none when nothing went.
+func (s *Store) DeleteOrganization(orgID string) ([]string, error) {
 	if err := s.execInTx(
 		stmt(`DELETE FROM organization_members WHERE org_id = ?`, orgID),
 		stmt(`DELETE FROM organizations WHERE id = ?`, orgID),
 	); err != nil {
-		return err
+		return nil, err
 	}
-	s.pruneSharingNow()
-	return nil
+	return s.pruneSharingNowPeople(), nil
 }
 
 func (s *Store) organizationExists(orgID string) bool {
@@ -463,13 +604,13 @@ func (s *Store) JoinOrganization(orgID, userID string) (bool, error) {
 }
 
 // RemoveOrganizationMember takes a user out of an organization. Shares, groups and task assignments
-// that depended on it go, unless another common organization keeps them allowed.
-func (s *Store) RemoveOrganizationMember(orgID, userID string) error {
+// that depended on it go, unless another common organization keeps them allowed. Returns the people
+// whose shares or groups changed (PruneSharingPeople), none when nothing went.
+func (s *Store) RemoveOrganizationMember(orgID, userID string) ([]string, error) {
 	if _, err := s.db.Exec(`DELETE FROM organization_members WHERE org_id = ? AND user_id = ?`, orgID, userID); err != nil {
-		return err
+		return nil, err
 	}
-	s.pruneSharingNow()
-	return nil
+	return s.pruneSharingNowPeople(), nil
 }
 
 // RemoveOrganizationMemberImpact counts what RemoveOrganizationMember would take away (shares and
@@ -484,7 +625,7 @@ func (s *Store) RemoveOrganizationMemberImpact(orgID, userID string) (int64, err
 	if _, err := tx.Exec(`DELETE FROM organization_members WHERE org_id = ? AND user_id = ?`, orgID, userID); err != nil {
 		return 0, err
 	}
-	return s.pruneSharingTx(tx, mode)
+	return s.pruneSharingTx(tx, mode, nil)
 }
 
 // OrganizationMemberIDs lists the members of an organization.

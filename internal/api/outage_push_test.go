@@ -120,13 +120,12 @@ func TestTaskAlarmPushGoesOnPastAPushServiceThatIsDown(t *testing.T) {
 	}
 	at := func(min int) time.Time { return time.Date(2026, 12, 10, 9, min, 0, 0, clock.Location()) }
 
-	start := time.Now()
 	srv.checkAlarms(at(30))
-	if took := time.Since(start); took >= 2*wait {
-		t.Errorf("the run waited for every device on the down push service: %v", took)
-	}
+	// Each attempt at the down service waits once (pushServices.RoundTrip), so one attempt means the run
+	// did not wait for every device there. Counted, not timed: under the race detector the rest of a run
+	// (encrypting the payloads, the database) alone took longer than two waits.
 	if n := push.attempts("down.push.example"); n != 1 {
-		t.Fatalf("one attempt at the down push service per run: %d", n)
+		t.Fatalf("one attempt at the down push service per run (the run waits for each): %d", n)
 	}
 	if push.received("/cleo") != 1 || push.received("/dora") != 1 {
 		t.Fatalf("the devices on the other push service get their alarm in the same run: %v", push.got)

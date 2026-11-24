@@ -3,6 +3,8 @@ package storage
 import (
 	"errors"
 	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -109,7 +111,7 @@ func TestVisibilityFollowsOrganizations(t *testing.T) {
 	if err := store.AddOrganizationMember(org2.ID, ben.ID); err != nil {
 		t.Fatalf("AddOrganizationMember failed: %v", err)
 	}
-	if err := store.RemoveOrganizationMember(org1.ID, ben.ID); err != nil {
+	if _, err := store.RemoveOrganizationMember(org1.ID, ben.ID); err != nil {
 		t.Fatalf("RemoveOrganizationMember failed: %v", err)
 	}
 	if shares, _ := store.GetDocShares(doc.ID); len(shares) != 0 {
@@ -263,9 +265,14 @@ func TestSeveralOrganizations(t *testing.T) {
 		t.Fatalf("the preview must not change anything, shares: %+v", shares)
 	}
 
-	// Leaving the family takes the share with Anna and the group, the company keeps Carl
-	if err := store.RemoveOrganizationMember(family.ID, ben.ID); err != nil {
+	// Leaving the family takes the share with Anna and the group, the company keeps Carl. Concerned: Ben
+	// and Anna, and Carl, who still has the note and sees its people change
+	concerned, err := store.RemoveOrganizationMember(family.ID, ben.ID)
+	if err != nil {
 		t.Fatalf("RemoveOrganizationMember: %v", err)
+	}
+	if want := sortedIDs(anna.ID, ben.ID, carl.ID); strings.Join(concerned, ",") != strings.Join(want, ",") {
+		t.Errorf("concerned by leaving the family: %v, want %v", concerned, want)
 	}
 	shares, _ := store.GetDocShares(doc.ID)
 	if len(shares) != 1 || shares[0].UserID != carl.ID {
@@ -275,11 +282,72 @@ func TestSeveralOrganizations(t *testing.T) {
 		t.Errorf("Ben should have left the family group, members: %+v", members)
 	}
 
-	// Deleting the organization frees its members
-	if err := store.DeleteOrganization(work.ID); err != nil {
+	// Deleting the organization frees its members; only the share between Ben and Carl went
+	concerned, err = store.DeleteOrganization(work.ID)
+	if err != nil {
 		t.Fatalf("DeleteOrganization: %v", err)
+	}
+	if want := sortedIDs(ben.ID, carl.ID); strings.Join(concerned, ",") != strings.Join(want, ",") {
+		t.Errorf("concerned by deleting the company: %v, want %v", concerned, want)
+	}
+	// The family's group goes with the family: only Anna, its last member, is concerned
+	if concerned, err := store.DeleteOrganization(family.ID); err != nil || strings.Join(concerned, ",") != anna.ID {
+		t.Errorf("deleting the family: %v (%v), want only Anna", concerned, err)
+	}
+	// Nothing left to take away: nobody concerned
+	empty, _ := store.CreateOrganization("Leer")
+	_ = store.AddOrganizationMember(empty.ID, ben.ID)
+	if concerned, err := store.DeleteOrganization(empty.ID); err != nil || concerned == nil || len(concerned) != 0 {
+		t.Errorf("deleting an organization without shares or groups: %v (%v), want nobody", concerned, err)
 	}
 	if store.CanSee(ben.ID, carl.ID) {
 		t.Errorf("without a common organization Ben and Carl must not see each other")
+	}
+}
+
+func sortedIDs(ids ...string) []string {
+	sort.Strings(ids)
+	return ids
+}
+
+// The people of an account: everyone it shares something with or is in a group with, not the others.
+func TestConnectedUserIDs(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "connected.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	setSharingMode(t, store, SharingOpen)
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	ben, _ := store.CreateUser("ben@example.com", "hash", "Ben", "member")
+	carl, _ := store.CreateUser("carl@example.com", "hash", "Carl", "member")
+	dora, _ := store.CreateUser("dora@example.com", "hash", "Dora", "member")
+	eve, _ := store.CreateUser("eve@example.com", "hash", "Eve", "member")
+	org, _ := store.CreateOrganization("Firma")
+	for _, u := range []string{anna.ID, ben.ID, carl.ID, dora.ID, eve.ID} {
+		_ = store.AddOrganizationMember(org.ID, u)
+	}
+	if ids, err := store.ConnectedUserIDs(anna.ID); err != nil || ids == nil || len(ids) != 0 {
+		t.Fatalf("nothing shared yet: %v (%v), want an empty list", ids, err)
+	}
+	// Anna shares a note with Ben; Carl shares a list with Anna; Dora is in a group with Anna
+	doc, _ := store.CreateDocument(anna.ID, "", "Notiz", "", "", nil, nil, false)
+	if _, err := store.CreateDocShare(anna.ID, doc.ID, ben.ID, "read"); err != nil {
+		t.Fatal(err)
+	}
+	list, _ := store.CreateList(carl.ID, "Einkauf", "", "shopping")
+	if _, err := store.AddListShare(carl.ID, list.ID, "user", anna.ID, "editor"); err != nil {
+		t.Fatal(err)
+	}
+	team, _ := store.CreateTeam(org.ID, "WG", "")
+	_ = store.AddTeamMember(team.ID, anna.ID, "admin")
+	_ = store.AddTeamMember(team.ID, dora.ID, "member")
+	ids, err := store.ConnectedUserIDs(anna.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sort.Strings(ids)
+	if want := sortedIDs(ben.ID, carl.ID, dora.ID); strings.Join(ids, ",") != strings.Join(want, ",") {
+		t.Errorf("connected to Anna: %v, want Ben, Carl and Dora (not Eve)", ids)
 	}
 }

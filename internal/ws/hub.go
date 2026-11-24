@@ -17,23 +17,27 @@ import (
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  4096,
-	WriteBufferSize: 4096,
-	CheckOrigin: func(r *http.Request) bool {
-		return originCheck(r)
-	},
+// SetOriginCheck installs the origin rule for WebSocket upgrades. Without one every origin is accepted:
+// proxies often rewrite the Host header, so a plain same-host comparison would break working setups.
+func (h *Hub) SetOriginCheck(f func(*http.Request) bool) {
+	h.mu.Lock()
+	h.originCheck = f
+	h.mu.Unlock()
 }
 
-// originCheck decides which browser origins may open a WebSocket (see SetOriginCheck). Without a
-// configured check every origin is accepted: proxies often rewrite the Host header, so a plain
-// same-host comparison would break working setups.
-var originCheck = func(*http.Request) bool { return true }
-
-// SetOriginCheck installs the origin rule for WebSocket upgrades.
-func (h *Hub) SetOriginCheck(f func(*http.Request) bool) {
-	if f != nil {
-		originCheck = f
+// upgrader builds the WebSocket upgrader with the hub's origin rule (each hub has its own, so several
+// servers in one process, as in the tests, do not share it).
+func (h *Hub) upgrader() *websocket.Upgrader {
+	h.mu.RLock()
+	check := h.originCheck
+	h.mu.RUnlock()
+	if check == nil {
+		check = func(*http.Request) bool { return true }
+	}
+	return &websocket.Upgrader{
+		ReadBufferSize:  4096,
+		WriteBufferSize: 4096,
+		CheckOrigin:     check,
 	}
 }
 
@@ -127,6 +131,8 @@ type Hub struct {
 	messages MessageHandler
 	// delivered learns every user an event goes to (SetDeliveryListener); called with h.mu read-locked
 	delivered func(userID, event string)
+	// originCheck decides which browser origins may open a WebSocket (SetOriginCheck); nil accepts all
+	originCheck func(*http.Request) bool
 }
 
 // SetDeliveryListener installs a function that learns, for every event sent to users or rooms, which
@@ -994,7 +1000,7 @@ func (c *Client) SendEvent(event string, payload any) {
 
 func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request, roomID, userID string) {
 	hw := &hijackBatched{ResponseWriter: w}
-	conn, err := upgrader.Upgrade(hw, r, nil)
+	conn, err := h.upgrader().Upgrade(hw, r, nil)
 	if err != nil {
 		slog.Error("WebSocket upgrade error", "room_id", roomID, "user_id", userID, "error", err)
 		return

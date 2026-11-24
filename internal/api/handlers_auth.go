@@ -702,6 +702,7 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	allowLongWork(w)
+	partners := s.accountPartners(user.ID)
 	if err := s.store.DeleteOwnAccount(user.ID); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, storage.ErrLastAdmin) {
@@ -712,8 +713,7 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 	}
 	s.removeUserBackups(user.ID)
 	// The account's lists and notes are gone for everyone it shared them with
-	s.dropLostAllRooms()
-	s.tellAccessChanged(nil)
+	s.accessLost(partners)
 	slog.Info("User deleted their account", "user_id", user.ID)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }

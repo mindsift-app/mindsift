@@ -9,8 +9,9 @@ import (
 )
 
 // Shares removed in bulk by the administration reach the people concerned as ACCESS_CHANGED, so their
-// apps load their lists, notes and groups again: removing someone from an organization tells that
-// organization's members (and nobody else), a stricter sharing mode every connection.
+// apps load their lists, notes and groups again: removing someone from an organization, deleting one, a
+// stricter sharing mode and a deleted account tell the people whose shares or groups went, nobody else,
+// and nobody at all when nothing went.
 func TestAdministrationChangesSendAccessChanged(t *testing.T) {
 	_, store, ts, owner, adminToken := startRealtimeServer(t)
 	member, memberToken := newTestUser(t, store, "org-mitglied@example.com")
@@ -63,31 +64,77 @@ func TestAdministrationChangesSendAccessChanged(t *testing.T) {
 		t.Fatal("ACCESS_CHANGED although nothing was removed")
 	}
 
-	// A stricter sharing mode that removes something: every connection
-	if _, err := store.AddListShare(owner.ID, list.ID, "user", member.ID, "editor"); err == nil {
-		t.Fatal("sharing across organizations was allowed")
+	ownerStream := openSSE(t, ts, adminToken)
+	setMode := func(mode string) {
+		t.Helper()
+		sys.SharingMode = mode
+		if err := store.UpdateSystemSettings(sys); err != nil {
+			t.Fatal(err)
+		}
 	}
-	sys.SharingMode = storage.SharingOpen
-	if err := store.UpdateSystemSettings(sys); err != nil {
-		t.Fatal(err)
+	share := func() {
+		t.Helper()
+		if _, err := store.AddListShare(owner.ID, list.ID, "user", member.ID, "editor"); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if _, err := store.AddListShare(owner.ID, list.ID, "user", member.ID, "editor"); err != nil {
-		t.Fatal(err)
-	}
-	if r := doJSON(t, ts, http.MethodPut, "/api/v1/admin/settings", adminToken, map[string]string{"sharingMode": storage.SharingPrivate}); r.StatusCode != http.StatusOK {
-		t.Fatalf("stricter sharing mode: status %d", r.StatusCode)
-	}
-	for who, st := range map[string]*sseStream{"the member": memberStream, "an outsider": outsiderStream} {
-		if st.waitFor(t, eventAccessChanged, 10*time.Second) == nil {
-			t.Fatalf("%s got no ACCESS_CHANGED after a stricter sharing mode", who)
+	told := func(what string, want, notWant map[string]*sseStream) {
+		t.Helper()
+		for who, st := range want {
+			if st.waitFor(t, eventAccessChanged, 10*time.Second) == nil {
+				t.Fatalf("%s: %s got no ACCESS_CHANGED", what, who)
+			}
+		}
+		for who, st := range notWant {
+			if st.waitFor(t, eventAccessChanged, 500*time.Millisecond) != nil {
+				t.Fatalf("%s: %s got ACCESS_CHANGED", what, who)
+			}
 		}
 	}
 
-	// An account deleted: its shares are gone for everyone it shared with, every connection is told
+	// Deleting an organization: the people whose share went, not the outsider
+	if _, err := store.AddListShare(owner.ID, list.ID, "user", member.ID, "editor"); err == nil {
+		t.Fatal("sharing across organizations was allowed")
+	}
+	if err := store.AddOrganizationMember(org.ID, member.ID); err != nil {
+		t.Fatal(err)
+	}
+	share()
+	if r := doJSON(t, ts, http.MethodDelete, "/api/v1/admin/organizations/"+org.ID, adminToken, nil); r.StatusCode != http.StatusOK {
+		t.Fatalf("delete organization: status %d", r.StatusCode)
+	}
+	told("organization deleted", map[string]*sseStream{"the member": memberStream, "the owner": ownerStream},
+		map[string]*sseStream{"an outsider": outsiderStream})
+	// ... and nobody when it connected nothing that was shared
+	empty, err := store.CreateOrganization("Leer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, uid := range []string{owner.ID, member.ID} {
+		if err := store.AddOrganizationMember(empty.ID, uid); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if r := doJSON(t, ts, http.MethodDelete, "/api/v1/admin/organizations/"+empty.ID, adminToken, nil); r.StatusCode != http.StatusOK {
+		t.Fatalf("delete organization without shares: status %d", r.StatusCode)
+	}
+	told("organization without shares deleted", nil,
+		map[string]*sseStream{"the member": memberStream, "the owner": ownerStream, "an outsider": outsiderStream})
+
+	// A stricter sharing mode that removes something: the people of the share, not the outsider
+	setMode(storage.SharingOpen)
+	share()
+	if r := doJSON(t, ts, http.MethodPut, "/api/v1/admin/settings", adminToken, map[string]string{"sharingMode": storage.SharingPrivate}); r.StatusCode != http.StatusOK {
+		t.Fatalf("stricter sharing mode: status %d", r.StatusCode)
+	}
+	told("stricter sharing mode", map[string]*sseStream{"the member": memberStream, "the owner": ownerStream},
+		map[string]*sseStream{"an outsider": outsiderStream})
+
+	// An account deleted: everyone it shared with is told, not the outsider
+	setMode(storage.SharingOpen)
+	share()
 	if r := doJSON(t, ts, http.MethodDelete, "/api/v1/admin/users/"+member.ID, adminToken, nil); r.StatusCode != http.StatusOK {
 		t.Fatalf("delete account: status %d", r.StatusCode)
 	}
-	if outsiderStream.waitFor(t, eventAccessChanged, 10*time.Second) == nil {
-		t.Fatal("no ACCESS_CHANGED after an account was deleted")
-	}
+	told("account deleted", map[string]*sseStream{"the owner": ownerStream}, map[string]*sseStream{"an outsider": outsiderStream})
 }
