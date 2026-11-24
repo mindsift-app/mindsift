@@ -11,8 +11,8 @@ import type { useTaskDrag } from './useTaskDrag';
 
 
 interface TaskListViewProps {
-  // From useTaskDrag in TasksView: a task can be dropped on a status group's header (or, in an empty group,
-  // on the strip below it that shows while dragging)
+  // From useTaskDrag in TasksView: a task can be dropped on the header of a status or priority group (or,
+  // in an empty group, on the strip below it that shows while dragging)
   drag: Pick<
     ReturnType<typeof useTaskDrag>,
     'draggingTaskId' | 'dragOverGroup' | 'canDropInGroup' | 'handleGroupDragOver' | 'handleGroupDragLeave' | 'handleDropOnGroup'
@@ -70,6 +70,10 @@ export function TaskListView({
   taskTrash,
 }: TaskListViewProps) {
   const { t } = useTranslation('tasks');
+  // Empty priority groups only show while a task is dragged that may go there
+  const shownGroups = groupedTasks?.filter(
+    (grp) => grp.tasks.length > 0 || !grp.hideWhenEmpty || (!!grp.drop && drag.canDropInGroup(grp.drop))
+  );
   return (
     <div className="space-y-2">
       {/* Open, done, trash: the same switch on phones (full width, 44 px tall) and on the desktop */}
@@ -164,14 +168,15 @@ export function TaskListView({
         />
       ) : (
         <div className="space-y-3">
-          {groupedTasks && groupedTasks.length > 0 ? (
+          {shownGroups && shownGroups.length > 0 ? (
             /* GROUPED LIST */
-            groupedTasks.map((grp) => {
-              const colId = grp.columnId;
-              // Status groups take a dragged task (like the Kanban columns); one its list lacks is greyed out
-              const accepts = !!colId && drag.canDropInGroup(colId);
-              const blocked = !!colId && !!drag.draggingTaskId && !accepts;
-              const over = !!colId && drag.dragOverGroup === colId;
+            shownGroups.map((grp) => {
+              const drop = grp.drop;
+              // Status and priority groups take a dragged task (like the Kanban columns); one it may not go
+              // into (a column its list lacks) is greyed out
+              const accepts = !!drop && drag.canDropInGroup(drop);
+              const blocked = !!drop && !!drag.draggingTaskId && !accepts;
+              const over = !!drop && drag.dragOverGroup === grp.key;
               return (
                 <div
                   key={grp.key}
@@ -181,10 +186,10 @@ export function TaskListView({
                   title={blocked ? t('kanban.notInList') : undefined}
                 >
                   <div
-                    data-group-drop={colId}
-                    onDragOver={colId ? (e) => drag.handleGroupDragOver(e, colId) : undefined}
-                    onDragLeave={colId ? (e) => drag.handleGroupDragLeave(e, colId) : undefined}
-                    onDrop={colId ? (e) => void drag.handleDropOnGroup(e, colId, grp.tasks) : undefined}
+                    data-group-drop={drop ? grp.key : undefined}
+                    onDragOver={drop ? (e) => drag.handleGroupDragOver(e, grp) : undefined}
+                    onDragLeave={drop ? (e) => drag.handleGroupDragLeave(e, grp) : undefined}
+                    onDrop={drop ? (e) => void drag.handleDropOnGroup(e, grp) : undefined}
                   >
                     <div
                       className={`px-3 py-1.5 border-b border-border flex items-center justify-between transition-colors ${

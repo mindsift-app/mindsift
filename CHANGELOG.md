@@ -8,7 +8,11 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+### Added
+- Tasks: in the list view grouped by priority, dragging a task into another priority group (onto its header or next to one of its tasks) sets that priority; empty groups show up while you drag.
+
 ### Changed
+- Tasks: in the list view not grouped by status (flat, or by list, priority, due date or hashtag), dropping a task on another task's row no longer changes its status; only grouped by status does it take over the other task's status.
 - On the phone, the priority chip under a task title (list and Kanban card) is now only a label instead of a button, so a stray tap no longer changes the priority; change it in the task details there.
 - Deleting an account or an organization, taking someone out of one, or a stricter sharing mode now only makes the apps of the people whose shares or groups changed load their lists and notes again, instead of everyone who is online.
 - Signing up and redeeming an invitation now ask for the password twice, like setting a new password everywhere else: the repetition turns red as soon as it differs, and the account is only created when both match.
