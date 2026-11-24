@@ -44,8 +44,9 @@ export const LegalLinks: React.FC<LegalLinksProps> = ({ legal, className = '', c
     }
   };
 
+  // The links and buttons (the caller's too) look like small text but take taps in 44 px on phones (tap-area)
   return (
-    <div className={`flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted ${className}`}>
+    <div className={`flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted [&>a]:tap-area [&>button]:tap-area ${className}`}>
       {entries.map((e) =>
         e.url && safeHref(e.url) ? (
           <a key={e.type} href={safeHref(e.url) as string} target="_blank" rel="noopener noreferrer" className="hover:text-main underline-offset-2 hover:underline">
