@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { Trans, useTranslation } from 'react-i18next';
-import { Upload, Check, CircleAlert, FileArchive } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Upload, CircleAlert } from 'lucide-react';
 import { DATA_SECTIONS, DataSection, ImportSummary } from '../../lib/types';
 import { SectionPicker } from './SectionPicker';
-import { summaryParts } from './importSummary';
+import { RestoreConfirm, RestoreResult } from './RestoreResult';
 import { api } from '../../lib/api';
 import { errorMessage } from '../../lib/errorMessage';
+import { SettingsCard } from '../../components/SettingsCard';
 
 interface ImportCardProps {
   source: 'mindsift' | 'obsidian';
@@ -78,12 +79,10 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
   const shown = result || preview;
 
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
-      <div>
-        <h4 className="font-bold text-main">{title}</h4>
-        <p className="text-muted text-[11px] mt-0.5">{description}</p>
-      </div>
-
+    <SettingsCard
+      title={title}
+      hint={description}
+    >
       {source === 'mindsift' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label={t('import.mode')}>
           {(
@@ -180,48 +179,8 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
       )}
 
       {shown && !busy && (
-        <div
-          className={`p-3 rounded-card border text-xs space-y-2 ${
-            result ? 'border-status-ok/40 bg-status-ok/10' : 'border-border bg-panel'
-          }`}
-        >
-          <p className="font-semibold text-main flex items-center gap-1.5">
-            {result ? <Check className="w-3.5 h-3.5 text-status-ok" /> : <FileArchive className="w-3.5 h-3.5 text-accent" />}
-            <span>{result ? t('import.done') : t('import.preview', { name: file?.name })}</span>
-          </p>
-          <p className="text-muted">
-            {t(result ? 'import.created' : 'import.willCreate', { what: summaryParts(shown).join(', ') || t('import.nothing') })}
-          </p>
-          {shown.skipped.length > 0 && (
-            <details className="text-[11px] text-muted">
-              <summary className="cursor-pointer">{t('import.skipped', { count: shown.skipped.length })}</summary>
-              <ul className="mt-1 space-y-0.5 max-h-40 overflow-y-auto">
-                {shown.skipped.map((s, i) => (
-                  <li key={i}>
-                    <span className="font-mono text-main">{s.path}</span> – {s.reason}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-          {!result && restoring && (
-            <label className="flex items-start gap-2 p-2.5 rounded-card border border-status-err/40 bg-status-err/10 text-[11px] text-main cursor-pointer">
-              <input
-                type="checkbox"
-                checked={confirmRestore}
-                onChange={(e) => setConfirmRestore(e.target.checked)}
-                className="mt-0.5 w-4 h-4 shrink-0"
-              />
-              <span>
-                <Trans
-                  t={t}
-                  i18nKey="import.restoreWarning"
-                  values={{ sections: DATA_SECTIONS.filter((x) => sections.includes(x.id)).map((x) => x.label).join(', ') }}
-                  components={{ b: <strong className="text-status-err" /> }}
-                />
-              </span>
-            </label>
-          )}
+        <RestoreResult summary={shown} done={!!result} title={result ? t('import.done') : t('import.preview', { name: file?.name })}>
+          {!result && restoring && <RestoreConfirm checked={confirmRestore} onChange={setConfirmRestore} sections={sections} />}
           {!result && (
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
@@ -237,8 +196,8 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
               </button>
             </div>
           )}
-        </div>
+        </RestoreResult>
       )}
-    </div>
+    </SettingsCard>
   );
 };

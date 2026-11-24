@@ -140,6 +140,32 @@ Components: [MfaStep.tsx](../frontend/src/features/auth/MfaStep.tsx) (sign-in), 
 - Removing the last second factor says so in red in the sheet before (two-factor sign-in goes off, recovery codes and trusted devices are deleted).
 - On phones fields, buttons and the switch row are 44 px high.
 
+## Settings Cards and Rows
+
+Components: [SettingsCard.tsx](../frontend/src/components/SettingsCard.tsx) (`SettingsCard`, `SettingRow`, `SettingsHeading`)
+
+- **`SettingsCard`**: one block of a page in the account settings or the administration: frame `p-4 bg-canvas border border-border rounded-card`, the title in `font-bold text-main` (12 px like the text around it; only the page's own heading is `text-sm`), an optional icon (`w-3.5 h-3.5 text-accent`) before it, a short hint in `text-[11px] text-muted` below it and an `action` on the right (a switch, a dropdown, a "Test" button, a badge); the content follows below with `space-y-3`. `active` frames it in the accent colour (an alarm channel in use).
+- **`SettingRow`**: one setting in a line: title and hint on the left, the control (`children`) on the right; it moves below the text when both do not fit (phones). On its own it is framed like a card; `plain` leaves the frame off for rows inside a card or a list with dividers (at least 44 px high).
+- **`SettingsHeading`**: the same title, hint and action for parts of a page without a frame (the parts of Sicherheit, the server backups, the imports).
+- **Hints are short:** one short sentence at most; what needs more goes into the help (`features/help/content/<code>.tsx`). "Fixed by `ENV`" notes are appended to the hint.
+- Data attributes (`data-admin-…`) are passed on to the frame, the browser tests find the blocks by them.
+
+## Restoring a Backup
+
+Components: `RestoreResult` and `RestoreConfirm` in [RestoreResult.tsx](../frontend/src/features/settings/RestoreResult.tsx)
+
+- The box after reading or restoring (import, own server backups, the desktop app's take-over of a server account): what it would create or created, the entries left out folded below, then the caller's own lines and buttons. Neutral while it is a preview, green (`status-ok`) when done.
+- Replacing data cannot be undone, so it is never one click: a red box with the warning naming the chosen sections and a tick box; the button stays disabled until it is ticked. No second click on the same button ("Wirklich …?").
+
+## Trash
+
+Component: [TrashList.tsx](../frontend/src/components/TrashList.tsx) (`TrashList`, `EmptyTrashButton`)
+
+- The trashes of notes (`TrashView`), tasks (`TaskTrashList`) and the Quick Dump (`TriageTrash`) are one framed list with dividers; the caller only draws the entry (title, where it came from, when it was deleted). Empty: `EmptyState` with a frame.
+- Each row: "Wiederherstellen" (runs at once; on phones only its icon, so the title keeps its room) and a red bin, 44 px on phones, 32 px from `sm`. The bin deletes for good after `askConfirm` at the click ("„…“ endgültig löschen?"). No second tap on the same button, no deleting without a question.
+- "Papierkorb leeren" (`EmptyTrashButton`, the tasks' toolbar button too) asks the same way and names how many entries go. Entries one may not change (a shared task list read only) show no buttons.
+- Errors go to the red notice at the bottom (`showError`).
+
 ## Error Notice
 
 Component: [ErrorNotice.tsx](../frontend/src/components/ErrorNotice.tsx), `showError(message)` from anywhere.
@@ -172,7 +198,9 @@ Components: [Spinner.tsx](../frontend/src/components/Spinner.tsx) (`Spinner`, `L
 
 - **`Spinner`** is the only turning circle (`LoaderCircle`, `animate-spin`): sizes `xs` 12 px, `sm` 14 px (default; buttons and small rows), `md` 16 px (lists, fields), `lg` 20 px, `xl` 24 px; `tone` `accent`, `muted` or the colour of the text around it. In a button it replaces the button's icon while the action runs. With `label` it announces itself to screen readers (when no text says what loads).
 - **`LoadingState`** stands where content will appear: spinner in the accent colour and a short muted text, centered with some room, or `inline` at the start of a row (settings cards). The text is "Wird geladen …" (`common:loading`) or names what loads: "Notizen werden geladen …", "Notiz wird geladen …". German puts a space before the "…"; no "Lade …" or "Lädt …".
+- **Running actions** (a button or line while something happens) follow the same pattern: "Wird gespeichert …", "Wird hochgeladen … 25 %", "Datei wird gelesen …", "Testmail wird gesendet …"; never "Speichere…" or "Speichert …". English, Spanish, French and Italian use their usual short form without "en cours" / "in corso" and without a space ("Saving…", "Guardando…", "Enregistrement…", "Salvataggio…").
 - **`EmptyState`**: "nothing here yet" as one short centered line in `text-xs text-muted`. Inside a framed list (rows with dividers) as a row of it; on its own with `framed` (dashed frame in the theme's corners), e.g. the trash, the audit log, users and invites. Larger empty screens with an icon and a title (no tasks, the to-do rollup, the help search) keep their own layout.
+- **`EmptyState compact`**: the small, left-aligned line in menus, popovers and short lists inside a card: "Keine Treffer" in a dropdown (`SelectMenu`) and in the search popovers (`PickerPopover`, `ExtractPopover`), no unplanned tasks in the calendar's side list, no trusted devices (framed). A day without tasks in the calendar uses the normal `EmptyState`.
 
 ## Counters
 

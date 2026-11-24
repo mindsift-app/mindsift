@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LegalSettings, SystemSettings } from '../../../lib/types';
+import { SettingsCard } from '../../../components/SettingsCard';
 
 const EMPTY: LegalSettings = { imprintUrl: '', imprintContent: '', privacyUrl: '', privacyContent: '', customLinkLabel: '', customLinkUrl: '' };
 
@@ -57,11 +58,11 @@ export function LegalSettingsCard({
     />
   );
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3" data-admin-legal>
-      <div>
-        <p className="font-bold text-main">{t('server.legal.title')}</p>
-        <p className="text-[11px] text-muted mt-0.5">{t('server.legal.hint')}</p>
-      </div>
+    <SettingsCard
+      data-admin-legal
+      title={t('server.legal.title')}
+      hint={t('server.legal.hint')}
+    >
       {(['imprint', 'privacy'] as const).map((kind) => (
         <div key={kind} className="space-y-1.5 pt-3 border-t border-border">
           <p className="text-main font-semibold">{t(`server.legal.${kind}`)}</p>
@@ -104,6 +105,6 @@ export function LegalSettingsCard({
           {t('server.legal.save')}
         </button>
       </div>
-    </div>
+    </SettingsCard>
   );
 }

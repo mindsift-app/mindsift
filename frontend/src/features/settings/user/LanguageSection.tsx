@@ -4,6 +4,7 @@ import { User } from '../../../lib/types';
 import { LANGUAGES, languageName } from '../../../i18n';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { InstantSaveToast, useInstantSave } from './InstantSave';
+import { SettingRow } from '../../../components/SettingsCard';
 
 // Language of the app: own choice or the browser's ('' = browser, then the server's default); dates and
 // quantities read from typed text (lib/typedRecognition.ts), on unless switched off
@@ -66,18 +67,17 @@ export function LanguageSection({
         })}
       </div>
       <p className="text-muted">{t('language.more')}</p>
-      <div className="p-3.5 rounded-card border border-border bg-canvas flex items-center justify-between gap-4">
-        <div className="text-xs">
-          <p className="font-semibold text-main">{t('language.typedRecognition')}</p>
-          <p className="text-[11px] text-faint">{t('language.typedRecognitionHint')}</p>
-        </div>
+      <SettingRow
+        title={t('language.typedRecognition')}
+        hint={t('language.typedRecognitionHint')}
+      >
         <ToggleSwitch
           checked={currentUser.typedRecognition !== false}
           disabled={languageSaving}
           onChange={(v) => void handleChangeTypedRecognition(v)}
           title={t('language.typedRecognition')}
         />
-      </div>
+      </SettingRow>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { useAnchoredPopover } from '../lib/useAnchoredPopover';
+import { EmptyState } from './EmptyState';
 
 export interface SelectMenuOption<T extends string> {
   value: T;
@@ -295,7 +296,7 @@ function MenuBase<T extends string>({
               </div>
             )}
             <div id={`${id}-list`} role="listbox" aria-label={ariaLabel} aria-multiselectable={multi || undefined} className="overflow-y-auto p-1">
-              {visible.length === 0 && <div className="px-2 py-2 text-muted">{t('select.noMatch')}</div>}
+              {visible.length === 0 && <EmptyState compact>{t('select.noMatch')}</EmptyState>}
               {visible.map((option, i) => {
                 const chosen = isSelected(option.value);
                 return (

@@ -238,7 +238,6 @@
     "personal": "Personale",
     "deletedAt": "eliminata il {{date}}",
     "empty": "Il cestino è vuoto.",
-    "delete": "Elimina definitivamente",
     "deletedAtBy": "eliminata il {{date}} da {{name}}",
     "deletedAtAuto": "eliminata il {{date}} (automaticamente)",
     "limited": "Vengono mostrate le {{count}} voci più recenti."

@@ -4,6 +4,7 @@ import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { SystemSettings } from '../../../lib/types';
 import { ImageQuality } from '../../../lib/media';
 import { NumberField } from '../../../components/NumberField';
+import { SettingsCard } from '../../../components/SettingsCard';
 
 // The largest limit the server takes (storage.MaxImageLimitMB)
 const MAX_LIMIT_MB = 1000;
@@ -25,23 +26,24 @@ export function ImageSettings({
   const enabled = settings.images !== false;
   const grey = enabled ? '' : 'opacity-50';
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3" data-admin-images>
-      <div className="flex items-center justify-between gap-4">
-        <div className="pr-4">
-          <p className="font-bold text-main">{t('server.images')}</p>
-          <p className="text-[11px] text-muted mt-0.5">
-            {t('server.imagesHint')}
-            {settings.imagesConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_IMAGES' })}`}
-          </p>
-        </div>
+    <SettingsCard
+      data-admin-images
+      title={t('server.images')}
+      hint={
+        <>
+          {t('server.imagesHint')}
+          {settings.imagesConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'MEDIA_IMAGES' })}`}
+        </>
+      }
+      action={
         <ToggleSwitch
           checked={enabled}
           disabled={Boolean(settings.imagesConfiguredViaEnv)}
           onChange={(images) => onSave({ images })}
           title={t('server.images')}
         />
-      </div>
-
+      }
+    >
       <div className={`flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-border ${grey}`} data-admin-image-quality>
         <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
           <p className="text-main font-semibold">{t('server.imageQuality')}</p>
@@ -100,6 +102,6 @@ export function ImageSettings({
           title={t('server.externalImages')}
         />
       </div>
-    </div>
+    </SettingsCard>
   );
 }

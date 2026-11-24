@@ -21,7 +21,7 @@ function QuantityEditor({ item, editing }: { item: ListItem; editing: ReturnType
         maxLength={QUANTITY_MAX_LENGTH}
         onSave={(quantity) => void editing.handleSaveQuantity(item.id, quantity)}
         onCancel={() => editing.setEditingQtyItemId(null)}
-        className="w-16 h-8 sm:h-6 px-1.5 text-base sm:text-xs input-field font-semibold text-accent text-center"
+        className="w-16 h-11 sm:h-6 px-1.5 text-base sm:text-xs input-field font-semibold text-accent text-center"
         placeholder={t('quantity')}
       />
     </div>

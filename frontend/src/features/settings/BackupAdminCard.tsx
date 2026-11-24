@@ -23,6 +23,7 @@ import { waitForReopen } from '../../lib/restoreReload';
 import { restoreWithKeyCheck } from './restoreKeyCheck';
 import { Spinner } from '../../components/Spinner';
 import { EmptyState } from '../../components/EmptyState';
+import { SettingsCard } from '../../components/SettingsCard';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
@@ -141,31 +142,29 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
   ].filter(Boolean) as string[];
 
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
-      <div className="flex items-center justify-between gap-4">
-        <div className="pr-4">
-          <p className="font-bold text-main flex items-center gap-1.5">
-            <Archive className="w-3.5 h-3.5 text-accent" />
-            {t('backups.autoTitle')}
-          </p>
-          <p className="text-[11px] text-muted mt-0.5">
-            <Trans
-              t={t}
-              i18nKey={desktop ? 'backups.full.autoHintDesktop' : 'backups.full.autoHint'}
-              values={{ time: settings.backupTime || DEFAULT_BACKUP_TIME }}
-              components={{ c: <code className="font-mono" /> }}
-            />
-            {lockedBy.length > 0 && ` ${t('settings:server.fixedBy', { env: lockedBy.join(', ') })}`}
-          </p>
-        </div>
+    <SettingsCard
+      title={t('backups.autoTitle')}
+      icon={<Archive className="w-3.5 h-3.5 text-accent" />}
+      hint={
+        <>
+          <Trans
+            t={t}
+            i18nKey={desktop ? 'backups.full.autoHintDesktop' : 'backups.full.autoHint'}
+            values={{ time: settings.backupTime || DEFAULT_BACKUP_TIME }}
+            components={{ c: <code className="font-mono" /> }}
+          />
+          {lockedBy.length > 0 && ` ${t('settings:server.fixedBy', { env: lockedBy.join(', ') })}`}
+        </>
+      }
+      action={
         <ToggleSwitch
           checked={Boolean(settings.backupEnabled)}
           disabled={Boolean(settings.backupEnabledConfiguredViaEnv)}
           onChange={(backupEnabled) => onSave({ backupEnabled })}
           title={settings.backupEnabled ? t('backups.autoOff') : t('backups.autoOn')}
         />
-      </div>
-
+      }
+    >
       <div className="flex flex-wrap items-end gap-3">
         <div className="text-[11px] text-muted">
           {t('backups.time')}
@@ -324,6 +323,6 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           </div>
         </div>
       )}
-    </div>
+    </SettingsCard>
   );
 };

@@ -8,6 +8,13 @@
   },
   "cancel": "Cancel",
   "trash": "Trash",
+  "trashList": {
+    "purge": "Delete for good",
+    "purgeConfirm": "Delete “{{title}}” for good?",
+    "empty": "Empty trash",
+    "emptyConfirm_one": "Delete {{count}} entry for good?",
+    "emptyConfirm_other": "Delete all {{count}} entries for good?"
+  },
   "aboutMindSift": "About MindSift",
   "role": {
     "admin": "Server admin",
@@ -161,7 +168,7 @@
     "countdown": "Reloading in {{seconds}} s.",
     "waitTyping": "Reloads as soon as you pause typing.",
     "held": "Reloads once you are done: some input or dictations are not saved yet.",
-    "saving": "Saving changes, then reloading …",
+    "saving": "Saving changes, then reloading…",
     "offline": "Reloads once the server can be reached again.",
     "stuckTitle": "New version does not load",
     "stuck": "The browser keeps serving the old version. Reload the page; if that does not help, clear the browser cache."
@@ -273,6 +280,7 @@
     "monthly": "monthly",
     "yearly": "yearly"
   },
+  "dataSectionsLabel": "Sections",
   "dataSections": {
     "notes": "Notes",
     "tasks": "Tasks",

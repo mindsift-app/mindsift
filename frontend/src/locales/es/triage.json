@@ -72,11 +72,6 @@
   "setOnList": "Poner en una lista",
   "trash": {
     "none": "No hay pensamientos descartados.",
-    "confirmDelete": "¿De verdad quieres eliminarlo definitivamente?",
-    "delete": "Eliminar definitivamente",
-    "really": "¿Seguro?",
-    "confirmEmpty": "¿De verdad quieres eliminar {{count}} definitivamente?",
-    "empty": "Vaciar papelera",
     "discardedAt": "descartado el {{date}}"
   },
   "capture": {

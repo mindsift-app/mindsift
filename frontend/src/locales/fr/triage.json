@@ -72,11 +72,6 @@
   "setOnList": "Placer sur une liste",
   "trash": {
     "none": "Aucune pensée jetée.",
-    "confirmDelete": "Supprimer définitivement ?",
-    "delete": "Supprimer définitivement",
-    "really": "Vraiment ?",
-    "confirmEmpty": "Supprimer définitivement {{count}} éléments ?",
-    "empty": "Vider la corbeille",
     "discardedAt": "jeté le {{date}}"
   },
   "capture": {

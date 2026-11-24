@@ -6,6 +6,7 @@ import { AdminPage } from './AdminPage';
 import { SHARING_MODES, useAdminSettings } from './useAdminSettings';
 import { useTranslation } from 'react-i18next';
 import { SelectMenu } from '../../../components/SelectMenu';
+import { SettingRow, SettingsCard } from '../../../components/SettingsCard';
 
 // Administration → Sharing: who may share with whom, finding people, public links and calendar
 // subscriptions (state in useAdminSettings)
@@ -26,14 +27,11 @@ export function SharingSection({
   return (
     <AdminPage title={t('admin.nav.sharing')} intro={t('admin.pages.sharingIntro')} demoMode={demoMode}>
       {/* Who may share with whom: one of three modes, stricter first */}
-      <div className="p-4 bg-canvas border border-border rounded-card space-y-3" data-admin-sharing-mode>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
-            <p className="font-bold text-main">{t('server.sharing')}</p>
-            <p className="text-[11px] text-muted mt-0.5">
-              {SHARING_MODES.find((m) => m.id === settings.sharingMode)?.text}
-            </p>
-          </div>
+      <SettingsCard
+        data-admin-sharing-mode
+        title={t('server.sharing')}
+        hint={SHARING_MODES.find((m) => m.id === settings.sharingMode)?.text}
+        action={
           <SelectMenu<SharingMode>
             size="sm"
             ariaLabel={t('server.sharing')}
@@ -41,7 +39,8 @@ export function SharingSection({
             onChange={(mode) => handleSelectSharingMode(mode)}
             options={SHARING_MODES.map((m) => ({ value: m.id, label: m.title, hint: m.text }))}
           />
-        </div>
+        }
+      >
 
         {pendingMode && (
           <div className="pt-3 border-t border-border flex flex-wrap items-center gap-2">
@@ -67,40 +66,42 @@ export function SharingSection({
             </button>
           </div>
         )}
-      </div>
+      </SettingsCard>
 
       {/* Finding people: suggestions while typing, or only by exact e-mail address / username */}
-      <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
-        <div className="pr-4">
-          <p className="font-bold text-main">{t('server.peopleSearch')}</p>
-          <p className="text-[11px] text-muted mt-0.5">
+      <SettingRow
+        title={t('server.peopleSearch')}
+        hint={
+          <>
             {t('server.peopleSearchHint')}
             {settings.peopleSearchConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'PEOPLE_SEARCH' })}`}
-          </p>
-        </div>
+          </>
+        }
+      >
         <ToggleSwitch
           checked={settings.peopleSearch !== false}
           disabled={Boolean(settings.peopleSearchConfiguredViaEnv)}
           onChange={(peopleSearch) => handleSaveSystemSettings({ peopleSearch })}
         />
-      </div>
+      </SettingRow>
 
       {/* Public links to notes: read only, always expiring */}
-      <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="pr-4">
-            <p className="font-bold text-main">{t('server.publicLinks')}</p>
-            <p className="text-[11px] text-muted mt-0.5">
-              {t('server.publicLinksHint')}
-              {settings.publicLinksConfiguredViaEnv && ` ${t('server.fixedBy', { env: demoMode ? 'MINDSIFT_DEMO' : 'PUBLIC_LINKS' })}`}
-            </p>
-          </div>
+      <SettingsCard
+        title={t('server.publicLinks')}
+        hint={
+          <>
+            {t('server.publicLinksHint')}
+            {settings.publicLinksConfiguredViaEnv && ` ${t('server.fixedBy', { env: demoMode ? 'MINDSIFT_DEMO' : 'PUBLIC_LINKS' })}`}
+          </>
+        }
+        action={
           <ToggleSwitch
             checked={settings.publicLinks !== false}
             disabled={Boolean(settings.publicLinksConfiguredViaEnv)}
             onChange={(publicLinks) => handleSaveSystemSettings({ publicLinks })}
           />
-        </div>
+        }
+      >
         {settings.publicLinks !== false && (
           <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
             <span className="text-main font-semibold">{t('server.publicLinkMaxDays')}</span>
@@ -117,23 +118,24 @@ export function SharingSection({
             )}
           </div>
         )}
-      </div>
+      </SettingsCard>
 
       {/* Calendar subscriptions: everyone's read-only feed of their open tasks */}
-      <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
-        <div className="pr-4">
-          <p className="font-bold text-main">{t('server.calendarFeeds')}</p>
-          <p className="text-[11px] text-muted mt-0.5">
+      <SettingRow
+        title={t('server.calendarFeeds')}
+        hint={
+          <>
             {t('server.calendarFeedsHint')}
             {settings.calendarFeedsConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'CALENDAR_FEEDS' })}`}
-          </p>
-        </div>
+          </>
+        }
+      >
         <ToggleSwitch
           checked={settings.calendarFeeds !== false}
           disabled={Boolean(settings.calendarFeedsConfiguredViaEnv)}
           onChange={(calendarFeeds) => handleSaveSystemSettings({ calendarFeeds })}
         />
-      </div>
+      </SettingRow>
     </AdminPage>
   );
 }

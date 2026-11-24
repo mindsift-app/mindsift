@@ -6,6 +6,7 @@ import { SpeechSettings, SystemSettings } from '../../../lib/types';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
 import { NumberField } from '../../../components/NumberField';
 import { SpeechModelPicker } from './SpeechModelPicker';
+import { SettingsCard } from '../../../components/SettingsCard';
 
 type Mode = 'server' | 'browser' | 'off';
 
@@ -69,15 +70,16 @@ export function SpeechSettingsCard({
   }
 
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3" data-admin-speech>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
-          <p className="font-bold text-main">{t('speech.mode')}</p>
-          <p className="text-[11px] text-muted mt-0.5">
-            {t('speech.modeHint')}
-            {fixed('mode')}
-          </p>
-        </div>
+    <SettingsCard
+      data-admin-speech
+      title={t('speech.mode')}
+      hint={
+        <>
+          {t('speech.modeHint')}
+          {fixed('mode')}
+        </>
+      }
+      action={
         <SelectMenu<Mode>
           size="sm"
           ariaLabel={t('speech.mode')}
@@ -90,8 +92,8 @@ export function SpeechSettingsCard({
             { value: 'off', label: t('speech.modeOff') },
           ]}
         />
-      </div>
-
+      }
+    >
       <div className={`flex items-center justify-between gap-4 pt-3 border-t border-border ${mode === 'off' ? 'opacity-50' : ''}`}>
         <div className="pr-4">
           <p className="text-main font-semibold">{t('speech.allowBrowser')}</p>
@@ -121,7 +123,7 @@ export function SpeechSettingsCard({
             placeholder="http://whisper:8000"
             aria-label={t('speech.url')}
             onChange={(e) => setUrl(e.target.value)}
-            className="flex-1 h-11 sm:h-8 px-2 input-field text-base sm:text-xs font-mono"
+            className="sm:flex-1 min-w-0 h-11 sm:h-8 px-2 input-field text-base sm:text-xs font-mono"
           />
           <input
             {...NO_AUTOFILL}
@@ -241,6 +243,6 @@ export function SpeechSettingsCard({
           />
         </div>
       </div>
-    </div>
+    </SettingsCard>
   );
 }

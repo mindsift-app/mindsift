@@ -298,7 +298,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
             <Key className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-main">{t('api.title')}</h3>
+            <h3 className="font-bold text-main">{t('api.title')}</h3>
             <p className="text-xs text-muted">
               {t('api.intro')}
             </p>
@@ -495,7 +495,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                   <Webhook className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-main">{t('api.sim.title')}</h3>
+                  <h3 className="font-bold text-main">{t('api.sim.title')}</h3>
                   <p className="text-xs text-muted">
                     <Trans
                       t={t}
@@ -623,7 +623,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                 <Bot className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-main">{t('api.mcp.title')}</h3>
+                <h3 className="font-bold text-main">{t('api.mcp.title')}</h3>
                 <p className="text-xs text-muted">
                   {t('api.mcp.intro')}
                 </p>

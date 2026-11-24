@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Retention, User } from '../../../lib/types';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { InstantSaveToast, useInstantSave } from './InstantSave';
+import { SettingRow } from '../../../components/SettingsCard';
 
 // Kontoeinstellungen → Aufbewahrung: the areas and the delays offered (storage.RetentionChoices); texts in
 // settings:retention.areas.<key> and settings:retention.options.<days>
@@ -49,11 +50,7 @@ export function RetentionSection({
               verb: t(`retention.areas.${key}.verb`),
             };
             return (
-            <div key={area.key} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-semibold text-main">{area.title}</p>
-                <p className="text-muted">{area.text}</p>
-              </div>
+            <SettingRow key={area.key} plain className="py-3" title={area.title} hint={area.text}>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-muted">{area.verb}</span>
                 <SelectMenu
@@ -68,7 +65,7 @@ export function RetentionSection({
                   }))}
                 />
               </div>
-            </div>
+            </SettingRow>
             );
           })}
         </div>

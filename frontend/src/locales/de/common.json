@@ -8,6 +8,13 @@
   },
   "cancel": "Abbrechen",
   "trash": "Papierkorb",
+  "trashList": {
+    "purge": "Endgültig löschen",
+    "purgeConfirm": "„{{title}}“ endgültig löschen?",
+    "empty": "Papierkorb leeren",
+    "emptyConfirm_one": "{{count}} Eintrag endgültig löschen?",
+    "emptyConfirm_other": "Alle {{count}} Einträge endgültig löschen?"
+  },
   "aboutMindSift": "Über MindSift",
   "role": {
     "admin": "Server-Admin",
@@ -114,7 +121,7 @@
     "edit": "Bearbeiten",
     "readOnly": "Nur Lesen",
     "searchUser": "Benutzer suchen (Name oder @Benutzername)…",
-    "saving": "Wird gespeichert…",
+    "saving": "Wird gespeichert …",
     "shareGroup": "Gruppe freigeben",
     "addUser": "Benutzer hinzufügen",
     "ownerOnly": "Nur der Eigentümer kann neue Freigaben einrichten.",
@@ -175,7 +182,7 @@
   "voice": {
     "stop": "Aufnahme beenden",
     "cancelRecording": "Aufnahme verwerfen",
-    "transcribing": "Wird erkannt…",
+    "transcribing": "Wird erkannt …",
     "input": "Spracheingabe",
     "failed": "Spracherkennung fehlgeschlagen",
     "noMic": "Kein Zugriff auf das Mikrofon (Berechtigung, oder die Seite läuft nicht über HTTPS)",
@@ -203,7 +210,7 @@
   "offline": {
     "waiting_one": "{{count}} Änderung wartet",
     "waiting_other": "{{count}} Änderungen warten",
-    "syncing": "Synchronisiere – {{waiting}}…",
+    "syncing": "Wird synchronisiert – {{waiting}} …",
     "pending": "Offline · {{waiting}} auf Verbindung",
     "idle": "Offline – Änderungen werden bei Verbindung synchronisiert",
     "notesPending_one": "Offline · Text in {{count}} Notiz wartet auf Verbindung",
@@ -271,6 +278,7 @@
     "monthly": "monatlich",
     "yearly": "jährlich"
   },
+  "dataSectionsLabel": "Bereiche",
   "dataSections": {
     "notes": "Notizen",
     "tasks": "Aufgaben",

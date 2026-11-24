@@ -179,8 +179,6 @@
     "intro": "Deleted notes and folders stay here until you restore them or delete them for good. A folder comes back with all its subfolders and notes. Until then it is hidden for everyone it was shared with.",
     "empty": "The trash is empty.",
     "viewReadOnly": "View read-only",
-    "reallyDelete": "Really delete?",
-    "deleteForever": "Delete for good",
     "folderNotes_one": "Folder · {{count}} note",
     "folderNotes_other": "Folder · {{count}} notes",
     "inFolder": "in {{path}}"
@@ -640,7 +638,7 @@
       "endedDiscard": "{{name}} discarded the live drawing.",
       "endedExpired": "The live drawing has ended.",
       "unsentKept": "Your last changes did not reach the session; they stay in this browser as a draft and are offered the next time you open the drawing.",
-      "saving": "Saving …",
+      "saving": "Saving…",
       "offline": "Connection lost – your changes go out as soon as it is back.",
       "offlineWatch": "Connection lost.",
       "offlineSave": "No connection – saving works once it is back.",

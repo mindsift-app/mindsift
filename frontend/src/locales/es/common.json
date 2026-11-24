@@ -8,6 +8,13 @@
   },
   "cancel": "Cancelar",
   "trash": "Papelera",
+  "trashList": {
+    "purge": "Eliminar definitivamente",
+    "purgeConfirm": "¿Eliminar «{{title}}» definitivamente?",
+    "empty": "Vaciar la papelera",
+    "emptyConfirm_one": "¿Eliminar {{count}} entrada definitivamente?",
+    "emptyConfirm_other": "¿Eliminar las {{count}} entradas definitivamente?"
+  },
   "aboutMindSift": "Acerca de MindSift",
   "role": {
     "admin": "Administrador del servidor",
@@ -161,7 +168,7 @@
     "countdown": "Se recarga en {{seconds}} s.",
     "waitTyping": "Se recarga en cuanto hagas una pausa al escribir.",
     "held": "Se recarga cuando termines: hay entradas o dictados que aún no se han guardado.",
-    "saving": "Guardando los cambios, después se recarga …",
+    "saving": "Guardando los cambios, después se recarga…",
     "offline": "Se recarga en cuanto el servidor vuelva a estar disponible.",
     "stuckTitle": "La nueva versión no se carga",
     "stuck": "El navegador sigue mostrando la versión antigua. Recarga la página; si no funciona, vacía la caché del navegador."
@@ -273,6 +280,7 @@
     "monthly": "mensualmente",
     "yearly": "anualmente"
   },
+  "dataSectionsLabel": "Secciones",
   "dataSections": {
     "notes": "Notas",
     "tasks": "Tareas",

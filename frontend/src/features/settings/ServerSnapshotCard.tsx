@@ -1,12 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { Trans, useTranslation } from 'react-i18next';
-import { Check, CircleAlert, FileArchive, RotateCcw, Server, Upload, UserRound } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { CircleAlert, FileArchive, RotateCcw, Server, Upload, UserRound } from 'lucide-react';
 import { DATA_SECTIONS, DataSection, SnapshotAccount, SnapshotStaged, SnapshotTakeOver } from '../../lib/types';
 import { api } from '../../lib/api';
 import { errorMessage } from '../../lib/errorMessage';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { SectionPicker } from './SectionPicker';
-import { summaryParts } from './importSummary';
+import { RestoreConfirm, RestoreResult } from './RestoreResult';
+import { SettingsCard } from '../../components/SettingsCard';
 
 // Desktop app, Administration → Data: one account of a server's backup into this instance's account: a
 // packed copy of the server's data or backups folder (.zip, .tar, .tar.gz, with the account's pictures and
@@ -110,20 +111,13 @@ export const ServerSnapshotCard: React.FC = () => {
     ].join(' · ');
 
   const restoring = mode === 'restore';
-  const sectionNames = DATA_SECTIONS.filter((s) => sections.includes(s.id))
-    .map((s) => s.label)
-    .join(', ');
 
   return (
-    <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
-      <div>
-        <p className="font-bold text-main flex items-center gap-1.5">
-          <Server className="w-3.5 h-3.5 text-accent" />
-          {t('backups.snapshot.title')}
-        </p>
-        <p className="text-[11px] text-muted mt-0.5">{t('backups.snapshot.hint')}</p>
-      </div>
-
+    <SettingsCard
+      title={t('backups.snapshot.title')}
+      icon={<Server className="w-3.5 h-3.5 text-accent" />}
+      hint={t('backups.snapshot.hint')}
+    >
       {!staged && (
         <div
           onDragOver={(e) => {
@@ -242,42 +236,17 @@ export const ServerSnapshotCard: React.FC = () => {
           {busy === 'applying' && <p className="text-[11px] text-muted">{t('import.importing')}</p>}
 
           {preview && account && busy === null && (
-            <div className="p-3 rounded-card border border-border bg-panel text-xs space-y-2">
-              <p className="font-semibold text-main flex items-center gap-1.5">
-                <FileArchive className="w-3.5 h-3.5 text-accent" />
-                <span>{t('backups.snapshot.previewTitle', { name: preview.account.displayName || preview.account.username })}</span>
-              </p>
-              <p className="text-muted">{t('import.willCreate', { what: summaryParts(preview).join(', ') || t('import.nothing') })}</p>
+            <RestoreResult
+              summary={preview}
+              done={false}
+              title={t('backups.snapshot.previewTitle', { name: preview.account.displayName || preview.account.username })}
+            >
               {preview.settings && <p className="text-muted">{t('backups.snapshot.settingsToo')}</p>}
               {(preview.media ?? 0) > 0 && <p className="text-muted">{t('backups.snapshot.media', { count: preview.media })}</p>}
               {(preview.mediaMissing ?? 0) > 0 && (
                 <p className="text-muted">{t('backups.snapshot.mediaMissing', { count: preview.mediaMissing })}</p>
               )}
-              {preview.skipped.length > 0 && (
-                <details className="text-[11px] text-muted">
-                  <summary className="cursor-pointer">{t('import.skipped', { count: preview.skipped.length })}</summary>
-                  <ul className="mt-1 space-y-0.5 max-h-40 overflow-y-auto">
-                    {preview.skipped.map((s, i) => (
-                      <li key={i}>
-                        <span className="font-mono text-main">{s.path}</span> – {s.reason}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-              {restoring && (
-                <label className="flex items-start gap-2 p-2.5 rounded-card border border-status-err/40 bg-status-err/10 text-[11px] text-main cursor-pointer">
-                  <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} className="mt-0.5 w-4 h-4 shrink-0" />
-                  <span>
-                    <Trans
-                      t={t}
-                      i18nKey="backups.snapshot.replaceWarning"
-                      values={{ sections: sectionNames }}
-                      components={{ b: <strong className="text-status-err" /> }}
-                    />
-                  </span>
-                </label>
-              )}
+              {restoring && <RestoreConfirm checked={confirm} onChange={setConfirm} sections={sections} i18nKey="backups.snapshot.replaceWarning" />}
               <div className="flex flex-col sm:flex-row gap-2 pt-1">
                 <button
                   type="button"
@@ -294,7 +263,7 @@ export const ServerSnapshotCard: React.FC = () => {
                   {t('common:cancel')}
                 </button>
               </div>
-            </div>
+            </RestoreResult>
           )}
           {!account && (
             <button type="button" onClick={reset} className="btn-action h-11 sm:h-8 px-3 text-xs">
@@ -312,15 +281,7 @@ export const ServerSnapshotCard: React.FC = () => {
       )}
 
       {result && (
-        <div className="p-3 rounded-card border border-status-ok/40 bg-status-ok/10 text-xs space-y-2">
-          <p className="font-semibold text-main flex items-center gap-1.5">
-            <Check className="w-3.5 h-3.5 text-status-ok" />
-            <span>{t('backups.snapshot.done', { name: result.account.displayName || result.account.username })}</span>
-          </p>
-          <p className="text-muted">{t('import.created', { what: summaryParts(result).join(', ') || t('import.nothing') })}</p>
-          {result.skipped.length > 0 && (
-            <p className="text-[11px] text-muted">{t('import.skipped', { count: result.skipped.length })}</p>
-          )}
+        <RestoreResult summary={result} done title={t('backups.snapshot.done', { name: result.account.displayName || result.account.username })}>
           {(result.settingsSkipped?.length ?? 0) > 0 && (
             <p className="text-[11px] text-muted">
               {t('backups.snapshot.settingsSkipped', {
@@ -331,8 +292,8 @@ export const ServerSnapshotCard: React.FC = () => {
           <button type="button" onClick={() => window.location.reload()} className="btn-primary h-11 sm:h-8 px-4 text-xs font-semibold">
             {t('backups.snapshot.reload')}
           </button>
-        </div>
+        </RestoreResult>
       )}
-    </div>
+    </SettingsCard>
   );
 };

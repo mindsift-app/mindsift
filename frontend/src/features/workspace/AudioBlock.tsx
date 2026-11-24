@@ -42,7 +42,7 @@ interface AudioBlockProps {
 // Audio block: player plus caption. With the own Whisper server the recording can be turned into text,
 // which becomes the caption (and so searchable). The server does that as a job (lib/transcriptionJobs.ts):
 // leaving the note does not stop it, the caption arrives through the note's sync, and the bullet shows
-// "Wird erkannt…" wherever the note is open, also after a reload.
+// "Wird erkannt …" wherever the note is open, also after a reload.
 export const AudioBlock: React.FC<AudioBlockProps> = ({
   content,
   docId,

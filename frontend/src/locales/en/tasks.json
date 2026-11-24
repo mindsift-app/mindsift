@@ -238,7 +238,6 @@
     "personal": "Personal",
     "deletedAt": "deleted {{date}}",
     "empty": "The trash is empty.",
-    "delete": "Delete for good",
     "deletedAtBy": "deleted {{date}} by {{name}}",
     "deletedAtAuto": "deleted {{date}} (automatically)",
     "limited": "Showing the newest {{count}} entries."

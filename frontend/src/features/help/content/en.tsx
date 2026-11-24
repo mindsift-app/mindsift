@@ -744,6 +744,13 @@ const en: HelpContent = {
             <li>
               <strong className="text-main">Importing Obsidian:</strong> Under <em>Account settings → Export &amp; import</em>, MindSift takes a vault as .zip. The notes go into a folder of their own named after the vault, subfolders are kept, checkboxes stay checkboxes and frontmatter tags become #hashtags. Embedded images and audio files come along, other attachments such as PDFs do not.
             </li>
+            <li>
+              <strong className="text-main">Deleting your data or account:</strong> Under <em>Account settings → Profile</em>, “Delete all my data” deletes your notes, folders, tasks, thoughts and lists; account and settings stay.
+              <Only can="accounts">
+                {' '}
+                Content others shared with you is kept. “Delete account” removes your account with all data and signs you out. The last administrator account can only be deleted once another account is an administrator.
+              </Only>
+            </li>
             <Only can="restore">
               <li>
                 <strong className="text-main">Restoring everything:</strong> Admins restore the whole instance with its pictures and recordings under <em>Administration → Data</em> with <em>Restore</em>; the current state is backed up first. To move, download a backup and load it on the new server with <em>Upload backup</em>.
@@ -796,7 +803,7 @@ const en: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Who may share with whom:</strong> the server admin decides: with everyone, only with people you have at least one <em>organization</em> in common with, or with nobody (“Private” mode: no sharing, no groups). You can belong to several organizations; server admins and user managers look after them. With people search switched off, you enter the exact e-mail address or username when sharing. Whoever works on something with you always shows there by name.
+              <strong className="text-main">Who may share with whom:</strong> the server admin decides: with everyone, only with people you have at least one <em>organization</em> in common with, or with nobody (“Private” mode: no sharing, no groups). In the middle mode, whoever belongs to no organization can share with nobody. You can belong to several organizations; server admins and user managers look after them. With people search switched off, you enter the exact e-mail address or username when sharing. Whoever works on something with you always shows there by name.
             </li>
             <li>
               <strong className="text-main">Server time zone:</strong> server admins set it under <em>Administration → Instance → Time zone</em>. It applies to everyone at once: due times, alarms, the daily summary and the backup time.

@@ -2,7 +2,7 @@
 // against a server with its own Whisper server, which this script plays itself: it holds its answers until
 // the script has seen the waiting state, so nothing depends on how long a step takes. Checked, in Chromium
 // with a fake microphone:
-//   - "Transkribieren" on a voice note: the bullet shows "Wird erkannt…", also after switching to another
+//   - "Transkribieren" on a voice note: the bullet shows "Wird erkannt …", also after switching to another
 //     note and after a reload; the text arrives in the caption by itself, and the server has it
 //   - holding the rail's + : the recording is on the server once released; a reload right after loses
 //     nothing, the Quick Dump shows it as being transcribed, and the server makes the entry
@@ -175,13 +175,13 @@ const main = async () => {
     await transcribe.waitFor({ timeout: 15000 });
     whisper.hold();
     await transcribe.click();
-    await page.getByText('Wird erkannt…').first().waitFor({ timeout: 5000 });
-    check(true, 'Notiz: Transkribieren zeigt „Wird erkannt…“');
+    await page.getByText('Wird erkannt …').first().waitFor({ timeout: 5000 });
+    check(true, 'Notiz: Transkribieren zeigt „Wird erkannt …“');
     await openNote(page, otherTitle);
     await page.reload();
     await openNote(page, title);
-    const pending = await page.getByText('Wird erkannt…').first().waitFor({ timeout: 4000 }).then(() => true, () => false);
-    check(pending, 'Notiz: nach Notizwechsel und Neuladen noch als „Wird erkannt…“ markiert');
+    const pending = await page.getByText('Wird erkannt …').first().waitFor({ timeout: 4000 }).then(() => true, () => false);
+    check(pending, 'Notiz: nach Notizwechsel und Neuladen noch als „Wird erkannt …“ markiert');
     await shot(page, 'transcription-note');
     whisper.release();
     await page.getByText(TEXT).first().waitFor({ timeout: 30000 });
@@ -210,9 +210,9 @@ const main = async () => {
     await dictate();
     check(true, 'Quick Dump: die Aufnahme liegt nach dem Loslassen auf dem Server');
     await page.reload();
-    const pendingRow = page.getByText('Sprachaufnahme wird transkribiert…').first();
+    const pendingRow = page.getByText('Sprachaufnahme wird transkribiert …').first();
     const shown = await pendingRow.waitFor({ timeout: 5000 }).then(() => true, () => false);
-    check(shown, 'Quick Dump: nach dem Neuladen als „wird transkribiert…“ zu sehen');
+    check(shown, 'Quick Dump: nach dem Neuladen als „wird transkribiert …“ zu sehen');
     await shot(page, 'transcription-inbox');
     whisper.release();
     const entry = await until('inbox entry', async () => {
@@ -222,7 +222,7 @@ const main = async () => {
     check(!!entry, 'Quick Dump: der Server hat den Eintrag angelegt, obwohl die Seite neu geladen wurde');
     check(whisper.calls > before, 'Quick Dump: der Whisper-Server wurde gefragt');
     const gone = await pendingRow.waitFor({ state: 'detached', timeout: 10000 }).then(() => true, () => false);
-    check(gone, 'Quick Dump: „wird transkribiert…“ verschwindet, sobald der Eintrag da ist');
+    check(gone, 'Quick Dump: „wird transkribiert …“ verschwindet, sobald der Eintrag da ist');
     if (entry) await api(token, 'DELETE', `/api/v1/thoughts/${entry.id}`).catch(() => {});
 
     // 3. A failing Whisper server: the recording stays above the Quick Dump, the server tries again later

@@ -109,7 +109,7 @@ describe('HoldToRecordFab', () => {
     expect(rec.lang).toBe('de-DE');
     expect(rec.interimResults).toBe(true);
     expect(rec.continuous).toBe(true);
-    expect(screen.getByText(/Ich höre zu… \(loslassen speichert\)/i)).toBeTruthy();
+    expect(screen.getByText(/Ich höre zu … \(loslassen speichert\)/i)).toBeTruthy();
 
     act(() => {
       rec.emitResult('Milch und Kaffee einkaufen');

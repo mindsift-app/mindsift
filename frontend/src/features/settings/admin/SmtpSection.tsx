@@ -7,6 +7,7 @@ import {
 import { useAdminSettings } from './useAdminSettings';
 import { SmtpFields } from './SmtpFields';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
+import { SettingsCard } from '../../../components/SettingsCard';
 
 // Administration → E-Mail / SMTP-Server (state in useAdminSettings)
 export function SmtpSection({
@@ -75,7 +76,7 @@ export function SmtpSection({
           <button
             type="button"
             onClick={() => handleSaveSystemSettings()}
-            className="btn-primary h-9 px-5 text-xs font-semibold"
+            className="btn-primary h-11 sm:h-9 px-5 text-xs font-semibold"
           >
             {t('settings:smtp.save')}
           </button>
@@ -84,11 +85,10 @@ export function SmtpSection({
 
         {/* Test SMTP Delivery (not while mail is switched off) */}
         <fieldset disabled={Boolean(settings.smtpDisabledViaEnv)} className="min-w-0 border-0 p-0 m-0">
-        <div className="p-4 bg-canvas border border-border rounded-card space-y-2">
-          <h3 className="font-bold text-main">{t('smtp.test')}</h3>
-          <p className="text-[11px] text-muted">
-            {t('smtp.testHint')}
-          </p>
+        <SettingsCard
+          title={t('smtp.test')}
+          hint={t('smtp.testHint')}
+        >
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               {...NO_AUTOFILL}
@@ -96,19 +96,19 @@ export function SmtpSection({
               value={testSmtpEmail}
               onChange={(e) => setTestSmtpEmail(e.target.value)}
               placeholder={t('smtp.testPlaceholder')}
-              className="flex-1 h-8 px-3 input-field"
+              className="flex-1 h-11 sm:h-8 px-3 input-field text-base sm:text-xs"
             />
             <button
               type="button"
               onClick={handleTestSmtp}
               disabled={testingSmtp || !testSmtpEmail.trim()}
-              className="btn-action h-8 px-4 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
+              className="btn-action h-11 sm:h-8 px-4 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
             >
               <Send className="w-3.5 h-3.5 text-accent" />
               <span>{testingSmtp ? t('smtp.testSending') : t('smtp.testSend')}</span>
             </button>
           </div>
-        </div>
+        </SettingsCard>
         </fieldset>
       </div>
     </fieldset>

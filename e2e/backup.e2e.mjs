@@ -2,7 +2,7 @@
 // Checked:
 //   - "Jetzt sichern" makes a full backup, listed as "Komplett mit … Mediendatei(en)"
 //   - "Download" saves one tar archive holding the database, the media files and secrets.key
-//   - restoring it from the list asks first, shows "Stelle wieder her…", reloads by itself; afterwards the
+//   - restoring it from the list asks first, shows "Wird wiederhergestellt …", reloads by itself; afterwards the
 //     notes are as at the backup (a note made later is gone, the picture is there), the state before is kept
 //     as a backup "vor einer Wiederherstellung" and the restore is in the audit log
 //   - uploading the downloaded archive goes in several chunks with a progress bar, asks, and restores it
@@ -144,8 +144,8 @@ const main = async () => {
     await dialog.waitFor({ timeout: 5000 });
     const reloaded = page.waitForEvent('load', { timeout: 90000 });
     await dialog.getByRole('button', { name: 'Wiederherstellen' }).click();
-    await page.getByText('Stelle wieder her… MindSift lädt danach neu.').waitFor({ timeout: 30000 });
-    check(true, 'Wiederherstellen: fragt nach und zeigt „Stelle wieder her…“');
+    await page.getByText('Wird wiederhergestellt … MindSift lädt danach neu.').waitFor({ timeout: 30000 });
+    check(true, 'Wiederherstellen: fragt nach und zeigt „Wird wiederhergestellt …“');
     await reloaded;
     check(true, 'Wiederherstellen: die Seite lädt danach von selbst neu');
     token = await login();

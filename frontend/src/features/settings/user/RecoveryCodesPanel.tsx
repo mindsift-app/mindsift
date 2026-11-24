@@ -22,7 +22,7 @@ export function RecoveryCodesPanel({ codes, account, onDone }: { codes: string[]
   };
 
   return (
-    <div className="p-3.5 rounded-card border border-accent/40 bg-accent/5 space-y-3" data-recovery-codes>
+    <div className="p-4 rounded-card border border-accent/40 bg-accent/5 space-y-3" data-recovery-codes>
       <div>
         <p className="font-semibold text-main">{t('security.twoFactor.codesTitle')}</p>
         <p className="text-[11px] text-muted">{t('security.twoFactor.codesIntro')}</p>

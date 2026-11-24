@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Archive, Check, Download, RotateCcw } from 'lucide-react';
+import { Archive, Download, RotateCcw } from 'lucide-react';
 import { BackupFile, DataSection, DATA_SECTIONS, ImportSummary } from '../../lib/types';
 import { api } from '../../lib/api';
 import { formatBytes, saveBlob } from '../../lib/download';
 import { SectionPicker } from './SectionPicker';
+import { RestoreConfirm, RestoreResult } from './RestoreResult';
 import { formatDateTime } from '../../lib/format';
 import { errorMessage } from '../../lib/errorMessage';
 import { EmptyState } from '../../components/EmptyState';
+import { SettingsHeading } from '../../components/SettingsCard';
 
 // The user's own automatic backups on the server: download or restore (all or some sections); after a
 // restore the app loads the own data again (onRestored)
@@ -63,21 +65,13 @@ export const ServerBackupsCard: React.FC<{ onRestored?: () => void }> = ({ onRes
     }
   };
 
-  const sectionNames = DATA_SECTIONS.filter((s) => sections.includes(s.id))
-    .map((s) => s.label)
-    .join(', ');
-
   return (
     <div className="space-y-2">
-      <div>
-        <h3 className="font-bold text-main flex items-center gap-1.5">
-          <Archive className="w-3.5 h-3.5 text-accent" />
-          {t('backups.serverTitle')}
-        </h3>
-        <p className="text-muted text-[11px] mt-0.5">
-          {t('backups.serverHint')}
-        </p>
-      </div>
+      <SettingsHeading
+        title={t('backups.serverTitle')}
+        icon={<Archive className="w-3.5 h-3.5 text-accent" />}
+        hint={t('backups.serverHint')}
+      />
       <div className="border border-border divide-y divide-border bg-canvas">
         {files.length === 0 ? (
           <EmptyState>{t('backups.none')}</EmptyState>
@@ -140,47 +134,21 @@ export const ServerBackupsCard: React.FC<{ onRestored?: () => void }> = ({ onRes
                   </div>
                   <SectionPicker value={sections} onChange={setSections} />
                   {result ? (
-                    <div className="space-y-1">
-                      <p className="text-[11px] text-status-ok flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" />{' '}
-                        {t('backups.restored', {
-                          notes: result.notes,
-                          tasks: result.tasks,
-                          lists: result.lists,
-                          inbox: result.inbox,
-                          themes: result.themes ?? 0,
-                        })}
-                      </p>
-                      {result.skipped.length > 0 && (
-                        <details className="text-[11px] text-muted">
-                          <summary className="cursor-pointer">{t('import.skipped', { count: result.skipped.length })}</summary>
-                          <ul className="mt-1 space-y-0.5 max-h-40 overflow-y-auto">
-                            {result.skipped.map((s, i) => (
-                              <li key={i}>
-                                <span className="font-mono text-main">{s.path}</span> – {s.reason}
-                              </li>
-                            ))}
-                          </ul>
-                        </details>
-                      )}
-                    </div>
+                    <RestoreResult summary={result} done title={t('backups.restored')} />
                   ) : (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => (mode === 'restore' && !confirm ? setConfirm(true) : restore())}
-                      className={`h-11 sm:h-8 px-4 text-xs font-semibold disabled:opacity-50 ${
-                        mode === 'restore' ? 'btn-action border-status-err text-status-err' : 'btn-primary'
-                      }`}
-                    >
-                      {busy
-                        ? t('backups.restoring')
-                        : mode === 'restore' && confirm
-                        ? t('backups.confirmReplace', { sections: sectionNames })
-                        : mode === 'restore'
-                        ? t('backups.replace')
-                        : t('import.merge')}
-                    </button>
+                    <>
+                      {mode === 'restore' && <RestoreConfirm checked={confirm} onChange={setConfirm} sections={sections} />}
+                      <button
+                        type="button"
+                        disabled={busy || (mode === 'restore' && !confirm)}
+                        onClick={restore}
+                        className={`h-11 sm:h-8 px-4 text-xs font-semibold disabled:opacity-50 ${
+                          mode === 'restore' ? 'btn-action border-status-err text-status-err' : 'btn-primary'
+                        }`}
+                      >
+                        {busy ? t('backups.restoring') : mode === 'restore' ? t('import.restoreNow') : t('import.merge')}
+                      </button>
+                    </>
                   )}
                   {error && <p className="text-[11px] text-status-err">{error}</p>}
                 </div>

@@ -15,6 +15,8 @@ import { passkeyProof, secondFactorOf, SecondFactorFields } from './SecondFactor
 import { LOW_RECOVERY_CODES } from '../../auth/MfaStep';
 import { errorMessage } from '../../../lib/errorMessage';
 import { LoadingState } from '../../../components/Spinner';
+import { SettingsHeading } from '../../../components/SettingsCard';
+import { EmptyState } from '../../../components/EmptyState';
 
 type Flow =
   | { step: 'idle' }
@@ -179,20 +181,19 @@ export function TwoFactorCard({
 
   return (
     <div className="space-y-3" data-security-card="two-factor">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-xs font-bold text-main flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-            <span>{t('security.twoFactor.title')}</span>
-          </h3>
-          <p className="text-[11px] text-muted">{t('security.twoFactor.intro')}</p>
-        </div>
-        {status && !demoMode && (
-          <span className={`shrink-0 ${anyOn ? 'badge-accent' : 'text-[11px] text-muted border border-border rounded-pill px-2 py-0.5'}`}>
-            {anyOn ? t('security.twoFactor.on') : t('security.twoFactor.off')}
-          </span>
-        )}
-      </div>
+      <SettingsHeading
+        title={t('security.twoFactor.title')}
+        icon={<ShieldCheck className="w-3.5 h-3.5 text-accent" />}
+        hint={t('security.twoFactor.intro')}
+        action={
+          status &&
+          !demoMode && (
+            <span className={anyOn ? 'badge-accent' : 'text-[11px] text-muted border border-border rounded-pill px-2 py-0.5'}>
+              {anyOn ? t('security.twoFactor.on') : t('security.twoFactor.off')}
+            </span>
+          )
+        }
+      />
 
       {demoMode || status?.available === false ? (
         <p className="text-[11px] text-muted p-3 rounded-card border border-border bg-canvas">{t('security.twoFactor.demo')}</p>
@@ -217,7 +218,7 @@ export function TwoFactorCard({
 
           {/* No app: set it up, starting with the password */}
           {!appOn && flow.step === 'idle' && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-card border border-border bg-canvas">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-card border border-border bg-canvas">
               <p className="text-[11px] text-muted">{anyOn ? t('security.twoFactor.appOffWithPasskeys') : t('security.twoFactor.offHint')}</p>
               <button
                 type="button"
@@ -238,7 +239,7 @@ export function TwoFactorCard({
                 e.preventDefault();
                 void startSetup();
               }}
-              className="p-3.5 rounded-card border border-border bg-canvas space-y-3"
+              className="p-4 rounded-card border border-border bg-canvas space-y-3"
             >
               {factor.needed && <p className="text-[11px] text-muted">{t('security.twoFactor.setupConfirmHint')}</p>}
               <SecondFactorFields
@@ -272,7 +273,7 @@ export function TwoFactorCard({
                 e.preventDefault();
                 void confirmSetup(code);
               }}
-              className="p-3.5 rounded-card border border-border bg-canvas space-y-4"
+              className="p-4 rounded-card border border-border bg-canvas space-y-4"
               data-totp-setup
             >
               <div className="space-y-2">
@@ -330,7 +331,7 @@ export function TwoFactorCard({
 
           {/* On (app or passkey): since when, codes left, new codes, remove the app */}
           {anyOn && flow.step === 'idle' && (
-            <div className="p-3.5 rounded-card border border-border bg-canvas space-y-3">
+            <div className="p-4 rounded-card border border-border bg-canvas space-y-3">
               <div className="text-[11px] space-y-1">
                 <p className="text-main">
                   {appOn
@@ -387,7 +388,9 @@ export function TwoFactorCard({
                 )}
               </div>
               {status.trustedDevices.length === 0 ? (
-                <p className="text-[11px] text-faint">{t('security.twoFactor.trustedNone')}</p>
+                <EmptyState compact framed>
+                  {t('security.twoFactor.trustedNone')}
+                </EmptyState>
               ) : (
                 <ul className="divide-y divide-border rounded-card border border-border bg-canvas">
                   {status.trustedDevices.map((d) => {

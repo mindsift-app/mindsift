@@ -12,6 +12,7 @@ import { renderMentions } from '../../lib/markdown';
 import { BottomSheet } from '../../components/BottomSheet';
 import { CountBadge } from '../../components/CountBadge';
 import { SegmentedControl } from '../../components/SegmentedControl';
+import { EmptyState } from '../../components/EmptyState';
 
 export type CalendarMode = 'month' | 'week';
 type Mode = CalendarMode;
@@ -429,7 +430,7 @@ export function TaskCalendar({
         </button>
       </form>
     );
-  const emptyHint = (text: string) => <p className="py-6 text-center text-xs text-faint">{text}</p>;
+  const emptyHint = (text: string) => <EmptyState>{text}</EmptyState>;
 
   // The day's tasks in full, and a field for a new task on that day
   const dayDetails = (day: string) => {
@@ -463,7 +464,7 @@ export function TaskCalendar({
       {unplannedOpen && (
         <div className="px-1.5 pb-2 space-y-0.5 max-h-[60vh] overflow-y-auto">
           {unplanned.length === 0 ? (
-            <p className="px-1.5 py-2 text-[11px] text-faint">{t('calendar.unplannedEmpty')}</p>
+            <EmptyState compact>{t('calendar.unplannedEmpty')}</EmptyState>
           ) : (
             unplanned.map((task) => chip({ task, time: '', upcoming: false }, task.id, phone))
           )}

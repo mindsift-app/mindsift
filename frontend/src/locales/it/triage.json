@@ -72,11 +72,6 @@
   "setOnList": "Metti su una lista",
   "trash": {
     "none": "Nessun pensiero scartato.",
-    "confirmDelete": "Vuoi davvero eliminare definitivamente?",
-    "delete": "Elimina definitivamente",
-    "really": "Davvero?",
-    "confirmEmpty": "Vuoi davvero eliminare definitivamente {{count}} elementi?",
-    "empty": "Svuota cestino",
     "discardedAt": "scartato il {{date}}"
   },
   "capture": {

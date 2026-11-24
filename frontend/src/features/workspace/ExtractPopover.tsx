@@ -5,6 +5,7 @@ import { FilePlusCorner, Search } from 'lucide-react';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { placeInViewport } from '../../lib/placeInViewport';
 import { useDismiss } from '../../lib/useDismiss';
+import { EmptyState } from '../../components/EmptyState';
 
 export interface ExtractTarget {
   id: string;
@@ -140,7 +141,7 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, align = 'r
           ))}
         </div>
       ) : (
-        <p className="px-2 py-1.5 text-faint">{t('extractMenu.none')}</p>
+        <EmptyState compact>{t('extractMenu.none')}</EmptyState>
       )}
     </div>,
     document.body

@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Check, Copy, Laptop } from 'lucide-react';
 import { desktopShell, DesktopLocalApi, DesktopShellError, DesktopProblem } from '../../lib/desktopShell';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
+import { SettingsCard } from '../../components/SettingsCard';
 
 // The first port the shell tries (DefaultLocalAPIPort in desktop/internal/shell/localapi.go)
 export const DEFAULT_LOCAL_API_PORT = 18890;
@@ -58,20 +59,19 @@ export const DesktopLocalAccess: React.FC<DesktopLocalAccessProps> = ({ onBaseCh
   const address = state.port ? `${localApiBase(state.port)}/api/v1/mcp` : '';
 
   return (
-    <div className="p-3 bg-canvas border border-border space-y-3">
-      <div className="flex items-start gap-3">
-        <Laptop className="w-4 h-4 mt-0.5 text-accent shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-main">{t('api.local.title')}</p>
-          <p className="text-[11px] text-muted">{t('api.local.intro')}</p>
-        </div>
+    <SettingsCard
+      title={t('api.local.title')}
+      icon={<Laptop className="w-3.5 h-3.5 text-accent shrink-0" />}
+      hint={t('api.local.intro')}
+      action={
         <ToggleSwitch
           checked={state.enabled}
           disabled={busy}
           title={t('api.local.title')}
           onChange={(on) => run(() => desktopShell.setLocalApi(on))}
         />
-      </div>
+      }
+    >
 
       {state.enabled && address && (
         <div className="space-y-2">
@@ -128,6 +128,6 @@ export const DesktopLocalAccess: React.FC<DesktopLocalAccessProps> = ({ onBaseCh
           {t(`desktop:errors.${problem.code}`, { detail: problem.detail, defaultValue: t('desktop:errors.failed') })}
         </p>
       )}
-    </div>
+    </SettingsCard>
   );
 };

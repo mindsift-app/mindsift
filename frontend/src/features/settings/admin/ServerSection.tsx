@@ -11,6 +11,7 @@ import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
 import { SelectMenu } from '../../../components/SelectMenu';
 import { can } from '../../../lib/capabilities';
+import { SettingRow } from '../../../components/SettingsCard';
 
 // Administration → Server: the instance itself, its version and what the server may reach outside
 // (state in useAdminSettings)
@@ -32,10 +33,7 @@ export function ServerSection({
 
       {/* The instance: its name, the default language and the server's time zone */}
       <div className="bg-canvas border border-border rounded-card divide-y divide-border" data-admin-instance>
-        <div className="p-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
-            <p className="font-bold text-main">{t('server.instanceName')}</p>
-          </div>
+        <SettingRow plain className="p-4" title={t('server.instanceName')}>
           <div className="flex gap-2 w-full sm:w-auto">
             <input
               {...NO_AUTOFILL}
@@ -55,14 +53,15 @@ export function ServerSection({
               {t('common:save')}
             </button>
           </div>
-        </div>
+        </SettingRow>
 
         {/* Default language: login screen, new accounts and browsers in other languages */}
-        <div className="p-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="w-full sm:w-auto sm:flex-1 min-w-0 sm:pr-4">
-            <p className="font-bold text-main">{t('defaultLanguage.title')}</p>
-            <p className="text-[11px] text-muted mt-0.5">{t('defaultLanguage.hint')}{can('accounts') && ` ${t('defaultLanguage.hintAccounts')}`}</p>
-          </div>
+        <SettingRow
+          plain
+          className="p-4"
+          title={t('defaultLanguage.title')}
+          hint={<>{t('defaultLanguage.hint')}{can('accounts') && ` ${t('defaultLanguage.hintAccounts')}`}</>}
+        >
           <SelectMenu
             size="sm"
             ariaLabel={t('defaultLanguage.title')}
@@ -70,7 +69,7 @@ export function ServerSection({
             onChange={(defaultLanguage) => handleSaveSystemSettings({ defaultLanguage })}
             options={LANGUAGES.map((l) => ({ value: l.id, label: l.name }))}
           />
-        </div>
+        </SettingRow>
 
         {/* The server's time zone: due dates, alarms, the daily summary and backups follow it */}
         <TimeZoneSetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
@@ -83,37 +82,39 @@ export function ServerSection({
       <LinkPreviewSetting settings={settings} demoMode={demoMode} onSave={(patch) => handleSaveSystemSettings(patch)} />
 
       {/* Alarm webhooks into the local network (SSRF protection) */}
-      <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
-        <div className="pr-4">
-          <p className="font-bold text-main">{t('server.privateWebhooks')}</p>
-          <p className="text-[11px] text-muted mt-0.5">
+      <SettingRow
+        title={t('server.privateWebhooks')}
+        hint={
+          <>
             {t('server.privateWebhooksHint')}
             {settings.allowPrivateWebhooksConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'ALLOW_PRIVATE_WEBHOOKS' })}`}
-          </p>
-        </div>
+          </>
+        }
+      >
         <ToggleSwitch
           checked={Boolean(settings.allowPrivateWebhooks)}
           disabled={Boolean(settings.allowPrivateWebhooksConfiguredViaEnv)}
           onChange={(allowPrivateWebhooks) => handleSaveSystemSettings({ allowPrivateWebhooks })}
         />
-      </div>
+      </SettingRow>
 
       {/* Web push only via the push services of the big browsers */}
       {can('push') && (
-        <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
-          <div className="pr-4">
-            <p className="font-bold text-main">{t('server.pushKnownOnly')}</p>
-            <p className="text-[11px] text-muted mt-0.5">
+        <SettingRow
+          title={t('server.pushKnownOnly')}
+          hint={
+            <>
               {t('server.pushKnownOnlyHint')}
               {settings.pushKnownServicesOnlyConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'PUSH_KNOWN_SERVICES_ONLY' })}`}
-            </p>
-          </div>
+            </>
+          }
+        >
           <ToggleSwitch
             checked={Boolean(settings.pushKnownServicesOnly)}
             disabled={Boolean(settings.pushKnownServicesOnlyConfiguredViaEnv)}
             onChange={(pushKnownServicesOnly) => handleSaveSystemSettings({ pushKnownServicesOnly })}
           />
-        </div>
+        </SettingRow>
       )}
     </AdminPage>
   );

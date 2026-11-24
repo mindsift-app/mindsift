@@ -745,6 +745,13 @@ const fr: HelpContent = {
             <li>
               <strong className="text-main">Importer Obsidian :</strong> Sous <em>Paramètres du compte → Export &amp; import</em>, MindSift accepte un vault en .zip. Les notes vont dans un dossier à part au nom du vault, les sous-dossiers sont conservés, les cases à cocher restent des cases et les tags du frontmatter deviennent des #hashtags. Les images et fichiers audio intégrés suivent, les autres pièces jointes comme les PDF non.
             </li>
+            <li>
+              <strong className="text-main">Supprimer tes données ou ton compte :</strong> Sous <em>Paramètres du compte → Profil</em>, « Supprimer toutes mes données » supprime tes notes, dossiers, tâches, pensées et listes ; le compte et les paramètres sont conservés.
+              <Only can="accounts">
+                {' '}
+                Le contenu partagé avec toi par d’autres est conservé. « Supprimer le compte » supprime ton compte avec toutes ses données et te déconnecte. Le dernier compte administrateur ne peut être supprimé que lorsqu’un autre compte est administrateur.
+              </Only>
+            </li>
             <Only can="restore">
               <li>
                 <strong className="text-main">Tout restaurer :</strong> les admins restaurent toute l’instance avec ses images et enregistrements dans <em>Administration → Données</em> avec <em>Restaurer</em> ; l’état actuel est sauvegardé avant. Pour un déménagement, télécharge une sauvegarde et charge-la sur le nouveau serveur avec <em>Téléverser une sauvegarde</em>.
@@ -797,7 +804,7 @@ const fr: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Qui peut partager avec qui :</strong> l'administrateur du serveur décide : avec tout le monde, uniquement avec les personnes avec qui tu as au moins une <em>organisation</em> en commun, ou avec personne (mode « Privé » : pas de partage, pas de groupes). Tu peux appartenir à plusieurs organisations ; les administrateurs et la gestion des utilisateurs s'en occupent. Si la recherche de personnes est désactivée, tu saisis l'adresse e-mail ou le nom d'utilisateur exacts lors du partage. Les personnes qui travaillent avec toi sur quelque chose y apparaissent toujours avec leur nom.
+              <strong className="text-main">Qui peut partager avec qui :</strong> l'administrateur du serveur décide : avec tout le monde, uniquement avec les personnes avec qui tu as au moins une <em>organisation</em> en commun, ou avec personne (mode « Privé » : pas de partage, pas de groupes). Dans le mode intermédiaire, qui n’appartient à aucune organisation ne peut partager avec personne. Tu peux appartenir à plusieurs organisations ; les administrateurs et la gestion des utilisateurs s'en occupent. Si la recherche de personnes est désactivée, tu saisis l'adresse e-mail ou le nom d'utilisateur exacts lors du partage. Les personnes qui travaillent avec toi sur quelque chose y apparaissent toujours avec leur nom.
             </li>
             <li>
               <strong className="text-main">Fuseau horaire du serveur :</strong> l'administrateur du serveur le règle sous <em>Administration → Instance → Fuseau horaire</em>. Il vaut aussitôt pour tous : échéances avec heure, alertes, résumé quotidien et heure des sauvegardes.

@@ -238,7 +238,6 @@
     "personal": "Persönlich",
     "deletedAt": "gelöscht {{date}}",
     "empty": "Der Papierkorb ist leer.",
-    "delete": "Endgültig löschen",
     "deletedAtBy": "gelöscht {{date}} von {{name}}",
     "deletedAtAuto": "gelöscht {{date}} (automatisch)",
     "limited": "Angezeigt werden die neuesten {{count}} Einträge."

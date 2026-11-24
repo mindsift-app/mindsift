@@ -49,7 +49,7 @@
   "capture": {
     "title": "Saisir un Quick Dump",
     "listening": "J'écoute…",
-    "transcribing": "Transcription en cours…",
+    "transcribing": "Transcription…",
     "placeholder": "Qu'as-tu en tête ?…",
     "stopRecording": "Arrêter l'enregistrement",
     "voiceInput": "Saisie vocale",
