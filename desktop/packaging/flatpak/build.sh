@@ -43,12 +43,12 @@ APP_ID=app.mindsift.MindSift
 DIR=desktop/packaging/flatpak
 # GNOME 51 (released 2026-09) is a branch: its security rebuilds come along, as they do for every user of
 # the runtime. The Go and Node extensions are pinned to a commit, so a new Go or Node only comes in
-# deliberately (14-day rule): f9e1ac9f… is Go 1.27.3, published on Flathub 2026-10-21; eb3f0d47… is the
-# Node 24 extension published 2026-09-19 (the next one, 2026-11-12, was too young on 2026-11-23).
+# deliberately (14-day rule): f9e1ac9f… is Go 1.27.3, published on Flathub 2026-10-21; f46da399… is the
+# Node 24 extension published 2026-11-12 (taken on 2026-11-27).
 GNOME_BRANCH=51
 EXT_BRANCH=26.08
 GO_EXT_COMMIT=f9e1ac9f0c6f95e0df3a4a972a9b7d008715b336c9558098678045a24b81c102
-NODE_EXT_COMMIT=eb3f0d4736b50b678eb7ad130ee0cb553711872a9be175cb6d812208ea8f5ed5
+NODE_EXT_COMMIT=f46da399c582301f046849732b412f1271fd8cdaf97a382582e6838aa39e19f7
 STAGE=desktop/out/flatpak
 OUT=desktop/out/mindsift-desktop-linux-amd64.flatpak
 APP_VERSION="$(sh ci/version.sh app "${APP_VERSION:-}")"
